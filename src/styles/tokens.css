@@ -1,0 +1,113 @@
+:root {
+  /* ---- Base palette (named, not generic) ---- */
+  --paper: #FBF9F4;        /* page background - warm off-white, never dark */
+  --paper-raised: #FFFFFF; /* cards */
+  --paper-sunken: #F3F0E7; /* subtle recessed fields, table headers */
+
+  --ink: #211F1B;          /* primary text */
+  --ink-soft: #6E6A60;     /* secondary text */
+  --ink-faint: #A9A497;    /* placeholders, hints */
+
+  --line: #E6E1D3;         /* hairline borders */
+  --line-strong: #D6CFBB;  /* emphasized borders */
+
+  /* Rail = brand / primary. Deep pine, evokes craft & growth (bakery -> operations -> mastery) */
+  --rail: #2A4A40;
+  --rail-hover: #223D34;
+  --rail-soft: #E6EEE9;
+  --rail-soft-text: #1E3B32;
+
+  /* Amber = in progress / pending / attention */
+  --amber: #B4832A;
+  --amber-soft: #F7EDD8;
+  --amber-soft-text: #7A5A1B;
+
+  /* Sage = success / passed / completed */
+  --sage: #4F7F55;
+  --sage-soft: #E7F1E4;
+  --sage-soft-text: #2F5A34;
+
+  /* Rust = overdue / danger / locked-blocking */
+  --rust: #B2482F;
+  --rust-soft: #F8E7E1;
+  --rust-soft-text: #7C311D;
+
+  /* Slate = neutral / locked / inactive-structural */
+  --slate: #8A8577;
+  --slate-soft: #EFEBDF;
+  --slate-soft-text: #5C584C;
+
+  /* Typography. The product UI reads as a clean, confident enterprise dashboard
+     (--font-display / --font-body: Inter throughout); Fraunces is reserved for the
+     brand wordmark alone (--font-brand), so personality lives in one place instead
+     of leaking into every stat number and heading. */
+  --font-brand: 'Fraunces', ui-serif, Georgia, serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --sidebar-w: 248px;
+
+  --shadow-card: 0 1px 2px rgba(33, 31, 27, 0.04), 0 1px 1px rgba(33, 31, 27, 0.03);
+  --shadow-raised: 0 8px 20px rgba(33, 31, 27, 0.10), 0 2px 6px rgba(33, 31, 27, 0.06);
+  --focus-ring: 0 0 0 3px var(--rail-soft);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--rail);
+}
+
+::selection {
+  background: var(--rail-soft);
+}
+
+/* A visible, on-brand focus ring for keyboard users wherever a component doesn't
+   define its own (buttons/inputs/selects define tighter rings in app.css). */
+:focus-visible {
+  outline: 2px solid var(--rail);
+  outline-offset: 2px;
+}
+
+/* scrollbar - light, unobtrusive */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
