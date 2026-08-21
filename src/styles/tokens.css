@@ -1,60 +1,78 @@
 :root {
-  /* ---- Base palette (named, not generic) ---- */
-  --paper: #FBF9F4;        /* page background - warm off-white, never dark */
-  --paper-raised: #FFFFFF; /* cards */
-  --paper-sunken: #F3F0E7; /* subtle recessed fields, table headers */
+  /* ---- Modern Enterprise Palette ---- */
+  --paper: #F8FAF9;        /* page background - ultra clean subtle sage/slate tint */
+  --paper-raised: #FFFFFF; /* cards & elevated panels */
+  --paper-sunken: #F1F5F3; /* subtle recessed fields, table headers */
+  --paper-glass: rgba(255, 255, 255, 0.88);
 
-  --ink: #211F1B;          /* primary text */
-  --ink-soft: #6E6A60;     /* secondary text */
-  --ink-faint: #A9A497;    /* placeholders, hints */
+  --ink: #111827;          /* primary text */
+  --ink-soft: #4B5563;     /* secondary text */
+  --ink-faint: #9CA3AF;    /* placeholders, hints */
 
-  --line: #E6E1D3;         /* hairline borders */
-  --line-strong: #D6CFBB;  /* emphasized borders */
+  --line: #E5E9E6;         /* hairline borders */
+  --line-strong: #D1D8D4;  /* emphasized borders */
 
-  /* Rail = brand / primary. Deep pine, evokes craft & growth (bakery -> operations -> mastery) */
-  --rail: #2A4A40;
-  --rail-hover: #223D34;
-  --rail-soft: #E6EEE9;
-  --rail-soft-text: #1E3B32;
+  /* Rail = brand primary: Elegant Forest Teal */
+  --rail: #0F766E;
+  --rail-hover: #115E59;
+  --rail-soft: #ECFDF5;
+  --rail-soft-text: #065F46;
+  --rail-gradient: linear-gradient(135deg, #0F766E 0%, #0D9488 100%);
 
-  /* Amber = in progress / pending / attention */
-  --amber: #B4832A;
-  --amber-soft: #F7EDD8;
-  --amber-soft-text: #7A5A1B;
+  /* AI Sparkle / Innovation gradient */
+  --ai-primary: #6366F1;
+  --ai-hover: #4F46E5;
+  --ai-soft: #EEF2FF;
+  --ai-soft-text: #3730A3;
+  --ai-gradient: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #DB2777 100%);
+  --ai-glow: 0 0 20px rgba(99, 102, 241, 0.25);
+
+  /* Amber = in progress / pending / attention / gamification */
+  --amber: #D97706;
+  --amber-soft: #FEF3C7;
+  --amber-soft-text: #92400E;
+  --gold-gradient: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 
   /* Sage = success / passed / completed */
-  --sage: #4F7F55;
-  --sage-soft: #E7F1E4;
-  --sage-soft-text: #2F5A34;
+  --sage: #10B981;
+  --sage-soft: #D1FAE5;
+  --sage-soft-text: #065F46;
 
   /* Rust = overdue / danger / locked-blocking */
-  --rust: #B2482F;
-  --rust-soft: #F8E7E1;
-  --rust-soft-text: #7C311D;
+  --rust: #EF4444;
+  --rust-soft: #FEE2E2;
+  --rust-soft-text: #991B1B;
 
   /* Slate = neutral / locked / inactive-structural */
-  --slate: #8A8577;
-  --slate-soft: #EFEBDF;
-  --slate-soft-text: #5C584C;
+  --slate: #64748B;
+  --slate-soft: #F1F5F9;
+  --slate-soft-text: #334155;
 
-  /* Typography. The product UI reads as a clean, confident enterprise dashboard
-     (--font-display / --font-body: Inter throughout); Fraunces is reserved for the
-     brand wordmark alone (--font-brand), so personality lives in one place instead
-     of leaking into every stat number and heading. */
-  --font-brand: 'Fraunces', ui-serif, Georgia, serif;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Blue = ILT Classroom / Live */
+  --blue: #2563EB;
+  --blue-soft: #DBEAFE;
+  --blue-soft-text: #1E40AF;
+
+  /* Typography */
+  --font-brand: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* Layout */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --sidebar-w: 248px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --sidebar-w: 260px;
 
-  --shadow-card: 0 1px 2px rgba(33, 31, 27, 0.04), 0 1px 1px rgba(33, 31, 27, 0.03);
-  --shadow-raised: 0 8px 20px rgba(33, 31, 27, 0.10), 0 2px 6px rgba(33, 31, 27, 0.06);
-  --focus-ring: 0 0 0 3px var(--rail-soft);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-raised: 0 10px 25px -3px rgba(15, 118, 110, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.2);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 

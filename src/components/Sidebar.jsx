@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useCourseStore } from '../state/CourseStore';
 import { currentUser, managerUser, adminUser, orgPathLabel } from '../data/mockData';
 
 const PROFILE_BY_ROLE = { learner: currentUser, manager: managerUser, admin: adminUser };
@@ -7,36 +8,44 @@ const PROFILE_BY_ROLE = { learner: currentUser, manager: managerUser, admin: adm
 const NAV_BY_ROLE = {
   learner: [
     { to: '/learner', label: 'Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/learner/courses', label: 'My courses', icon: 'ti-book-2' },
+    { to: '/learner/courses', label: 'My Courses', icon: 'ti-book-2' },
+    { to: '/learner/classrooms', label: 'Classrooms & QR Check-in', icon: 'ti-chalkboard' },
+    { to: '/learner/paths', label: 'Learning Paths', icon: 'ti-git-branch' },
+    { to: '/learner/ai-hub', label: 'AI Learning Hub & SOPs', icon: 'ti-sparkles', badge: 'AI' },
+    { to: '/learner/leaderboard', label: 'Leaderboard & XP', icon: 'ti-trophy' },
     { to: '/learner/certificates', label: 'Certificates', icon: 'ti-certificate' },
-    { to: '/learner/history', label: 'Learning history', icon: 'ti-history' },
+    { to: '/learner/history', label: 'Learning History', icon: 'ti-history' },
   ],
   manager: [
-    { to: '/manager', label: 'Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/learning', label: 'My learning', icon: 'ti-book-2' },
-    { to: '/manager/certificates', label: 'Certificates', icon: 'ti-certificate' },
-    { to: '/manager/team', label: 'Team', icon: 'ti-users' },
-    { to: '/manager/courses', label: 'Team courses', icon: 'ti-stack-2' },
-    { to: '/manager/reports', label: 'Team reports', icon: 'ti-chart-bar' },
+    { to: '/manager', label: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
+    { to: '/manager/team', label: 'Direct Reports', icon: 'ti-users' },
+    { to: '/manager/approvals', label: 'Course Approvals', icon: 'ti-circle-check', badge: '2' },
+    { to: '/manager/courses', label: 'Team Courses', icon: 'ti-stack-2' },
+    { to: '/manager/reports', label: 'Reports & Compliance', icon: 'ti-chart-bar' },
+    { to: '/manager/learning', label: 'My Learning', icon: 'ti-book-2' },
+    { to: '/manager/certificates', label: 'My Certificates', icon: 'ti-certificate' },
   ],
   admin: [
-    { to: '/admin', label: 'Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/admin/courses', label: 'Courses', icon: 'ti-stack-2' },
-    { to: '/admin/config', label: 'Configuration', icon: 'ti-settings' },
-    { to: '/admin/reports', label: 'Analytics', icon: 'ti-chart-histogram' },
+    { to: '/admin', label: 'Executive Dashboard & AI', icon: 'ti-layout-dashboard', end: true },
+    { to: '/admin/courses', label: 'Course Catalog & Builder', icon: 'ti-stack-2' },
+    { to: '/admin/config', label: 'HRIS & MMVN Governance', icon: 'ti-settings' },
+    { to: '/admin/reports', label: 'Strategic ROI & Audit Center', icon: 'ti-chart-histogram' },
   ],
+
 };
 
 const ROLE_META = {
-  learner: { label: 'User Learn', icon: 'ti-user', tone: 'rail' },
-  manager: { label: 'Manager', icon: 'ti-briefcase', tone: 'amber' },
-  admin: { label: 'Admin', icon: 'ti-shield-lock', tone: 'sage' },
+  learner: { label: 'Learner (Store / HO)', icon: 'ti-user', tone: 'rail' },
+  manager: { label: 'Line Manager', icon: 'ti-briefcase', tone: 'amber' },
+  admin: { label: 'L&D Administrator', icon: 'ti-shield-lock', tone: 'sage' },
 };
 
 export default function Sidebar({ role, collapsed }) {
+  const { currentUser: authUser } = useCourseStore();
   const items = NAV_BY_ROLE[role];
   const meta = ROLE_META[role];
-  const profile = PROFILE_BY_ROLE[role];
+  const profile = (authUser && authUser.role === role) ? authUser : PROFILE_BY_ROLE[role];
+
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -81,7 +90,21 @@ export default function Sidebar({ role, collapsed }) {
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <i className={`ti ${item.icon}`} aria-hidden="true" />
-            <span>{item.label}</span>
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {item.badge && (
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: 10,
+                  background: item.badge === 'AI' ? 'var(--ai-gradient)' : 'var(--amber)',
+                  color: '#fff',
+                }}
+              >
+                {item.badge}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

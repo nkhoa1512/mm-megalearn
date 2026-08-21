@@ -1,38 +1,250 @@
-import React from 'react';
-import { orgReport } from '../../data/mockData';
-import { StatCard, Badge, BarChart, StatusStackedBar, LineChart, DonutChart } from '../../components/ui';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  orgReport,
+  divisionComplianceLeague,
+  liveSystemActivity,
+  courses,
+} from '../../data/mockData';
+import { StatCard, Badge, BarChart, StatusStackedBar, LineChart, DonutChart, Button } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
-const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
+const STATUS_TONE = {
+  PUBLISHED: 'sage',
+  DRAFT: 'rail',
+  ARCHIVED: 'slate',
+};
 
-// FR-DASH-ADM-001/002: organization-wide counts plus per-course performance,
-// shown as a stacked bar (status mix), a line (trend), a donut (headcount split)
-// and a bar chart (per-course ranking) so Admin has more than one lens on it.
+const LEAGUE_STATUS_META = {
+  AUDIT_READY: { label: 'Audit Ready', tone: 'sage', icon: 'ti-shield-check' },
+  NEEDS_ATTENTION: { label: 'Needs Attention', tone: 'amber', icon: 'ti-alert-circle' },
+  HIGH_RISK: { label: 'High Risk', tone: 'rust', icon: 'ti-alert-triangle' },
+};
+
 export default function AdminDashboard() {
-  const { courses } = useCourseStore();
-  const mandatoryCount = courses.filter((c) => c.courseType === 'MANDATORY').length;
-  const optionalCount = courses.filter((c) => c.courseType === 'OPTIONAL').length;
+  const navigate = useNavigate();
+  const { courses: storeCourses } = useCourseStore();
+  const [leagueFilter, setLeagueFilter] = useState('ALL');
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastSent, setBroadcastSent] = useState(false);
+
+  const mandatoryCount = storeCourses.filter((c) => c.courseType === 'MANDATORY').length;
+  const optionalCount = storeCourses.filter((c) => c.courseType === 'OPTIONAL').length;
+
+  const filteredLeague = divisionComplianceLeague.filter((d) => {
+    if (leagueFilter === 'ALL') return true;
+    return d.status === leagueFilter;
+  });
+
+  function handleBroadcastReminders() {
+    setIsBroadcasting(true);
+    setTimeout(() => {
+      setIsBroadcasting(false);
+      setBroadcastSent(true);
+      setTimeout(() => setBroadcastSent(false), 4000);
+    }, 1200);
+  }
+
   return (
     <>
-      <div className="page-header">
-        <h1>Admin overview</h1>
-        <p>Organization-wide status for the learning and development program.</p>
+      {/* Executive Command Header */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h1>Executive L&amp;D Command &amp; Compliance Hub</h1>
+            <Badge tone="ai" icon="ti-crown">HRD Level 1 Enterprise Authority</Badge>
+          </div>
+          <p>
+            Real-time compliance monitoring, course lifecycle governance, and AI predictive insights across <strong>2,145 associates</strong> in <strong>16 Divisions &middot; 56 Departments</strong>.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="outline" icon="ti-settings" onClick={() => navigate('/admin/config')}>
+            HRIS &amp; Governance
+          </Button>
+          <Button variant="outline" icon="ti-chart-histogram" onClick={() => navigate('/admin/reports')}>
+            Strategic ROI &amp; Audit
+          </Button>
+          <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
+            Create New Course
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-4" style={{ marginBottom: 8 }}>
-        <StatCard label="Total employees" value={orgReport.totalEmployees} />
-        <StatCard label="Total managers" value={orgReport.totalManagers} />
-        <StatCard label="Total User Learn" value={orgReport.totalUserLearn} />
-        <StatCard label="Active courses" value={orgReport.totalActiveCourses} tone="rail" />
-      </div>
-      <div className="grid grid-4" style={{ marginBottom: 8 }}>
-        <StatCard label="Mandatory courses" value={orgReport.totalMandatoryCourses} tone="amber" />
-        <StatCard label="Optional courses" value={orgReport.totalOptionalCourses} />
-        <StatCard label="Completed" value={orgReport.totalCompleted} tone="sage" />
-        <StatCard label="Overdue" value={orgReport.totalOverdue} tone="rust" />
+      {/* AI Predictive Risk & Early Warning Banner */}
+      <div className="card card-pad" style={{ marginBottom: 24, background: 'linear-gradient(135deg, #EEF2FF 0%, #FAF5FF 100%)', borderColor: '#C7D2FE' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 280 }}>
+            <div className="stat-icon-badge" style={{ background: 'var(--ai-gradient)', color: '#fff', width: 46, height: 46, fontSize: 22, flexShrink: 0 }}>
+              <i className="ti ti-sparkles" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#3730A3', display: 'flex', alignItems: 'center', gap: 8 }}>
+                AI Early-Warning: Regulatory Compliance Risk Detected
+                <span style={{ fontSize: 11, background: '#FEE2E2', color: '#991B1B', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                  Inspection in 14 Days
+                </span>
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 3 }}>
+                <strong>OPT (Store Operations)</strong> has <strong>18 overdue associates</strong> in <em>Food Safety (HACCP)</em>. Company-wide completion is <strong>74.8%</strong> (+12% QoQ). Automated intervention recommended.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              size="sm"
+              variant={broadcastSent ? 'primary' : 'ai'}
+              icon={broadcastSent ? 'ti-check' : isBroadcasting ? 'ti-loader' : 'ti-send'}
+              onClick={handleBroadcastReminders}
+              disabled={isBroadcasting}
+            >
+              {broadcastSent ? 'Reminders Sent (Zalo/Teams)!' : isBroadcasting ? 'Broadcasting...' : '1-Click Target Escalation'}
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="section-label">Enrollment status, org-wide</div>
+      {/* 6 Executive KPI Stat Cards */}
+      <div className="grid grid-3" style={{ marginBottom: 16 }}>
+        <div className="card card-pad stat">
+          <div className="stat-label">Total Enterprise Headcount</div>
+          <div className="stat-value">{orgReport.totalEmployees.toLocaleString()} Associates</div>
+          <div className="stat-sublabel">186 Managers &middot; 1,959 Frontline/Staff</div>
+        </div>
+
+        <div className="card card-pad stat">
+          <div className="stat-label">Overall Compliance Rate</div>
+          <div className="stat-value" style={{ color: 'var(--sage)' }}>{orgReport.overallCompletionRate}%</div>
+          <div className="stat-sublabel">Target benchmark: &ge;80.0%</div>
+        </div>
+
+        <div className="card card-pad stat">
+          <div className="stat-label">Certified Competencies Issued</div>
+          <div className="stat-value" style={{ color: 'var(--rail)' }}>{orgReport.totalCompleted.toLocaleString()} Credentials</div>
+          <div className="stat-sublabel">Verifiable digital QR certificates</div>
+        </div>
+      </div>
+
+      <div className="grid grid-3" style={{ marginBottom: 24 }}>
+        <div className="card card-pad stat">
+          <div className="stat-label">Active Catalog Programs</div>
+          <div className="stat-value">{orgReport.totalActiveCourses} Courses</div>
+          <div className="stat-sublabel">{mandatoryCount} Mandatory &middot; {optionalCount} Elective</div>
+        </div>
+
+        <div className="card card-pad stat">
+          <div className="stat-label">Overdue Compliance Enrollments</div>
+          <div className="stat-value" style={{ color: 'var(--rust)' }}>{orgReport.totalOverdue} Associates</div>
+          <div className="stat-sublabel">Down -14% vs last month</div>
+        </div>
+
+        <div className="card card-pad stat">
+          <div className="stat-label">Average Assessment Score</div>
+          <div className="stat-value" style={{ color: 'var(--amber)' }}>{orgReport.avgPassingScore}%</div>
+          <div className="stat-sublabel">{orgReport.firstTimePassRate}% First-attempt pass rate</div>
+        </div>
+      </div>
+
+      {/* 16 MMVN Divisions Compliance League Table */}
+      <div className="card card-pad" style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)' }}>
+              MMVN 16 Divisions Compliance League Table &amp; Audit Radar
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Real-time training completion across all 16 business divisions at MM Mega Market Vietnam.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: 'All 16 Divisions' },
+              { id: 'AUDIT_READY', label: 'Audit Ready' },
+              { id: 'NEEDS_ATTENTION', label: 'Needs Attention' },
+              { id: 'HIGH_RISK', label: 'High Risk' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setLeagueFilter(f.id)}
+                className="btn btn-sm"
+                style={{
+                  background: leagueFilter === f.id ? 'var(--rail)' : 'var(--paper-raised)',
+                  color: leagueFilter === f.id ? '#fff' : 'var(--ink)',
+                  borderColor: leagueFilter === f.id ? 'var(--rail)' : 'var(--line-strong)',
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th style={{ width: 60 }}>Rank</th>
+                <th style={{ width: 140 }}>Division</th>
+                <th>Division Name &amp; Head</th>
+                <th style={{ width: 100 }}>Headcount</th>
+                <th style={{ minWidth: 160 }}>Completion Progress</th>
+                <th style={{ width: 90 }}>Overdue</th>
+                <th style={{ width: 100 }}>Avg Score</th>
+                <th style={{ width: 140 }}>Compliance Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLeague.map((div) => {
+                const meta = LEAGUE_STATUS_META[div.status] || LEAGUE_STATUS_META.AUDIT_READY;
+                return (
+                  <tr key={div.code}>
+                    <td style={{ fontWeight: 700, color: div.rank <= 3 ? 'var(--amber)' : 'var(--ink-soft)' }}>
+                      #{div.rank}
+                    </td>
+                    <td>
+                      <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{div.code}</strong>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{div.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Head: {div.director}</div>
+                    </td>
+                    <td>{div.headcount}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, height: 7, background: 'var(--paper-sunken)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: `${div.completionRate}%`,
+                              height: '100%',
+                              background: div.completionRate >= 85 ? 'var(--sage)' : div.completionRate >= 70 ? 'var(--rail)' : 'var(--rust)',
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 42 }}>{div.completionRate}%</span>
+                      </div>
+                    </td>
+                    <td style={{ color: div.overdueCount > 0 ? 'var(--rust)' : 'var(--sage)', fontWeight: div.overdueCount > 0 ? 700 : 500 }}>
+                      {div.overdueCount}
+                    </td>
+                    <td>
+                      <strong>{div.avgScore}%</strong>
+                    </td>
+                    <td>
+                      <Badge tone={meta.tone} icon={meta.icon}>
+                        {meta.label}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Charts: Status Stacked Bar & Trajectory */}
+      <div className="section-label">Organization-Wide Enrollment Status Breakdown</div>
       <div className="card card-pad" style={{ marginBottom: 28 }}>
         <StatusStackedBar
           segments={[
@@ -46,80 +258,117 @@ export default function AdminDashboard() {
 
       <div className="grid grid-2" style={{ marginBottom: 28, alignItems: 'start' }}>
         <div>
-          <div className="section-label">Completions trend, last 6 months</div>
+          <div className="section-label">Monthly Completion Trajectory</div>
           <div className="card card-pad">
             <LineChart data={orgReport.monthlyCompletions.map((m) => ({ label: m.month, value: m.value }))} />
           </div>
         </div>
         <div>
-          <div className="section-label">Courses by type</div>
+          <div className="section-label">Course Distribution by Category</div>
           <div className="card card-pad">
             <DonutChart
               data={[
-                { label: 'Mandatory', value: mandatoryCount, tone: 'amber' },
-                { label: 'Optional', value: optionalCount, tone: 'slate' },
+                { label: 'Mandatory Compliance', value: mandatoryCount, tone: 'amber' },
+                { label: 'Elective Catalog', value: optionalCount, tone: 'slate' },
               ]}
             />
           </div>
         </div>
       </div>
 
-      <div className="section-label">Completion rate by course</div>
-      <div className="card card-pad" style={{ marginBottom: 28 }}>
-        <BarChart
-          valueSuffix="%"
-          data={orgReport.coursePerformance.map((cp) => ({
-            label: cp.course, value: cp.completionRate,
-            detail: `${cp.course}: ${cp.completed} of ${cp.assigned} completed (${cp.completionRate}%)`,
-          }))}
-        />
-      </div>
-
-      <div className="section-label">Course performance</div>
-      <div className="card" style={{ marginBottom: 28 }}>
+      {/* Detailed Course Performance with Friction Analysis */}
+      <div className="section-label">Course Program Performance &amp; Friction Diagnostics</div>
+      <div className="card" style={{ marginBottom: 28, overflowX: 'auto' }}>
         <table className="table">
           <thead>
             <tr>
-              <th>Course</th>
-              <th>Assigned</th>
-              <th>Completed</th>
-              <th>Overdue</th>
-              <th>Completion rate</th>
-              <th>Avg. score</th>
+              <th>Course Program</th>
+              <th style={{ width: 100 }}>Assigned</th>
+              <th style={{ width: 100 }}>Completed</th>
+              <th style={{ width: 90 }}>Overdue</th>
+              <th style={{ width: 130 }}>Completion Rate</th>
+              <th style={{ width: 100 }}>Avg Score</th>
+              <th>AI Diagnostic &amp; Content Friction Note</th>
             </tr>
           </thead>
           <tbody>
             {orgReport.coursePerformance.map((cp) => (
-              <tr key={cp.course}>
-                <td style={{ fontWeight: 600 }}>{cp.course}</td>
-                <td>{cp.assigned}</td>
-                <td>{cp.completed}</td>
-                <td>{cp.overdue}</td>
-                <td>{cp.completionRate}%</td>
-                <td>{cp.avgScore != null ? `${cp.avgScore}%` : '—'}</td>
+              <tr key={cp.code}>
+                <td>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{cp.course}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{cp.code}</div>
+                </td>
+                <td>{cp.assigned.toLocaleString()}</td>
+                <td style={{ color: 'var(--sage)', fontWeight: 700 }}>{cp.completed.toLocaleString()}</td>
+                <td style={{ color: cp.overdue > 0 ? 'var(--rust)' : 'var(--ink-soft)', fontWeight: cp.overdue > 0 ? 700 : 500 }}>
+                  {cp.overdue}
+                </td>
+                <td>
+                  <strong style={{ fontSize: 13 }}>{cp.completionRate}%</strong>
+                </td>
+                <td>
+                  <strong>{cp.avgScore != null ? `${cp.avgScore}%` : '—'}</strong>
+                </td>
+                <td style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
+                  <i className="ti ti-bulb" style={{ color: 'var(--amber)', marginRight: 4 }} />
+                  {cp.frictionNote}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="section-label">Courses</div>
-      <div className="card">
-        {courses.map((c, i) => (
-          <div
-            key={c.id}
-            style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '14px 20px', borderBottom: i < courses.length - 1 ? '1px solid var(--line)' : 'none',
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.title}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{c.code} &middot; {c.modules.length} modules &middot; {c.version}</div>
+      {/* Real-time Live Enterprise System Audit Stream */}
+      <div className="section-label">Live Enterprise System Activity &amp; Audit Feed</div>
+      <div className="card card-pad" style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {liveSystemActivity.map((act) => (
+            <div
+              key={act.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 14px',
+                borderRadius: 8,
+                background: act.alert ? '#FEF2F2' : 'var(--paper-sunken)',
+                border: act.alert ? '1px solid #FECACA' : '1px solid var(--line)',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    background: act.type === 'SAP_SYNC' ? '#EEF2FF' : act.alert ? '#FEE2E2' : '#ECFDF5',
+                    color: act.type === 'SAP_SYNC' ? '#4F46E5' : act.alert ? '#DC2626' : '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 16,
+                  }}
+                >
+                  <i className={act.type === 'SAP_SYNC' ? 'ti ti-cloud-computing' : act.alert ? 'ti-alert-triangle' : act.type === 'QR_CHECKIN' ? 'ti-qrcode' : 'ti-certificate'} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: act.alert ? '#991B1B' : 'var(--ink)' }}>
+                    {act.user ? `${act.user} (${act.code} · ${act.role})` : act.source}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                    {act.title || act.details}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                {act.time}
+              </div>
             </div>
-            <Badge tone={STATUS_TONE[c.status]}>{c.status.charAt(0) + c.status.slice(1).toLowerCase()}</Badge>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </>
   );

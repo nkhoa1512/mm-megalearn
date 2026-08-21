@@ -1,5 +1,6 @@
 import React from 'react';
-import { teamMembers } from '../../data/mockData';
+import { getTeamMembersForManager, managerUser as defaultManager } from '../../data/mockData';
+import { useCourseStore } from '../../state/CourseStore';
 import { Badge, BarChart, CourseTypeBadge } from '../../components/ui';
 
 function groupByCourse(members) {
@@ -21,18 +22,26 @@ function groupByCourse(members) {
   });
 }
 
-// The Manager's employee-centric view lives at /manager/team; this is the
-// course-centric complement so a Division/Department manager can see, per
-// course, how the team within their scope is doing on it (FR-DASH-MGR-002).
 export default function ManagerCourses() {
+  const { currentUser: authUser } = useCourseStore();
+  const activeManager = authUser?.role === 'manager' || authUser?.role === 'admin' ? authUser : defaultManager;
+  const teamMembers = getTeamMembersForManager(activeManager);
   const groups = groupByCourse(teamMembers);
 
   return (
     <>
-      <div className="page-header">
-        <h1>Team courses</h1>
-        <p>Every course your team is taking, and how your scope is doing on each one.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h1>Team Curriculum &amp; Course Progress</h1>
+            <Badge tone="amber">{activeManager.divisionCode} &middot; {activeManager.departmentCode}</Badge>
+          </div>
+          <p>
+            Overview of curriculum modules assigned to direct reports under {activeManager.fullName} ({activeManager.position}).
+          </p>
+        </div>
       </div>
+
 
       <div className="section-label">Completion rate by course</div>
       <div className="card card-pad" style={{ marginBottom: 28 }}>

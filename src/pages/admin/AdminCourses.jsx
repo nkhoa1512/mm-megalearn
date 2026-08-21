@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseHasParticipants } from '../../data/mockData';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
@@ -6,9 +6,30 @@ import { useCourseStore } from '../../state/CourseStore';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
+const CATEGORIES = [
+  'ALL',
+  'Food Safety & Hygiene',
+  'Information Security',
+  'Health & Safety',
+  'Cold Chain',
+  'Store Operations',
+  'Supply Chain & Logistics',
+  'Loss Prevention & QA',
+  'Leadership & Management',
+  'Corporate Governance',
+  'E-Commerce',
+  'Merchandising & Sales',
+  'Finance & Accounting',
+];
+
 export default function AdminCourses() {
   const navigate = useNavigate();
   const { courses, updateCourse, removeCourse } = useCourseStore();
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const pageSize = 15;
 
   function publish(course) {
     updateCourse(course.id, { ...course, status: 'PUBLISHED', publishedAt: new Date().toISOString().slice(0, 10) });
@@ -20,45 +41,121 @@ export default function AdminCourses() {
     }
   }
 
+  const filtered = courses.filter((c) => {
+    const matchCat = selectedCategory === 'ALL' || c.category === selectedCategory;
+    const matchType = selectedType === 'ALL' || c.courseType === selectedType;
+    const matchSearch = !search ||
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.code.toLowerCase().includes(search.toLowerCase()) ||
+      c.category.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchType && matchSearch;
+  });
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: 12 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1>Manage courses</h1>
-          <p>Define what employees must learn, in modules and lessons, and who Mandatory courses target.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h1>Course Catalog &amp; Program Governance</h1>
+            <Badge tone="sage">{courses.length} Total Programs</Badge>
+          </div>
+          <p>
+            Define curriculum modules, author interactive quizzes, import question banks, and target mandatory compliance by Business Unit, Division, Department, or Job Level.
+          </p>
         </div>
-        <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>New course</Button>
+        <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
+          Create New Course
+        </Button>
       </div>
 
-      <div className="card">
+      {/* Filter & Search Bar */}
+      <div className="card card-pad" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: 260 }}>
+            <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 10, color: 'var(--ink-faint)', fontSize: 14 }} />
+            <input
+              type="text"
+              className="field-input"
+              style={{ paddingLeft: 32, height: 34, fontSize: 12.5 }}
+              placeholder="Search 100 courses by title, code..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+
+          <select
+            className="field-select"
+            style={{ height: 34, fontSize: 12 }}
+            value={selectedCategory}
+            onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+          >
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>{cat === 'ALL' ? 'All 12 Domains' : cat}</option>
+            ))}
+          </select>
+
+          <select
+            className="field-select"
+            style={{ height: 34, fontSize: 12 }}
+            value={selectedType}
+            onChange={(e) => { setSelectedType(e.target.value); setPage(1); }}
+          >
+            <option value="ALL">All Types (Mandatory &amp; Elective)</option>
+            <option value="MANDATORY">Mandatory Compliance</option>
+            <option value="OPTIONAL">Optional Elective</option>
+          </select>
+        </div>
+
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          Showing <strong>{paginated.length}</strong> of <strong>{filtered.length}</strong> matched courses
+        </div>
+      </div>
+
+      {/* Courses Table */}
+      <div className="card" style={{ overflowX: 'auto' }}>
         <table className="table">
           <thead>
             <tr>
-              <th>Course</th>
-              <th>Type</th>
-              <th>Assigned to</th>
-              <th>Modules</th>
-              <th>Version</th>
-              <th>Status</th>
-              <th></th>
+              <th>Course Program</th>
+              <th style={{ width: 140 }}>Type</th>
+              <th>Assigned Target Scope</th>
+              <th style={{ width: 90 }}>Modules</th>
+              <th style={{ width: 90 }}>Duration</th>
+              <th style={{ width: 110 }}>Status</th>
+              <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {courses.map((c) => {
+            {paginated.map((c) => {
               const hasParticipants = courseHasParticipants(c);
               return (
                 <tr key={c.id}>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{c.title}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{c.code} &middot; {c.category}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{c.title}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {c.category} &middot; Version {c.version}
+                    </div>
                   </td>
                   <td><CourseTypeBadge courseType={c.courseType} /></td>
-                  <td style={{ color: 'var(--ink-soft)', fontSize: 12.5 }}>
-                    {c.courseType === 'MANDATORY' ? c.assignment?.targetLabel : 'Course catalog'}
+                  <td style={{ color: 'var(--ink-soft)', fontSize: 12 }}>
+                    {c.courseType === 'MANDATORY' ? (
+                      <span style={{ background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 4, display: 'inline-block' }}>
+                        {c.assignment?.targetLabel || 'Assigned Division'}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-faint)' }}>All MMVN Associates (Catalog)</span>
+                    )}
                   </td>
-                  <td>{c.modules.length}</td>
-                  <td style={{ color: 'var(--ink-soft)' }}>{c.version}</td>
-                  <td><Badge tone={STATUS_TONE[c.status]}>{c.status.charAt(0) + c.status.slice(1).toLowerCase()}</Badge></td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.modules?.length || 2}</td>
+                  <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.estimatedDuration || '2h'}</td>
+                  <td>
+                    <Badge tone={STATUS_TONE[c.status]}>
+                      {c.status === 'PUBLISHED' ? 'Published' : c.status === 'DRAFT' ? 'Draft' : 'Archived'}
+                    </Badge>
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
@@ -74,6 +171,40 @@ export default function AdminCourses() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 10 }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+            Page <strong>{page}</strong> of <strong>{totalPages}</strong> ({filtered.length} courses total)
+          </span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              &larr; Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className="btn btn-sm"
+                  style={{
+                    background: page === p ? 'var(--rail)' : 'var(--paper-raised)',
+                    color: page === p ? '#fff' : 'var(--ink)',
+                    borderColor: page === p ? 'var(--rail)' : 'var(--line-strong)',
+                    minWidth: 32,
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+              Next &rarr;
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

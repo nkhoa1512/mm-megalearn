@@ -1,10 +1,11 @@
 import React from 'react';
 import { managerUser } from '../../data/mockData';
+import { useCourseStore } from '../../state/CourseStore';
 import LearnerCertificates from '../learner/LearnerCertificates';
 
-// Manager earns certificates the same way a User Learn does — section 39 applies
-// to any completer, not just USER_LEARN — so this reuses the same view, scoped
-// to the Manager's own completions.
 export default function ManagerCertificates() {
-  return <LearnerCertificates user={managerUser} />;
+  const { currentUser: authUser } = useCourseStore();
+  const user = (authUser && authUser.role === 'manager') ? authUser : managerUser;
+  return <LearnerCertificates user={user} />;
 }
+

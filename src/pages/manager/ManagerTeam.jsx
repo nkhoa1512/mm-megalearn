@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { teamMembers } from '../../data/mockData';
+import { getTeamMembersForManager, managerUser as defaultManager } from '../../data/mockData';
+import { useCourseStore } from '../../state/CourseStore';
 import { Badge, ProgressBar, Button, CourseTypeBadge } from '../../components/ui';
 
 const STATUS_META = {
@@ -12,22 +13,32 @@ const STATUS_META = {
 
 const FILTERS = ['All', 'Not started', 'In progress', 'Completed', 'Failed', 'Overdue'];
 
-// FR-DASH-MGR-002: Manager can monitor employee/course/progress/status/score/attempts/
-// due date/last activity within scope. No action here changes an assignment (BR-025).
 export default function ManagerTeam() {
+  const { currentUser: authUser } = useCourseStore();
+  const activeManager = authUser?.role === 'manager' || authUser?.role === 'admin' ? authUser : defaultManager;
+  const teamMembers = getTeamMembersForManager(activeManager);
+
   const [filter, setFilter] = useState('All');
 
   const filtered = teamMembers.filter((m) => {
     if (filter === 'All') return true;
-    return STATUS_META[m.status].label === filter;
+    return STATUS_META[m.status]?.label === filter;
   });
 
   return (
     <>
-      <div className="page-header">
-        <h1>Team</h1>
-        <p>Every User Learn employee within your authorized management scope and their assigned training.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h1>Direct Reports &amp; Team Roster</h1>
+            <Badge tone="amber">{activeManager.divisionCode} &middot; {activeManager.departmentCode}</Badge>
+          </div>
+          <p>
+            Monitor learning progress, mandatory certifications, and compliance status for direct reports under {activeManager.fullName} ({activeManager.position}).
+          </p>
+        </div>
       </div>
+
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {FILTERS.map((f) => (

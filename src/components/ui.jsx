@@ -1,52 +1,80 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export function Badge({ tone = 'slate', children, icon }) {
+export function Badge({ tone = 'slate', children, icon, size }) {
   return (
-    <span className={`badge badge-${tone}`}>
+    <span className={`badge badge-${tone} ${size === 'sm' ? 'badge-sm' : ''}`}>
       {icon ? <i className={`ti ${icon}`} aria-hidden="true" /> : <span className="badge-dot" />}
       {children}
     </span>
   );
 }
 
-export function ProgressBar({ value, tone = 'rail' }) {
+export function ProgressBar({ value, tone = 'rail', size = 'md' }) {
   const fillColor = {
-    rail: 'var(--rail)',
-    sage: 'var(--sage)',
-    amber: 'var(--amber)',
-    rust: 'var(--rust)',
-  }[tone];
+    rail: 'var(--rail-gradient)',
+    sage: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+    amber: 'var(--gold-gradient)',
+    rust: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+    ai: 'var(--ai-gradient)',
+    blue: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+  }[tone] || 'var(--rail-gradient)';
+
+  const height = size === 'sm' ? 6 : size === 'lg' ? 12 : 8;
+
   return (
-    <div className="progress-track">
-      <div className="progress-fill" style={{ width: `${value}%`, background: fillColor }} />
+    <div className="progress-track" style={{ height }}>
+      <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: fillColor }} />
     </div>
   );
 }
 
-export function StatCard({ label, value, tone }) {
+export function StatCard({ label, value, tone, icon, trend, sublabel }) {
   const color = {
     rail: 'var(--rail)',
     sage: 'var(--sage)',
     amber: 'var(--amber)',
     rust: 'var(--rust)',
+    blue: 'var(--blue)',
+    ai: 'var(--ai-primary)',
     ink: 'var(--ink)',
   }[tone || 'ink'];
+
   return (
-    <div className="stat">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value" style={{ color }}>{value}</div>
+    <div className="stat card-interactive">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
+        <div className="stat-label">{label}</div>
+        {icon && (
+          <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)` }}>
+            <i className={`ti ${icon}`} aria-hidden="true" />
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <div className="stat-value" style={{ color }}>{value}</div>
+        {trend && (
+          <span className="stat-trend" style={{ color: trend.startsWith('+') ? 'var(--sage)' : 'var(--rust)' }}>
+            <i className={`ti ${trend.startsWith('+') ? 'ti-trending-up' : 'ti-trending-down'}`} /> {trend}
+          </span>
+        )}
+      </div>
+      {sublabel && <div className="stat-sublabel">{sublabel}</div>}
     </div>
   );
 }
 
-export function Button({ children, variant = 'default', size, icon, onClick, block, type = 'button', disabled = false }) {
+export function Button({ children, variant = 'default', size, icon, onClick, block, type = 'button', disabled = false, className = '' }) {
   const cls = ['btn'];
   if (variant === 'primary') cls.push('btn-primary');
   if (variant === 'ghost') cls.push('btn-ghost');
   if (variant === 'danger') cls.push('btn-danger');
+  if (variant === 'outline') cls.push('btn-outline');
+  if (variant === 'ai') cls.push('btn-ai');
+  if (variant === 'gold') cls.push('btn-gold');
   if (size === 'sm') cls.push('btn-sm');
+  if (size === 'lg') cls.push('btn-lg');
   if (block) cls.push('btn-block');
+  if (className) cls.push(className);
   return (
     <button type={type} className={cls.join(' ')} onClick={onClick} disabled={disabled}>
       {icon && <i className={`ti ${icon}`} aria-hidden="true" />}
@@ -57,8 +85,187 @@ export function Button({ children, variant = 'default', size, icon, onClick, blo
 
 export function CourseTypeBadge({ courseType }) {
   return courseType === 'MANDATORY'
-    ? <Badge tone="amber" icon="ti-asterisk">Mandatory</Badge>
-    : <Badge tone="slate" icon="ti-list-check">Optional</Badge>;
+    ? <Badge tone="amber" icon="ti-shield-alert">Mandatory (Compliance)</Badge>
+    : <Badge tone="slate" icon="ti-book-2">Optional (Elective)</Badge>;
+}
+
+
+// Modal Component
+export function Modal({ isOpen, onClose, title, subtitle, children, footer, size = 'md' }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className={`modal-box modal-${size}`} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div>
+            <h3 className="modal-title">{title}</h3>
+            {subtitle && <p className="modal-subtitle">{subtitle}</p>}
+          </div>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close">
+            <i className="ti ti-x" />
+          </button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Tabs Component
+export function Tabs({ tabs, activeTab, onChange }) {
+  return (
+    <div className="tabs-container">
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            className={`tab-btn ${isActive ? 'active' : ''}`}
+            onClick={() => onChange(tab.id)}
+          >
+            {tab.icon && <i className={`ti ${tab.icon}`} />}
+            <span>{tab.label}</span>
+            {tab.count != null && (
+              <span className={`tab-count ${isActive ? 'active' : ''}`}>{tab.count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Visual QR Code Generator (SVG Simulation)
+export function QRCodeView({ value, size = 160, label }) {
+  return (
+    <div className="qr-container" style={{ width: size + 32 }}>
+      <div className="qr-box" style={{ width: size, height: size }}>
+        <svg viewBox="0 0 100 100" width="100%" height="100%" className="qr-svg">
+          {/* Outer finder patterns */}
+          <rect x="5" y="5" width="28" height="28" fill="#0F766E" rx="4" />
+          <rect x="11" y="11" width="16" height="16" fill="#FFFFFF" rx="2" />
+          <rect x="15" y="15" width="8" height="8" fill="#0F766E" rx="1" />
+
+          <rect x="67" y="5" width="28" height="28" fill="#0F766E" rx="4" />
+          <rect x="73" y="11" width="16" height="16" fill="#FFFFFF" rx="2" />
+          <rect x="77" y="15" width="8" height="8" fill="#0F766E" rx="1" />
+
+          <rect x="5" y="67" width="28" height="28" fill="#0F766E" rx="4" />
+          <rect x="11" y="73" width="16" height="16" fill="#FFFFFF" rx="2" />
+          <rect x="15" y="77" width="8" height="8" fill="#0F766E" rx="1" />
+
+          {/* Matrix data cells */}
+          <rect x="38" y="8" width="6" height="6" fill="#111827" rx="1" />
+          <rect x="48" y="8" width="6" height="6" fill="#0F766E" rx="1" />
+          <rect x="58" y="12" width="6" height="6" fill="#111827" rx="1" />
+
+          <rect x="8" y="38" width="6" height="6" fill="#0F766E" rx="1" />
+          <rect x="18" y="44" width="6" height="6" fill="#111827" rx="1" />
+          <rect x="28" y="38" width="6" height="6" fill="#0F766E" rx="1" />
+
+          {/* Center decorative logo */}
+          <rect x="40" y="40" width="20" height="20" fill="#0F766E" rx="4" />
+          <text x="50" y="54" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontWeight="bold" fontFamily="sans-serif">MM</text>
+
+          <rect x="68" y="38" width="6" height="6" fill="#111827" rx="1" />
+          <rect x="78" y="44" width="6" height="6" fill="#0F766E" rx="1" />
+          <rect x="88" y="38" width="6" height="6" fill="#111827" rx="1" />
+
+          <rect x="38" y="68" width="6" height="6" fill="#111827" rx="1" />
+          <rect x="48" y="74" width="6" height="6" fill="#0F766E" rx="1" />
+          <rect x="58" y="84" width="6" height="6" fill="#111827" rx="1" />
+          <rect x="78" y="74" width="6" height="6" fill="#0F766E" rx="1" />
+          <rect x="88" y="84" width="6" height="6" fill="#111827" rx="1" />
+        </svg>
+      </div>
+      {label && <div className="qr-label">{label}</div>}
+      <div className="qr-value-code">{value}</div>
+    </div>
+  );
+}
+
+// Certificate Preview Modal
+export function CertificateModal({ certificate, isOpen, onClose }) {
+  if (!isOpen || !certificate) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Xác thực & Tải Chứng chỉ Điện tử"
+      subtitle={`Mã chứng chỉ: ${certificate.id}`}
+      size="lg"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+            <i className="ti ti-shield-check" style={{ color: 'var(--sage)', marginRight: 4 }} />
+            Official Digital Certificate &middot; Verified via MMVN Enterprise Security
+          </span>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="outline" icon="ti-printer" onClick={() => window.print()}>Print Certificate</Button>
+            <Button variant="primary" icon="ti-download" onClick={onClose}>Download PDF</Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="cert-frame">
+        <div className="cert-border">
+          <div className="cert-header">
+            <div className="cert-logo-box">
+              <div className="brand-mark" style={{ width: 44, height: 44, fontSize: 22 }}>MM</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--rail)', letterSpacing: '0.05em' }}>MM MEGA MARKET VIETNAM</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)', textTransform: 'uppercase' }}>Learning &amp; Organizational Development</div>
+              </div>
+            </div>
+            <div className="cert-gold-badge">
+              <i className="ti ti-rosette" />
+              <span>CERTIFIED</span>
+            </div>
+          </div>
+
+          <div className="cert-body">
+            <div className="cert-title-eng">CERTIFICATE OF COMPLETION</div>
+            <div className="cert-presented">This is to certify that:</div>
+            <div className="cert-recipient">{certificate.recipientName || 'Minh Tran'}</div>
+            <div className="cert-details">
+              Role: <strong>{certificate.recipientPosition || 'Bakery Associate'}</strong> &middot; Department: <strong>{certificate.department || 'OMD / Processed Fresh Food'}</strong>
+            </div>
+            <div className="cert-course-name">{certificate.courseName}</div>
+            <div className="cert-score-text">
+              Has successfully completed the prescribed curriculum and demonstrated professional competency with an assessment score of <strong>{certificate.score || 95}%</strong>.
+            </div>
+          </div>
+
+          <div className="cert-footer">
+            <div className="cert-sign-col">
+              <div className="cert-sign-line" />
+              <div className="cert-sign-title">Head of Learning &amp; Org Development</div>
+              <div className="cert-sign-org">MM Mega Market Vietnam</div>
+            </div>
+
+            <div className="cert-qr-col">
+              <QRCodeView value={certificate.id} size={70} />
+              <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 4 }}>Scan QR code to verify authenticity</div>
+            </div>
+
+            <div className="cert-seal-col">
+              <div className="cert-seal">
+                <i className="ti ti-award" />
+                <span>OFFICIAL SEAL</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
+                Issued: {certificate.issueDate}<br />
+                {certificate.validUntil && <span style={{ color: 'var(--amber-soft-text)' }}>Recertification due: {certificate.validUntil}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
 }
 
 const LESSON_ICON = {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  businessUnits, divisions, departments, allUsers, createBlankCourse,
+  businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
 } from '../../data/mockData';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
@@ -11,10 +11,10 @@ const LESSON_ICON = {
   TEXT: 'ti-align-left', SCRIPT: 'ti-article', ASSESSMENT: 'ti-writing',
 };
 
-const ASSIGNMENT_TYPES = ['BUSINESS_UNIT', 'DIVISION', 'DEPARTMENT', 'ROLE', 'USER'];
+const ASSIGNMENT_TYPES = ['BUSINESS_UNIT', 'DIVISION', 'DEPARTMENT', 'LEVEL', 'ROLE', 'USER'];
 const TARGET_ID_FIELD = {
   BUSINESS_UNIT: 'targetBusinessUnitId', DIVISION: 'targetDivisionId',
-  DEPARTMENT: 'targetDepartmentId', ROLE: 'targetRole', USER: 'targetUserId',
+  DEPARTMENT: 'targetDepartmentId', LEVEL: 'targetLevel', ROLE: 'targetRole', USER: 'targetUserId',
 };
 
 function targetOptionsFor(assignmentType) {
@@ -22,11 +22,13 @@ function targetOptionsFor(assignmentType) {
     case 'BUSINESS_UNIT': return businessUnits.map((b) => ({ id: b.id, label: b.name }));
     case 'DIVISION': return divisions.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
     case 'DEPARTMENT': return departments.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
-    case 'ROLE': return [{ id: 'MANAGER', label: 'Manager' }, { id: 'USER_LEARN', label: 'User Learn' }];
-    case 'USER': return allUsers().filter((u) => u.role !== 'ADMIN').map((u) => ({ id: u.userId, label: `${u.fullName} (${u.employeeCode})` }));
+    case 'LEVEL': return jobLevels.map((l) => ({ id: l.level, label: `Level ${l.level} - ${l.title}` }));
+    case 'ROLE': return [{ id: 'admin', label: 'Admin (HRD Director Level 1)' }, { id: 'manager', label: 'Line Manager (Level 4-5)' }, { id: 'learner', label: 'Learner (Level 6-7, CL, IN)' }];
+    case 'USER': return (demoUsers || allUsers()).filter((u) => u.role !== 'admin').map((u) => ({ id: u.userId, label: `${u.fullName} (${u.employeeCode} · Lvl ${u.level} · ${u.divisionCode}-${u.departmentCode})` }));
     default: return [];
   }
 }
+
 
 function genId(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.round(Math.random() * 1e4)}`;

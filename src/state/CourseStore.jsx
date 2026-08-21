@@ -1,32 +1,80 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { courses as initialCourses } from '../data/mockData';
+import {
+  courses as initialCourses,
+  classroomSessions as initialClassrooms,
+  pendingApprovalRequests as initialApprovals,
+  gamificationData as initialGamification,
+  demoUsers,
+  adminUser,
+} from '../data/mockData';
 
-// No backend in this mockup: courses live in memory (React state) and are mirrored
-// to localStorage so Admin's created/edited courses survive a page reload too,
-// not just in-session navigation. Clear localStorage to reset to the seed data.
-const STORAGE_KEY = 'ridgeline-lms-courses';
+const AUTH_KEY = 'ridgeline-lms-auth-v5';
+const STORAGE_KEY = 'ridgeline-lms-courses-v5';
+const CLASSROOM_KEY = 'ridgeline-lms-classrooms-v5';
+const APPROVAL_KEY = 'ridgeline-lms-approvals-v5';
+const GAMIFICATION_KEY = 'ridgeline-lms-gamification-v5';
+
+
+
 const CourseStoreContext = createContext(null);
 
-function loadInitialCourses() {
+function loadItem(key, fallback) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch {
-    // Corrupt or inaccessible storage — fall back to the seed data below.
+    // fallback
   }
-  return initialCourses;
+  return fallback;
 }
 
 export function CourseStoreProvider({ children }) {
-  const [courses, setCourses] = useState(loadInitialCourses);
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(() => loadItem(AUTH_KEY, adminUser));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(loadItem(AUTH_KEY, adminUser)));
+
+  // App data state
+  const [courses, setCourses] = useState(() => loadItem(STORAGE_KEY, initialCourses));
+  const [classrooms, setClassrooms] = useState(() => loadItem(CLASSROOM_KEY, initialClassrooms));
+  const [approvals, setApprovals] = useState(() => loadItem(APPROVAL_KEY, initialApprovals));
+  const [gamification, setGamification] = useState(() => loadItem(GAMIFICATION_KEY, initialGamification));
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [activeAiTab, setActiveAiTab] = useState('tutor');
 
   useEffect(() => {
     try {
+      if (isAuthenticated && currentUser) {
+        localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+      localStorage.setItem(CLASSROOM_KEY, JSON.stringify(classrooms));
+      localStorage.setItem(APPROVAL_KEY, JSON.stringify(approvals));
+      localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(gamification));
     } catch {
-      // Storage unavailable (private browsing, quota) — edits still work in-session.
+      // ignore quota / private browsing
     }
-  }, [courses]);
+  }, [isAuthenticated, currentUser, courses, classrooms, approvals, gamification]);
+
+  // Auth actions
+  const login = useCallback((userObj) => {
+    setCurrentUser(userObj);
+    setIsAuthenticated(true);
+  }, []);
+
+  const logout = useCallback(() => {
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  }, []);
+
+  const switchUser = useCallback((userId) => {
+    const found = demoUsers.find((u) => u.userId === userId || u.employeeCode === userId);
+    if (found) {
+      setCurrentUser(found);
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const addCourse = useCallback((course) => {
     setCourses((prev) => [...prev, course]);
@@ -40,8 +88,89 @@ export function CourseStoreProvider({ children }) {
     setCourses((prev) => prev.filter((c) => c.id !== courseId));
   }, []);
 
+  // Classrooms action: Register or Check-in via QR
+  const checkInClassroom = useCallback((sessionId) => {
+    setClassrooms((prev) =>
+      prev.map((s) =>
+        s.id === sessionId
+          ? { ...s, attendanceStatus: 'CHECKED_IN', isEnrolled: true }
+          : s
+      )
+    );
+    // Award 150 XP for attending classroom
+    setGamification((prev) => ({
+      ...prev,
+      userStats: {
+        ...prev.userStats,
+        points: prev.userStats.points + 150,
+      },
+    }));
+  }, []);
+
+  const enrollClassroom = useCallback((sessionId) => {
+    setClassrooms((prev) =>
+      prev.map((s) =>
+        s.id === sessionId
+          ? {
+              ...s,
+              isEnrolled: true,
+              enrolledCount: s.enrolledCount + 1,
+              attendanceStatus: 'PENDING_CHECKIN',
+            }
+          : s
+      )
+    );
+  }, []);
+
+  // Approval actions
+  const approveRequest = useCallback((reqId) => {
+    setApprovals((prev) =>
+      prev.map((r) => (r.id === reqId ? { ...r, status: 'APPROVED' } : r))
+    );
+  }, []);
+
+  const rejectRequest = useCallback((reqId) => {
+    setApprovals((prev) =>
+      prev.map((r) => (r.id === reqId ? { ...r, status: 'REJECTED' } : r))
+    );
+  }, []);
+
+  // AI assistant helpers
+  const openAiAssistant = useCallback((tab = 'tutor') => {
+    setActiveAiTab(tab);
+    setAiDrawerOpen(true);
+  }, []);
+
+  const closeAiAssistant = useCallback(() => {
+    setAiDrawerOpen(false);
+  }, []);
+
   return (
-    <CourseStoreContext.Provider value={{ courses, addCourse, updateCourse, removeCourse }}>
+    <CourseStoreContext.Provider
+      value={{
+        currentUser,
+        isAuthenticated,
+        login,
+        logout,
+        switchUser,
+        demoUsers,
+        courses,
+        addCourse,
+        updateCourse,
+        removeCourse,
+        classrooms,
+        checkInClassroom,
+        enrollClassroom,
+        approvals,
+        approveRequest,
+        rejectRequest,
+        gamification,
+        aiDrawerOpen,
+        activeAiTab,
+        openAiAssistant,
+        closeAiAssistant,
+      }}
+    >
       {children}
     </CourseStoreContext.Provider>
   );
@@ -52,3 +181,4 @@ export function useCourseStore() {
   if (!ctx) throw new Error('useCourseStore must be used within a CourseStoreProvider');
   return ctx;
 }
+
