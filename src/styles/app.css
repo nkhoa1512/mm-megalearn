@@ -184,9 +184,12 @@
   height: 100vh;
 }
 .content {
-  padding: 28px 32px 60px;
-  max-width: 1180px;
+  padding: 28px 36px 60px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
+
 
 .page-header {
   margin-bottom: 24px;
