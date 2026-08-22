@@ -71,7 +71,7 @@ export default function LoginPage() {
               MM MEGA MARKET VIETNAM
             </div>
             <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
-              Enterprise Learning &amp; Development System &middot; Ridgeline LMS
+              Enterprise Learning &amp; Development Platform &middot; MM MegaLearn
             </div>
           </div>
         </div>

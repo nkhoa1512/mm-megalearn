@@ -1,4 +1,4 @@
-# SRS — Ridgeline LMS (Corporate Learning & Development System)
+# SRS — MM MegaLearn (Corporate Learning & Development System)
 
 > **Ghi chú nguồn gốc tài liệu:** File `SRS.md` gốc được nhắc tới trong code
 > (`mockData.js`, `README.md`) không có trong repo này — chỉ còn lại bản mockup
@@ -12,7 +12,7 @@
 ## 1. Giới thiệu
 
 ### 1.1 Mục đích
-Ridgeline LMS là hệ thống đào tạo nội bộ doanh nghiệp (Corporate L&D System)
+MM MegaLearn là hệ thống đào tạo nội bộ doanh nghiệp (Corporate L&D System)
 cho phép:
 - Nhân viên (**User Learn**) học các khoá học bắt buộc (Mandatory) và tự chọn
   (Optional), làm bài đánh giá cuối khoá, nhận chứng chỉ.
@@ -26,7 +26,7 @@ cho phép:
 Bản mockup hiện tại (`lms-app`) là **front-end thuần** (React + Vite +
 React Router), không có backend thật:
 - Toàn bộ dữ liệu nằm trong `src/data/mockData.js`, được mirror qua
-  `localStorage` (key `ridgeline-lms-courses`) để việc tạo/sửa khoá học của
+  `localStorage` (key `mm-megalearn-courses-v5`) để việc tạo/sửa khoá học của
   Admin còn giữ lại sau khi reload trang.
 - Vai trò hiện được chọn bằng dropdown ở Topbar (`learner` / `manager` /
   `admin`) — đây **chỉ là công cụ demo UI**, không phải cơ chế xác thực/phân

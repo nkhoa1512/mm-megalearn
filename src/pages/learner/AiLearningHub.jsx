@@ -15,7 +15,7 @@ export default function AiLearningHub() {
     {
       id: 1,
       sender: 'bot',
-      text: `Hello **${currentUser.fullName}**! I am your **Ridgeline AI Learning Companion**. Feel free to ask any question regarding standard operating procedures (SOPs), food safety compliance, or quiz study prep.`,
+      text: `Hello **${currentUser.fullName}**! I am your **MM MegaLearn AI Companion**. Feel free to ask any question regarding standard operating procedures (SOPs), food safety compliance, or quiz study prep.`,
       time: 'Just now',
     },
   ]);

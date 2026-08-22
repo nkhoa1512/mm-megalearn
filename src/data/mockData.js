@@ -498,7 +498,7 @@ export function deriveCertificates(courseList, user) {
         isCompliance: c.courseType === 'MANDATORY',
         score: c.enrollment.score || (passingAttempt ? passingAttempt.score : 90),
         issuer: 'MM Mega Market Vietnam - Learning & Organizational Development',
-        verificationUrl: `https://lms.ridgeline.internal/verify/CERT-MMVN-${c.code || 'LMS'}-${cleanEmpCode}`,
+        verificationUrl: `https://megalearn.mmvietnam.com/verify/CERT-MMVN-${c.code || 'LMS'}-${cleanEmpCode}`,
         recipientName: user.fullName,
         recipientPosition: user.position,
         department: orgPathLabel(user),

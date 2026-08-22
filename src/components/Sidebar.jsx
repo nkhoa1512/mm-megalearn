@@ -50,9 +50,9 @@ export default function Sidebar({ role, collapsed }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
-        <div className="brand-mark">R</div>
+        <div className="brand-mark">MM</div>
         <div>
-          <div className="brand-name">Ridgeline</div>
+          <div className="brand-name">MM MegaLearn</div>
           <div className="brand-sub">Learning &amp; development</div>
         </div>
       </div>

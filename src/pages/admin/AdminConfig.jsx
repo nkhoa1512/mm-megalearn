@@ -149,11 +149,11 @@ export default function AdminConfig() {
   });
 
   // 6. Branding & Certificate
-  const [portalName, setPortalName] = useState('MM Mega Market Vietnam - Ridgeline LMS');
+  const [portalName, setPortalName] = useState('MM Mega Market Vietnam - MM MegaLearn');
   const [certSignerName, setCertSignerName] = useState('Sarah Nguyen');
   const [certSignerTitle, setCertSignerTitle] = useState('Head of Division - HR Director / BOM');
   const [certIssuerOrg, setCertIssuerOrg] = useState('MM Mega Market Vietnam - Learning & Organizational Development');
-  const [certQrPrefix, setCertQrPrefix] = useState('https://lms.ridgeline.internal/verify/');
+  const [certQrPrefix, setCertQrPrefix] = useState('https://megalearn.mmvietnam.com/verify/');
 
   function showToast(msg) {
     setToastMessage(msg);
@@ -1096,7 +1096,7 @@ export default function AdminConfig() {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <Button variant="outline" icon="ti-download" onClick={() => showToast('Exporting ridgeline-system-config.json...')}>
+                  <Button variant="outline" icon="ti-download" onClick={() => showToast('Exporting mm-megalearn-system-config.json...')}>
                     Export System Configuration JSON
                   </Button>
                   <Button variant="outline" icon="ti-upload" onClick={() => showToast('Config Import dialog opened.')}>

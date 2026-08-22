@@ -8,11 +8,11 @@ import {
   adminUser,
 } from '../data/mockData';
 
-const AUTH_KEY = 'ridgeline-lms-auth-v5';
-const STORAGE_KEY = 'ridgeline-lms-courses-v5';
-const CLASSROOM_KEY = 'ridgeline-lms-classrooms-v5';
-const APPROVAL_KEY = 'ridgeline-lms-approvals-v5';
-const GAMIFICATION_KEY = 'ridgeline-lms-gamification-v5';
+const AUTH_KEY = 'mm-megalearn-auth-v5';
+const STORAGE_KEY = 'mm-megalearn-courses-v5';
+const CLASSROOM_KEY = 'mm-megalearn-classrooms-v5';
+const APPROVAL_KEY = 'mm-megalearn-approvals-v5';
+const GAMIFICATION_KEY = 'mm-megalearn-gamification-v5';
 
 
 

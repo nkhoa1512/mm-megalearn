@@ -1,7 +1,7 @@
-# Ridgeline LMS — mockup
+# MM MegaLearn — Corporate Learning & Development Platform (MM Mega Market Vietnam)
 
-Clickable front-end mockup for the Corporate Learning & Development System
-described in the SRS. Built with React + Vite + React Router. No backend —
+Clickable front-end mockup & enterprise architecture for the Corporate Learning & Development System (MM MegaLearn)
+described in the SRS / FSD. Built with React + Vite + React Router. No backend —
 all data lives in `src/data/mockData.js` so the whole app runs standalone.
 
 ## Run it
