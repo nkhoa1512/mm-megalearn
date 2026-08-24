@@ -1,16 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useCourseStore } from '../state/CourseStore';
-import { currentUser, managerUser, adminUser, orgPathLabel } from '../data/mockData';
+import { currentUser, managerUser, adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, orgPathLabel } from '../data/mockData';
 
 const PROFILE_BY_ROLE = {
   learner: currentUser,
   manager: managerUser,
   admin: adminUser,
-  hrbp: managerUser,
-  trainer: adminUser,
-  sysadmin: adminUser,
-  useradmin: adminUser,
+  hrbp: hrbpUser,
+  trainer: trainerUser,
+  sysadmin: sysAdminUser,
+  useradmin: userAdminUser,
 };
 
 const NAV_BY_ROLE = {

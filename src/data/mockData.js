@@ -33,13 +33,101 @@ import {
 
 export const demoUsers = generated100Users;
 
-// Default user export references for backward compatibility
-export const adminUser = demoUsers[0];
-export const managerUser = demoUsers[1];
-export const currentUser = demoUsers[3];
+// Dedicated demo personas for all Enterprise Roles in MMVN Matrix
+export const adminUser = demoUsers[0]; // Sarah Nguyen (HR Director / L&D Admin)
+export const managerUser = demoUsers[1]; // David Tran (Department Manager)
+export const currentUser = demoUsers[3]; // Minh Tran (Store Associate / Learner)
+
+export const sysAdminUser = {
+  userId: 'USR-SYS-001',
+  employeeCode: 'MMVN-9001',
+  fullName: 'Tran Quoc Bao (IT)',
+  email: 'bao.tran@mmvietnam.com',
+  role: 'sysadmin',
+  position: 'Lead Cybersecurity & IT Infrastructure Specialist',
+  level: '4',
+  levelTitle: 'Lead IT Systems Administrator',
+  branch: 'SUPPORTING',
+  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-it', divisionCode: 'IT', divisionName: 'Information Technology',
+  departmentId: 'dept-mis', departmentCode: 'MIS', departmentName: 'IT & Security Infrastructure',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'TB',
+  badgeTone: 'rust',
+};
+
+export const userAdminUser = {
+  userId: 'USR-HR-002',
+  employeeCode: 'MMVN-9002',
+  fullName: 'Le Thi Mai (HR Ops)',
+  email: 'mai.le@mmvietnam.com',
+  role: 'useradmin',
+  position: 'HR Operations & Employee Master Records Lead',
+  level: '4',
+  levelTitle: 'User Administrator / HR Master Data',
+  branch: 'SUPPORTING',
+  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
+  departmentId: 'dept-cb', departmentCode: 'C&B', departmentName: 'Compensation, Benefits & HR Ops',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'LM',
+  badgeTone: 'blue',
+};
+
+export const trainerUser = {
+  userId: 'USR-TR-001',
+  employeeCode: 'MMVN-9003',
+  fullName: 'Nguyen Van Hung (Master Trainer)',
+  email: 'hung.nguyen@mmvietnam.com',
+  role: 'trainer',
+  position: 'Master Trainer & Faculty Lead (L&OD)',
+  level: '4',
+  levelTitle: 'Senior L&D Instructor',
+  branch: 'SUPPORTING',
+  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
+  departmentId: 'dept-lod', departmentCode: 'L&OD', departmentName: 'Learning & Org Development',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'NH',
+  badgeTone: 'sage',
+};
+
+export const hrbpUser = {
+  userId: 'USR-HRBP-001',
+  employeeCode: 'MMVN-9004',
+  fullName: 'Dang Thanh Mai (HRBP)',
+  email: 'mai.dang@mmvietnam.com',
+  role: 'hrbp',
+  position: 'Regional Senior HR Business Partner',
+  level: '4',
+  levelTitle: 'HRBP Lead',
+  branch: 'SUPPORTING',
+  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
+  departmentId: 'dept-hrbp', departmentCode: 'HRBP', departmentName: 'HR Business Partnering',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'DM',
+  badgeTone: 'blue',
+};
 
 export function allUsers() {
-  return demoUsers;
+  return [adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, managerUser, currentUser, ...demoUsers.slice(4)];
 }
 
 // Direct reports of Line Manager (Fresh Food & Operations) with authentic diverse cases

@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../state/CourseStore';
-import { notifications } from '../data/mockData';
+import { notifications, adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, managerUser, currentUser } from '../data/mockData';
 import { Button, Badge } from './ui';
 
 export default function Topbar({ role, onRoleChange, onToggleSidebar, title, crumb }) {
   const navigate = useNavigate();
-  const { currentUser, openAiAssistant, logout, switchUser, demoUsers, openTalentProfile } = useCourseStore();
+  const { currentUser: authUser, openAiAssistant, logout, switchUser, demoUsers, openTalentProfile } = useCourseStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [inbox, setInbox] = useState(notifications.learnerInbox);
 
-  const profile = currentUser || demoUsers[0];
+  const profile = authUser || adminUser;
   const unreadCount = inbox.filter((n) => n.unread).length;
 
   const profileRef = useRef(null);
@@ -30,22 +30,27 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
   function handleRoleChange(e) {
     const nextRole = e.target.value;
     onRoleChange(nextRole);
-    // Switch to a suitable demo user for this role if needed
-    if (nextRole === 'admin' || nextRole === 'sysadmin' || nextRole === 'useradmin') {
-      switchUser(demoUsers[0].userId);
+    // Switch to the dedicated demo persona for each enterprise role
+    if (nextRole === 'admin') {
+      switchUser(adminUser.userId);
+      navigate('/admin');
+    } else if (nextRole === 'sysadmin') {
+      switchUser(sysAdminUser.userId);
       navigate('/admin/config');
-    } else if (nextRole === 'manager') {
-      switchUser(demoUsers[1].userId);
-      navigate('/manager');
+    } else if (nextRole === 'useradmin') {
+      switchUser(userAdminUser.userId);
+      navigate('/admin/config');
+    } else if (nextRole === 'trainer') {
+      switchUser(trainerUser.userId);
+      navigate('/admin/training-ops');
     } else if (nextRole === 'hrbp') {
-      const hrbpUser = demoUsers.find((u) => u.departmentCode === 'HRBP') || demoUsers[1];
       switchUser(hrbpUser.userId);
       navigate('/admin/reports');
-    } else if (nextRole === 'trainer') {
-      switchUser(demoUsers[2].userId);
-      navigate('/admin/training-ops');
+    } else if (nextRole === 'manager') {
+      switchUser(managerUser.userId);
+      navigate('/manager');
     } else {
-      switchUser(demoUsers[3].userId);
+      switchUser(currentUser.userId);
       navigate('/learner');
     }
   }
@@ -92,21 +97,19 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
           AI Tutor &amp; SOPs
         </Button>
 
-        {/* Extended Enterprise Role Switcher */}
-        <div className="role-switcher">
-          <label htmlFor="role-select" style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-            Role
-          </label>
-          <select id="role-select" value={role} onChange={handleRoleChange} className="field-select" style={{ padding: '6px 28px 6px 10px', fontSize: 12.5, width: 'auto' }}>
-            <option value="learner">Employee / Learner (Store &amp; HO)</option>
-            <option value="manager">Line Manager (Store / Dept)</option>
-            <option value="hrbp">HRBP (HR Business Partner)</option>
-            <option value="trainer">L&amp;D Trainer / Instructor</option>
-            <option value="admin">L&amp;D Admin (HR Director Level 1)</option>
-            <option value="sysadmin">System Admin (IT Security)</option>
-            <option value="useradmin">User Admin (Employee &amp; Org Records)</option>
-          </select>
-        </div>
+        {/* Switch Persona / Account Button -> Go to Login */}
+        <Button
+          variant="outline"
+          size="sm"
+          icon="ti-arrows-left-right"
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+          title="Switch persona or log in with another account"
+        >
+          Switch Account
+        </Button>
 
         {/* Notification Bell */}
         <div style={{ position: 'relative' }}>

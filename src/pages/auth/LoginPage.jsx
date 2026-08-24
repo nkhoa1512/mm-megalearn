@@ -1,29 +1,66 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../../state/CourseStore';
-import { demoUsers, divisions, departments, jobLevels } from '../../data/mockData';
+import {
+  demoUsers,
+  allUsers,
+  adminUser,
+  sysAdminUser,
+  userAdminUser,
+  trainerUser,
+  hrbpUser,
+  managerUser,
+  currentUser,
+  divisions,
+  departments,
+  jobLevels,
+} from '../../data/mockData';
 import { Badge, Button } from '../../components/ui';
+
+function getRoleBadge(role) {
+  switch (role) {
+    case 'admin': return <Badge tone="ai">👑 L&amp;D Admin</Badge>;
+    case 'sysadmin': return <Badge tone="rust">🔒 Sys Admin</Badge>;
+    case 'useradmin': return <Badge tone="blue">👥 User Admin</Badge>;
+    case 'trainer': return <Badge tone="sage">🎓 Trainer</Badge>;
+    case 'hrbp': return <Badge tone="blue">📊 HRBP</Badge>;
+    case 'manager': return <Badge tone="amber">💼 Manager</Badge>;
+    default: return <Badge tone="rail">👤 Learner</Badge>;
+  }
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useCourseStore();
-  const [selectedUser, setSelectedUser] = useState(demoUsers[0]);
-  const [employeeId, setEmployeeId] = useState(demoUsers[0].employeeCode);
+  const [selectedUser, setSelectedUser] = useState(adminUser);
+  const [employeeId, setEmployeeId] = useState(adminUser.employeeCode);
   const [password, setPassword] = useState('••••••••');
   const [ssoLoading, setSsoLoading] = useState(false);
   const [allUsersSearch, setAllUsersSearch] = useState('');
   const [showAllUsersModal, setShowAllUsersModal] = useState(false);
   const [divisionFilter, setDivisionFilter] = useState('ALL');
 
-  const featuredUsers = demoUsers.slice(0, 6);
+  const totalUserList = allUsers ? allUsers() : demoUsers;
 
-  const filteredAllUsers = demoUsers.filter((u) => {
+  const featuredUsers = [
+    { ...adminUser, roleBadge: '👑 L&D Admin (Director)', roleTone: 'ai' },
+    { ...sysAdminUser, roleBadge: '🔒 System Admin (IT)', roleTone: 'rust' },
+    { ...userAdminUser, roleBadge: '👥 User Admin (HR Ops)', roleTone: 'blue' },
+    { ...trainerUser, roleBadge: '🎓 L&D Trainer', roleTone: 'sage' },
+    { ...hrbpUser, roleBadge: '📊 HRBP Regional', roleTone: 'blue' },
+    { ...managerUser, roleBadge: '💼 Line Manager', roleTone: 'amber' },
+    { ...currentUser, roleBadge: '👤 Store Associate', roleTone: 'rail' },
+  ];
+
+  const filteredAllUsers = totalUserList.filter((u) => {
     const matchDiv = divisionFilter === 'ALL' || u.divisionCode === divisionFilter;
-    const matchSearch = !allUsersSearch ||
-      u.fullName.toLowerCase().includes(allUsersSearch.toLowerCase()) ||
-      u.employeeCode.toLowerCase().includes(allUsersSearch.toLowerCase()) ||
-      u.position.toLowerCase().includes(allUsersSearch.toLowerCase()) ||
-      u.departmentCode.toLowerCase().includes(allUsersSearch.toLowerCase());
+    const q = allUsersSearch.toLowerCase().trim();
+    const matchSearch = !q ||
+      u.fullName.toLowerCase().includes(q) ||
+      u.employeeCode.toLowerCase().includes(q) ||
+      u.position.toLowerCase().includes(q) ||
+      (u.departmentCode && u.departmentCode.toLowerCase().includes(q)) ||
+      (u.role && u.role.toLowerCase().includes(q));
     return matchDiv && matchSearch;
   });
 
@@ -37,6 +74,9 @@ export default function LoginPage() {
     const target = userToLogin || selectedUser;
     login(target);
     if (target.role === 'admin') navigate('/admin');
+    else if (target.role === 'sysadmin' || target.role === 'useradmin') navigate('/admin/config');
+    else if (target.role === 'trainer') navigate('/admin/training-ops');
+    else if (target.role === 'hrbp') navigate('/admin/reports');
     else if (target.role === 'manager') navigate('/manager');
     else navigate('/learner');
   }
@@ -46,7 +86,7 @@ export default function LoginPage() {
     setTimeout(() => {
       setSsoLoading(false);
       handleDirectLogin(selectedUser);
-    }, 900);
+    }, 800);
   }
 
   function handleSubmitForm(e) {
@@ -156,8 +196,8 @@ export default function LoginPage() {
                       <div>
                         {/* Top role & level tag */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontSize: 10.5, fontWeight: 700, background: user.role === 'admin' ? 'var(--ai-gradient)' : user.role === 'manager' ? '#FEF3C7' : 'var(--paper-sunken)', color: user.role === 'admin' ? '#fff' : user.role === 'manager' ? '#92400E' : 'var(--ink)', padding: '2px 7px', borderRadius: 12 }}>
-                            {user.role === 'admin' ? '👑 Admin / BOM' : user.role === 'manager' ? '💼 Line Manager' : '👤 Learner'}
+                          <span style={{ fontSize: 10.5, fontWeight: 700, background: user.role === 'admin' || user.role === 'sysadmin' || user.role === 'useradmin' ? 'var(--ai-gradient)' : user.role === 'manager' ? '#FEF3C7' : 'var(--paper-sunken)', color: user.role === 'admin' || user.role === 'sysadmin' || user.role === 'useradmin' ? '#fff' : user.role === 'manager' ? '#92400E' : 'var(--ink)', padding: '2px 7px', borderRadius: 12 }}>
+                            {user.roleBadge || (user.role === 'admin' ? '👑 Admin / BOM' : user.role === 'manager' ? '💼 Line Manager' : '👤 Learner')}
                           </span>
                           <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink-faint)' }}>
                             Level {user.level}
@@ -398,9 +438,7 @@ export default function LoginPage() {
                         <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.position}</div>
                       </td>
                       <td>
-                        <Badge tone={u.role === 'admin' ? 'ai' : u.role === 'manager' ? 'amber' : 'rail'}>
-                          {u.role.toUpperCase()}
-                        </Badge>
+                        {getRoleBadge(u.role)}
                       </td>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                         Lvl {u.level}

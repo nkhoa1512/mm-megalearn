@@ -6,6 +6,7 @@ import {
   gamificationData as initialGamification,
   actionPlans as initialActionPlans,
   demoUsers,
+  allUsers,
   adminUser,
 } from '../data/mockData';
 
@@ -77,7 +78,8 @@ export function CourseStoreProvider({ children }) {
   }, []);
 
   const switchUser = useCallback((userId) => {
-    const found = demoUsers.find((u) => u.userId === userId || u.employeeCode === userId);
+    const list = allUsers ? allUsers() : demoUsers;
+    const found = list.find((u) => u.userId === userId || u.employeeCode === userId);
     if (found) {
       setCurrentUser(found);
       setIsAuthenticated(true);
