@@ -9,6 +9,11 @@ function requiredLessonsOf(course) {
 }
 
 function isAnswerCorrect(question, selectedIds) {
+  if (question.type === 'SHORT_ANSWER') {
+    const typed = (selectedIds[0] || '').trim().toLowerCase();
+    if (!typed) return false;
+    return question.options.some((o) => o.text.trim().toLowerCase() === typed);
+  }
   const correctIds = question.options.filter((o) => o.isCorrect).map((o) => o.id).sort();
   const chosen = [...selectedIds].sort();
   return correctIds.length === chosen.length && correctIds.every((id, i) => id === chosen[i]);
@@ -81,6 +86,10 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     });
   }
 
+  function setTextAnswer(question, text) {
+    setAnswers((prev) => ({ ...prev, [question.id]: [text] }));
+  }
+
   function handleSubmit() {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -147,17 +156,27 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         {questions.map((q, i) => (
           <div className="card card-pad" key={q.id} style={{ marginBottom: 14 }}>
             <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>Q{i + 1}. {q.text}</div>
-            {q.options.map((o) => (
-              <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '6px 0' }}>
-                <input
-                  type={q.type === 'MULTIPLE_CHOICE' ? 'checkbox' : 'radio'}
-                  name={q.id}
-                  checked={(answers[q.id] || []).includes(o.id)}
-                  onChange={() => toggleAnswer(q, o.id)}
-                />
-                {o.text}
-              </label>
-            ))}
+            {q.type === 'SHORT_ANSWER' ? (
+              <input
+                className="field-input"
+                type="text"
+                placeholder="Type your answer..."
+                value={(answers[q.id] || [])[0] || ''}
+                onChange={(e) => setTextAnswer(q, e.target.value)}
+              />
+            ) : (
+              q.options.map((o) => (
+                <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '6px 0' }}>
+                  <input
+                    type={q.type === 'MULTIPLE_CHOICE' ? 'checkbox' : 'radio'}
+                    name={q.id}
+                    checked={(answers[q.id] || []).includes(o.id)}
+                    onChange={() => toggleAnswer(q, o.id)}
+                  />
+                  {o.text}
+                </label>
+              ))
+            )}
           </div>
         ))}
         <Button variant="primary" icon="ti-send" onClick={handleSubmit}>Submit assessment</Button>
@@ -195,14 +214,25 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           {questions.map((q, i) => (
             <div className="card card-pad" key={q.id} style={{ marginBottom: 10 }}>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Q{i + 1}. {q.text}</div>
-              {q.options.map((o) => {
-                const chosen = (answers[q.id] || []).includes(o.id);
-                return (
-                  <div key={o.id} style={{ fontSize: 12.5, padding: '3px 0', color: o.isCorrect ? 'var(--sage-soft-text)' : chosen ? 'var(--rust)' : 'var(--ink-soft)' }}>
-                    {o.isCorrect ? '✓' : chosen ? '✕' : '·'} {o.text}
+              {q.type === 'SHORT_ANSWER' ? (
+                <div style={{ fontSize: 12.5 }}>
+                  <div style={{ color: isAnswerCorrect(q, answers[q.id] || []) ? 'var(--sage-soft-text)' : 'var(--rust)' }}>
+                    Your answer: <strong>{(answers[q.id] || [])[0] || '(no answer)'}</strong>
                   </div>
-                );
-              })}
+                  <div style={{ color: 'var(--ink-soft)', marginTop: 2 }}>
+                    Accepted answer(s): {q.options.map((o) => o.text).join(', ')}
+                  </div>
+                </div>
+              ) : (
+                q.options.map((o) => {
+                  const chosen = (answers[q.id] || []).includes(o.id);
+                  return (
+                    <div key={o.id} style={{ fontSize: 12.5, padding: '3px 0', color: o.isCorrect ? 'var(--sage-soft-text)' : chosen ? 'var(--rust)' : 'var(--ink-soft)' }}>
+                      {o.isCorrect ? '✓' : chosen ? '✕' : '·'} {o.text}
+                    </div>
+                  );
+                })
+              )}
               {q.explanation && <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 6 }}>{q.explanation}</div>}
             </div>
           ))}

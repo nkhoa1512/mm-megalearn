@@ -8,6 +8,7 @@ import {
   orgPathLabel,
   aiRecommendations,
   classroomSessions,
+  totalLearningHours,
 } from '../../data/mockData';
 import { Badge, ProgressBar, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
@@ -22,6 +23,7 @@ export default function LearnerDashboard() {
   const mandatoryCount = courses.filter((c) => c.courseType === 'MANDATORY').length;
   const inProgressCount = courses.filter((c) => c.enrollment.status === 'IN_PROGRESS').length;
   const completedCount = courses.filter((c) => c.enrollment.status === 'COMPLETED').length;
+  const learningHours = totalLearningHours(allCourses, user);
 
   const { userStats } = gamification;
   const upcomingILT = classroomSessions.find((s) => s.isEnrolled && s.status === 'UPCOMING');
@@ -141,6 +143,7 @@ export default function LearnerDashboard() {
         <StatTile label="In Progress" value={inProgressCount} tone="rail" icon="ti-loader" />
         <StatTile label="Completed" value={completedCount} tone="sage" icon="ti-circle-check" />
         <StatTile label="Certificates Earned" value={certificates.length} tone="sage" icon="ti-certificate" />
+        <StatTile label="Learning Hours" value={`${learningHours.toFixed(1)}h`} tone="blue" icon="ti-clock-hour-4" />
       </div>
 
       {/* Assigned Courses Grid */}

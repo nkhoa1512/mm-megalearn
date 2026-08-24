@@ -429,6 +429,17 @@ export function courseHasParticipants(course) {
   return ownEnrollmentStarted || teamMemberStarted;
 }
 
+// Learning hours actually invested: each course's estimatedHours (e.g. "3h",
+// "1.5h remaining") weighted by the learner's real progress on it, summed
+// across every course in their "My Learning" list.
+export function totalLearningHours(courseList, user) {
+  return myLearningCourses(courseList, user).reduce((sum, c) => {
+    const hours = parseFloat(c.estimatedHours) || 0;
+    const progress = (c.enrollment.progressPercent || 0) / 100;
+    return sum + hours * progress;
+  }, 0);
+}
+
 export function orgPathLabel(user) {
   if (!user) return '—';
   const divCode = user.divisionCode || divisions.find((d) => d.id === user.divisionId)?.code || '';
@@ -452,6 +463,9 @@ export function createBlankCourse() {
     courseType: 'OPTIONAL',
     status: 'DRAFT',
     version: 'v1.0',
+    versionHistory: [{
+      version: 'v1.0', updatedBy: adminUser.fullName, updatedAt: new Date().toISOString().slice(0, 10), note: 'Initial draft created.',
+    }],
     estimatedDuration: '',
     createdBy: adminUser.userId,
     publishedAt: null,

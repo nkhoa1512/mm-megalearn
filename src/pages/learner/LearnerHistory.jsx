@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { currentUser, getUserLearningHistory, orgPathLabel } from '../../data/mockData';
+import { currentUser, getUserLearningHistory, orgPathLabel, totalLearningHours } from '../../data/mockData';
 import { Badge, Button } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -10,9 +10,10 @@ const TYPE_META = {
 };
 
 export default function LearnerHistory() {
-  const { currentUser: authUser } = useCourseStore();
+  const { currentUser: authUser, courses: allCourses } = useCourseStore();
   const user = authUser || currentUser;
   const historyLogs = getUserLearningHistory(user);
+  const learningHours = totalLearningHours(allCourses, user);
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -70,6 +71,12 @@ export default function LearnerHistory() {
           <div className="stat-label">Audit Compliance Status</div>
           <div className="stat-value" style={{ color: 'var(--rail)', fontSize: 18, fontWeight: 800 }}>VERIFIED</div>
           <div className="stat-sublabel">Digital watermark recorded</div>
+        </div>
+
+        <div className="card card-pad stat">
+          <div className="stat-label">Total Learning Hours</div>
+          <div className="stat-value" style={{ color: 'var(--blue)' }}>{learningHours.toFixed(1)}h</div>
+          <div className="stat-sublabel">Weighted by real course progress</div>
         </div>
       </div>
 

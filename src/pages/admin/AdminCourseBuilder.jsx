@@ -21,6 +21,13 @@ function cloneCourse(course) {
   return typeof structuredClone === 'function' ? structuredClone(course) : JSON.parse(JSON.stringify(course));
 }
 
+// Seed courses authored before version tracking existed have no `version` /
+// `versionHistory` fields — default them so the Version History panel and
+// header always have something real to show instead of "undefined".
+function withVersionDefaults(course) {
+  return { ...course, version: course.version || 'v1.0', versionHistory: course.versionHistory || [] };
+}
+
 function defaultRuleFor(lessonType) {
   if (lessonType === 'VIDEO') return { requiredWatchPercent: 90 };
   if (lessonType === 'IMAGE') return { requireAllViewed: true, imageCount: 1 };
@@ -55,7 +62,9 @@ function parseCsvLine(line) {
 // Question bank import (FR-ASSESS-001/002): a CSV with question, type, up to 4
 // options, which are correct (letters, ";"-joined for multiple), category,
 // difficulty, score, explanation. Rows missing text/options/a correct answer
-// are skipped and counted, never silently dropped.
+// are skipped and counted, never silently dropped. For SHORT_ANSWER rows the
+// "correct" column holds the accepted answer text(s) directly (";"-joined for
+// alternates) instead of option letters, and optionA-D are left blank.
 function parseQuestionCsv(text) {
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
   const rows = lines.slice(1);
@@ -64,15 +73,22 @@ function parseQuestionCsv(text) {
   for (const line of rows) {
     const [qText, type, optA, optB, optC, optD, correct, category, difficulty, score, explanation] = parseCsvLine(line);
     if (!qText || !type) { skipped++; continue; }
-    const letters = ['A', 'B', 'C', 'D'];
-    const optionTexts = [optA, optB, optC, optD];
-    const correctLetters = (correct || '').split(';').map((s) => s.trim().toUpperCase()).filter(Boolean);
-    const options = letters
-      .map((letter, i) => ({ id: genId('o'), text: optionTexts[i], isCorrect: correctLetters.includes(letter) }))
-      .filter((o) => o.text);
-    if (options.length < 2 || !options.some((o) => o.isCorrect)) { skipped++; continue; }
-    const normalizedType = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'].includes((type || '').toUpperCase())
+    const normalizedType = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'].includes((type || '').toUpperCase())
       ? type.toUpperCase() : 'SINGLE_CHOICE';
+    let options;
+    if (normalizedType === 'SHORT_ANSWER') {
+      options = (correct || '').split(';').map((s) => s.trim()).filter(Boolean)
+        .map((answerText) => ({ id: genId('o'), text: answerText, isCorrect: true }));
+      if (options.length === 0) { skipped++; continue; }
+    } else {
+      const letters = ['A', 'B', 'C', 'D'];
+      const optionTexts = [optA, optB, optC, optD];
+      const correctLetters = (correct || '').split(';').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      options = letters
+        .map((letter, i) => ({ id: genId('o'), text: optionTexts[i], isCorrect: correctLetters.includes(letter) }))
+        .filter((o) => o.text);
+      if (options.length < 2 || !options.some((o) => o.isCorrect)) { skipped++; continue; }
+    }
     questions.push({
       id: genId('q'), text: qText, type: normalizedType, options,
       category: category || '', difficulty: ['EASY', 'MEDIUM', 'HARD'].includes((difficulty || '').toUpperCase()) ? difficulty.toUpperCase() : 'MEDIUM',
@@ -88,6 +104,7 @@ function downloadQuestionCsvTemplate() {
     '"What is 2+2?",SINGLE_CHOICE,3,4,5,6,B,Math,EASY,5,"Basic arithmetic."',
     '"Which of these are prime numbers?",MULTIPLE_CHOICE,2,3,4,9,A;B,Math,MEDIUM,10,',
     '"The sky is blue.",TRUE_FALSE,True,False,,,A,General,EASY,5,',
+    '"What temperature range should the bakery proofer be kept at?",SHORT_ANSWER,,,,,28-32 degrees;28 to 32 degrees,Food Safety,MEDIUM,5,"Accepts any listed alternative; case-insensitive."',
   ].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -112,11 +129,11 @@ function blankQuestion() {
 export default function AdminCourseBuilder() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, addCourse, updateCourse } = useCourseStore();
+  const { courses, addCourse, updateCourse, currentUser: authUser } = useCourseStore();
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
-  const [draft, setDraft] = useState(() => cloneCourse(existing || createBlankCourse()));
+  const [draft, setDraft] = useState(() => withVersionDefaults(cloneCourse(existing || createBlankCourse())));
   const [activeModuleId, setActiveModuleId] = useState(draft.modules[0]?.id);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -124,7 +141,7 @@ export default function AdminCourseBuilder() {
   const [importMessage, setImportMessage] = useState('');
 
   useEffect(() => {
-    const fresh = cloneCourse(existing || createBlankCourse());
+    const fresh = withVersionDefaults(cloneCourse(existing || createBlankCourse()));
     setDraft(fresh);
     setActiveModuleId(fresh.modules[0]?.id);
     setSaved(false);
@@ -262,6 +279,11 @@ export default function AdminCourseBuilder() {
     }));
   }
 
+  function bumpVersion(version) {
+    const m = /^v(\d+)\.(\d+)$/.exec(version || 'v1.0');
+    return m ? `v${m[1]}.${Number(m[2]) + 1}` : 'v1.1';
+  }
+
   function handleSave() {
     if (!draft.title.trim()) { setError('Course title is required.'); return; }
     if (draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) { setError('Mandatory courses need a due date for their target audience.'); return; }
@@ -270,7 +292,19 @@ export default function AdminCourseBuilder() {
       addCourse(draft);
       navigate(`/admin/courses/${draft.id}`, { replace: true });
     } else {
-      updateCourse(draft.id, draft);
+      // Content version tracking: every save on an existing course bumps the
+      // version and appends who/when to versionHistory (newest first), so the
+      // Course Builder always shows which revision is current.
+      const nextVersion = bumpVersion(draft.version);
+      const entry = {
+        version: nextVersion,
+        updatedBy: authUser?.fullName || 'L&D Admin',
+        updatedAt: new Date().toISOString().slice(0, 10),
+        note: 'Content updated via Course Builder.',
+      };
+      const withVersion = { ...draft, version: nextVersion, versionHistory: [entry, ...(draft.versionHistory || [])] };
+      setDraft(withVersion);
+      updateCourse(draft.id, withVersion);
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -377,12 +411,28 @@ export default function AdminCourseBuilder() {
               <i className="ti ti-history" style={{ marginRight: 6, color: 'var(--rail)' }} />
               Content Versioning &amp; Quality Audit Trail
             </span>
-            <Badge tone="sage">Active Version: {draft.configuration?.version || 'v2.1'}</Badge>
+            <Badge tone="sage">Active Version: {draft.version}</Badge>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', display: 'flex', gap: 16 }}>
-            <span>Last Reviewed By: <strong>{draft.configuration?.lastReviewedBy || 'Nguyen Van Hung (Master Trainer)'}</strong></span>
-            <span>Reviewed Date: <strong>{draft.configuration?.lastReviewedDate || '2026-08-14'}</strong></span>
-          </div>
+          {(draft.versionHistory && draft.versionHistory.length > 0) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+              {draft.versionHistory.map((h, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12,
+                    padding: '4px 0', borderTop: i > 0 ? '1px solid var(--line)' : 'none',
+                  }}
+                >
+                  <span style={{ color: 'var(--ink)' }}>
+                    <strong>{h.version}</strong>{i === 0 ? ' (latest)' : ''} &mdash; {h.note}
+                  </span>
+                  <span style={{ color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{h.updatedBy} &middot; {h.updatedAt}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>No revision history yet — this is the original draft.</div>
+          )}
         </div>
       </div>
 
@@ -751,13 +801,18 @@ function LessonContentFields({ lesson, onChange }) {
   );
 }
 
+// Seed lessons authored before per-type completion rules existed have no
+// `rule` object at all (only lessons added via "Add lesson" in this editor
+// get one from defaultRuleFor) — fall back to the same defaults so existing
+// courses don't crash the editor when opened.
 function LessonRuleFields({ lesson, onChange }) {
+  const rule = lesson.rule || {};
   if (lesson.lessonType === 'VIDEO') {
     return (
       <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
         Required watch
-        <input className="field-input" style={{ width: 60 }} type="number" value={lesson.rule.requiredWatchPercent}
-          onChange={(e) => onChange({ rule: { ...lesson.rule, requiredWatchPercent: Number(e.target.value) } })} />%
+        <input className="field-input" style={{ width: 60 }} type="number" value={rule.requiredWatchPercent ?? 90}
+          onChange={(e) => onChange({ rule: { ...rule, requiredWatchPercent: Number(e.target.value) } })} />%
       </label>
     );
   }
@@ -766,11 +821,11 @@ function LessonRuleFields({ lesson, onChange }) {
       <>
         <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
           Image count
-          <input className="field-input" style={{ width: 60 }} type="number" value={lesson.rule.imageCount}
-            onChange={(e) => onChange({ rule: { ...lesson.rule, imageCount: Number(e.target.value) } })} />
+          <input className="field-input" style={{ width: 60 }} type="number" value={rule.imageCount ?? 1}
+            onChange={(e) => onChange({ rule: { ...rule, imageCount: Number(e.target.value) } })} />
         </label>
         <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <input type="checkbox" checked={lesson.rule.requireAllViewed} onChange={(e) => onChange({ rule: { ...lesson.rule, requireAllViewed: e.target.checked } })} /> Require all viewed
+          <input type="checkbox" checked={rule.requireAllViewed ?? true} onChange={(e) => onChange({ rule: { ...rule, requireAllViewed: e.target.checked } })} /> Require all viewed
         </label>
       </>
     );
@@ -781,8 +836,8 @@ function LessonRuleFields({ lesson, onChange }) {
   return (
     <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
       Required read
-      <input className="field-input" style={{ width: 60 }} type="number" value={lesson.rule.requiredReadPercent}
-        onChange={(e) => onChange({ rule: { ...lesson.rule, requiredReadPercent: Number(e.target.value) } })} />%
+      <input className="field-input" style={{ width: 60 }} type="number" value={rule.requiredReadPercent ?? 90}
+        onChange={(e) => onChange({ rule: { ...rule, requiredReadPercent: Number(e.target.value) } })} />%
     </label>
   );
 }
@@ -820,12 +875,17 @@ function QuestionEditor({ index, question, editing, onEdit, onDone, onChange, on
   function addOption() {
     onChange({ options: [...question.options, { id: genId('o'), text: '', isCorrect: false }] });
   }
+  function addAcceptedAnswer() {
+    onChange({ options: [...question.options, { id: genId('o'), text: '', isCorrect: true }] });
+  }
   function removeOption(id) {
     onChange({ options: question.options.filter((o) => o.id !== id) });
   }
   function setType(type) {
     if (type === 'TRUE_FALSE') {
       onChange({ type, options: [{ id: genId('o'), text: 'True', isCorrect: true }, { id: genId('o'), text: 'False', isCorrect: false }] });
+    } else if (type === 'SHORT_ANSWER') {
+      onChange({ type, options: [{ id: genId('o'), text: '', isCorrect: true }] });
     } else {
       onChange({ type });
     }
@@ -844,6 +904,7 @@ function QuestionEditor({ index, question, editing, onEdit, onDone, onChange, on
             <option value="SINGLE_CHOICE">Single choice</option>
             <option value="MULTIPLE_CHOICE">Multiple choice</option>
             <option value="TRUE_FALSE">True / False</option>
+            <option value="SHORT_ANSWER">Short answer (free text)</option>
           </select>
         </div>
         <div>
@@ -864,30 +925,40 @@ function QuestionEditor({ index, question, editing, onEdit, onDone, onChange, on
         </div>
       </div>
       <div style={{ marginBottom: 10 }}>
-        <label className="field-label">Answer options ({question.type === 'MULTIPLE_CHOICE' ? 'check all correct answers' : 'select the correct answer'})</label>
+        <label className="field-label">
+          {question.type === 'SHORT_ANSWER'
+            ? 'Accepted answer(s) — learner input matches any one, case-insensitive'
+            : `Answer options (${question.type === 'MULTIPLE_CHOICE' ? 'check all correct answers' : 'select the correct answer'})`}
+        </label>
         {question.options.map((o) => (
           <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <input
-              type={question.type === 'MULTIPLE_CHOICE' ? 'checkbox' : 'radio'}
-              name={`correct-${question.id}`}
-              checked={o.isCorrect}
-              onChange={() => setCorrect(o.id)}
-            />
+            {question.type !== 'SHORT_ANSWER' && (
+              <input
+                type={question.type === 'MULTIPLE_CHOICE' ? 'checkbox' : 'radio'}
+                name={`correct-${question.id}`}
+                checked={o.isCorrect}
+                onChange={() => setCorrect(o.id)}
+              />
+            )}
             <input
               className="field-input"
               value={o.text}
               disabled={question.type === 'TRUE_FALSE'}
+              placeholder={question.type === 'SHORT_ANSWER' ? 'Accepted answer text' : undefined}
               onChange={(e) => setOptionText(o.id, e.target.value)}
               style={{ flex: 1 }}
             />
-            {question.type !== 'TRUE_FALSE' && question.options.length > 2 && (
+            {question.type !== 'TRUE_FALSE' && question.options.length > (question.type === 'SHORT_ANSWER' ? 1 : 2) && (
               <button className="icon-btn" aria-label="Remove option" onClick={() => removeOption(o.id)}>
                 <i className="ti ti-x" aria-hidden="true" />
               </button>
             )}
           </div>
         ))}
-        {question.type !== 'TRUE_FALSE' && (
+        {question.type === 'SHORT_ANSWER' && (
+          <Button size="sm" icon="ti-plus" onClick={addAcceptedAnswer}>Add alternative answer</Button>
+        )}
+        {question.type !== 'TRUE_FALSE' && question.type !== 'SHORT_ANSWER' && (
           <Button size="sm" icon="ti-plus" onClick={addOption}>Add option</Button>
         )}
       </div>
