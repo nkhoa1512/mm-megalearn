@@ -3,14 +3,21 @@ import { NavLink } from 'react-router-dom';
 import { useCourseStore } from '../state/CourseStore';
 import { currentUser, managerUser, adminUser, orgPathLabel } from '../data/mockData';
 
-const PROFILE_BY_ROLE = { learner: currentUser, manager: managerUser, admin: adminUser };
+const PROFILE_BY_ROLE = {
+  learner: currentUser,
+  manager: managerUser,
+  admin: adminUser,
+  hrbp: managerUser,
+  trainer: adminUser,
+  sysadmin: adminUser,
+};
 
 const NAV_BY_ROLE = {
   learner: [
     { to: '/learner', label: 'Dashboard', icon: 'ti-layout-dashboard', end: true },
     { to: '/learner/courses', label: 'My Courses', icon: 'ti-book-2' },
     { to: '/learner/classrooms', label: 'Classrooms & QR Check-in', icon: 'ti-chalkboard' },
-    { to: '/learner/paths', label: 'Learning Paths', icon: 'ti-git-branch' },
+    { to: '/learner/paths', label: 'Learning Paths & 70/20/10', icon: 'ti-git-branch' },
     { to: '/learner/ai-hub', label: 'AI Learning Hub & SOPs', icon: 'ti-sparkles', badge: 'AI' },
     { to: '/learner/leaderboard', label: 'Leaderboard & XP', icon: 'ti-trophy' },
     { to: '/learner/certificates', label: 'Certificates', icon: 'ti-certificate' },
@@ -18,42 +25,79 @@ const NAV_BY_ROLE = {
   ],
   manager: [
     { to: '/manager', label: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/team', label: 'Direct Reports', icon: 'ti-users' },
+    { to: '/manager/team', label: 'Direct Reports & Skill Gaps', icon: 'ti-users' },
     { to: '/manager/approvals', label: 'Course Approvals', icon: 'ti-circle-check', badge: '2' },
     { to: '/manager/courses', label: 'Team Courses', icon: 'ti-stack-2' },
     { to: '/manager/reports', label: 'Reports & Compliance', icon: 'ti-chart-bar' },
     { to: '/manager/learning', label: 'My Learning', icon: 'ti-book-2' },
     { to: '/manager/certificates', label: 'My Certificates', icon: 'ti-certificate' },
   ],
+  hrbp: [
+    { to: '/manager/reports', label: 'HRBP Regional Analytics', icon: 'ti-chart-pie', end: true },
+    { to: '/manager/team', label: 'Talent Pipelines & Gaps', icon: 'ti-users' },
+    { to: '/admin/reports', label: 'Compliance & Heatmap', icon: 'ti-chart-histogram' },
+  ],
+  trainer: [
+    { to: '/admin/training-ops', label: 'Trainer Hub & Classrooms', icon: 'ti-school', end: true },
+    { to: '/learner/classrooms', label: 'QR Attendance Live', icon: 'ti-qrcode' },
+    { to: '/admin/courses', label: 'Course Materials & PPT', icon: 'ti-stack-2' },
+  ],
   admin: [
     { to: '/admin', label: 'Executive Dashboard & AI', icon: 'ti-layout-dashboard', end: true },
     { to: '/admin/courses', label: 'Course Catalog & Builder', icon: 'ti-stack-2' },
-    { to: '/admin/config', label: 'HRIS & MMVN Governance', icon: 'ti-settings' },
+    { to: '/admin/training-ops', label: 'Training Ops, Trainers & Labs', icon: 'ti-school' },
     { to: '/admin/reports', label: 'Strategic ROI & Audit Center', icon: 'ti-chart-histogram' },
+    { to: '/admin/config', label: 'HRIS & MMVN Dual Hierarchy', icon: 'ti-settings' },
   ],
-
+  sysadmin: [
+    { to: '/admin/config', label: 'IT Security & HRIS Sync', icon: 'ti-settings', end: true },
+    { to: '/admin/reports', label: 'Audit Logs & Heatmap', icon: 'ti-shield-lock' },
+    { to: '/admin', label: 'System Overview', icon: 'ti-layout-dashboard' },
+  ],
 };
 
 const ROLE_META = {
-  learner: { label: 'Learner (Store / HO)', icon: 'ti-user', tone: 'rail' },
-  manager: { label: 'Line Manager', icon: 'ti-briefcase', tone: 'amber' },
+  learner: { label: 'Employee / Learner (Store & HO)', icon: 'ti-user', tone: 'rail' },
+  manager: { label: 'Line Manager (Operations / Dept)', icon: 'ti-briefcase', tone: 'amber' },
+  hrbp: { label: 'HRBP (Regional Partner)', icon: 'ti-users', tone: 'blue' },
+  trainer: { label: 'L&D Trainer / Instructor', icon: 'ti-school', tone: 'sage' },
   admin: { label: 'L&D Administrator', icon: 'ti-shield-lock', tone: 'sage' },
+  sysadmin: { label: 'System Administrator (IT)', icon: 'ti-lock', tone: 'rust' },
 };
 
 export default function Sidebar({ role, collapsed }) {
   const { currentUser: authUser } = useCourseStore();
-  const items = NAV_BY_ROLE[role];
-  const meta = ROLE_META[role];
+  const effectiveRole = NAV_BY_ROLE[role] ? role : 'learner';
+  const items = NAV_BY_ROLE[effectiveRole];
+  const meta = ROLE_META[effectiveRole] || ROLE_META.learner;
   const profile = (authUser && authUser.role === role) ? authUser : PROFILE_BY_ROLE[role];
-
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
-        <div className="brand-mark">MM</div>
+        <div
+          className="brand-mark"
+          style={{
+            background: 'linear-gradient(135deg, var(--bigc-green) 0%, #007A38 100%)',
+            color: '#fff',
+            fontWeight: 900,
+            boxShadow: '0 2px 8px rgba(0, 158, 73, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+          }}
+        >
+          <span style={{ color: '#fff', fontWeight: 900, fontSize: 13 }}>MM</span>
+          <span style={{ position: 'absolute', bottom: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: 'var(--mm-red)', border: '1.5px solid #fff' }} />
+        </div>
         <div>
-          <div className="brand-name">MM MegaLearn</div>
-          <div className="brand-sub">Learning &amp; development</div>
+          <div className="brand-name" style={{ fontWeight: 800, color: 'var(--ink)' }}>
+            MM Mega<span style={{ color: 'var(--bigc-green)' }}>Learn</span>
+          </div>
+          <div className="brand-sub" style={{ fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
+            Big C &amp; MM Mega Market
+          </div>
         </div>
       </div>
 
@@ -71,11 +115,13 @@ export default function Sidebar({ role, collapsed }) {
         </div>
       </div>
       {profile && (
-        <div className="org-pill" title="Your Business Unit / Division / Department">
+        <div className="org-pill" title="Your Business Unit / Division / Department / Store">
           <i className="ti ti-sitemap" aria-hidden="true" />
           <div>
             <div className="role-pill-label">{profile.fullName}</div>
-            <div className="org-pill-value">MMVN &middot; {orgPathLabel(profile)}</div>
+            <div className="org-pill-value">
+              {profile.storeName ? `${profile.storeName} (${profile.branchName ? 'Ops' : 'HO'})` : `MMVN · ${orgPathLabel(profile)}`}
+            </div>
           </div>
         </div>
       )}
@@ -110,7 +156,7 @@ export default function Sidebar({ role, collapsed }) {
       </nav>
 
       <div className="sidebar-foot">
-        Mockup build &middot; demo data only
+        MM Mega Market &middot; LMS 2026 Production Standard
       </div>
     </aside>
   );

@@ -332,7 +332,7 @@ export default function AdminCourseBuilder() {
           <label className="field-label">Description</label>
           <textarea className="field-input" value={draft.description} onChange={(e) => patch({ description: e.target.value })} rows={2} style={{ resize: 'vertical' }} />
         </div>
-        <div className="grid grid-3">
+        <div className="grid grid-3" style={{ marginBottom: 14 }}>
           <div>
             <label className="field-label">Course type</label>
             <select className="field-select" value={draft.courseType} onChange={(e) => setCourseType(e.target.value)}>
@@ -342,6 +342,20 @@ export default function AdminCourseBuilder() {
             <div className="field-hint">Only Admin can create, configure, publish and assign Mandatory courses.</div>
           </div>
           <div>
+            <label className="field-label">Modality &amp; Format</label>
+            <select
+              className="field-select"
+              value={draft.modality || 'SCORM_PACKAGE'}
+              onChange={(e) => patch({ modality: e.target.value, format: e.target.value === 'SCORM_PACKAGE' ? 'SCORM 2004' : e.target.value === 'PPT_PRESENTATION' ? 'Interactive PPT Slides' : e.target.value === 'EXTERNAL_PLATFORM' ? 'LinkedIn Learning / Coursera Embed' : 'Interactive Video' })}
+            >
+              <option value="SCORM_PACKAGE">SCORM 2004 Package</option>
+              <option value="INTERACTIVE_VIDEO">Interactive Video Stream</option>
+              <option value="PPT_PRESENTATION">PowerPoint Slide Deck</option>
+              <option value="EXTERNAL_PLATFORM">External Platform (LinkedIn / Coursera / Udemy)</option>
+              <option value="CLASSROOM_LAB">Store Practical Lab (ILT)</option>
+            </select>
+          </div>
+          <div>
             <label className="field-label">Status</label>
             <select className="field-select" value={draft.status} onChange={(e) => patch({ status: e.target.value })}>
               <option value="DRAFT">Draft</option>
@@ -349,9 +363,20 @@ export default function AdminCourseBuilder() {
               <option value="ARCHIVED">Archived</option>
             </select>
           </div>
-          <div>
-            <label className="field-label">Version</label>
-            <input className="field-input" value={draft.version} onChange={(e) => patch({ version: e.target.value })} />
+        </div>
+
+        {/* Version Audit Trail & Review Log */}
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
+              <i className="ti ti-history" style={{ marginRight: 6, color: 'var(--rail)' }} />
+              Content Versioning &amp; Quality Audit Trail
+            </span>
+            <Badge tone="sage">Active Version: {draft.configuration?.version || 'v2.1'}</Badge>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', display: 'flex', gap: 16 }}>
+            <span>Last Reviewed By: <strong>{draft.configuration?.lastReviewedBy || 'Nguyen Van Hung (Master Trainer)'}</strong></span>
+            <span>Reviewed Date: <strong>{draft.configuration?.lastReviewedDate || '2026-08-14'}</strong></span>
           </div>
         </div>
       </div>

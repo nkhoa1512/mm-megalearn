@@ -62,13 +62,32 @@ export default function LoginPage() {
     <div style={{ minHeight: '100vh', background: 'radial-gradient(ellipse at top left, #F0FDF4 0%, #F8FAF9 50%, #EEF2FF 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: 'var(--font-body)' }}>
       {/* Top Brand Bar */}
       <header style={{ padding: '16px 32px', borderBottom: '1px solid var(--line)', background: 'var(--paper-glass)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, fontWeight: 800 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, var(--bigc-green) 0%, #007A38 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 18,
+              fontWeight: 900,
+              boxShadow: '0 4px 12px rgba(0, 158, 73, 0.25)',
+              position: 'relative',
+            }}
+          >
             MM
+            <span style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: 'var(--mm-red)', border: '2px solid #fff' }} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--rail)', letterSpacing: '-0.02em' }}>
-              MM MEGA MARKET VIETNAM
+            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>MM MEGA MARKET &amp; BIG C</span>
+              <span style={{ background: 'var(--mm-blue-soft)', color: 'var(--mm-blue)', fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                VIETNAM
+              </span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
               Enterprise Learning &amp; Development Platform &middot; MM MegaLearn

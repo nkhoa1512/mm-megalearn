@@ -6,7 +6,7 @@ import { Button, Badge } from './ui';
 
 export default function Topbar({ role, onRoleChange, onToggleSidebar, title, crumb }) {
   const navigate = useNavigate();
-  const { currentUser, openAiAssistant, logout, switchUser, demoUsers } = useCourseStore();
+  const { currentUser, openAiAssistant, logout, switchUser, demoUsers, openTalentProfile } = useCourseStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [inbox, setInbox] = useState(notifications.learnerInbox);
@@ -31,11 +31,23 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
     const nextRole = e.target.value;
     onRoleChange(nextRole);
     // Switch to a suitable demo user for this role if needed
-    const targetUser = demoUsers.find((u) => u.role === nextRole);
-    if (targetUser) {
-      switchUser(targetUser.userId);
+    if (nextRole === 'admin' || nextRole === 'sysadmin') {
+      switchUser(demoUsers[0].userId);
+      navigate('/admin');
+    } else if (nextRole === 'manager') {
+      switchUser(demoUsers[1].userId);
+      navigate('/manager');
+    } else if (nextRole === 'hrbp') {
+      const hrbpUser = demoUsers.find((u) => u.departmentCode === 'HRBP') || demoUsers[1];
+      switchUser(hrbpUser.userId);
+      navigate('/admin/reports');
+    } else if (nextRole === 'trainer') {
+      switchUser(demoUsers[2].userId);
+      navigate('/admin/training-ops');
+    } else {
+      switchUser(demoUsers[3].userId);
+      navigate('/learner');
     }
-    navigate(`/${nextRole}`);
   }
 
   function handleSwitchPersona(user) {
@@ -80,15 +92,18 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
           AI Tutor &amp; SOPs
         </Button>
 
-        {/* Role Switcher */}
+        {/* Extended Enterprise Role Switcher */}
         <div className="role-switcher">
           <label htmlFor="role-select" style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
             Role
           </label>
           <select id="role-select" value={role} onChange={handleRoleChange} className="field-select" style={{ padding: '6px 28px 6px 10px', fontSize: 12.5, width: 'auto' }}>
-            <option value="learner">Learner (Store / HO)</option>
-            <option value="manager">Line Manager</option>
+            <option value="learner">Employee / Learner (Store &amp; HO)</option>
+            <option value="manager">Line Manager (Store / Dept)</option>
+            <option value="hrbp">HRBP (HR Business Partner)</option>
+            <option value="trainer">L&amp;D Trainer / Instructor</option>
             <option value="admin">L&amp;D Admin (HR Director Level 1)</option>
+            <option value="sysadmin">System Admin (IT Security)</option>
           </select>
         </div>
 
@@ -118,35 +133,57 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
 
           {/* Notification Popover */}
           {showNotifications && (
-            <div className="notification-popover">
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>Notifications ({unreadCount} new)</div>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11.5, cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    Mark all as read
-                  </button>
-                )}
+            <div
+              className="card card-pad"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 44,
+                width: 340,
+                zIndex: 1000,
+                boxShadow: 'var(--shadow-modal)',
+                borderColor: 'var(--line-strong)',
+                animation: 'fadeIn 0.15s ease',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>Notifications</div>
+                <button
+                  onClick={markAllRead}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: 11.5,
+                    color: 'var(--rail)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Mark all as read
+                </button>
               </div>
-              <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto' }}>
                 {inbox.map((n) => (
                   <div
                     key={n.id}
                     style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid var(--line)',
-                      background: n.unread ? 'var(--rail-soft)' : 'transparent',
+                      padding: '8px 10px',
+                      borderRadius: 6,
+                      background: n.unread ? 'var(--rail-soft)' : 'var(--paper-sunken)',
+                      fontSize: 12,
                       display: 'flex',
-                      gap: 10,
+                      gap: 8,
+                      alignItems: 'start',
                     }}
                   >
-                    <i className="ti ti-bell-ringing" style={{ color: 'var(--rail)', marginTop: 2 }} />
+                    <i
+                      className={`ti ${n.type === 'ASSIGNED' ? 'ti-book-2' : 'ti-alert-triangle'}`}
+                      style={{ color: n.type === 'ASSIGNED' ? 'var(--rail)' : 'var(--rust)', marginTop: 2 }}
+                    />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{n.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{n.message}</div>
-                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>{n.time}</div>
+                      <div style={{ fontWeight: n.unread ? 700 : 500, color: 'var(--ink)' }}>{n.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{n.time}</div>
                     </div>
                   </div>
                 ))}
@@ -155,7 +192,7 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
           )}
         </div>
 
-        {/* User Avatar & Profile Dropdown */}
+        {/* Short Version Profile + Talent Profile Trigger */}
         <div ref={profileRef} style={{ position: 'relative' }}>
           <div
             onClick={() => setShowProfileMenu((v) => !v)}
@@ -163,18 +200,18 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              padding: '4px 8px 4px 4px',
+              padding: '4px 10px 4px 6px',
               borderRadius: 24,
-              border: '1px solid var(--line)',
               background: 'var(--paper-raised)',
+              border: '1px solid var(--line)',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              userSelect: 'none',
             }}
           >
+            {/* Short Version: Avatar + Name + ID + Position */}
             <div
-              className="avatar"
               style={{
-                background: profile.role === 'admin' ? 'var(--ai-gradient)' : 'var(--rail)',
+                background: 'var(--rail)',
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: 12,
@@ -186,16 +223,15 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
                 justifyContent: 'center',
               }}
             >
-              {profile.avatar || profile.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+              {profile.avatar || profile.fullName.slice(0, 2).toUpperCase()}
             </div>
 
-            {/* Level & Dept Pill */}
             <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, color: 'var(--ink)' }}>
-                {profile.fullName.split(' ')[0]}
+                {profile.fullName}
               </div>
               <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
-                Lvl {profile.level} &middot; {profile.divisionCode}
+                {profile.employeeCode} &middot; {profile.position}
               </div>
             </div>
 
@@ -210,7 +246,7 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
                 position: 'absolute',
                 right: 0,
                 top: 44,
-                width: 310,
+                width: 320,
                 zIndex: 1000,
                 boxShadow: 'var(--shadow-modal)',
                 borderColor: 'var(--line-strong)',
@@ -232,21 +268,38 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
                   {profile.employeeCode} &middot; {profile.email}
                 </div>
 
-                {/* Division & Dept Details */}
-                <div style={{ background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontSize: 11.5, marginTop: 8, color: 'var(--ink)' }}>
-                  <div><strong>Division:</strong> {profile.divisionCode} ({profile.divisionName})</div>
-                  <div><strong>Department:</strong> {profile.departmentCode} ({profile.departmentName})</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>{profile.levelTitle}</div>
+                {/* Division, Store & Branch */}
+                <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 11.5, marginTop: 8, color: 'var(--ink)' }}>
+                  <div><strong>Store / Location:</strong> {profile.storeName || 'An Phu Head Office'}</div>
+                  <div><strong>Branch:</strong> {profile.branchName || 'Hypermarket Operations Branch'}</div>
+                  <div><strong>Department:</strong> {profile.divisionCode} - {profile.departmentCode}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2 }}>Tenure: {profile.yearsOfService || 1.5} years</div>
+                </div>
+
+                {/* View Full Talent Profile Button */}
+                <div style={{ marginTop: 10 }}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    block
+                    icon="ti-id-badge-2"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      openTalentProfile(profile);
+                    }}
+                  >
+                    View Talent Profile
+                  </Button>
                 </div>
               </div>
 
               {/* Quick Persona Switcher */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-faint)', marginBottom: 6 }}>
-                  Switch Authenticated Persona:
+                  Switch Demo Persona:
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
-                  {demoUsers.map((u) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 150, overflowY: 'auto' }}>
+                  {demoUsers.slice(0, 10).map((u) => (
                     <button
                       key={u.userId}
                       onClick={() => handleSwitchPersona(u)}
@@ -267,7 +320,9 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
                     >
                       <div>
                         <div style={{ fontWeight: u.userId === profile.userId ? 700 : 500 }}>{u.fullName}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>Level {u.level} &middot; {u.divisionCode}-{u.departmentCode}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>
+                          Lvl {u.level} &middot; {u.storeName ? u.storeName.split(' ')[0] + ' ' + u.storeName.split(' ')[1] : u.divisionCode}
+                        </div>
                       </div>
                       {u.userId === profile.userId && <i className="ti ti-check" style={{ color: 'var(--rail)' }} />}
                     </button>
@@ -278,7 +333,7 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
               {/* Sign Out Button */}
               <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
                 <Button variant="danger" size="sm" block icon="ti-logout" onClick={handleLogout}>
-                  Sign Out (Log Out)
+                  Sign Out
                 </Button>
               </div>
             </div>
@@ -288,5 +343,3 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
     </header>
   );
 }
-
-

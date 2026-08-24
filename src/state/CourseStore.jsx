@@ -4,6 +4,7 @@ import {
   classroomSessions as initialClassrooms,
   pendingApprovalRequests as initialApprovals,
   gamificationData as initialGamification,
+  actionPlans as initialActionPlans,
   demoUsers,
   adminUser,
 } from '../data/mockData';
@@ -13,8 +14,7 @@ const STORAGE_KEY = 'mm-megalearn-courses-v5';
 const CLASSROOM_KEY = 'mm-megalearn-classrooms-v5';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v5';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v5';
-
-
+const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v5';
 
 const CourseStoreContext = createContext(null);
 
@@ -38,8 +38,15 @@ export function CourseStoreProvider({ children }) {
   const [classrooms, setClassrooms] = useState(() => loadItem(CLASSROOM_KEY, initialClassrooms));
   const [approvals, setApprovals] = useState(() => loadItem(APPROVAL_KEY, initialApprovals));
   const [gamification, setGamification] = useState(() => loadItem(GAMIFICATION_KEY, initialGamification));
+  const [actionPlans, setActionPlans] = useState(() => loadItem(ACTION_PLAN_KEY, initialActionPlans));
+
+  // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeAiTab, setActiveAiTab] = useState('tutor');
+
+  const [talentProfileUser, setTalentProfileUser] = useState(null);
+  const [surveyModalConfig, setSurveyModalConfig] = useState({ isOpen: false, course: null, type: 'L1', learner: null });
+  const [nominateModalConfig, setNominateModalConfig] = useState({ isOpen: false, member: null });
 
   useEffect(() => {
     try {
@@ -52,10 +59,11 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(CLASSROOM_KEY, JSON.stringify(classrooms));
       localStorage.setItem(APPROVAL_KEY, JSON.stringify(approvals));
       localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(gamification));
+      localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, courses, classrooms, approvals, gamification]);
+  }, [isAuthenticated, currentUser, courses, classrooms, approvals, gamification, actionPlans]);
 
   // Auth actions
   const login = useCallback((userObj) => {
@@ -88,7 +96,7 @@ export function CourseStoreProvider({ children }) {
     setCourses((prev) => prev.filter((c) => c.id !== courseId));
   }, []);
 
-  // Classrooms action: Register or Check-in via QR
+  // Classrooms action: Register, Batch Enroll or Check-in via QR
   const checkInClassroom = useCallback((sessionId) => {
     setClassrooms((prev) =>
       prev.map((s) =>
@@ -122,6 +130,22 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
+  const batchEnrollStudents = useCallback((sessionId, studentList) => {
+    setClassrooms((prev) =>
+      prev.map((s) => {
+        if (s.id === sessionId) {
+          const currentList = s.enrolledStudents || [];
+          return {
+            ...s,
+            enrolledCount: currentList.length + studentList.length,
+            enrolledStudents: [...currentList, ...studentList],
+          };
+        }
+        return s;
+      })
+    );
+  }, []);
+
   // Approval actions
   const approveRequest = useCallback((reqId) => {
     setApprovals((prev) =>
@@ -134,6 +158,62 @@ export function CourseStoreProvider({ children }) {
       prev.map((r) => (r.id === reqId ? { ...r, status: 'REJECTED' } : r))
     );
   }, []);
+
+  // Action Plans
+  const createActionPlan = useCallback((newPlan) => {
+    setActionPlans((prev) => [newPlan, ...prev]);
+  }, []);
+
+  const updateActionPlan = useCallback((planId, patch) => {
+    setActionPlans((prev) =>
+      prev.map((p) => (p.id === planId ? { ...p, ...patch } : p))
+    );
+  }, []);
+
+  // Talent Profile Modal
+  const openTalentProfile = useCallback((user) => {
+    setTalentProfileUser(user || currentUser);
+  }, [currentUser]);
+
+  const closeTalentProfile = useCallback(() => {
+    setTalentProfileUser(null);
+  }, []);
+
+  // Survey Modal (L1 / L3)
+  const openSurveyModal = useCallback((course, type = 'L1', learner = null) => {
+    setSurveyModalConfig({ isOpen: true, course, type, learner });
+  }, []);
+
+  const closeSurveyModal = useCallback(() => {
+    setSurveyModalConfig({ isOpen: false, course: null, type: 'L1', learner: null });
+  }, []);
+
+  // Manager Nominate Modal
+  const openNominateModal = useCallback((member) => {
+    setNominateModalConfig({ isOpen: true, member });
+  }, []);
+
+  const closeNominateModal = useCallback(() => {
+    setNominateModalConfig({ isOpen: false, member: null });
+  }, []);
+
+  const nominateCourse = useCallback((member, course) => {
+    const newApproval = {
+      id: `req-nom-${Date.now()}`,
+      employeeId: member.employeeId || member.userId,
+      employeeName: member.name || member.fullName,
+      position: member.position,
+      department: member.departmentName || member.departmentCode || 'Operations',
+      courseId: course.id,
+      courseName: course.title,
+      requestDate: new Date().toISOString().slice(0, 10),
+      justification: `Nominated by Line Manager for competency development and career succession roadmap.`,
+      courseCost: course.modality === 'EXTERNAL_PLATFORM' ? 'Included in enterprise license package' : 'Internal MMVN complimentary',
+      status: 'APPROVED',
+    };
+    setApprovals((prev) => [newApproval, ...prev]);
+    closeNominateModal();
+  }, [closeNominateModal]);
 
   // AI assistant helpers
   const openAiAssistant = useCallback((tab = 'tutor') => {
@@ -161,14 +241,28 @@ export function CourseStoreProvider({ children }) {
         classrooms,
         checkInClassroom,
         enrollClassroom,
+        batchEnrollStudents,
         approvals,
         approveRequest,
         rejectRequest,
+        actionPlans,
+        createActionPlan,
+        updateActionPlan,
         gamification,
         aiDrawerOpen,
         activeAiTab,
         openAiAssistant,
         closeAiAssistant,
+        talentProfileUser,
+        openTalentProfile,
+        closeTalentProfile,
+        surveyModalConfig,
+        openSurveyModal,
+        closeSurveyModal,
+        nominateModalConfig,
+        openNominateModal,
+        closeNominateModal,
+        nominateCourse,
       }}
     >
       {children}
@@ -181,4 +275,3 @@ export function useCourseStore() {
   if (!ctx) throw new Error('useCourseStore must be used within a CourseStoreProvider');
   return ctx;
 }
-
