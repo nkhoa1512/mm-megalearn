@@ -75,9 +75,9 @@ const ROLE_META = {
 export default function Sidebar({ role, collapsed }) {
   const { currentUser: authUser } = useCourseStore();
   const effectiveRole = NAV_BY_ROLE[role] ? role : 'learner';
-  const items = NAV_BY_ROLE[effectiveRole];
+  const items = NAV_BY_ROLE[effectiveRole] || NAV_BY_ROLE.learner;
   const meta = ROLE_META[effectiveRole] || ROLE_META.learner;
-  const profile = (authUser && authUser.role === role) ? authUser : PROFILE_BY_ROLE[role];
+  const profile = (authUser && authUser.role === effectiveRole) ? authUser : (PROFILE_BY_ROLE[effectiveRole] || currentUser);
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>

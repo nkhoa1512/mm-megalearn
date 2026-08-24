@@ -62,10 +62,57 @@ const PAGE_META = {
   '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Admin (Level 1)' },
 };
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("MM MegaLearn ErrorBoundary caught an error:", error, errorInfo);
+  }
+  handleReset() {
+    try {
+      localStorage.clear();
+    } catch {}
+    window.location.reload();
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'system-ui, sans-serif', background: '#F8FAFC', color: '#1E293B' }}>
+          <div style={{ maxWidth: 500, width: '100%', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>
+              ⚠️
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Something went wrong</h2>
+            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 20px', lineHeight: 1.5 }}>
+              An unexpected render issue occurred. You can reset your session cache and reload the application.
+            </p>
+            <div style={{ background: '#F1F5F9', padding: 12, borderRadius: 8, fontSize: 12, fontFamily: 'monospace', color: '#475569', textAlign: 'left', marginBottom: 20, overflowX: 'auto' }}>
+              {this.state.error?.message || 'Unknown render error'}
+            </div>
+            <button
+              onClick={this.handleReset}
+              style={{ background: '#007A38', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              Reset Session Cache &amp; Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Shell({ role, setRole }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const meta = PAGE_META[location.pathname] || { title: 'MM MegaLearn Platform', crumb: role.charAt(0).toUpperCase() + role.slice(1) };
+  const safeRole = role || 'learner';
+  const meta = PAGE_META[location.pathname] || { title: 'MM MegaLearn Platform', crumb: safeRole.charAt(0).toUpperCase() + safeRole.slice(1) };
 
   return (
     <div className="app-shell">
@@ -166,7 +213,9 @@ export default function App() {
   return (
     <HashRouter>
       <CourseStoreProvider>
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </CourseStoreProvider>
     </HashRouter>
   );
