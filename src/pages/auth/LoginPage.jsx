@@ -44,12 +44,12 @@ export default function LoginPage() {
 
   const featuredUsers = [
     { ...adminUser, roleBadge: '👑 L&D Admin (Director)', roleTone: 'ai' },
-    { ...sysAdminUser, roleBadge: '🔒 System Admin (IT)', roleTone: 'rust' },
-    { ...userAdminUser, roleBadge: '👥 User Admin (HR Ops)', roleTone: 'blue' },
-    { ...trainerUser, roleBadge: '🎓 L&D Trainer', roleTone: 'sage' },
-    { ...hrbpUser, roleBadge: '📊 HRBP Regional', roleTone: 'blue' },
-    { ...managerUser, roleBadge: '💼 Line Manager', roleTone: 'amber' },
-    { ...currentUser, roleBadge: '👤 Store Associate', roleTone: 'rail' },
+    { ...userAdminUser, roleBadge: '👥 Quản Trị Nhân Sự (User Admin)', roleTone: 'blue' },
+    { ...sysAdminUser, roleBadge: '🔒 Quản Trị Kỹ Thuật (IT Admin)', roleTone: 'rust' },
+    { ...trainerUser, roleBadge: '🎓 Giảng Viên Đứng Lớp (Trainer)', roleTone: 'blue' },
+    { ...hrbpUser, roleBadge: '📊 Đối Tác Nhân Sự (HRBP)', roleTone: 'blue' },
+    { ...managerUser, roleBadge: '💼 Quản Lý Trực Tiếp (Manager)', roleTone: 'amber' },
+    { ...currentUser, roleBadge: '👤 Nhân Viên Tuyến Đầu (Learner)', roleTone: 'rail' },
   ];
 
   const filteredAllUsers = totalUserList.filter((u) => {
@@ -74,9 +74,10 @@ export default function LoginPage() {
     const target = userToLogin || selectedUser;
     login(target);
     if (target.role === 'admin') navigate('/admin');
-    else if (target.role === 'sysadmin' || target.role === 'useradmin') navigate('/admin/config');
-    else if (target.role === 'trainer') navigate('/admin/training-ops');
-    else if (target.role === 'hrbp') navigate('/admin/reports');
+    else if (target.role === 'useradmin') navigate('/user-admin');
+    else if (target.role === 'sysadmin') navigate('/sysadmin');
+    else if (target.role === 'trainer') navigate('/trainer');
+    else if (target.role === 'hrbp') navigate('/hrbp');
     else if (target.role === 'manager') navigate('/manager');
     else navigate('/learner');
   }

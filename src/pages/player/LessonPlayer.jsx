@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyLessonProgress } from '../../data/mockData';
+import { applyLessonProgress, getCourseAccessControl, currentUser } from '../../data/mockData';
 import { Badge, Button, ProgressBar } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -40,7 +40,8 @@ function lessonTypeLabel(t) {
 export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const { courses, updateCourse, openSurveyModal } = useCourseStore();
+  const { courses, updateCourse, openSurveyModal, currentUser: authUser } = useCourseStore();
+  const user = authUser || currentUser;
   const course = courses.find((c) => c.id === courseId);
   const lesson = course?.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
 
@@ -54,6 +55,18 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
         <i className="ti ti-mood-empty" aria-hidden="true" />
         <p>Lesson not found.</p>
         <Link to={basePath}>Back to course list</Link>
+      </div>
+    );
+  }
+
+  const access = getCourseAccessControl(course, user);
+  if (access.isLocked) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 500 }}>
+        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học dành riêng cho Cấp Quản lý</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
       </div>
     );
   }

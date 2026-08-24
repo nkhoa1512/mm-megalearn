@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyAssessmentAttempt, drawAssessmentQuestions } from '../../data/mockData';
+import { applyAssessmentAttempt, drawAssessmentQuestions, getCourseAccessControl, currentUser } from '../../data/mockData';
 import { Badge, Button } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -25,7 +25,8 @@ function isAnswerCorrect(question, selectedIds) {
 export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, updateCourse } = useCourseStore();
+  const { courses, updateCourse, currentUser: authUser } = useCourseStore();
+  const user = authUser || currentUser;
   const course = courses.find((c) => c.id === courseId);
 
   const [phase, setPhase] = useState('start');
@@ -34,6 +35,28 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [result, setResult] = useState(null);
   const submittedRef = useRef(false);
+
+  if (!course || !course.enrollment || !course.configuration.assessmentEnabled) {
+    return (
+      <div className="empty-state">
+        <i className="ti ti-mood-empty" aria-hidden="true" />
+        <p>Assessment not found.</p>
+        <Link to={basePath}>Back to my courses</Link>
+      </div>
+    );
+  }
+
+  const access = getCourseAccessControl(course, user);
+  if (access.isLocked) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 500 }}>
+        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học dành riêng cho Cấp Quản lý</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (phase !== 'in-progress' || secondsLeft <= 0) return;

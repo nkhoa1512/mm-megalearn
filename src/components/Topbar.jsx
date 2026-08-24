@@ -36,16 +36,16 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
       navigate('/admin');
     } else if (nextRole === 'sysadmin') {
       switchUser(sysAdminUser.userId);
-      navigate('/admin/config');
+      navigate('/sysadmin');
     } else if (nextRole === 'useradmin') {
       switchUser(userAdminUser.userId);
-      navigate('/admin/config');
+      navigate('/user-admin');
     } else if (nextRole === 'trainer') {
       switchUser(trainerUser.userId);
-      navigate('/admin/training-ops');
+      navigate('/trainer');
     } else if (nextRole === 'hrbp') {
       switchUser(hrbpUser.userId);
-      navigate('/admin/reports');
+      navigate('/hrbp');
     } else if (nextRole === 'manager') {
       switchUser(managerUser.userId);
       navigate('/manager');

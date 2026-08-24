@@ -194,8 +194,8 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       email: 'minh.tran@mmvietnam.com',
       role: 'learner',
       position: 'Bakery Section Specialist',
-      level: '6',
-      levelTitle: 'Executive / Specialist',
+      level: '1',
+      levelTitle: 'Level 1 - Frontline Specialist',
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -570,12 +570,44 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const lastReviewedBy = idx % 2 === 0 ? 'Nguyễn Văn Hùng (Master Trainer)' : 'Đặng Thanh Mai (L&OD Lead)';
     const lastReviewedDate = `2026-0${Math.max(1, 8 - (idx % 6))}-14`;
 
+    const isClassroom = tpl.modality === 'CLASSROOM_LAB';
+    const deliveryType = isClassroom ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING';
+    const trainerId = isClassroom ? (idx % 2 === 0 ? 'tr-01' : 'tr-03') : null;
+    const trainerName = isClassroom ? (idx % 2 === 0 ? 'Nguyen Van Hung' : 'Vu Duc Thanh') : null;
+    const venue = isClassroom ? (idx % 2 === 0 ? 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' : 'HSE Fire & Emergency Drill Grounds (MM Thang Long)') : null;
+    const venueId = isClassroom ? (idx % 2 === 0 ? 'lab-ap-fresh' : 'lab-tl-fire') : null;
+    const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
+    const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
+
+    let targetLevel = '1';
+    let targetLevelTitle = 'Level 1: Tuyến Đầu (Associate)';
+
+    if (tpl.domain === 'Leadership' || tpl.codePrefix === 'LEAD') {
+      targetLevel = (idx >= 6) ? '5' : '4';
+      targetLevelTitle = (targetLevel === '5') ? 'Level 5: Giám Đốc Siêu Thị (SGM)' : 'Level 4: Trưởng Bộ Phận / Quản Lý (Manager)';
+    } else if (tpl.codePrefix === 'MERCH' && idx >= 4) {
+      targetLevel = '4';
+      targetLevelTitle = 'Level 4: Trưởng Bộ Phận / Quản Lý (Manager)';
+    } else if (tpl.codePrefix === 'STOPS' && idx >= 6) {
+      targetLevel = '3';
+      targetLevelTitle = 'Level 3: Trưởng Quầy / Ngành Hàng (Section Lead)';
+    } else if (tpl.codePrefix === 'SCM' && idx >= 4) {
+      targetLevel = '3';
+      targetLevelTitle = 'Level 3: Trưởng Quầy / Ngành Hàng (Section Lead)';
+    } else if (idx >= 5) {
+      targetLevel = '2';
+      targetLevelTitle = 'Level 2: Trưởng Nhóm / Giám Sát Ca (Supervisor)';
+    }
+
     generatedCourseList.push({
       id: courseId,
       code,
       title,
       category: tpl.cat,
       domain: tpl.domain,
+      deliveryType,
+      targetLevel,
+      targetLevelTitle,
       modality: tpl.modality || 'SCORM_PACKAGE',
       format: tpl.format || 'SCORM 2004',
       platformSource: tpl.platformSource || null,
@@ -583,6 +615,13 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       estimatedHours: tpl.time,
       passingScore: tpl.passScore,
       published: true,
+      trainerId,
+      trainerName,
+      venue,
+      venueId,
+      scheduleDate,
+      scheduleTime,
+      maxCapacity: isClassroom ? 25 : 500,
       description: `Comprehensive MMVN standard training module for ${title}. Aligned with retail excellence and regulatory compliance.`,
       prerequisites: idx > 0 && idx % 3 === 0 ? [`CRS-${tpl.codePrefix}-${String(courseCounter - 1).padStart(3, '0')}`] : [],
       configuration: {
@@ -641,58 +680,166 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
 export const generated100Courses = generatedCourseList;
 
 // ---------------------------------------------------------------------------
-// 3. GENERATE REALISTIC ENROLLMENT MATRIX (100 Users x 100 Courses)
+// 3. ENTERPRISE ACCESS CONTROL & TARGETING RULES
 // ---------------------------------------------------------------------------
 
-export const generated100EnrollmentMatrix = generated100Users.map((user, uIdx) => {
-  // Give each user 5-10 course enrollments
-  const userCourses = generated100Courses.slice(0, 6 + (uIdx % 4));
+export function getCourseAccessControl(course, user) {
+  if (!user || !course) return { isLocked: false, requiredLevel: 1, reason: null };
+  const userLevel = Number(user.level) || 1;
+  const isManagerOrAdmin = user.role === 'manager' || user.role === 'admin' || user.role === 'hrbp';
 
-  const enrollments = userCourses.map((c, cIdx) => {
-    let status = 'IN_PROGRESS';
-    let progressPercent = 65;
-    let score = null;
-    let attemptsCount = 0;
-    let completedAt = null;
+  // Leadership & Management courses require Level 4+ (Line Manager / SGM)
+  const isLeadershipCourse =
+    course.domain === 'Leadership' ||
+    course.category === 'Leadership & Management' ||
+    course.code?.startsWith('LEAD') ||
+    course.title?.toLowerCase().includes('leadership') ||
+    course.title?.toLowerCase().includes('manager') ||
+    course.title?.toLowerCase().includes('p&l') ||
+    course.assignment?.targetLevel === '4' ||
+    course.assignment?.targetRole === 'MANAGER';
 
-    if ((uIdx + cIdx) % 5 === 0) {
-      status = 'COMPLETED';
-      progressPercent = 100;
-      score = 88 + ((uIdx * 3 + cIdx) % 12);
-      attemptsCount = 1;
-      completedAt = '2026-08-14';
-    } else if ((uIdx + cIdx) % 5 === 1) {
-      status = 'NOT_STARTED';
-      progressPercent = 0;
-      score = null;
-      attemptsCount = 0;
-    } else if ((uIdx + cIdx) % 5 === 2) {
-      status = 'OVERDUE';
-      progressPercent = 25;
-      score = null;
-      attemptsCount = 0;
-    } else if ((uIdx + cIdx) % 5 === 3) {
-      status = 'FAILED';
-      progressPercent = 100;
-      score = 52;
-      attemptsCount = 3;
+  if (isLeadershipCourse) {
+    if (userLevel < 4 && !isManagerOrAdmin) {
+      return {
+        isLocked: true,
+        requiredLevel: 4,
+        reason: 'Khóa học này dành riêng cho Cấp Quản Lý (Level 4+ / Manager). Học viên cấp dưới cần gửi yêu cầu phê duyệt để mở khóa.',
+      };
     }
+  }
 
-    return {
-      courseId: c.id,
-      userId: user.userId,
-      courseType: c.courseType,
-      status,
-      progressPercent,
-      score,
-      attemptsCount,
-      completedAt,
-      lastActivityAt: '2026-08-19',
-    };
-  });
+  // Certain Strategic Commercial / Budget courses require Level 4+
+  if (course.code?.startsWith('MERCH-002') || course.code?.startsWith('MERCH-004') || course.code?.startsWith('GOV-001')) {
+    if (userLevel < 4 && !isManagerOrAdmin) {
+      return {
+        isLocked: true,
+        requiredLevel: 4,
+        reason: 'Khóa học Hoạch định Chiến lược & Ngân sách cần phê duyệt của Trưởng Bộ Phận.',
+      };
+    }
+  }
 
-  return {
+  return { isLocked: false, requiredLevel: 1, reason: null };
+}
+
+// ---------------------------------------------------------------------------
+// 4. GENERATE TARGETED REALISTIC ENROLLMENT MATRIX (~8-14 Courses per User)
+// ---------------------------------------------------------------------------
+
+export const generated100EnrollmentMatrix = {};
+export const generated100EnrollmentList = [];
+
+// Specific hand-crafted realistic enrollment list for Minh Tran (Bakery Specialist - USR-1042)
+const MINH_TRAN_ENROLLMENTS = {
+  'course-fsh-1': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'course-fsh-2': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30' },
+  'course-fsh-3': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30' },
+  'course-fsh-4': { status: 'IN_PROGRESS', progressPercent: 65, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'course-isa-1': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30' },
+  'course-isa-2': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15' },
+  'course-hse-1': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15' },
+  'course-hse-4': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10' },
+  'course-stops-1': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'course-cold-1': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'course-ecom-1': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
+  'course-merch-1': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
+};
+
+generated100Users.forEach((user, uIdx) => {
+  const userEnrollmentMap = {};
+
+  if (user.userId === 'USR-1042' || user.employeeCode === 'MMVN-1042') {
+    Object.entries(MINH_TRAN_ENROLLMENTS).forEach(([courseId, details]) => {
+      const course = generatedCourseList.find((c) => c.id === courseId);
+      if (course) {
+        userEnrollmentMap[courseId] = {
+          courseId,
+          userId: user.userId,
+          courseType: course.courseType,
+          ...details,
+          lastLessonTitle: course.modules?.[0]?.lessons?.[0]?.title || '1.1 Industry Standards & Legal Foundations',
+          lastActivityAt: '2026-08-20',
+        };
+      }
+    });
+  } else {
+    // For other users, select 8-12 tailored courses based on role and department
+    const isManager = user.role === 'manager' || Number(user.level) >= 4;
+    const isFood = user.divisionCode === 'OMD' || user.departmentCode === 'PPF';
+    const isSCM = user.divisionCode === 'SCM';
+    const isFrontEnd = user.departmentCode === 'FE' || user.position?.includes('Cashier');
+
+    generatedCourseList.forEach((c, cIdx) => {
+      let isTargeted = false;
+
+      // Universal compliance for all employees
+      if (c.id === 'course-isa-1' || c.id === 'course-hse-1' || c.id === 'course-stops-1') {
+        isTargeted = true;
+      }
+      // Manager leadership courses
+      else if (isManager && c.code?.startsWith('LEAD')) {
+        isTargeted = (cIdx % 3 === 0);
+      }
+      // Food Safety courses
+      else if (isFood && c.code?.startsWith('FSH')) {
+        isTargeted = (cIdx % 2 === 0);
+      }
+      // SCM courses
+      else if (isSCM && (c.code?.startsWith('SCM') || c.code?.startsWith('COLD'))) {
+        isTargeted = (cIdx % 2 === 0);
+      }
+      // POS Cashier courses
+      else if (isFrontEnd && c.code?.startsWith('STOPS')) {
+        isTargeted = (cIdx % 2 === 0);
+      }
+      // Electives
+      else if ((uIdx * 3 + cIdx) % 17 === 0) {
+        isTargeted = true;
+      }
+
+      if (isTargeted) {
+        let status = 'IN_PROGRESS';
+        let progressPercent = 35 + ((uIdx * 7 + cIdx * 11) % 55);
+        let score = null;
+        let attemptsCount = 0;
+        let completedAt = null;
+
+        if ((uIdx + cIdx) % 4 === 0) {
+          status = 'COMPLETED';
+          progressPercent = 100;
+          score = 85 + ((uIdx * 3 + cIdx) % 15);
+          attemptsCount = 1;
+          completedAt = '2026-08-14';
+        } else if ((uIdx + cIdx) % 7 === 0) {
+          status = 'NOT_STARTED';
+          progressPercent = 0;
+        } else if ((uIdx + cIdx) % 5 === 0) {
+          status = 'OVERDUE';
+          progressPercent = 20;
+        }
+
+        userEnrollmentMap[c.id] = {
+          courseId: c.id,
+          userId: user.userId,
+          courseType: c.courseType,
+          status,
+          progressPercent,
+          score,
+          attemptsCount,
+          completedAt,
+          dueDate: c.assignment?.dueDate || '2026-09-30',
+          lastLessonTitle: c.modules?.[0]?.lessons?.[0]?.title || '1.1 Industry Standards & Legal Foundations',
+          lastActivityAt: '2026-08-19',
+        };
+      }
+    });
+  }
+
+  generated100EnrollmentMatrix[user.userId] = userEnrollmentMap;
+  generated100EnrollmentList.push({
     userId: user.userId,
-    enrollments,
-  };
+    enrollments: Object.values(userEnrollmentMap),
+  });
 });
+

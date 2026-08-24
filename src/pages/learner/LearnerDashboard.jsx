@@ -31,34 +31,22 @@ export default function LearnerDashboard() {
 
   return (
     <>
-      {/* Page Header with Gamification Bar */}
+      {/* Page Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800 }}>Welcome back, {user.fullName.split(' ').pop()}! 👋</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800 }}>Xin chào, {user.fullName.split(' ').pop()}! 👋</h1>
           <p style={{ marginTop: 2 }}>
             <strong>{user.position}</strong> &middot; MM Mega Market &middot; {orgPathLabel(user)}
           </p>
         </div>
 
-
-        {/* Gamification Quick Stats */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div
-            className="streak-pill"
-            onClick={() => navigate('/learner/leaderboard')}
-            style={{ cursor: 'pointer' }}
-            title="Click to view full Leaderboard"
-          >
-            <i className="ti ti-flame" /> {userStats.streakDays}-Day Streak
-          </div>
-          <div
-            className="xp-badge"
-            onClick={() => navigate('/learner/leaderboard')}
-            style={{ cursor: 'pointer' }}
-            title="Learning Experience Points"
-          >
-            <i className="ti ti-sparkles" /> Level {userStats.currentLevel} &middot; {userStats.points} XP
-          </div>
+          <Button variant="outline" icon="ti-sparkles" onClick={() => navigate('/learner/ai-hub')}>
+            Gợi Ý Khóa Học AI
+          </Button>
+          <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>
+            Khóa Học Của Tôi ({courses.length})
+          </Button>
         </div>
       </div>
 
@@ -215,41 +203,66 @@ function CourseCard({ course, onOpen }) {
     OVERDUE: { tone: 'rust', label: 'Overdue' },
     FAILED: { tone: 'rust', label: 'Failed' },
   };
-  const s = statusMap[course.enrollment.status] || { tone: 'slate', label: 'Not Enrolled' };
+  const s = statusMap[course.enrollment?.status] || { tone: 'slate', label: 'Not Enrolled' };
+  const isInPerson = course.deliveryType === 'IN_PERSON_CLASSROOM' || course.modality === 'CLASSROOM_LAB';
 
   return (
-    <div className="card card-pad card-interactive" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    <div
+      className="card card-pad card-interactive"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        borderColor: isInPerson ? 'var(--blue)' : 'var(--line)',
+        background: isInPerson ? 'linear-gradient(180deg, #FFFFFF 0%, var(--blue-soft) 100%)' : '#fff',
+      }}
+    >
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 10 }}>
-          <div>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{course.title}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-              {course.category} &middot; {course.modules.length} modules &middot; {course.estimatedDuration}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
+          <div style={{ flex: 1, marginRight: 8 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.35 }}>{course.title}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 3 }}>
+              {course.category} &middot; {isInPerson ? (course.venue || 'Xưởng Bánh MM An Phú') : `${course.modules?.length || 0} modules`}
+              {isInPerson && course.trainerName && (
+                <span style={{ color: 'var(--blue)', fontWeight: 600, display: 'block', marginTop: 2 }}>
+                  👨‍🏫 Giảng viên: {course.trainerName}
+                </span>
+              )}
             </div>
           </div>
-          <Badge tone={s.tone}>{s.label}</Badge>
+          <Badge tone={isInPerson ? 'blue' : s.tone}>{isInPerson ? 'Store Lab (ILT)' : s.label}</Badge>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
           <CourseTypeBadge courseType={course.courseType} />
+          {isInPerson && (
+            <Badge tone="blue" icon="ti-school">Đào Tạo Trực Tiếp</Badge>
+          )}
         </div>
 
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 5 }}>
             <span>Progress</span>
-            <span style={{ fontWeight: 600 }}>{course.enrollment.progressPercent}%</span>
+            <span style={{ fontWeight: 600 }}>{course.enrollment?.progressPercent || 0}%</span>
           </div>
-          <ProgressBar value={course.enrollment.progressPercent} tone={course.enrollment.status === 'COMPLETED' ? 'sage' : 'rail'} size="sm" />
+          <ProgressBar value={course.enrollment?.progressPercent || 0} tone={course.enrollment?.status === 'COMPLETED' ? 'sage' : isInPerson ? 'blue' : 'rail'} size="sm" />
         </div>
       </div>
 
       <div>
         <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 12 }}>
           <i className="ti ti-calendar" style={{ marginRight: 5, verticalAlign: -2 }} />
-          {course.enrollment.dueDate ? `Due date: ${formatDate(course.enrollment.dueDate)}` : 'Self-paced'}
+          {isInPerson
+            ? `Ngày học: ${course.scheduleDate || '2026-08-28'} (${course.scheduleTime || '08:30'})`
+            : course.enrollment?.dueDate ? `Due date: ${formatDate(course.enrollment.dueDate)}` : 'Self-paced'}
         </div>
-        <Button block variant={course.enrollment.status === 'COMPLETED' ? 'outline' : 'primary'} onClick={onOpen}>
-          {course.enrollment.status === 'COMPLETED' ? 'Review Course' : 'Start Course'}
+        <Button
+          block
+          variant={isInPerson ? 'primary' : course.enrollment?.status === 'COMPLETED' ? 'outline' : 'primary'}
+          icon={isInPerson ? 'ti-qrcode' : course.enrollment?.status === 'COMPLETED' ? 'ti-rotate' : 'ti-player-play'}
+          onClick={onOpen}
+        >
+          {isInPerson ? 'Quét QR Điểm danh' : course.enrollment?.status === 'COMPLETED' ? 'Review Course' : 'Start Course'}
         </Button>
       </div>
     </div>

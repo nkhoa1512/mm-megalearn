@@ -1,44 +1,68 @@
 import React, { useState } from 'react';
-import {
-  aiKnowledgeBase,
-  aiRecommendations,
-  aiChatSamplePrompts,
-  currentUser,
-} from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
+import { useCourseStore } from '../../state/CourseStore';
+import { currentUser as defaultUser } from '../../data/mockData';
 import { Badge, Button, Tabs } from '../../components/ui';
 
 export default function AiLearningHub() {
-  const [activeTab, setActiveTab] = useState('search');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTag, setSelectedTag] = useState('ALL');
+  const navigate = useNavigate();
+  const { courses: allCourses, currentUser: authUser, enrollCourse } = useCourseStore();
+  const user = authUser || defaultUser;
+
+  // Active Tab: recommendations (Default) vs tutor
+  const [activeTab, setActiveTab] = useState('recommendations');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+
+  // AI Chatbot State
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'bot',
-      text: `Hello **${currentUser.fullName}**! I am your **MM MegaLearn AI Companion**. Feel free to ask any question regarding standard operating procedures (SOPs), food safety compliance, or quiz study prep.`,
-      time: 'Just now',
+      text: `Xin chào **${user.fullName}**! Tôi là **Trợ lý AI Đào tạo MM MegaLearn**. Bạn có thể hỏi tôi bất kỳ thắc mắc nào về kiến thức bài học, quy chuẩn an toàn thực phẩm HACCP, hoặc ôn tập câu hỏi trắc nghiệm trước khi thi.`,
+      time: 'Vừa xong',
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Filter knowledge base
-  const allTags = ['ALL', 'Bakery', 'SOP', 'Food Safety', 'Security', 'Fire Safety', 'Customer Service'];
-  const filteredKB = aiKnowledgeBase.filter((doc) => {
-    const matchesQuery =
-      !searchQuery ||
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.matchedExcerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = selectedTag === 'ALL' || doc.tags.includes(selectedTag);
-    return matchesQuery && matchesTag;
+  // DYNAMIC PERSONALIZED RECOMMENDATIONS (Filtered from Admin Courses in CourseStore)
+  // Recommends courses created by Admin that the user has NOT completed yet
+  const uncompletedCourses = allCourses.filter((c) => {
+    const isCompleted = c.enrollment?.status === 'COMPLETED';
+    const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && Number(user.level) < 4;
+    return !isCompleted && !isManagerCourse;
   });
+
+  const recommendedCourses = uncompletedCourses.filter((c) => {
+    if (categoryFilter === 'ALL') return true;
+    if (categoryFilter === 'FRESH_FOOD') return c.domain === 'Food Safety & Hygiene' || c.code?.startsWith('FSH') || c.code?.startsWith('COLD');
+    if (categoryFilter === 'STORE_OPS') return c.domain === 'Store Operations' || c.code?.startsWith('STOPS');
+    if (categoryFilter === 'SAFETY') return c.domain === 'Health & Safety' || c.code?.startsWith('HSE') || c.code?.startsWith('ISA');
+    if (categoryFilter === 'DIGITAL') return c.domain === 'E-Commerce' || c.code?.startsWith('ECOM') || c.code?.startsWith('MERCH');
+    return true;
+  });
+
+  function getAiReason(course) {
+    if (course.code?.startsWith('FSH') || course.domain === 'Food Safety & Hygiene') {
+      return `Đề xuất trực tiếp cho vị trí ${user.position}: Cần thiết để đáp ứng tiêu chuẩn kiểm định an toàn vệ sinh thực phẩm HACCP tại xưởng chế biến.`;
+    }
+    if (course.code?.startsWith('COLD') || course.domain === 'Cold Chain') {
+      return `Bổ trợ nghiệp vụ bảo quản hàng lạnh và chống sốc nhiệt cho nhóm sản phẩm tươi sống tại siêu thị.`;
+    }
+    if (course.code?.startsWith('HSE') || course.domain === 'Health & Safety') {
+      return `Khóa học tuân thủ bắt buộc định kỳ về PCCC và An toàn lao động cho toàn bộ nhân sự khối Vận hành.`;
+    }
+    if (course.code?.startsWith('STOPS') || course.domain === 'Store Operations') {
+      return `Chuẩn hóa kỹ năng vận hành quầy kệ, chống hao hụt và nâng cao trải nghiệm khách hàng tại MM Mega Market.`;
+    }
+    return `Khóa học tự chọn nâng cao năng lực chuyên môn trong danh mục đào tạo của Ban L&D MM Mega Market.`;
+  }
 
   function handleSend(textToSend) {
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
-    const userMsg = { id: Date.now(), sender: 'user', text: text, time: 'Now' };
+    const userMsg = { id: Date.now(), sender: 'user', text: text, time: 'Vừa xong' };
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputText('');
     setIsTyping(true);
@@ -46,19 +70,19 @@ export default function AiLearningHub() {
     setTimeout(() => {
       let reply = '';
       const lower = text.toLowerCase();
-      if (lower.includes('temperature') || lower.includes('dough') || lower.includes('bakery') || lower.includes('proofing')) {
-        reply = `🥖 **Bakery Standards (SOP-OMD-04)**:\n• **Proofing cabinet**: Maintain temperature between **28°C – 32°C**, relative humidity 80-85%.\n• **Convection oven**: Inspect thermal sensors before each shift.\n• **Logging**: Record readings in Form SOP-OMD-04B every **120 minutes**.\n• **Deviation handling**: If temperature variance exceeds ±3°C, halt new dough batches and notify the Shift Supervisor immediately.`;
-      } else if (lower.includes('security') || lower.includes('data') || lower.includes('pos')) {
-        reply = `🔒 **Information Security & POS Terminal Policy (SEC-POL-01)**:\n1. **4 Data Classification Tiers**: Public -> Internal -> Confidential (Customer records, store financial metrics) -> Restricted (Card tokens, master POS credentials).\n2. **POS Restrictions**: Strictly prohibit unapproved software installations and unauthorized USB removable storage.\n3. **Incident Reporting**: Mandatory incident notification to MIS Helpdesk within **24 hours**.`;
-      } else if (lower.includes('fire') || lower.includes('evacuation') || lower.includes('safety') || lower.includes('hse')) {
-        reply = `🔥 **Emergency Fire & Evacuation Procedure (HSE-PCCC-02)**:\n1. Trigger nearest manual fire alarm pull station.\n2. Deploy CO2 extinguishers (for electrical equipment) or Foam extinguishers (for grease and kitchen oils).\n3. Guide store visitors along photoluminescent exit paths toward **Assembly Point 1 in the main parking lot**.`;
+      if (lower.includes('haccp') || lower.includes('vệ sinh') || lower.includes('nhiệt độ') || lower.includes('bánh')) {
+        reply = `🥖 **Quy Chuẩn An Toàn Thực Phẩm Quầy Bánh (SOP-OMD-04)**:\n• **Tủ ủ bột**: Duy trì nhiệt độ **28°C – 32°C**, độ ẩm tương đối 80-85%.\n• **Lò nướng đối lưu**: Kiểm tra cảm biến nhiệt trước mỗi ca nướng.\n• **Ghi chép nhật ký**: Ghi nhiệt độ vào Biểu mẫu SOP-OMD-04B mỗi **120 phút**.\n• **Xử lý sự cố**: Nếu nhiệt độ lệch quá ±3°C, tạm dừng nướng mẻ mới và báo ngay cho Trưởng ca.`;
+      } else if (lower.includes('pccc') || lower.includes('cháy') || lower.includes('thoát hiểm') || lower.includes('bình')) {
+        reply = `🔥 **Quy Trình Ứng Phó Sự Cố PCCC Siêu Thị (HSE-PCCC-02)**:\n1. Bấm chuông báo cháy khẩn cấp gần nhất.\n2. Sử dụng bình khí CO2 (cho thiết bị điện) hoặc bình Bọt Foam (cho khu vực dầu mỡ xưởng nấu/nướng).\n3. Hướng dẫn khách hàng di chuyển theo đèn Exit dạ quang ra **Khu vực tập kết an toàn số 1 tại bãi đỗ xe**.`;
+      } else if (lower.includes('bài thi') || lower.includes('trắc nghiệm') || lower.includes('điểm đạt')) {
+        reply = `🎯 **Thông Tin Bài Thi Đánh Giá (Final Assessment)**:\n• Điểm đạt chuẩn là **80%** (tương đương đúng 4/5 câu hỏi).\n• Mỗi học viên có tối đa **3 lần thi lại**.\n• Thời gian làm bài tiêu chuẩn là **15 phút**. Chúc bạn ôn tập tốt và đạt điểm tối đa!`;
       } else {
-        reply = `💡 **AI Knowledge Engine Insight**:\nYour inquiry has been verified against MM Mega Market Vietnam's standardized SOP knowledge base. Ensure compliance with your store's operational logs.`;
+        reply = `💡 **Giải Đáp Từ AI Tutor MM MegaLearn**:\nNội dung câu hỏi của bạn đã được đối soát với các khóa học và quy chuẩn đào tạo hiện hành của MM Mega Market. Bạn có thể bấm vào tab **"Gợi Ý Khóa Học Cá Nhân Hóa"** để xem và vào học trực tiếp các khóa liên quan.`;
       }
 
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, sender: 'bot', text: reply, time: 'Just now' },
+        { id: Date.now() + 1, sender: 'bot', text: reply, time: 'Vừa xong' },
       ]);
       setIsTyping(false);
     }, 600);
@@ -70,276 +94,253 @@ export default function AiLearningHub() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>AI Learning Hub</h1>
-            <Badge tone="ai" icon="ti-sparkles">Phase 2 AI Engine</Badge>
+            <h1>AI Learning Hub &amp; Gợi Ý Khóa Học</h1>
+            <Badge tone="ai" icon="ti-sparkles">Trợ Lý AI Doanh Nghiệp</Badge>
           </div>
-          <p>
-            Intelligent enterprise assistant for natural-language SOP search, personalized course matching, and 24/7 compliance support.
+          <p style={{ margin: 0 }}>
+            Hệ thống AI tự động phân tích chức danh <strong>{user.position}</strong> ({user.branchName || 'Khối Vận hành Siêu thị'}) để gợi ý các khóa học chưa hoàn thành từ kho bài giảng của L&amp;D Admin.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="outline" icon="ti-refresh" onClick={() => setSearchQuery('')}>Reset</Button>
-          <Button variant="ai" icon="ti-message-chatbot" onClick={() => setActiveTab('tutor')}>Chat with AI</Button>
+          <Button
+            variant={activeTab === 'recommendations' ? 'primary' : 'outline'}
+            icon="ti-bulb"
+            onClick={() => setActiveTab('recommendations')}
+          >
+            Khóa Học Được Gợi Ý ({recommendedCourses.length})
+          </Button>
+          <Button
+            variant={activeTab === 'tutor' ? 'primary' : 'outline'}
+            icon="ti-message-chatbot"
+            onClick={() => setActiveTab('tutor')}
+          >
+            Hỏi Đáp Cùng AI Tutor
+          </Button>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs
         tabs={[
-          { id: 'search', label: 'Semantic SOP & Manual Search', icon: 'ti-search', count: filteredKB.length },
-          { id: 'tutor', label: 'AI Tutor & Interactive Q&A', icon: 'ti-message-chatbot' },
-          { id: 'recommendations', label: 'Personalized Recommendations', icon: 'ti-bulb', count: aiRecommendations.length },
+          { id: 'recommendations', label: 'Gợi Ý Khóa Học Cá Nhân Hóa (Từ Danh Mục Admin)', icon: 'ti-bulb', count: recommendedCourses.length },
+          { id: 'tutor', label: 'Trợ Lý AI Hỏi Đáp & Ôn Tập Bài Học', icon: 'ti-message-chatbot' },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
       />
 
-      {/* TAB 1: SMART SOP SEARCH */}
-      {activeTab === 'search' && (
+      {/* TAB 1: PERSONALIZED RECOMMENDATIONS (FROM ADMIN COURSES) */}
+      {activeTab === 'recommendations' && (
         <>
-          {/* Search Box Card */}
+          {/* Filter Bar */}
           <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)', borderColor: '#BFDBFE' }}>
-            <div style={{ position: 'relative', marginBottom: 12 }}>
-              <i className="ti ti-search" style={{ position: 'absolute', left: 16, top: 14, fontSize: 18, color: 'var(--ai-primary)' }} />
-              <input
-                type="text"
-                className="field-input"
-                style={{ padding: '12px 16px 12px 46px', fontSize: 14.5, borderRadius: 'var(--radius-md)', background: '#ffffff', borderColor: '#93C5FD' }}
-                placeholder="Ask a question or enter keywords (e.g. proofing box temperature, POS security, emergency exit...)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Filter tags */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-soft)' }}>Topic Filter:</span>
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(tag)}
-                  style={{
-                    border: '1px solid',
-                    borderColor: selectedTag === tag ? 'var(--ai-primary)' : 'var(--line)',
-                    background: selectedTag === tag ? 'var(--ai-soft)' : '#fff',
-                    color: selectedTag === tag ? 'var(--ai-soft-text)' : 'var(--ink-soft)',
-                    padding: '4px 12px',
-                    borderRadius: 16,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    fontWeight: selectedTag === tag ? 600 : 400,
-                  }}
-                >
-                  {tag === 'ALL' ? 'All Documents' : `#${tag}`}
-                </button>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Lọc theo chuyên ngành:</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'ALL', label: 'Tất Cả Khóa Gợi Ý' },
+                  { id: 'FRESH_FOOD', label: 'Thực Phẩm Tươi Sống & Bánh Mì (HACCP)' },
+                  { id: 'STORE_OPS', label: 'Vận Hành Quầy Kệ Siêu Thị' },
+                  { id: 'SAFETY', label: 'An Toàn PCCC & Bảo Mật' },
+                  { id: 'DIGITAL', label: 'Thương Mại Điện Tử & Đơn Hàng' },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setCategoryFilter(f.id)}
+                    style={{
+                      border: '1px solid',
+                      borderColor: categoryFilter === f.id ? 'var(--blue)' : 'var(--line)',
+                      background: categoryFilter === f.id ? 'var(--blue)' : '#fff',
+                      color: categoryFilter === f.id ? '#fff' : 'var(--ink)',
+                      padding: '5px 14px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      fontWeight: categoryFilter === f.id ? 700 : 500,
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Results List */}
-          <div className="grid grid-2">
-            {filteredKB.map((doc) => (
-              <div key={doc.id} className="card card-pad card-interactive" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div className="activity-icon" style={{ background: 'var(--ai-soft)', color: 'var(--ai-soft-text)', width: 36, height: 36 }}>
-                        <i className="ti ti-file-text" style={{ fontSize: 18 }} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>{doc.title}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{doc.docType} &middot; {doc.pages} pages &middot; Updated {doc.updatedAt}</div>
-                      </div>
-                    </div>
-                    <Badge tone="ai">Match {doc.relevance}%</Badge>
-                  </div>
+          {/* Recommended Courses Grid */}
+          <div className="grid grid-2" style={{ gap: 16 }}>
+            {recommendedCourses.length === 0 ? (
+              <div className="card card-pad empty-state" style={{ gridColumn: '1 / -1' }}>
+                <i className="ti ti-circle-check" style={{ fontSize: 40, color: 'var(--sage)' }} />
+                <p>Tuyệt vời! Bạn đã hoàn thành toàn bộ các khóa học trong nhóm chuyên ngành này.</p>
+              </div>
+            ) : (
+              recommendedCourses.map((course) => {
+                const isInPerson = course.deliveryType === 'IN_PERSON_CLASSROOM' || course.modality === 'CLASSROOM_LAB';
+                const isEnrolled = Boolean(course.enrollment);
 
-                  <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12, lineHeight: 1.5 }}>
-                    {doc.summary}
-                  </p>
-
+                return (
                   <div
+                    key={course.id}
+                    className="card card-pad"
                     style={{
-                      background: 'var(--paper-sunken)',
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontStyle: 'italic',
-                      color: 'var(--ink)',
-                      borderLeft: '3px solid var(--ai-primary)',
-                      marginBottom: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      borderLeft: '4px solid var(--blue)',
+                      padding: 18,
                     }}
                   >
-                    "{doc.matchedExcerpt}"
-                  </div>
-                </div>
+                    <div>
+                      {/* Top badge row */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{course.code}</span>
+                          <Badge tone={isInPerson ? 'amber' : 'blue'}>
+                            {isInPerson ? 'Thực Hành Xưởng (ILT)' : (course.format || 'E-learning')}
+                          </Badge>
+                        </div>
+                        <Badge tone={course.courseType === 'MANDATORY' ? 'amber' : 'sage'}>
+                          {course.courseType === 'MANDATORY' ? 'Khóa Bắt Buộc' : 'Tự Chọn Bổ Trợ'}
+                        </Badge>
+                      </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {doc.tags.map((t) => (
-                      <span key={t} style={{ fontSize: 10.5, background: 'var(--paper-sunken)', padding: '2px 8px', borderRadius: 4, color: 'var(--ink-soft)' }}>
-                        #{t}
+                      {/* Title */}
+                      <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>
+                        {course.title}
+                      </div>
+
+                      {/* AI Matching Justification */}
+                      <div style={{ background: '#F0FDF4', borderRadius: 8, padding: '8px 12px', marginBottom: 12, border: '1px solid #DCFCE7' }}>
+                        <div style={{ fontSize: 11.5, color: '#166534', lineHeight: 1.45 }}>
+                          <i className="ti ti-sparkles" style={{ marginRight: 4, color: '#16A34A' }} />
+                          <strong>Lý do AI đề xuất:</strong> {getAiReason(course)}
+                        </div>
+                      </div>
+
+                      {/* Meta specs */}
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12, display: 'flex', gap: 12 }}>
+                        <span><i className="ti ti-clock" style={{ marginRight: 4 }} /> Thời lượng: <strong>{course.estimatedDuration || '3h'}</strong></span>
+                        <span><i className="ti ti-award" style={{ marginRight: 4 }} /> Điểm đạt: <strong>{course.passingScore || 80}%</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Action Row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+                        {isInPerson && course.trainerName ? `GV: ${course.trainerName}` : 'Do L&D Admin ban hành'}
                       </span>
-                    ))}
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={isInPerson ? 'ti-calendar-event' : 'ti-player-play'}
+                        onClick={() => {
+                          if (isInPerson) {
+                            navigate('/learner/classrooms');
+                          } else {
+                            if (!isEnrolled) enrollCourse(course.id);
+                            navigate(`/learner/courses/${course.id}`);
+                          }
+                        }}
+                      >
+                        {isInPerson ? 'Xem Lịch Thực Hành' : isEnrolled ? 'Vào Học Ngay' : 'Đăng Ký & Vào Học'}
+                      </Button>
+                    </div>
                   </div>
-                  <Button size="sm" variant="outline" icon="ti-file-search">Open Source SOP</Button>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </>
       )}
 
-      {/* TAB 2: AI TUTOR CHAT */}
+      {/* TAB 2: AI TUTOR CHATBOT */}
       {activeTab === 'tutor' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '620px', overflow: 'hidden' }}>
-          {/* Chat header */}
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--line)', background: 'var(--paper-sunken)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div className="stat-icon-badge" style={{ background: 'var(--ai-gradient)', color: '#fff' }}>
-                <i className="ti ti-sparkles" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13.5 }}>Enterprise AI Learning Tutor</div>
-                <div style={{ fontSize: 11.5, color: 'var(--sage)' }}>
-                  <i className="ti ti-circle-filled" style={{ fontSize: 8, marginRight: 4 }} />
-                  Active &middot; Grounded in MMVN verified SOP documentation
-                </div>
+        <div className="card card-pad" style={{ maxWidth: 850, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 14, borderBottom: '1px solid var(--line)', marginBottom: 16 }}>
+            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--ai-soft)', color: 'var(--ai-soft-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+              <i className="ti ti-message-chatbot" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>Trợ Lý AI Hỏi Đáp Bài Học (AI Tutor)</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Hỗ trợ giải đáp kiến thức về các khóa học HACCP, PCCC, An toàn thông tin và quy trình vận hành MM Mega Market.
               </div>
             </div>
-            <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => setMessages([messages[0]])}>Clear History</Button>
           </div>
 
-          {/* Chat message flow */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`ai-chat-bubble ${m.sender === 'user' ? 'ai-bubble-user' : 'ai-bubble-bot'}`}
-                style={{ maxWidth: '80%' }}
+          {/* Quick Prompts */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            {[
+              'Quy chuẩn nhiệt độ tủ ủ bột bánh mì là bao nhiêu?',
+              'Quy trình PCCC khi xảy ra chập cháy tại siêu thị?',
+              'Bài thi trắc nghiệm cần đạt bao nhiêu điểm?',
+            ].map((p, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(p)}
+                style={{
+                  background: 'var(--paper-sunken)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 16,
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  color: 'var(--ink)',
+                  cursor: 'pointer',
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 11, opacity: 0.75 }}>
-                  <i className={`ti ${m.sender === 'user' ? 'ti-user' : 'ti-sparkles'}`} />
-                  <span>{m.sender === 'user' ? 'You' : 'AI Learning Companion'} &middot; {m.time}</span>
-                </div>
-                <div style={{ whiteSpace: 'pre-line', fontSize: 13.5, lineHeight: 1.6 }}>{m.text}</div>
+                💡 {p}
+              </button>
+            ))}
+          </div>
+
+          {/* Chat Messages */}
+          <div style={{ minHeight: 280, maxHeight: 420, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingRight: 6, marginBottom: 16 }}>
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                style={{
+                  alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  background: msg.sender === 'user' ? 'var(--blue)' : 'var(--paper-sunken)',
+                  color: msg.sender === 'user' ? '#fff' : 'var(--ink)',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-line',
+                }}
+              >
+                {msg.text}
               </div>
             ))}
             {isTyping && (
-              <div className="ai-chat-bubble ai-bubble-bot" style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>
-                <i className="ti ti-loader ti-spin" style={{ marginRight: 6 }} /> AI is querying SOP repository...
+              <div style={{ alignSelf: 'flex-start', background: 'var(--paper-sunken)', padding: '8px 14px', borderRadius: 12, fontSize: 12, color: 'var(--ink-soft)' }}>
+                <i className="ti ti-loader" style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />
+                AI Tutor đang soạn câu trả lời...
               </div>
             )}
           </div>
 
-          {/* Quick prompts */}
-          <div style={{ padding: '10px 16px', background: 'var(--paper-sunken)', borderTop: '1px solid var(--line)' }}>
-            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>
-              <i className="ti ti-wand" style={{ marginRight: 4 }} /> Recommended Questions:
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {aiChatSamplePrompts.map((p, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSend(p)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid var(--line)',
-                    padding: '5px 12px',
-                    borderRadius: 14,
-                    fontSize: 12,
-                    color: 'var(--ink-soft)',
-                    cursor: 'pointer',
-                    transition: 'all 0.12s ease',
-                  }}
-                  onMouseEnter={(e) => { e.target.style.borderColor = 'var(--ai-primary)'; e.target.style.color = 'var(--ai-soft-text)'; }}
-                  onMouseLeave={(e) => { e.target.style.borderColor = 'var(--line)'; e.target.style.color = 'var(--ink-soft)'; }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Input row */}
-          <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line)', background: 'var(--paper-raised)' }}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              style={{ display: 'flex', gap: 10 }}
-            >
-              <input
-                type="text"
-                className="field-input"
-                style={{ fontSize: 14, padding: '10px 14px' }}
-                placeholder="Ask a question regarding operational standards, food safety, security..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-              />
-              <Button variant="ai" type="submit" icon="ti-send">
-                Send Question
-              </Button>
-            </form>
+          {/* Input Bar */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              className="field-input"
+              style={{ flex: 1 }}
+              placeholder="Nhập câu hỏi của bạn về bài học..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            />
+            <Button variant="primary" icon="ti-send" onClick={() => handleSend()}>
+              Gửi
+            </Button>
           </div>
         </div>
-      )}
-
-      {/* TAB 3: PERSONALIZED RECOMMENDATIONS */}
-      {activeTab === 'recommendations' && (
-        <>
-          <div className="card card-pad" style={{ marginBottom: 20, background: 'var(--ai-soft)', borderColor: '#DDD6FE' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div className="stat-icon-badge" style={{ background: 'var(--ai-gradient)', color: '#fff', width: 44, height: 44, fontSize: 22 }}>
-                <i className="ti ti-chart-arrows" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ai-soft-text)' }}>
-                  AI Competency Gap Analysis
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--ai-soft-text)', marginTop: 2 }}>
-                  Based on the profile of <strong>{currentUser.fullName} ({currentUser.position} - {currentUser.departmentId})</strong>, the AI engine mapped your skill matrices and identified high-priority development courses.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-3">
-            {aiRecommendations.map((rec, idx) => (
-              <div key={idx} className="card card-pad card-interactive" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{rec.title}</div>
-                    <Badge tone={rec.badgeTone}>Match {rec.confidence}%</Badge>
-                  </div>
-                  <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 14, lineHeight: 1.5 }}>
-                    {rec.reason}
-                  </p>
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 6 }}>Target Competencies:</div>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {rec.matchSkills.map((sk) => (
-                        <span key={sk} style={{ fontSize: 11, background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 6, color: 'var(--ink)' }}>
-                          ✓ {sk}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-                  <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
-                    <i className="ti ti-clock" style={{ marginRight: 4 }} /> {rec.estimatedHours}
-                  </span>
-                  <Button variant="primary" size="sm" icon="ti-player-play">Start Course</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
       )}
     </>
   );
 }
-

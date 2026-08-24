@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   trainersDirectory,
   meetingRoomsAndLabs,
@@ -9,6 +10,7 @@ import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 
 export default function AdminTrainingOps() {
+  const navigate = useNavigate();
   const { classrooms, batchEnrollStudents } = useCourseStore();
   const [activeTab, setActiveTab] = useState('TRAINERS'); // TRAINERS, VENUES, CALENDAR, BATCH_ENROLL
 
@@ -248,7 +250,7 @@ export default function AdminTrainingOps() {
             <div style={{ fontWeight: 800, fontSize: 15 }}>
               Enterprise Classroom Workshops &amp; Webinar Schedule (August &amp; September 2026)
             </div>
-            <Button size="sm" variant="primary" icon="ti-plus">
+            <Button size="sm" variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
               Schedule New Cohort
             </Button>
           </div>

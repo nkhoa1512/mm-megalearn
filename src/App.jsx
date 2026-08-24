@@ -16,7 +16,6 @@ import LearnerCertificates from './pages/learner/LearnerCertificates';
 import LearnerHistory from './pages/learner/LearnerHistory';
 import LearnerClassrooms from './pages/learner/LearnerClassrooms';
 import LearnerLearningPaths from './pages/learner/LearnerLearningPaths';
-import LearnerLeaderboard from './pages/learner/LearnerLeaderboard';
 import AiLearningHub from './pages/learner/AiLearningHub';
 
 import ManagerDashboard from './pages/manager/ManagerDashboard';
@@ -25,7 +24,6 @@ import ManagerLearning from './pages/manager/ManagerLearning';
 import ManagerCertificates from './pages/manager/ManagerCertificates';
 import ManagerCourses from './pages/manager/ManagerCourses';
 import ManagerReports from './pages/manager/ManagerReports';
-import ManagerApprovals from './pages/manager/ManagerApprovals';
 
 import LessonPlayer from './pages/player/LessonPlayer';
 import AssessmentPlayer from './pages/player/AssessmentPlayer';
@@ -36,6 +34,10 @@ import AdminCourseBuilder from './pages/admin/AdminCourseBuilder';
 import AdminConfig from './pages/admin/AdminConfig';
 import AdminReports from './pages/admin/AdminReports';
 import AdminTrainingOps from './pages/admin/AdminTrainingOps';
+import TrainerHub from './pages/trainer/TrainerHub';
+import HrbpDashboard from './pages/hrbp/HrbpDashboard';
+import UserAdminPortal from './pages/useradmin/UserAdminPortal';
+import SysAdminPortal from './pages/sysadmin/SysAdminPortal';
 
 const PAGE_META = {
   '/learner': { title: 'Personal Learning Dashboard & Milestones', crumb: 'Learner (Store & HO)' },
@@ -46,6 +48,14 @@ const PAGE_META = {
   '/learner/leaderboard': { title: 'Honor Roll & Gamification XP', crumb: 'Learner (Store & HO)' },
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
+
+  '/trainer': { title: 'Trainer Command & In-Person Faculty Portal', crumb: 'Faculty & Instructor (L&OD)' },
+
+  '/hrbp': { title: 'HRBP Strategic Talent & Regional Workforce Portal', crumb: 'HR Business Partner (HRD)' },
+
+  '/user-admin': { title: 'User Administration & Dual-Branch Org Structure', crumb: 'User Administrator (HR Ops)' },
+
+  '/sysadmin': { title: 'IT Security, HRIS Integration & Infrastructure Command', crumb: 'System Administrator (IT)' },
 
   '/manager': { title: 'Team Operations Command Dashboard', crumb: 'Line Manager & HRBP' },
   '/manager/team': { title: 'Direct Reports, Skill Gaps & Level 3 Review', crumb: 'Line Manager & HRBP' },
@@ -137,14 +147,12 @@ function Shell({ role, setRole }) {
               <Route path="/learner/classrooms" element={<LearnerClassrooms />} />
               <Route path="/learner/paths" element={<LearnerLearningPaths />} />
               <Route path="/learner/ai-hub" element={<AiLearningHub />} />
-              <Route path="/learner/leaderboard" element={<LearnerLeaderboard />} />
               <Route path="/learner/certificates" element={<LearnerCertificates />} />
               <Route path="/learner/history" element={<LearnerHistory />} />
 
               {/* Manager Routes */}
               <Route path="/manager" element={<ManagerDashboard />} />
               <Route path="/manager/team" element={<ManagerTeam />} />
-              <Route path="/manager/approvals" element={<ManagerApprovals />} />
               <Route path="/manager/courses" element={<ManagerCourses />} />
               <Route path="/manager/reports" element={<ManagerReports />} />
               <Route path="/manager/learning" element={<ManagerLearning />} />
@@ -152,6 +160,18 @@ function Shell({ role, setRole }) {
               <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
               <Route path="/manager/learning/:courseId/assessment" element={<AssessmentPlayer basePath="/manager/learning" />} />
               <Route path="/manager/certificates" element={<ManagerCertificates />} />
+
+              {/* HRBP Routes */}
+              <Route path="/hrbp" element={<HrbpDashboard />} />
+
+              {/* User Admin Routes */}
+              <Route path="/user-admin" element={<UserAdminPortal />} />
+
+              {/* System Admin (IT) Routes */}
+              <Route path="/sysadmin" element={<SysAdminPortal />} />
+
+              {/* Trainer Routes */}
+              <Route path="/trainer" element={<TrainerHub />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />

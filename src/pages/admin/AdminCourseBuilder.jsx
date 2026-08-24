@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
+  trainersDirectory, meetingRoomsAndLabs,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
@@ -329,6 +330,227 @@ export default function AdminCourseBuilder() {
         </div>
       </div>
 
+      {/* DELIVERY MODE SWITCHER */}
+      <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div className="section-label" style={{ margin: 0 }}>
+            <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Hình Thức Đào Tạo / Delivery Mode
+          </div>
+          <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
+            {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
+          </Badge>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004' })}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              borderRadius: 8,
+              border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail)' : '1px solid var(--line)',
+              background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft)' : '#fff',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <i className="ti ti-device-laptop" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Học Trực Tuyến (Online E-learning)</div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học qua Video, YouTube, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => patch({
+              deliveryType: 'IN_PERSON_CLASSROOM',
+              modality: 'CLASSROOM_LAB',
+              format: 'Store Practical Lab / ILT',
+              trainerId: draft.trainerId || trainersDirectory[0]?.id || 'tr-01',
+              trainerName: draft.trainerName || trainersDirectory[0]?.name || 'Nguyen Van Hung',
+              venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
+              venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
+              scheduleDate: draft.scheduleDate || '2026-08-28',
+              scheduleTime: draft.scheduleTime || '08:30 - 11:30 (3.0 hours)',
+              maxCapacity: draft.maxCapacity || 25,
+            })}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              borderRadius: 8,
+              border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue)' : '1px solid var(--line)',
+              background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft)' : '#fff',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <i className="ti ti-chalkboard" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Đào Tạo Trực Tiếp (In-Person Workshop)</div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học tập trung tại xưởng/phòng học có Giảng viên (Trainer) &amp; Điểm danh Live QR</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* DEDICATED IN-PERSON CLASSROOM LOGISTICS CARD */}
+      {draft.deliveryType === 'IN_PERSON_CLASSROOM' && (
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--blue)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--blue-soft) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div className="section-label" style={{ margin: 0, color: 'var(--blue)' }}>
+              <i className="ti ti-school" style={{ marginRight: 6 }} />
+              In-Person Training Logistics &amp; Faculty Assignment
+            </div>
+            <Badge tone="blue" icon="ti-qrcode">Live QR Attendance Enabled</Badge>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Giảng viên Đứng lớp (Assigned Trainer / Faculty)</label>
+              <select
+                className="field-select"
+                value={draft.trainerId || 'tr-01'}
+                onChange={(e) => {
+                  const tr = trainersDirectory.find((t) => t.id === e.target.value);
+                  patch({ trainerId: tr?.id, trainerName: tr?.name });
+                }}
+              >
+                {trainersDirectory.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} — {t.role} (CSAT {t.rating}★ &middot; {t.totalClassesTaught} sessions)
+                  </option>
+                ))}
+              </select>
+              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Trainer và mở mã QR Điểm danh tại lớp.</div>
+            </div>
+
+            <div>
+              <label className="field-label">Địa điểm / Phòng Thực hành (Venue &amp; Practical Lab)</label>
+              <select
+                className="field-select"
+                value={draft.venueId || 'lab-ap-fresh'}
+                onChange={(e) => {
+                  const r = meetingRoomsAndLabs.find((rm) => rm.id === e.target.value);
+                  patch({ venueId: r?.id, venue: r?.name, maxCapacity: r?.capacity || 25 });
+                }}
+              >
+                {meetingRoomsAndLabs.map((rm) => (
+                  <option key={rm.id} value={rm.id}>
+                    {rm.name} (Sức chứa: {rm.capacity} chỗ &middot; {rm.location})
+                  </option>
+                ))}
+              </select>
+              <div className="field-hint">Phòng học / Xưởng thực hành tổ chức buổi đào tạo thực tế.</div>
+            </div>
+          </div>
+
+          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Ngày tổ chức (Training Date)</label>
+              <input
+                type="date"
+                className="field-input"
+                value={draft.scheduleDate || '2026-08-28'}
+                onChange={(e) => patch({ scheduleDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Khung giờ (Time Window)</label>
+              <select
+                className="field-select"
+                value={draft.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
+                onChange={(e) => patch({ scheduleTime: e.target.value })}
+              >
+                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (Sáng - 3.0 tiếng)</option>
+                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (Chiều - 3.0 tiếng)</option>
+                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (Sáng - 3.0 tiếng)</option>
+                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (Chiều - 3.0 tiếng)</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <input
+                type="number"
+                className="field-input"
+                value={draft.maxCapacity || 25}
+                onChange={(e) => patch({ maxCapacity: Number(e.target.value) || 25 })}
+              />
+            </div>
+          </div>
+
+          {/* Quick Target Audience Presets */}
+          <div style={{ background: '#fff', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--line)' }}>
+            <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
+              <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--blue)' }} />
+              Gán Nhanh Đối Tượng Học Viên Bắt Buộc Tham Gia (Target Cohort Enrollment)
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { label: '👥 Tất cả Quản lý (All Managers)', type: 'ROLE', target: 'MANAGER' },
+                { label: '🌱 Tất cả Nhân sự Mới (New Joiners)', type: 'STATUS', target: 'NEW_JOINER' },
+                { label: '🥖 Nhân viên Quầy Bánh & Tươi sống (MM An Phú)', type: 'DEPARTMENT', target: 'dept-ppf' },
+                { label: '🏢 Toàn bộ Nhân viên Siêu thị An Phú', type: 'STORE', target: 'store-an-phu' },
+              ].map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    patch({
+                      courseType: 'MANDATORY',
+                      assignedCohortNote: preset.label,
+                    });
+                    if (preset.type === 'DEPARTMENT') {
+                      setDraft((d) => ({
+                        ...d,
+                        courseType: 'MANDATORY',
+                        assignment: {
+                          assignmentType: 'DEPARTMENT',
+                          targetDepartmentId: preset.target,
+                          assignedBy: 'Sarah Nguyen (L&OD Admin)',
+                          startDate: draft.scheduleDate || '2026-08-28',
+                          dueDate: draft.scheduleDate || '2026-08-28',
+                        },
+                      }));
+                    } else if (preset.type === 'STORE') {
+                      setDraft((d) => ({
+                        ...d,
+                        courseType: 'MANDATORY',
+                        assignment: {
+                          assignmentType: 'STORE',
+                          targetStoreId: preset.target,
+                          assignedBy: 'Sarah Nguyen (L&OD Admin)',
+                          startDate: draft.scheduleDate || '2026-08-28',
+                          dueDate: draft.scheduleDate || '2026-08-28',
+                        },
+                      }));
+                    }
+                  }}
+                  className="btn btn-sm"
+                  style={{
+                    background: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--paper-sunken)',
+                    color: draft.assignedCohortNote === preset.label ? '#fff' : 'var(--ink)',
+                    borderColor: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--line)',
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="section-label" style={{ margin: '0 0 14px' }}>Basic information</div>
         <div className="grid grid-3" style={{ marginBottom: 14 }}>
@@ -362,13 +584,14 @@ export default function AdminCourseBuilder() {
             <label className="field-label">Modality &amp; Format</label>
             <select
               className="field-select"
-              value={draft.modality || 'SCORM_PACKAGE'}
+              value={draft.modality || (draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'CLASSROOM_LAB' : 'SCORM_PACKAGE')}
               onChange={(e) => {
                 const modality = e.target.value;
                 const format = modality === 'SCORM_PACKAGE' ? 'SCORM 2004'
                   : modality === 'PPT_PRESENTATION' ? 'Interactive PPT Slides'
                   : modality === 'EXTERNAL_PLATFORM' ? 'LinkedIn Learning / Coursera Embed'
                   : modality === 'YOUTUBE_LINK' ? 'YouTube Video (External Link)'
+                  : modality === 'CLASSROOM_LAB' ? 'Store Practical Lab / ILT'
                   : 'Interactive Video';
                 patch({ modality, format });
               }}
@@ -378,7 +601,7 @@ export default function AdminCourseBuilder() {
               <option value="PPT_PRESENTATION">PowerPoint Slide Deck</option>
               <option value="EXTERNAL_PLATFORM">External Platform (LinkedIn / Coursera / Udemy)</option>
               <option value="YOUTUBE_LINK">YouTube Video (Link)</option>
-              <option value="CLASSROOM_LAB">Store Practical Lab (ILT)</option>
+              <option value="CLASSROOM_LAB">Store Practical Lab (ILT Workshop)</option>
             </select>
           </div>
           <div>

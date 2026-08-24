@@ -1,17 +1,17 @@
-# TÀI LIỆU ĐẶC TẢ YÊU CẦU NGHIỆP VỤ & CHỨC NĂNG HỆ THỐNG
+# TÀI LIỆU ĐẶC TẢ YÊU CẦU NGHIỆP VỤ, HỆ THỐNG & HƯỚNG DẪN SỬ DỤNG GIAO DIỆN
 ## MM MEGALEARN — CORPORATE LEARNING & DEVELOPMENT SYSTEM
-### (Hệ thống Quản lý Đào tạo Nội bộ & Phát triển Năng lực Doanh nghiệp)
+### (Hệ thống Quản lý Đào tạo Nội bộ, Phát triển Năng lực & Hướng dẫn Vận hành Thao tác)
 
 ---
 
-| **Mã tài liệu** | **SRS-FSD-MMVN-MEGALEARN-2026-V6.3** |
+| **Mã tài liệu** | **SRS-FSD-UG-MMVN-2026-V7.0** |
 |:---|:---|
 | **Dự án** | MM MegaLearn (MM Mega Market Vietnam Enterprise Edition) |
-| **Loại tài liệu** | Software Requirements Specification & Functional Specification Document (SRS/FSD) |
-| **Phiên bản** | 6.3 (Full Codebase, Action Plan & L3 Evaluation Verified) |
+| **Loại tài liệu** | Software Requirements Specification, Functional Specification Document & Screen-by-Screen User Guide |
+| **Phiên bản** | 7.0 (Includes Comprehensive Screen-by-Screen User Guide) |
 | **Ngày cập nhật** | 24/08/2026 |
-| **Trạng thái** | Approved / Đối chiếu & Đồng bộ 100% Mã nguồn & Yêu cầu thực tế |
-| **Đối tượng áp dụng** | Product Owners, Solution Architects, Business Analysts, Full-Stack Developers, QA Engineers, L&OD Team |
+| **Trạng thái** | Approved / Đối chiếu & Đồng bộ 100% Mã nguồn Front-end Mockup thực tế |
+| **Đối tượng áp dụng** | Product Owners, Solution Architects, Business Analysts, Full-Stack Developers, QA Engineers, L&OD Team, End-Users |
 
 ---
 
@@ -30,8 +30,12 @@
    - 4.7. Phân hệ Báo cáo ROI Kirkpatrick, Heatmap & Chi tiêu Ngân sách (FR-REP)
    - 4.8. Phân hệ Trợ lý Trí tuệ Nhân tạo Doanh nghiệp (FR-AI)
 5. [MÔ HÌNH DỮ LIỆU & THIẾT KẾ CƠ SỞ DỮ LIỆU (DATABASE SCHEMA)](#5-mô-hình-dữ-liệu--thiết-kế-cơ-sở-dữ-liệu-database-schema)
-6. [ĐẶC TẢ KIẾN TRÚC VÀ API ENDPOINTS](#6-đặc-tả-kiến-trúc-và-api-endpoints)
-7. [YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS - NFR)](#7-yêu-cầu-phi-chức-năng-non-functional-requirements---nfr)
+6. [HƯỚNG DẪN SỬ DỤNG HỆ THỐNG & THAO TÁC TỪNG MÀN HÌNH (SCREEN-BY-SCREEN USER GUIDE)](#6-hướng-dẫn-sử-dụng-hệ-thống--thao-tác-từng-màn-hình-screen-by-screen-user-guide)
+   - 6.1. Khung Giao diện Chung & Bộ Chuyển đổi Vai trò (Global Layout & Role Switcher)
+   - 6.2. Cổng Trải nghiệm Học tập của Nhân viên (Learner Portal)
+   - 6.3. Cổng Giám sát & Quản trị của Line Manager (Manager Portal)
+   - 6.4. Cổng Soạn thảo & Quản trị Đào tạo (L&OD Admin Portal)
+7. [YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS - NFR) & LỘ TRÌNH TRIỂN KHAI](#7-yêu-cầu-phi-chức-năng-non-functional-requirements---nfr--lộ-trình-triển-khai)
 
 ---
 
@@ -244,146 +248,120 @@ BUSINESS_UNIT: bu-mmvn (MM Mega Market Vietnam)
    └──< [CERTIFICATES] (Derived)
 ```
 
-### 5.2. Đặc tả Chi tiết Các Bảng Dữ liệu Cốt lõi (Data Dictionary)
+---
 
-#### 1. Bảng `users` (Danh sách Cán bộ Nhân viên)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Mã định danh duy nhất (Ví dụ: `USR-1042`). |
-| `employee_code` | VARCHAR(32) | UNIQUE, NOT NULL | Mã số nhân viên MMVN (Ví dụ: `MMVN-1042`). |
-| `email` | VARCHAR(128) | UNIQUE, NOT NULL | Email doanh nghiệp `@mmvietnam.com`. |
-| `full_name` | VARCHAR(128) | NOT NULL | Họ và tên đầy đủ của nhân viên. |
-| `role` | ENUM | NOT NULL | `learner`, `manager`, `hrbp`, `trainer`, `useradmin`, `sysadmin`, `admin`. |
-| `job_level` | VARCHAR(8) | FK -> job_levels.level | Cấp bậc chức danh: `1` đến `7`, `CL` (Casual), `IN` (Intern). |
-| `position_title` | VARCHAR(128) | NOT NULL | Tên chức danh công việc cụ thể. |
-| `years_of_service` | DECIMAL(3,1) | DEFAULT 1.0 | Thâm niên công tác tại MMVN (năm). |
-| `join_date` | DATE | NULL | Ngày chính thức gia nhập công ty. |
-| `business_unit_id` | VARCHAR(32) | FK -> business_units.id | Mã BU trực thuộc (`bu-mmvn`). |
-| `division_id` | VARCHAR(32) | FK -> divisions.id, NULL | Mã Khối Head Office (`div-omd`, `div-scm`...). |
-| `department_id` | VARCHAR(32) | FK -> departments.id, NULL | Mã Phòng ban (`dept-ppf`, `dept-df`...). |
-| `area_id` | VARCHAR(32) | FK -> operations_areas.id, NULL | Mã Miền (`area-north`, `area-south`...). |
-| `cluster_id` | VARCHAR(32) | FK -> store_clusters.id, NULL | Mã Cụm siêu thị (`cluster-hcm-east`...). |
-| `store_id` | VARCHAR(32) | FK -> retail_stores.id, NULL | Mã Siêu thị (`store-an-phu`...). |
-| `manager_id` | VARCHAR(64) | FK -> users.id, NULL | Mã Quản lý trực tiếp (Direct Manager). |
-| `status` | ENUM | NOT NULL, DEFAULT 'ACTIVE' | **4 Trạng thái chuẩn:** `ACTIVE` (Đang làm việc), `INACTIVE` (Tạm ngưng), `TRANSFER` (Điều chuyển), `NEW_JOINER` (Nhân sự mới). |
+## 6. HƯỚNG DẪN SỬ DỤNG HỆ THỐNG & THAO TÁC TỪNG MÀN HÌNH (SCREEN-BY-SCREEN USER GUIDE)
 
-#### 2. Bảng `courses` (Danh mục Khóa học Đa phương thức)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Mã khóa học (Ví dụ: `course-fsh-1`). |
-| `code` | VARCHAR(32) | UNIQUE, NOT NULL | Mã chuẩn hóa (Ví dụ: `HACCP-101`). |
-| `title` | VARCHAR(255) | NOT NULL | Tên tiêu đề khóa học. |
-| `version` | VARCHAR(16) | DEFAULT 'v1.0' | **Phiên bản tài liệu khóa học** (Ví dụ: `v1.0`, `v2.1`). |
-| `course_cost` | VARCHAR(64) | NULL | **Chi phí đào tạo / Đơn vị tổ chức** (Ví dụ: `4,500,000 VND / Khóa`). |
-| `course_type` | ENUM | NOT NULL | `MANDATORY`, `OPTIONAL`, `ILT_CLASSROOM`. |
-| `modality` | ENUM | NOT NULL | `SCORM_PACKAGE`, `INTERACTIVE_VIDEO`, `PPT_PRESENTATION`, `EXTERNAL_PLATFORM`, `YOUTUBE_LINK`, `DOCUMENT`, `SCRIPT`, `IMAGE`, `TEXT`, `CLASSROOM_LAB`. |
-| `category` | VARCHAR(64) | NOT NULL | Phân loại nghiệp vụ (Fresh Food, Safety, Leadership...). |
-| `status` | ENUM | DEFAULT 'DRAFT' | `DRAFT`, `PUBLISHED`, `ARCHIVED`. |
+Chương này mô tả chi tiết cách thức thao tác trực quan trên giao diện người dùng thực tế của hệ thống MM MegaLearn:
 
-#### 3. Bảng `action_plans` (Kế hoạch Hành động & Đánh giá L3 Sau 3-6 Tháng)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Mã kế hoạch hành động (Ví dụ: `act-plan-101`). |
-| `learner_id` | VARCHAR(64) | FK -> users.id, NOT NULL | Mã nhân viên cam kết hành động. |
-| `manager_id` | VARCHAR(64) | FK -> users.id, NOT NULL | Mã Quản lý trực tiếp theo dõi & đánh giá. |
-| `course_id` | VARCHAR(64) | FK -> courses.id, NOT NULL | Mã khóa học hoàn thành tương ứng. |
-| `target_commitment` | TEXT | NOT NULL | Cam kết áp dụng hành động thực tế tại quầy siêu thị trong 90 ngày. |
-| `kpi_target` | VARCHAR(255) | NOT NULL | Chỉ số KPI mục tiêu (Ví dụ: Giảm hao hụt bánh tươi 10%). |
-| `survey_l1_score` | DECIMAL(2,1) | NOT NULL | Điểm trung bình hài lòng L1 CSAT (1.0 -> 5.0 sao). |
-| `evaluation_date` | DATE | NOT NULL | Hạn chót đánh giá định kỳ sau 3-6 tháng. |
-| `manager_review_l3` | JSON | NULL | Kết quả đánh giá L3 của Manager: `{"rating": 5, "gain": "+15%", "notes": "..."}`. |
-| `status` | ENUM | DEFAULT 'IN_PROGRESS' | `IN_PROGRESS` (Đang thực hiện), `EVALUATED` (Đã ký duyệt L3). |
+### 6.1. Khung Giao diện Chung & Bộ Chuyển đổi Vai trò (Global Layout & Role Switcher)
 
-#### 4. Bảng `approval_requests` (Đơn Đăng ký & Phê duyệt Khóa học)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Mã yêu cầu phê duyệt (Ví dụ: `req-101`). |
-| `user_id` | VARCHAR(64) | FK -> users.id, NOT NULL | Mã nhân viên nộp đơn đăng ký. |
-| `course_id` | VARCHAR(64) | FK -> courses.id, NOT NULL | Mã khóa học đề xuất tham gia. |
-| `course_cost` | VARCHAR(64) | NOT NULL | **Chi phí chương trình** (Ví dụ: `4,500,000 VND`). |
-| `justification` | TEXT | NOT NULL | Lý do / Giải trình nhu cầu phát triển năng lực. |
-| `status` | ENUM | DEFAULT 'PENDING' | `PENDING`, `APPROVED`, `REJECTED`. |
-
-#### 5. Bảng `learning_enrollments` (Tiến trình Học tập)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Khóa chính Enrollment (Ví dụ: `enr-1042-fsh`). |
-| `user_id` | VARCHAR(64) | FK -> users.id, NOT NULL | Mã nhân viên học tập. |
-| `course_id` | VARCHAR(64) | FK -> courses.id, NOT NULL | Mã khóa học tham gia. |
-| `status` | ENUM | NOT NULL | `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `OVERDUE`. |
-| `progress_percent` | INT | DEFAULT 0 | Tiến độ từ $0\%$ đến $100\%$ tính theo công thức chuẩn 70/30. |
-| `final_score` | INT | NULL | Điểm thi cao nhất đạt được ($\%$). |
-| `completed_at` | TIMESTAMP | NULL | Thời điểm hoàn thành toàn bộ điều kiện khóa học. |
-
-#### 6. Bảng `assessment_attempts` (Nhật ký Thi Bất biến)
-| Tên Cột | Kiểu Dữ liệu | Ràng buộc | Mô tả Chi tiết |
-|:---|:---|:---|:---|
-| `id` | VARCHAR(64) | PK, NOT NULL | Khóa chính bản ghi thi (Ví dụ: `att-98124`). |
-| `enrollment_id` | VARCHAR(64) | FK -> learning_enrollments.id | Mã bản ghi tiến trình tương ứng. |
-| `attempt_number` | INT | NOT NULL | Lần thi thứ mấy (1, 2, 3...). |
-| `score_percent` | INT | NOT NULL | Điểm số đạt được ($\%$). |
-| `passed` | BOOLEAN | NOT NULL | Kết quả Đạt (`true`) hoặc Không đạt (`false`). |
-| `duration_seconds` | INT | NOT NULL | Thời gian thực tế làm bài (giây). |
-| `submitted_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Thời điểm nộp bài (Append-only, không cho phép sửa/xóa). |
+| Thành phần Giao diện | Vị trí & Thao tác Click | Luồng Nghiệp vụ & Kết quả Phản hồi của Hệ thống |
+|:---|:---|:---|
+| **Bộ chuyển đổi Vai trò (Role Switcher)** | Góc trên cùng bên phải Topbar (Badge vai trò). Nhấp chọn 1 trong 7 vai trò (`learner`, `manager`, `hrbp`, `trainer`, `useradmin`, `sysadmin`, `admin`). | Hệ thống lập tức cập nhật quyền truy cập, chuyển hướng cây menu Sidebar sang đúng vai trò vừa chọn (ví dụ: chuyển từ `learner` sang `manager` sẽ hiển thị menu Team, Approvals) và tải dữ liệu phiên làm việc phù hợp. |
+| **Trợ lý Nổi AI Drawer** | Nút tròn biểu tượng tia sáng AI Sparkles ở góc dưới cùng bên phải màn hình. | Mở ngăn kéo nổi (Floating Drawer) từ cạnh phải mà không làm gián đoạn trang đang học. Cho phép đặt câu hỏi nhanh về quy trình SOP (Bakery, Fire Safety, POS Security) và nhận câu trả lời phân tích chuẩn nghiệp vụ sau 500ms. |
+| **Chuông Thông báo (Notifications)** | Biểu tượng chuông trên Topbar kèm chấm đỏ số lượng. | Hiển thị danh sách thông báo: Khóa học mới được gán, Cảnh báo hạn chót sắp đến, Đơn xin học đã được Quản lý duyệt, Lời nhắc Nudge từ Quản lý. |
 
 ---
 
-## 6. ĐẶC TẢ KIẾN TRÚC VÀ API ENDPOINTS
+### 6.2. Cổng Học viên (Learner Portal)
 
-```
-/api/v1
-├── /auth
-│   ├── POST   /login                      # Đăng nhập tài khoản
-│   ├── POST   /logout                     # Hủy phiên làm việc
-│   └── GET    /me                         # Lấy thông tin User Profile & Quyền hạn
-│
-├── /learner
-│   ├── GET    /dashboard                  # KPI cá nhân & Khóa học gần nhất
-│   ├── GET    /courses                    # Danh sách My Courses & Catalog
-│   ├── GET    /courses/:id                # Chi tiết khóa học, module, lesson
-│   ├── POST   /courses/:id/lessons/:lid/progress # Ghi nhận tiến độ bài học (Watch %, Read %)
-│   ├── POST   /courses/:id/assessment/start      # Bắt đầu thi, rút ngẫu nhiên K câu hỏi
-│   ├── POST   /courses/:id/assessment/submit     # Nộp bài thi, tự động chấm điểm tức thì
-│   ├── POST   /courses/:id/survey-l1      # Nộp khảo sát CSAT L1 & Thiết lập Action Plan 90 ngày
-│   ├── GET    /classrooms                 # Danh sách lớp thực hành ILT
-│   ├── POST   /classrooms/:id/checkin     # Điểm danh Live QR Code (+150 XP)
-│   ├── GET    /learning-paths             # Lộ trình nghề nghiệp & Khung 70-20-10
-│   ├── GET    /talent-profile             # Hồ sơ năng lực & Kế nhiệm 4 Tabs
-│   ├── GET    /certificates               # Danh sách chứng chỉ số
-│   └── GET    /leaderboard                # Bảng xếp hạng XP & Huy hiệu
-│
-├── /manager
-│   ├── GET    /team-dashboard             # Thống kê KPI tuân thủ toàn đội
-│   ├── GET    /direct-reports             # Danh sách nhân viên & Tiến độ chi tiết
-│   ├── POST   /nominate-course            # Chỉ định/Đề cử khóa học cho nhân viên
-│   ├── POST   /nudge-reminder             # 1-Click gửi nhắc nhở nhân viên quá hạn
-│   ├── GET    /action-plans               # Danh sách cam kết Action Plans của Direct Reports
-│   ├── POST   /action-plans/:id/evaluation-l3 # Đánh giá Hành vi L3 sau 3-6 tháng & Ký duyệt
-│   ├── GET    /approvals                  # Danh sách yêu cầu xin học & Chi phí (Program Cost)
-│   └── POST   /approvals/:id/decide       # Xử lý Approve / Reject yêu cầu
-│
-├── /admin
-│   ├── GET    /executive-overview         # Chỉ số Executive KPI toàn quốc
-│   ├── CRUD   /courses                    # Quản lý khóa học & Trình soạn thảo Builder (version, cost)
-│   ├── POST   /courses/:id/questions/import-csv # Import câu hỏi kiểm tra CSV
-│   ├── CRUD   /auto-assignment-rules      # Quản trị luật tự động gán khóa học
-│   ├── GET    /org-hierarchy              # Lấy cây cơ cấu tổ chức nhánh đôi
-│   ├── POST   /org-hierarchy/nodes        # Thêm phòng ban / siêu thị mới
-│   ├── POST   /hris/sync-trigger          # Kích hoạt đồng bộ SAP SuccessFactors
-│   ├── GET    /training-ops/venues        # Danh sách phòng thực hành & Lịch đặt
-│   ├── POST   /training-ops/venues/reserve # Đặt phòng thực hành (Kiểm tra trùng lịch)
-│   ├── GET    /reports/kirkpatrick-roi    # Báo cáo ROI đào tạo 4 cấp độ
-│   ├── GET    /reports/cost-budget        # Báo cáo chi tiêu ngân sách (departmentSpend)
-│   └── GET    /reports/export-csv         # Xuất báo cáo CSV chuẩn UTF-8 BOM
-│
-└── /ai-hub
-    ├── POST   /sop-search                 # Tra cứu ngữ nghĩa tài liệu SOP
-    └── POST   /chat-assistant             # Chatbot Gia sư AI giải đáp thắc mắc
-```
+#### Màn hình 1: Bảng Điều khiển Cá nhân (Learner Dashboard — `/learner/dashboard`)
+1. **Thẻ "Continue Learning" (Ghim Khóa Đang Học)**:
+   - *Hiển thị:* Tên khóa học gần nhất đang học dở, thanh % tiến độ (ví dụ 40%), hạn hoàn thành `dueDate`.
+   - *Thao tác:* Nhấn nút **"Resume Course"**.
+   - *Kết quả:* Hệ thống điều hướng thẳng vào bài học kế tiếp chưa hoàn thành trong Trình phát bài học (`LessonPlayer`).
+2. **Danh mục Khóa học theo 4 Tabs (All / Mandatory / Optional / Completed)**:
+   - *Thao tác:* Bấm chuyển Tab để lọc danh sách khóa học. Nhấp vào bất kỳ thẻ khóa học nào.
+   - *Kết quả:* Mở trang Chi tiết Khóa học (`/learner/courses/:id`) hiển thị tóm tắt, thời lượng, số module và danh sách bài học.
+
+#### Màn hình 2: Trình Phát Bài học Đa Định dạng (Lesson Player — `/learner/courses/:id/lessons/:lid`)
+| Định dạng Bài học | Thao tác Học viên trên Giao diện | Phản hồi & Điều kiện Ghi nhận Hoàn thành của Hệ thống |
+|:---|:---|:---|
+| **Video MP4 / Stream** | Xem video trực tuyến trên trình phát. | Hệ thống theo dõi thời lượng. Khi xem $\ge 90\%$ hoặc nhấn nút **"Mark as watched"** $\rightarrow$ Đánh dấu tích xanh hoàn thành bài học, tự động cập nhật tiến độ tổng thể. |
+| **YouTube Video Chuyên dụng** | Xem video qua khung phát YouTube nhúng chuẩn đỏ. | Nhấp nút **"Confirm Video Watched"** $\rightarrow$ Hệ thống ghi nhận tiến độ 100% cho bài học và mở khóa bài tiếp theo. |
+| **SCORM 2004 Package** | Nhấn nút *Previous / Next Slide* trên thanh điều hướng mô phỏng gói chuẩn SCORM. | Khi đi qua slide cuối cùng $\rightarrow$ Tự động kích hoạt sự kiện `LMSSetValue(cmi.completion_status, 'completed')` và cập nhật khóa học. |
+| **Interactive Slide Deck (PPT)** | Xem bộ slide bài giảng, chuyển trang từ slide 1 đến slide cuối. | Hoàn thành khi duyệt đủ 100% các trang slide. |
+| **Tài liệu SOP / Text** | Cuộn đọc văn bản hoặc xem file tài liệu nhúng. | Cuộn sâu $\ge 90\%$ hoặc nhấn nút **"Mark as Read"** $\rightarrow$ Ghi nhận hoàn thành. |
+
+#### Màn hình 3: Trình Khảo thí Đánh giá Cuối khóa (Assessment Player — `/learner/courses/:id/assessment`)
+1. **Bắt đầu Thi**: Bấm nút **"Start Assessment"** (chỉ sáng khi 100% bài học bắt buộc đã hoàn thành).
+2. **Làm bài & Đếm giờ**: Đồng hồ đếm lùi thời gian thực (ví dụ 15:00). Chọn đáp án các câu hỏi trắc nghiệm.
+3. **Nộp bài (Submit)**:
+   - *Chủ động:* Bấm nút **"Submit Assessment"**.
+   - *Tự động:* Khi đồng hồ về 00:00 $\rightarrow$ Hệ thống tự động nộp bài ngay lập tức.
+   - *Kết quả:* Chấm điểm tức thì, thông báo Điểm số %, Đạt/Không đạt, Lượt thi còn lại (`attemptsLeft`).
+4. **Khảo sát L1 & Cam kết Action Plan**: Mở modal khảo sát đánh giá CSAT 1-5 sao $\rightarrow$ Nhập 1-2 cam kết hành động 90 ngày (`targetCommitment`, `kpiTarget`) $\rightarrow$ Nhấn **"Submit CSAT & Unlock Certificate"** $\rightarrow$ Mở khóa chứng chỉ số và chuyển Action Plan sang Quản lý.
+
+#### Màn hình 4: Lớp Thực hành ILT & Điểm danh Live QR (`/learner/classrooms`)
+- *Thao tác:* Nhấn nút **"Quick QR Check-in"** trên thẻ lớp học thực hành quầy hoặc webinar.
+- *Kết quả:* Modal hiển thị mã QR động tại lớp. Nhấn **"Confirm Attendance"** $\rightarrow$ Hệ thống ghi nhận có mặt, cấp tích xanh chuyên cần và cộng ngay **+150 XP** thưởng Gamification.
 
 ---
 
-## 7. YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS - NFR)
+### 6.3. Cổng Quản lý Trực tiếp (Line Manager Portal)
+
+#### Màn hình 1: Quản lý Đội ngũ & Giám sát Năng lực (Team Supervision — `/manager/team`)
+| Phân vùng / Tab | Thao tác của Quản lý | Hành vi Xử lý & Kết quả Phản hồi của Hệ thống |
+|:---|:---|:---|
+| **Tab 1: Team Members (Giám sát Tiến độ)** | • Xem danh sách nhân viên trực thuộc.<br>• Nhấn nút **"Assign"** trên hàng nhân viên.<br>• Nhấn nút **"View Profile"**. | • **Assign:** Mở `ManagerNominateModal` cho phép chọn khóa học từ Catalog, đặt hạn chót `dueDate`, nhập lý do `justification` $\rightarrow$ Bấm "Confirm Nomination" $\rightarrow$ Ghi danh ngay và gửi thông báo vào inbox nhân viên.<br>• **View Profile:** Mở `TalentProfileModal` đầy đủ 4 Tabs (Kế nhiệm, Thâm niên, Dự án, Điểm số). |
+| **Tab 2: Skill Gap Analysis (Phân tích Khoảng cách Kỹ năng)** | Xem ma trận so sánh năng lực hiện tại vs chuẩn chức danh kế nhiệm. Nhấn nút **"Assign Developmental Course"** tại kỹ năng bị thiếu hụt (Gap âm). | Hệ thống tự động mở form đề xuất khóa học tương ứng với kỹ năng còn yếu $\rightarrow$ Quản lý xác nhận gán bổ sung để nhân viên hoàn thiện năng lực. |
+| **Tab 3: Action Plans & L3 Review (Đánh giá Hành vi 3-6 Tháng)** | Xem danh sách cam kết Kế hoạch hành động của nhân viên. Nhấn nút **"Conduct Level 3 Review (3-6 Mos)"**. | Mở modal đánh giá Kirkpatrick L3: Chấm điểm tiến bộ hành vi (1-5 sao), nhập chỉ số tăng năng suất thực tế (ví dụ: +15% tốc độ thu ngân), nhập nhận xét $\rightarrow$ Bấm "Confirm Level 3 Evaluation" $\rightarrow$ Chuyển trạng thái sang **Signed-off** và ghi nhận vào báo cáo ROI Cấp 3. |
+
+#### Màn hình 2: Phê duyệt Khóa học & Chi phí Đào tạo (Course Approvals — `/manager/approvals`)
+- *Xem danh sách:* Đơn xin học các chứng chỉ/khóa học đặc thù của nhân viên kèm chi phí đào tạo (`courseCost`, ví dụ: `4,500,000 VND`).
+- *Phê duyệt (Approve):* Nhấn **"Approve Request"** $\rightarrow$ Duyệt đơn tức thì, cấp quyền truy cập khóa học cho nhân viên và ghi nhận chi phí vào ngân sách đào tạo của phòng ban.
+- *Từ chối (Reject):* Nhấn **"Reject"** $\rightarrow$ Hủy yêu cầu và gửi thông báo từ chối kèm lý do về học viên.
+
+---
+
+### 6.4. Cổng Quản trị Đào tạo (L&OD Admin Portal)
+
+#### Màn hình 1: Trình Soạn thảo Khóa học Đa Hình thức (Course Builder — `/admin/courses/new`)
+1. **Lựa chọn Hình thức Đào tạo (Delivery Mode)**:
+   - 🌐 **Khóa Học Trực Tuyến (Online E-learning)**: Học viên tự học qua Video, YouTube Embed, SCORM 2004, Slide PPT, PDF & Thi trắc nghiệm cuối khóa.
+   - 🏢 **Khóa Đào Tạo Trực Tiếp (In-Person Workshop / ILT)**: Học tập trung tại phòng học hoặc xưởng thực hành siêu thị có Giảng viên (Trainer) đứng lớp và mở mã Live QR điểm danh.
+2. **Cấu hình Logistics Khóa Đào tạo Trực tiếp (ILT)**:
+   - **Giảng viên Đứng lớp**: Chọn Giảng viên từ danh bạ Master Trainer (Nguyễn Văn Hùng, Đặng Thanh Mai, Vũ Đức Thành, Trần Minh Quang...).
+   - **Địa điểm & Phòng thực hành**: Chọn phòng họp hoặc xưởng thực hành (Xưởng Bánh Mì MM An Phú, Phòng đào tạo Thu ngân POS, Bãi tập PCCC...).
+   - **Ngày giờ & Sức chứa**: Cấu hình ngày học, khung giờ (Sáng 08:30 - 11:30 / Chiều 13:30 - 16:30), sức chứa tối đa (Max Capacity).
+   - **Gán Nhanh Đối tượng Bắt buộc**: Gán nhanh theo nhóm (Tất cả Quản lý - All Managers, Nhân sự Mới - New Joiners, Nhân viên Quầy Bánh An Phú, Toàn công ty).
+3. **Cấu trúc Module & Khảo thí**: Cấu hình bài giảng, Slide tài liệu, Ngân hàng đề thi CSV và % điểm đạt.
+4. **Xuất bản**: Nhấn **"Publish Course"** $\rightarrow$ Khóa học kích hoạt, tự động gán vào Cổng Học viên và xuất hiện trên Cổng Lịch dạy của Giảng viên.
+
+#### Màn hình 2: Đặt Phòng Thực hành & Quản lý Lịch Đào tạo (Training Ops — `/admin/training-ops`)
+- *Thao tác Đặt phòng:* Chọn phòng thực hành quầy hoặc phòng họp tại Head Office, chọn ngày tổ chức và nhập tên chương trình $\rightarrow$ Nhấn **"Reserve Room"**.
+- *Kiểm tra Xung đột (Conflict Guard):*
+  - Nếu phòng đã có lớp khác đặt vào ngày đó: Hệ thống kích hoạt **Conflict Guard** $\rightarrow$ Chặn đặt và hiển thị cảnh báo đỏ *"Conflict: Phòng đã có chương trình đặt vào ngày này!"*.
+  - Nếu phòng còn trống: Ghi nhận đặt phòng thành công và hiển thị lịch trực tiếp trên bảng điều khiển.
+- *Nút "Schedule New Cohort":* Điều hướng trực tiếp sang Trình tạo khóa học để tạo lớp đào tạo thực hành mới.
+- *Công cụ Upload Danh sách Roster (Batch Student Upload):* Dán danh sách mã nhân viên $\rightarrow$ Ghi danh đồng loạt vào lớp học thực tế chỉ với 1 click.
+
+#### Màn hình 3: Báo cáo ROI Kirkpatrick, Heatmap & Xuất Dữ liệu (`/admin/reports`)
+- **Xuất Báo cáo CSV (Excel)**: Nhấn **"Export Excel Report (CSV)"** $\rightarrow$ Tải file `.csv` chuẩn UTF-8 BOM hiển thị chuẩn 100% tiếng Việt trên Excel.
+- **Xuất Bản in Hồ sơ Kiểm toán (PDF)**: Nhấn **"Export Audit Dossier"** $\rightarrow$ Kích hoạt lệnh `window.print()` chuẩn CSS A4 để in hoặc lưu file PDF Hồ sơ Kiểm toán Đào tạo phục vụ thanh tra.
+
+---
+
+### 6.5. Cổng Giảng viên Đứng lớp (Trainer Faculty Portal — `/trainer`)
+Dành riêng cho Đội ngũ Giảng viên Nội bộ & Master Trainer (ví dụ: Thầy **Nguyễn Văn Hùng** — Head of Operational Training) để quản lý các lớp đào tạo trực tiếp:
+- **Lớp Học Tôi Phụ Trách (My Teaching Classes)**:
+  - Xem danh sách các lớp thực hành tại xưởng bánh, bãi tập PCCC hoặc webinar được L&D phân công.
+  - Nhấn nút **"Mở QR Điểm danh Trực tiếp"** $\rightarrow$ Hiển thị màn hình phóng to mã Live QR Token tại lớp học để học viên quét mã nhận `+150 XP`.
+  - Nhấn nút **"Danh sách Học viên"** $\rightarrow$ Mở bảng điểm danh toàn bộ học viên đã ghi danh, hỗ trợ tìm kiếm nhanh và tích điểm danh thủ công.
+- **Đánh giá CSAT & Phản hồi từ Học viên**: Xem tổng điểm CSAT trung bình (**4.90 / 5.0★**) và danh sách nhận xét thực tế từ học viên sau các buổi thực hành quầy bánh, PCCC, thu ngân.
+- **Phòng Thực hành & Thiết bị Siêu thị**: Tra cứu danh sách xưởng thực hành kèm thông số sức chứa và trang thiết bị có sẵn.
+
+---
+
+### 6.6. Phân hệ Nhân sự HRBP & Quản trị Hệ thống (HRBP, User Admin, IT System Admin)
+- **HRBP (Human Resource Business Partner — `Dang Thanh Mai`)**: Giám sát chỉ số tuân thủ đào tạo theo vùng/khối, phát hiện khoảng cách kỹ năng (Skill Gap) của từng bộ phận để phối hợp cùng L&D xây dựng lộ trình kế nhiệm (Succession Pipeline).
+- **User Admin (Quản trị Nhân sự / Cây Tổ chức — `Le Thi Mai`)**: Quản lý danh bạ 100+ nhân viên, cập nhật cây cơ cấu tổ chức 2 nhánh Head Office và Chi nhánh Siêu thị, quản lý chức danh và thâm niên.
+- **System Admin IT (Quản trị Kỹ thuật — `Tran Quoc Bao`)**: Giám sát toàn bộ hạ tầng kỹ thuật, nhật ký bảo mật (Security Audit Logs), trạng thái tích hợp HRIS Sync, cấu hình phân quyền RBAC và chính sách mật khẩu.
+
+---
+
+## 7. YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS - NFR) & LỘ TRÌNH TRIỂN KHAI
 
 ### 7.1. Hiệu năng & Khả năng Chịu tải (Performance & Scalability)
 - **NFR-PERF-001**: $95\%$ truy vấn API có thời gian phản hồi dưới **$200\text{ms}$** trong điều kiện mạng tiêu chuẩn.
@@ -397,4 +375,4 @@ BUSINESS_UNIT: bu-mmvn (MM Mega Market Vietnam)
 - **NFR-AVAIL-001**: Cam kết thời gian hoạt động liên tục đạt tối thiểu **$99.9\%$**. Tự động sao lưu định kỳ bảo đảm an toàn dữ liệu.
 
 ---
-*(Tài liệu đã được đối chiếu, bổ sung đầy đủ phân hệ Action Plan, Khảo sát L1 và Đánh giá Hành vi L3 sau 3-6 tháng, đồng bộ tuyệt đối 100% với mã nguồn Mockup Front-end thực tế của dự án MM MegaLearn).*
+*(Tài liệu phiên bản V7.1 đã tích hợp hoàn chỉnh toàn bộ Hướng dẫn Thao tác Từng Màn hình - Screen-by-Screen User Guide, phân định rõ ràng 7 vai trò hệ thống, quy trình tạo khóa học Online E-learning vs Khóa Đào tạo Trực tiếp ILT, Cổng Giảng viên Trainer Hub và mã Live QR điểm danh chuyên cần).*

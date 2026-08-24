@@ -24,7 +24,8 @@ const CATEGORIES = [
 
 export default function AdminCourses() {
   const navigate = useNavigate();
-  const { courses, updateCourse, removeCourse } = useCourseStore();
+  const { courses, updateCourse, removeCourse, currentUser } = useCourseStore();
+  const isAdmin = currentUser?.role === 'admin';
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
@@ -66,9 +67,11 @@ export default function AdminCourses() {
             Define curriculum modules, author interactive quizzes, import question banks, and target mandatory compliance by Business Unit, Division, Department, or Job Level.
           </p>
         </div>
-        <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
-          Create New Course
-        </Button>
+        {isAdmin && (
+          <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
+            Create New Course
+          </Button>
+        )}
       </div>
 
       {/* Filter & Search Bar */}
@@ -158,11 +161,17 @@ export default function AdminCourses() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
-                      {c.status === 'DRAFT' && <Button size="sm" variant="primary" onClick={() => publish(c)}>Publish</Button>}
-                      <span title={hasParticipants ? 'Cannot delete: employees have already started this course.' : undefined}>
-                        <Button size="sm" variant="danger" icon="ti-trash" disabled={hasParticipants} onClick={() => remove(c)}>Delete</Button>
-                      </span>
+                      {isAdmin ? (
+                        <>
+                          <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
+                          {c.status === 'DRAFT' && <Button size="sm" variant="primary" onClick={() => publish(c)}>Publish</Button>}
+                          <span title={hasParticipants ? 'Cannot delete: employees have already started this course.' : undefined}>
+                            <Button size="sm" variant="danger" icon="ti-trash" disabled={hasParticipants} onClick={() => remove(c)}>Delete</Button>
+                          </span>
+                        </>
+                      ) : (
+                        <Button size="sm" variant="outline" icon="ti-eye" onClick={() => navigate(`/learner/courses/${c.id}`)}>View Course</Button>
+                      )}
                     </div>
                   </td>
                 </tr>

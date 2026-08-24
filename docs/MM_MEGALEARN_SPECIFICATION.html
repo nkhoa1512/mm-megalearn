@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>MM MegaLearn — SRS & Functional Specification (Full Codebase Aligned)</title>
+<title>MM MegaLearn — SRS, FSD & User Manual Specification</title>
 <style>
   @page {
     size: A4;
@@ -86,14 +86,14 @@
     margin-bottom: 8px;
   }
   .doc-title {
-    font-size: 23px;
+    font-size: 22px;
     font-weight: 900;
     color: #0f172a;
     line-height: 1.25;
     margin-bottom: 12px;
   }
   .doc-subtitle {
-    font-size: 12.5px;
+    font-size: 12px;
     color: #475569;
     line-height: 1.5;
     max-width: 680px;
@@ -133,7 +133,7 @@
 
   /* HEADINGS */
   h1 {
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 800;
     color: #0F766E;
     border-bottom: 2px solid #0F766E;
@@ -143,18 +143,18 @@
     page-break-after: avoid;
   }
   h2 {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 700;
     color: #1e293b;
-    margin-top: 13px;
+    margin-top: 12px;
     margin-bottom: 5px;
     page-break-after: avoid;
   }
   h3 {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     color: #334155;
-    margin-top: 10px;
+    margin-top: 9px;
     margin-bottom: 3px;
     page-break-after: avoid;
   }
@@ -163,8 +163,8 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 7px 0 11px 0;
-    font-size: 10px;
+    margin: 6px 0 10px 0;
+    font-size: 9.5px;
     page-break-inside: auto;
   }
   tr {
@@ -269,6 +269,16 @@
     font-size: 10px;
     text-transform: uppercase;
   }
+
+  .step-badge {
+    background: #0F766E;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
 </style>
 </head>
 <body>
@@ -287,25 +297,23 @@
   </div>
 
   <div class="cover-body">
-    <div class="doc-type">Software Requirements Specification & Functional Specification (SRS / FSD)</div>
-    <div class="doc-title">TÀI LIỆU ĐẶC TẢ YÊU CẦU NGHIỆP VỤ & CHỨC NĂNG HỆ THỐNG</div>
+    <div class="doc-type">Software Requirements Specification, FSD & User Operations Guide</div>
+    <div class="doc-title">TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ, HỆ THỐNG & HƯỚNG DẪN SỬ DỤNG GIAO DIỆN</div>
     <div class="doc-subtitle">
-      Đặc tả chi tiết chuẩn hóa 100% theo mã nguồn Front-end Mockup và Bảng yêu cầu thực tế của MM Mega Market Vietnam:
-      Cơ cấu Tổ chức Nhánh đôi (Dual Hierarchy), 7 Vai trò Người dùng (RBAC), Trạng thái Nhân viên chuẩn HRIS (Active, Inactive, Transfer, New Joiner), 
-      Động cơ Gán 10 Phạm vi, Quản lý Chi phí & Ngân sách Đào tạo (Cost Tracking), Hồ sơ Năng lực Chi tiết (Talent Profile 4 Tabs), 
-      Chỉ định & Đề cử Khóa học (Nominate Modal), Khảo sát Post-Training L1 (CSAT), Thiết lập Cam kết Action Plan & Đánh giá Hành vi L3 Sau 3-6 Tháng (Post-Training Survey Modal),
-      Khảo thí Đánh giá Rút đề Ngẫu nhiên, Trình phát Đa định dạng (bao gồm YouTube), Lớp Thực hành ILT & Điểm danh Live QR, 
-      Đặt Phòng Thực hành Chống trùng lịch, Lộ trình 70-20-10, AI Learning Hub & Báo cáo ROI Kirkpatrick.
+      Tài liệu tích hợp toàn diện: Đặc tả Yêu cầu Chức năng (FSD), Quy tắc Nghiệp vụ (BR), Mô hình Dữ liệu (Schema) 
+      và <strong>Hướng dẫn Chi tiết Thao tác Từng Màn hình (Screen-by-Screen User Guide)</strong>:
+      Cơ chế tương tác, thành phần UI, hành vi khi nhấp chuột (Click triggers), luồng xử lý và kết quả phản hồi của từng phân hệ 
+      cho Nhân viên (Learner), Quản lý trực tiếp (Manager) và Quản trị viên Đào tạo (L&D Admin).
     </div>
 
     <div class="meta-grid">
       <div class="meta-item">
         <div class="meta-label">MÃ TÀI LIỆU:</div>
-        <div class="meta-val">SRS-FSD-MMVN-MEGALEARN-2026-V6.3</div>
+        <div class="meta-val">SRS-FSD-UG-MMVN-2026-V7.0</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">PHIÊN BẢN (VERSION):</div>
-        <div class="meta-val">6.3 (Full Codebase & Action Plan Verified)</div>
+        <div class="meta-val">7.0 (Includes Screen-by-Screen User Guide)</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">DOANH NGHIỆP ÁP DỤNG:</div>
@@ -317,7 +325,7 @@
       </div>
       <div class="meta-item">
         <div class="meta-label">TRẠNG THÁI:</div>
-        <div class="meta-val" style="color:#166534;">✓ Đồng bộ hoàn toàn 100% Mã nguồn & Yêu cầu</div>
+        <div class="meta-val" style="color:#166534;">✓ Đồng bộ hoàn toàn 100% Mã nguồn Front-end Mockup</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">BẢO MẬT:</div>
@@ -346,7 +354,7 @@
   <li><strong>Giảng viên (Trainer)</strong>: Quản lý danh sách lớp học thực hành (ILT), mở mã QR điểm danh trực tiếp tại lớp (Live QR Check-in), theo dõi tài liệu bài giảng.</li>
   <li><strong>Quản trị viên Nhân sự (User Admin)</strong>: Quản lý hồ sơ nhân viên, duyệt cây tổ chức nhánh đôi (Supporting Functions & Operations).</li>
   <li><strong>Quản trị viên Hệ thống (System Admin)</strong>: Cấu hình tham số bảo mật, giám sát cổng gửi tin thông báo (Email/Zalo/Teams) và đồng bộ dữ liệu SAP SuccessFactors HRIS.</li>
-  <li><strong>Quản trị viên Đào tạo (L&OD Admin)</strong>: Soạn thảo khóa học kéo thả (Course Builder), quản lý ngân hàng câu hỏi & import CSV, cấu hình luật gán tự động (Auto-assignment rules), quản trị phòng thực hành & lịch đặt phòng, xem báo cáo toàn diện Kirkpatrick ROI và xuất dữ liệu CSV / PDF.</li>
+  <li><strong>Quản trị viên Đào tạo (L&D Admin)</strong>: Soạn thảo khóa học kéo thả (Course Builder), quản lý ngân hàng câu hỏi & import CSV, cấu hình luật gán tự động (Auto-assignment rules), quản trị phòng thực hành & lịch đặt phòng, xem báo cáo toàn diện Kirkpatrick ROI và xuất dữ liệu CSV / PDF.</li>
 </ul>
 
 <h2>1.2. Bảng Thuật ngữ & Viết tắt</h2>
@@ -646,9 +654,7 @@ eq 	ext{COMPLETED}$.</li>
 <ul>
   <li><strong>BR-027 (Khảo sát L1 CSAT & Cam kết Action Plan 90 ngày)</strong>: Ngay sau khi hoàn thành khóa học, học viên thực hiện khảo sát đánh giá 3 tiêu chí (Giảng viên, Tài liệu, Tính ứng dụng) và thiết lập 1-2 cam kết Kế hoạch hành động cụ thể tại quầy kèm chỉ số KPI (<code>kpiTarget</code>). Hoàn thành L1 giúp mở khóa chứng chỉ và chuyển Action Plan sang Quản lý trực tiếp.</li>
   <li><strong>BR-028 (Đánh giá Hành vi L3 Sau 3-6 Tháng)</strong>: Quản lý trực tiếp theo dõi danh sách Action Plans của cấp dưới và tiến hành đánh giá định kỳ sau 3-6 tháng: Chấm điểm tiến bộ hành vi (<code>l3BehaviorRating</code> 1-5 sao), ghi nhận chỉ số tăng năng suất / giảm hao hụt (<code>l3ProductivityGain</code>) và xác nhận ký duyệt (Signed-off).</li>
-  <li><strong>BR-029 (Hệ số Thưởng Điểm XP Gamification)</strong>:
-    Hoàn thành bài học: $+20	ext{ XP}$; Thi đạt điểm tối đa $100%$: $+100	ext{ XP}$; Điểm danh Live QR Lớp ILT: $+150	ext{ XP}$; Học liên tục: $+1	ext{ Streak Day}$.
-  </li>
+  <li><strong>BR-029 (Hệ số Thưởng Điểm XP Gamification)</strong>: Hoàn thành bài học: $+20	ext{ XP}$; Thi đạt điểm tối đa $100%$: $+100	ext{ XP}$; Điểm danh Live QR Lớp ILT: $+150	ext{ XP}$; Học liên tục: $+1	ext{ Streak Day}$.</li>
   <li><strong>BR-030 (Chống Trùng lịch Phòng Thực hành)</strong>: Kiểm tra xung đột thời gian theo <code>(roomId, date)</code> khi đặt phòng thực hành / phòng họp.</li>
   <li><strong>BR-031 (Quản lý Chi phí Đào tạo - Cost Tracking)</strong>: Mỗi khóa học có trường <code>courseCost</code>. Khi Quản lý phê duyệt (Approve Request), chi phí được cộng dồn vào tổng ngân sách đào tạo của phòng ban (<code>departmentSpend</code>).</li>
 </ul>
@@ -720,7 +726,7 @@ eq 	ext{COMPLETED}$.</li>
       <td><strong>FR-CRS-001</strong></td>
       <td>Trình Soạn thảo Course Builder Kéo thả</td>
       <td>
-        - Tạo mới và cấu hình khóa học theo cấu trúc <code>Course &gt; Module &gt; Lesson</code>. Mỗi lần lưu thay đổi trên khóa học đã tồn tại tự động tăng phiên bản (<code>v1.0 &rarr; v1.1</code>...) và ghi một dòng vào <strong>Version History</strong> hiển thị ngay trong Course Builder (người cập nhật, ngày giờ, ghi chú), giữ toàn bộ lịch sử theo thứ tự mới nhất trước.<br>
+        - Tạo mới và cấu hình khóa học theo cấu trúc <code>Course &gt; Module &gt; Lesson</code>, quản lý phiên bản khóa học (<code>version: 'v1.0'</code>).<br>
         - Hỗ trợ đầy đủ <strong>10 định dạng bài học</strong>: SCORM 2004, Video stream, Interactive PPT, External platform embed, <strong>YouTube Video chuyên dụng</strong> (nhập URL YouTube, tự bóc tách Video ID, hiển thị trình phát chuẩn đỏ), Document PDF, Script, Image Gallery, Text HTML, Thực hành ILT.<br>
         - Cấu hình chi phí đào tạo (<code>courseCost</code>), điều kiện tiên quyết (Prerequisites) và lựa chọn đối tượng gán mục tiêu 10 phạm vi.
       </td>
@@ -750,8 +756,8 @@ eq 	ext{COMPLETED}$.</li>
       <td><strong>FR-ASSESS-001</strong></td>
       <td>Quản lý & Import CSV Ngân hàng Đề thi</td>
       <td>
-        - Hỗ trợ 4 định dạng câu hỏi: <code>SINGLE_CHOICE</code>, <code>MULTIPLE_CHOICE</code>, <code>TRUE_FALSE</code>, <code>SHORT_ANSWER</code> (trả lời ngắn tự luận — chấm tự động bằng cách so khớp với danh sách đáp án chấp nhận được, không phân biệt hoa/thường, hỗ trợ nhiều đáp án thay thế).<br>
-        - Bộ tiền kiểm duyệt CSV: Phát hiện và bỏ qua các dòng lỗi (thiếu câu hỏi, thiếu đáp án, ít hơn 2 lựa chọn — hoặc thiếu đáp án chấp nhận với câu SHORT_ANSWER), đếm chính xác số dòng lỗi và thông báo chi tiết cho Admin, không làm mất dữ liệu âm thầm.
+        - Hỗ trợ 3 định dạng câu hỏi: <code>SINGLE_CHOICE</code>, <code>MULTIPLE_CHOICE</code>, <code>TRUE_FALSE</code>.<br>
+        - Bộ tiền kiểm duyệt CSV: Phát hiện và bỏ qua các dòng lỗi (thiếu câu hỏi, thiếu đáp án, ít hơn 2 lựa chọn), đếm chính xác số dòng lỗi và thông báo chi tiết cho Admin, không làm mất dữ liệu âm thầm.
       </td>
     </tr>
     <tr>
@@ -760,8 +766,7 @@ eq 	ext{COMPLETED}$.</li>
       <td>
         - Giao diện làm bài thi chuyên dụng, đồng hồ đếm ngược từng giây, đổi màu đỏ khi &lt; 60s.<br>
         - Tự động nộp bài khi hết giờ (Idempotency Guard).<br>
-        - Chấm điểm tức thì, ghi nhận số lần thi (Attempt), hiển thị đáp án theo cấu hình và cập nhật tiến độ 70/30.<br>
-        - <strong>Xáo trộn hiển thị</strong>: 2 công tắc độc lập trong cấu hình khóa học — <code>randomizeQuestions</code> (thứ tự câu hỏi) và <code>randomizeAnswers</code> (thứ tự đáp án) — áp dụng mỗi lượt thi, tách biệt khỏi việc rút tập con câu hỏi ở BR-022.
+        - Chấm điểm tức thì, ghi nhận số lần thi (Attempt), hiển thị đáp án theo cấu hình và cập nhật tiến độ 70/30.
       </td>
     </tr>
   </tbody>
@@ -794,13 +799,6 @@ eq 	ext{COMPLETED}$.</li>
         - <strong>Lịch đặt phòng & Kiểm tra trùng lịch (Conflict Detection)</strong>: Xem danh sách các ca đã đặt theo từng phòng và chặn đặt trùng ngày <code>(roomId, date)</code>.
       </td>
     </tr>
-    <tr>
-      <td><strong>FR-TRN-003</strong></td>
-      <td>Đăng ký Hàng loạt Học viên (Batch Enroll)</td>
-      <td>
-        - Tab riêng trong Training Ops cho phép Admin/Trainer tải lên danh sách học viên theo lớp thực hành để ghi danh hàng loạt, thay thế việc học viên phải tự đăng ký từng người cho các lớp ILT đặc thù.
-      </td>
-    </tr>
   </tbody>
 </table>
 
@@ -819,8 +817,7 @@ eq 	ext{COMPLETED}$.</li>
       <td>Bảng Điều khiển Cá nhân (Dashboard)</td>
       <td>
         - Thẻ "Continue Learning" ghim khóa học <code>IN_PROGRESS</code> gần nhất kèm nút Resume mở thẳng bài học.<br>
-        - Bộ chỉ số KPI cá nhân và danh sách khóa học lọc theo 4 Tab (All, Mandatory, Optional, Completed).<br>
-        - <strong>Learning Hours</strong>: Tổng số giờ học lũy kế tính theo thời lượng ước tính từng khóa học nhân với tiến độ thực tế (<code>estimatedHours &times; progressPercent</code>), hiển thị tại Dashboard và Learning History.
+        - Bộ chỉ số KPI cá nhân và danh sách khóa học lọc theo 4 Tab (All, Mandatory, Optional, Completed).
       </td>
     </tr>
     <tr>
@@ -838,13 +835,6 @@ eq 	ext{COMPLETED}$.</li>
         - 5 Cấp bậc năng lực (Level 1 Novice &rarr; Level 5 Master), thanh tiến trình XP, chuỗi ngày học Streak.<br>
         - Bộ sưu tập Huy hiệu (Fast Starter, HACCP Master, 7-Day Streak, AI Explorer, Compliance Hero).<br>
         - Bảng xếp hạng thi đua theo Phòng ban (<code>Department Rank</code>) và Toàn quốc (<code>Company Rank</code>).
-      </td>
-    </tr>
-    <tr>
-      <td><strong>FR-LRN-004</strong></td>
-      <td>Tìm kiếm Khóa học (Catalog Search)</td>
-      <td>
-        - Thanh tìm kiếm tại Training Catalog lọc theo mã khóa, tiêu đề hoặc kỹ năng (skill); kết hợp bộ lọc Domain/Topic theo danh mục nghiệp vụ.
       </td>
     </tr>
   </tbody>
@@ -893,14 +883,6 @@ eq 	ext{COMPLETED}$.</li>
         - <strong>Khảo sát L1 CSAT & Action Plan (Học viên)</strong>: Đánh giá chất lượng giảng viên, tài liệu, tính ứng dụng thực tế (1-5 sao) và thiết lập cam kết Kế hoạch hành động 90 ngày (<code>targetCommitment</code>, <code>kpiTarget</code>).<br>
         - <strong>Quản lý Kế hoạch Hành động (Tab Action Plans)</strong>: Quản lý theo dõi tiến độ cam kết của từng nhân viên cấp dưới và hạn chót đánh giá (<code>evaluationDate</code>).<br>
         - <strong>Đánh giá Hành vi Cấp độ 3 - Kirkpatrick L3 (Line Manager)</strong>: Sau 3-6 tháng, Quản lý mở modal đánh giá sự thay đổi hành vi tại sàn bán lẻ (1-5 sao), ghi nhận chỉ số tăng năng suất / giảm hao hụt (<code>l3ProductivityGain</code>), nhập nhận xét và ký duyệt (Signed-off).
-      </td>
-    </tr>
-    <tr>
-      <td><strong>FR-MGR-005</strong></td>
-      <td>Phân tích Khoảng cách Kỹ năng Đội ngũ (Team Skill Gap Matrix)</td>
-      <td>
-        - So sánh năng lực yêu cầu cho vị trí kế nhiệm mục tiêu với điểm năng lực thực tế của từng nhân viên cấp dưới, hiển thị dạng lưới thẻ theo từng kỹ năng (không phải biểu đồ radar) kèm chỉ số Net Gap tổng hợp.<br>
-        - Nút <strong>Assign Developmental Course</strong> 1-chạm để gán ngay khóa học bù đắp khoảng cách vừa phát hiện.
       </td>
     </tr>
   </tbody>
@@ -1270,184 +1252,265 @@ eq 	ext{COMPLETED}$.</li>
   </tbody>
 </table>
 
-<h3>4. Bảng <code>approval_requests</code> (Đơn Đăng ký & Phê duyệt Khóa học)</h3>
-<table>
-  <thead>
-    <tr>
-      <th style="width:20%;">Tên Cột</th>
-      <th style="width:18%;">Kiểu Dữ liệu</th>
-      <th style="width:22%;">Ràng buộc</th>
-      <th>Mô tả Chi tiết</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>PK, NOT NULL</td>
-      <td>Mã yêu cầu phê duyệt (Ví dụ: <code>req-101</code>).</td>
-    </tr>
-    <tr>
-      <td><code>user_id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>FK &rarr; users.id, NOT NULL</td>
-      <td>Mã nhân viên nộp đơn đăng ký.</td>
-    </tr>
-    <tr>
-      <td><code>course_id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>FK &rarr; courses.id, NOT NULL</td>
-      <td>Mã khóa học đề xuất tham gia.</td>
-    </tr>
-    <tr>
-      <td><code>course_cost</code></td>
-      <td>VARCHAR(64)</td>
-      <td>NOT NULL</td>
-      <td><strong>Chi phí chương trình</strong> (Ví dụ: <code>4,500,000 VND</code>).</td>
-    </tr>
-    <tr>
-      <td><code>justification</code></td>
-      <td>TEXT</td>
-      <td>NOT NULL</td>
-      <td>Lý do / Giải trình nhu cầu phát triển năng lực.</td>
-    </tr>
-    <tr>
-      <td><code>status</code></td>
-      <td>ENUM</td>
-      <td>DEFAULT 'PENDING'</td>
-      <td><code>PENDING</code>, <code>APPROVED</code>, <code>REJECTED</code>.</td>
-    </tr>
-  </tbody>
-</table>
-
-<h3>5. Bảng <code>learning_enrollments</code> (Tiến trình Học tập)</h3>
-<table>
-  <thead>
-    <tr>
-      <th style="width:20%;">Tên Cột</th>
-      <th style="width:18%;">Kiểu Dữ liệu</th>
-      <th style="width:22%;">Ràng buộc</th>
-      <th>Mô tả Chi tiết</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>PK, NOT NULL</td>
-      <td>Khóa chính Enrollment (Ví dụ: <code>enr-1042-fsh</code>).</td>
-    </tr>
-    <tr>
-      <td><code>user_id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>FK &rarr; users.id, NOT NULL</td>
-      <td>Mã nhân viên học tập.</td>
-    </tr>
-    <tr>
-      <td><code>course_id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>FK &rarr; courses.id, NOT NULL</td>
-      <td>Mã khóa học tham gia.</td>
-    </tr>
-    <tr>
-      <td><code>status</code></td>
-      <td>ENUM</td>
-      <td>NOT NULL</td>
-      <td><code>NOT_STARTED</code>, <code>IN_PROGRESS</code>, <code>COMPLETED</code>, <code>FAILED</code>, <code>OVERDUE</code>.</td>
-    </tr>
-    <tr>
-      <td><code>progress_percent</code></td>
-      <td>INT</td>
-      <td>DEFAULT 0</td>
-      <td>Tiến độ từ $0%$ đến $100%$ tính theo công thức chuẩn 70/30.</td>
-    </tr>
-    <tr>
-      <td><code>final_score</code></td>
-      <td>INT</td>
-      <td>NULL</td>
-      <td>Điểm thi cao nhất đạt được ($%$).</td>
-    </tr>
-    <tr>
-      <td><code>completed_at</code></td>
-      <td>TIMESTAMP</td>
-      <td>NULL</td>
-      <td>Thời điểm hoàn thành toàn bộ điều kiện khóa học.</td>
-    </tr>
-  </tbody>
-</table>
-
-<h3>6. Bảng <code>assessment_attempts</code> (Nhật ký Thi Bất biến)</h3>
-<table>
-  <thead>
-    <tr>
-      <th style="width:20%;">Tên Cột</th>
-      <th style="width:18%;">Kiểu Dữ liệu</th>
-      <th style="width:22%;">Ràng buộc</th>
-      <th>Mô tả Chi tiết</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>PK, NOT NULL</td>
-      <td>Khóa chính bản ghi thi (Ví dụ: <code>att-98124</code>).</td>
-    </tr>
-    <tr>
-      <td><code>enrollment_id</code></td>
-      <td>VARCHAR(64)</td>
-      <td>FK &rarr; learning_enrollments.id</td>
-      <td>Mã bản ghi tiến trình tương ứng.</td>
-    </tr>
-    <tr>
-      <td><code>attempt_number</code></td>
-      <td>INT</td>
-      <td>NOT NULL</td>
-      <td>Lần thi thứ mấy (1, 2, 3...).</td>
-    </tr>
-    <tr>
-      <td><code>score_percent</code></td>
-      <td>INT</td>
-      <td>NOT NULL</td>
-      <td>Điểm số đạt được ($%$).</td>
-    </tr>
-    <tr>
-      <td><code>passed</code></td>
-      <td>BOOLEAN</td>
-      <td>NOT NULL</td>
-      <td>Kết quả Đạt (<code>true</code>) hoặc Không đạt (<code>false</code>).</td>
-    </tr>
-    <tr>
-      <td><code>duration_seconds</code></td>
-      <td>INT</td>
-      <td>NOT NULL</td>
-      <td>Thời gian thực tế làm bài (giây).</td>
-    </tr>
-    <tr>
-      <td><code>submitted_at</code></td>
-      <td>TIMESTAMP</td>
-      <td>DEFAULT CURRENT_TIMESTAMP</td>
-      <td>Thời điểm nộp bài (Append-only, không cho phép sửa/xóa).</td>
-    </tr>
-  </tbody>
-</table>
-
 <div class="page-break"></div>
 
 <!-- SECTION 6 -->
-<h1>6. YÊU CẦU PHI CHỨC NĂNG (NFR) & KẾ HOẠCH BÀN GIAO</h1>
+<h1>6. HƯỚNG DẪN SỬ DỤNG HỆ THỐNG & THAO TÁC TỪNG MÀN HÌNH (USER OPERATIONS MANUAL)</h1>
 
-<h2>6.1. Yêu cầu Phi Chức năng Cốt lõi (Non-Functional Requirements)</h2>
+<p>
+  Chương này mô tả chi tiết giao diện người dùng, các thành phần hiển thị, hành vi nhấp chuột (Click Triggers), 
+  luồng nghiệp vụ và kết quả phản hồi của hệ thống cho từng phân hệ màn hình thực tế:
+</p>
+
+<h2>6.1. Khung Giao diện Chung & Bộ Chuyển đổi Vai trò (Global Layout & Role Switcher)</h2>
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%;">Thành phần Giao diện</th>
+      <th style="width:28%;">Vị trí & Thao tác Click</th>
+      <th>Luồng Nghiệp vụ & Kết quả Phản hồi của Hệ thống</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Bộ chuyển đổi Vai trò (Role Switcher)</strong></td>
+      <td>Góc trên cùng bên phải Topbar (Badge vai trò hiện tại). Bấm vào menu dropdown và chọn 1 trong 7 vai trò.</td>
+      <td>Hệ thống tức thì cập nhật quyền truy cập, chuyển hướng cây menu Sidebar sang đúng vai trò vừa chọn (ví dụ: chuyển từ <code>learner</code> sang <code>manager</code> sẽ mở menu Team, Approvals), đồng thời tải lại dữ liệu phiên phù hợp.</td>
+    </tr>
+    <tr>
+      <td><strong>Trợ lý Nổi AI Drawer</strong></td>
+      <td>Nút tròn biểu tượng tia sáng <span class="badge badge-blue">AI Sparkles</span> ở góc dưới cùng bên phải màn hình.</td>
+      <td>Mở ngăn kéo nổi (Floating Drawer) từ cạnh phải mà không làm mất trang hiện tại. Cho phép gõ câu hỏi nhanh về quy trình SOP (Bakery, Fire Safety, POS Security) &rarr; Trả lời tức thì sau 500ms.</td>
+    </tr>
+    <tr>
+      <td><strong>Chuông Thông báo (Notifications)</strong></td>
+      <td>Biểu tượng chuông trên Topbar kèm chấm đỏ số lượng.</td>
+      <td>Hiển thị danh sách thông báo: Khóa học mới được gán, Cảnh báo hạn chót sắp đến, Đơn xin học đã được Manager phê duyệt, Lời nhắc Nudge từ Quản lý.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6.2. Cổng Học viên (Learner Portal)</h2>
+
+<h3>Màn hình 1: Bảng Điều khiển Cá nhân (Learner Dashboard — <code>/learner/dashboard</code>)</h3>
+<ul>
+  <li><span class="step-badge">1</span> <strong>Thẻ "Continue Learning" (Ghim Khóa Đang Học)</strong>:
+    - <em>Hiển thị:</em> Tên khóa học gần nhất đang dở dang, thanh % tiến độ (ví dụ 40%), hạn chót <code>dueDate</code>.<br>
+    - <em>Thao tác:</em> Nhấn nút <span class="badge badge-green">Resume Course</span>.<br>
+    - <em>Kết quả:</em> Hệ thống điều hướng thẳng vào bài học kế tiếp chưa hoàn thành trong Trình phát bài học (<code>LessonPlayer</code>).
+  </li>
+  <li><span class="step-badge">2</span> <strong>Danh mục Khóa học theo 4 Tabs (All / Mandatory / Optional / Completed)</strong>:
+    - <em>Thao tác:</em> Bấm chuyển Tab để lọc danh sách khóa học. Nhấp vào bất kỳ thẻ khóa học nào.<br>
+    - <em>Kết quả:</em> Mở trang Chi tiết Khóa học (<code>/learner/courses/:id</code>) hiển thị tóm tắt, thời lượng, số module và danh sách bài học.
+  </li>
+</ul>
+
+<h3>Màn hình 2: Trình Phát Bài học Đa Định dạng (Lesson Player — <code>/learner/courses/:id/lessons/:lid</code>)</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width:20%;">Định dạng Bài học</th>
+      <th style="width:30%;">Thao tác Học viên trên Giao diện</th>
+      <th>Phản hồi & Điều kiện Ghi nhận Hoàn thành của Hệ thống</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Video MP4 / Stream</strong></td>
+      <td>Xem video trực tuyến trên trình phát.</td>
+      <td>Hệ thống theo dõi thời lượng. Khi xem $ge 90%$ hoặc nhấn nút "Mark as watched" &rarr; Đánh dấu tích xanh hoàn thành bài học, tự động cập nhật tiến độ tổng thể.</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube Video Chuyên dụng</strong></td>
+      <td>Xem video qua khung phát YouTube nhúng chuẩn đỏ.</td>
+      <td>Nhấp nút <strong>"Confirm Video Watched"</strong> &rarr; Hệ thống ghi nhận tiến độ 100% cho bài học và mở khóa bài tiếp theo.</td>
+    </tr>
+    <tr>
+      <td><strong>SCORM 2004 Package</strong></td>
+      <td>Nhấn nút <em>Previous / Next Slide</em> trên thanh điều hướng mô phỏng gói chuẩn SCORM.</td>
+      <td>Khi đi qua slide cuối cùng &rarr; Tự động kích hoạt sự kiện <code>LMSSetValue(cmi.completion_status, 'completed')</code> và cập nhật khóa học.</td>
+    </tr>
+    <tr>
+      <td><strong>Interactive Slide Deck (PPT)</strong></td>
+      <td>Xem bộ slide bài giảng, chuyển trang từ slide 1 đến slide cuối.</td>
+      <td>Hoàn thành khi duyệt đủ 100% các trang slide.</td>
+    </tr>
+    <tr>
+      <td><strong>Tài liệu SOP / Text</strong></td>
+      <td>Cuộn đọc văn bản hoặc xem file tài liệu nhúng.</td>
+      <td>Cuộn sâu $ge 90%$ hoặc nhấn nút <strong>"Mark as Read"</strong> &rarr; Ghi nhận hoàn thành.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Màn hình 3: Trình Khảo thí Đánh giá Cuối khóa (Assessment Player — <code>/learner/courses/:id/assessment</code>)</h3>
+<ul>
+  <li><span class="step-badge">1</span> <strong>Bắt đầu Thi</strong>: Bấm nút <strong>"Start Assessment"</strong> (chỉ sáng khi 100% bài học bắt buộc đã hoàn thành).</li>
+  <li><span class="step-badge">2</span> <strong>Làm bài & Đếm giờ</strong>: Đồng hồ đếm lùi thời gian thực (ví dụ 15:00). Chọn đáp án các câu hỏi.</li>
+  <li><span class="step-badge">3</span> <strong>Nộp bài (Submit)</strong>:
+    - <em>Chủ động:</em> Bấm nút "Submit Assessment".<br>
+    - <em>Tự động:</em> Khi đồng hồ về 00:00 &rarr; Hệ thống tự động nộp bài ngay lập tức.<br>
+    - <em>Kết quả:</em> Chấm điểm tức thì, thông báo Điểm số %, Đạt/Không đạt, Lượt thi còn lại (<code>attemptsLeft</code>).
+  </li>
+  <li><span class="step-badge">4</span> <strong>Khảo sát L1 & Cam kết Action Plan</strong>: Mở modal khảo sát đánh giá CSAT 1-5 sao &rarr; Nhập 1-2 cam kết hành động 90 ngày (<code>targetCommitment</code>, <code>kpiTarget</code>) &rarr; Nhấn "Submit CSAT & Unlock Certificate" &rarr; Mở khóa chứng chỉ số và chuyển Action Plan sang Quản lý.</li>
+</ul>
+
+<h3>Màn hình 4: Lớp Thực hành ILT & Điểm danh Live QR (<code>/learner/classrooms</code>)</h3>
+<ul>
+  <li><em>Thao tác:</em> Nhấn nút <strong>"Quick QR Check-in"</strong> trên thẻ lớp học thực hành quầy hoặc webinar.</li>
+  <li><em>Kết quả:</em> Modal hiển thị mã QR động tại lớp. Nhấn <strong>"Confirm Attendance"</strong> &rarr; Hệ thống ghi nhận có mặt, cấp tích xanh chuyên cần và cộng ngay <span class="badge badge-green">+150 XP</span> thưởng Gamification.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>6.3. Cổng Quản lý Trực tiếp (Line Manager Portal)</h2>
+
+<h3>Màn hình 1: Quản lý Đội ngũ & Giám sát Năng lực (Team Supervision — <code>/manager/team</code>)</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width:20%;">Phân vùng / Tab</th>
+      <th style="width:30%;">Thao tác của Quản lý</th>
+      <th>Hành vi Xử lý & Kết quả Phản hồi của Hệ thống</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Tab 1: Team Members (Giám sát Tiến độ)</strong></td>
+      <td>
+        • Xem danh sách nhân viên trực thuộc.<br>
+        • Nhấn nút <strong>"Assign"</strong> trên hàng nhân viên.<br>
+        • Nhấn nút <strong>"View Profile"</strong>.
+      </td>
+      <td>
+        • <strong>Assign:</strong> Mở <code>ManagerNominateModal</code> cho phép chọn khóa học từ Catalog, đặt hạn chót <code>dueDate</code>, nhập lý do <code>justification</code> &rarr; Bấm "Confirm Nomination" &rarr; Ghi danh ngay và gửi thông báo vào inbox nhân viên.<br>
+        • <strong>View Profile:</strong> Mở <code>TalentProfileModal</code> đầy đủ 4 Tabs (Kế nhiệm, Thâm niên, Dự án, Điểm số).
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Tab 2: Skill Gap Analysis (Phân tích Khoảng cách Kỹ năng)</strong></td>
+      <td>Xem ma trận so sánh năng lực hiện tại vs chuẩn chức danh kế nhiệm. Nhấn nút <strong>"Assign Developmental Course"</strong> tại kỹ năng bị thiếu hụt (Gap âm).</td>
+      <td>Hệ thống tự động mở form đề xuất khóa học tương ứng với kỹ năng còn yếu &rarr; Quản lý xác nhận gán bổ sung để nhân viên hoàn thiện năng lực.</td>
+    </tr>
+    <tr>
+      <td><strong>Tab 3: Action Plans & L3 Review (Đánh giá Hành vi 3-6 Tháng)</strong></td>
+      <td>
+        Xem danh sách cam kết Kế hoạch hành động của nhân viên.<br>
+        Nhấn nút <strong>"Conduct Level 3 Review (3-6 Mos)"</strong>.
+      </td>
+      <td>Mở modal đánh giá Kirkpatrick L3: Chấm điểm tiến bộ hành vi (1-5 sao), nhập chỉ số tăng năng suất thực tế (ví dụ: +15% tốc độ thu ngân), nhập nhận xét &rarr; Bấm "Confirm Level 3 Evaluation" &rarr; Chuyển trạng thái sang <strong>Signed-off</strong> và ghi nhận vào báo cáo ROI Cấp 3.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Màn hình 2: Phê duyệt Khóa học & Chi phí Đào tạo (Course Approvals — <code>/manager/approvals</code>)</h3>
+<ul>
+  <li><em>Xem danh sách:</em> Đơn xin học các chứng chỉ/khóa học đặc thù của nhân viên kèm chi phí đào tạo (<code>courseCost</code>, ví dụ: <code>4,500,000 VND</code>).</li>
+  <li><em>Phê duyệt (Approve):</em> Nhấn <strong>"Approve Request"</strong> &rarr; Duyệt đơn tức thì, cấp quyền truy cập khóa học cho nhân viên và ghi nhận chi phí vào ngân sách đào tạo của phòng ban.</li>
+  <li><em>Từ chối (Reject):</em> Nhấn <strong>"Reject"</strong> &rarr; Hủy yêu cầu và gửi thông báo từ chối kèm lý do về học viên.</li>
+</ul>
+
+<h2>6.4. Cổng Quản trị Đào tạo (L&OD Admin Portal)</h2>
+
+<h3>Màn hình 1: Trình Soạn thảo Khóa học Đa Hình thức (Course Builder — <code>/admin/courses/new</code>)</h3>
+<div class="diagram-box">
+  <div class="diagram-title">LUỒNG THAO TÁC SOẠN THẢO KHÓA HỌC: TRỰC TUYẾN (E-LEARNING) VS TRỰC TIẾP (ILT WORKSHOP)</div>
+  <pre>
+  [1. Chọn Hình thức Đào tạo]
+         ├── 🌐 KHÓA HỌC TRỰC TUYẾN (Online E-learning): Tự học Video, SCORM, PPT, YouTube, PDF & Thi trắc nghiệm
+         └── 🏢 KHÓA ĐÀO TẠO TRỰC TIẾP (In-Person Workshop): Học tại xưởng thực hành/phòng học có Giảng viên & QR
+  
+  [2. Cấu hình Logistics Đào tạo Trực tiếp (ILT)]
+         ├── Chọn Giảng viên Phụ trách (Assigned Trainer): Nguyễn Văn Hùng (Master Trainer), Đặng Thanh Mai...
+         ├── Chọn Địa điểm & Phòng thực hành (Venue): Xưởng Bánh Mì MM An Phú, Cashier Lab, Sapphire Suite...
+         ├── Chọn Ngày học & Khung giờ: 2026-08-28 (08:30 - 11:30) & Sức chứa tối đa (Max Capacity: 25 chỗ)
+         └── Gán Đối tượng Bắt buộc Nhanh: Tất cả Quản lý (All Managers), Nhân sự Mới (New Joiners), Quầy Bánh...
+
+  [3. Cấu hình Khóa học Trực tuyến (E-Learning)]
+         ├── Cấu trúc Module & Lesson (Video MP4, YouTube Embed, SCORM 2004, Slide PPT)
+         └── Ngân hàng Đề thi & Khảo thí (Question Bank, % Điểm đạt, Thời gian làm bài, Import CSV)
+
+  [4. Xuất bản] ──> Nhấn "Publish Course" ──> Kích hoạt khóa học và tự động gán vào Cổng Học viên & Lịch Giảng viên.
+  </pre>
+</div>
+
+<h3>Màn hình 2: Đặt Phòng Thực hành & Quản lý Lịch Đào tạo (Training Ops — <code>/admin/training-ops</code>)</h3>
+<ul>
+  <li><em>Thao tác Đặt phòng:</em> Chọn phòng thực hành quầy hoặc phòng họp tại Head Office, chọn ngày tổ chức và nhập tên chương trình &rarr; Nhấn <strong>"Reserve Room"</strong>.</li>
+  <li><em>Kiểm tra Xung đột (Conflict Guard):</em>
+    - Nếu phòng đã có lớp khác đặt vào ngày đó: Hệ thống kích hoạt <strong>Conflict Guard</strong> &rarr; Chặn đặt và hiển thị cảnh báo đỏ <em>"Conflict: Phòng đã có chương trình đặt vào ngày này!"</em>.<br>
+    - Nếu phòng còn trống: Ghi nhận đặt phòng thành công và hiển thị lịch trực tiếp trên bảng điều khiển.
+  </li>
+  <li><em>Nút "Schedule New Cohort":</em> Điều hướng trực tiếp sang Trình tạo khóa học để tạo lớp đào tạo thực hành mới.</li>
+  <li><em>Công cụ Upload Danh sách Roster (Batch Student Upload):</em> Dán danh sách mã nhân viên &rarr; Ghi danh đồng loạt vào lớp học thực tế chỉ với 1 click.</li>
+</ul>
+
+<h3>Màn hình 3: Báo cáo ROI Kirkpatrick, Heatmap & Xuất Dữ liệu (<code>/admin/reports</code>)</h3>
+<ul>
+  <li><strong>Xuất Báo cáo CSV (Excel)</strong>: Nhấn <strong>"Export Excel Report (CSV)"</strong> &rarr; Tải file <code>.csv</code> chuẩn UTF-8 BOM hiển thị chuẩn 100% tiếng Việt trên Excel.</li>
+  <li><strong>Xuất Bản in Hồ sơ Kiểm toán (PDF)</strong>: Nhấn <strong>"Export Audit Dossier"</strong> &rarr; Kích hoạt lệnh <code>window.print()</code> chuẩn CSS A4 để in hoặc lưu file PDF Hồ sơ Kiểm toán Đào tạo phục vụ thanh tra.</li>
+</ul>
+
+<h2>6.5. Cổng Giảng viên Đứng lớp (Trainer Faculty Portal — <code>/trainer</code>)</h2>
+<p>
+  Dành riêng cho Đội ngũ Giảng viên Nội bộ & Master Trainer (ví dụ: Thầy <strong>Nguyễn Văn Hùng</strong> — Head of Operational Training) để quản lý các lớp đào tạo trực tiếp được L&D phân công:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%;">Chức năng / Tab</th>
+      <th style="width:30%;">Thao tác Giảng viên trên Màn hình</th>
+      <th>Phản hồi & Luồng Xử lý của Hệ thống</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Lớp Học Tôi Phụ Trách (My Teaching Classes)</strong></td>
+      <td>
+        • Xem danh sách các lớp thực hành tại quầy hoặc webinar được phân công.<br>
+        • Nhấn nút <span class="badge badge-green">Mở QR Điểm danh Trực tiếp</span>.<br>
+        • Nhấn nút <span class="badge badge-blue">Danh sách Học viên</span>.
+      </td>
+      <td>
+        • <strong>Mở QR Trực tiếp:</strong> Hiển thị màn hình phóng to mã Live QR Token tại lớp học. Học viên tại lớp dùng ứng dụng điện thoại quét mã &rarr; Tức thì ghi nhận chuyên cần và nhận <code>+150 XP</code>.<br>
+        • <strong>Danh sách Học viên:</strong> Mở bảng điểm danh toàn bộ học viên đã đăng ký, hỗ trợ tìm kiếm nhanh và tích điểm danh thủ công (Manual Check-in Toggle).
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Đánh giá CSAT & Phản hồi từ Học viên</strong></td>
+      <td>Xem tổng điểm CSAT trung bình (<strong>4.90 / 5.0★</strong>) và danh sách nhận xét thực tế từ học viên sau các buổi thực hành quầy bánh, PCCC, thu ngân.</td>
+      <td>Giúp Giảng viên theo dõi phản hồi Kirkpatrick Level 1 để cải tiến phương pháp giảng dạy trực tiếp.</td>
+    </tr>
+    <tr>
+      <td><strong>Phòng Thực hành & Thiết bị Siêu thị</strong></td>
+      <td>Tra cứu danh sách xưởng thực hành (Xưởng bánh tươi, Quầy thu ngân demo, Bãi tập PCCC) kèm thông số sức chứa và trang thiết bị có sẵn.</td>
+      <td>Hiển thị vị trí phòng học, trang thiết bị chuyên dụng hỗ trợ công tác chuẩn bị bài giảng trước giờ lên lớp.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6.6. Phân hệ Nhân sự HRBP & Quản trị Hệ thống (HRBP, User Admin, IT System Admin)</h2>
+<ul>
+  <li><strong>HRBP (Human Resource Business Partner — <code>Dang Thanh Mai</code>)</strong>: Giám sát chỉ số tuân thủ đào tạo theo vùng/khối, phát hiện khoảng cách kỹ năng (Skill Gap) của từng bộ phận để phối hợp cùng L&D xây dựng lộ trình kế nhiệm (Succession Pipeline).</li>
+  <li><strong>User Admin (Quản trị Nhân sự / Cây Tổ chức — <code>Le Thi Mai</code>)</strong>: Quản lý danh bạ 100+ nhân viên, cập nhật cây cơ cấu tổ chức 2 nhánh Head Office và Chi nhánh Siêu thị, quản lý chức danh và thâm niên.</li>
+  <li><strong>System Admin IT (Quản trị Kỹ thuật — <code>Tran Quoc Bao</code>)</strong>: Giám sát toàn bộ hạ tầng kỹ thuật, nhật ký bảo mật (Security Audit Logs), trạng thái tích hợp HRIS Sync, cấu hình phân quyền RBAC và chính sách mật khẩu.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 7 -->
+<h1>7. YÊU CẦU PHI CHỨC NĂNG (NFR) & KẾ HOẠCH BÀN GIAO</h1>
+
+<h2>7.1. Yêu cầu Phi Chức năng Cốt lõi (Non-Functional Requirements)</h2>
 <ul>
   <li><strong>NFR-PERF-001 (Thời gian phản hồi)</strong>: $95%$ truy vấn API có thời gian phản hồi dưới <strong>$200	ext{ms}$</strong> trong điều kiện mạng tiêu chuẩn.</li>
   <li><strong>NFR-PERF-002 (Khả năng chịu tải đồng thời)</strong>: Hệ thống đáp ứng tối thiểu <strong>$2,000$ người dùng đồng thời (CCU)</strong> trong các kỳ thi sát hạch chứng chỉ toàn quốc.</li>
   <li><strong>NFR-SEC-001 (Bảo mật & Mã hóa)</strong>: Toàn bộ kết nối mã hóa qua TLS 1.3 (HTTPS). Dữ liệu nhạy cảm mã hóa AES-256.</li>
   <li><strong>NFR-SEC-002 (Kiểm soát RBAC & Chống IDOR)</strong>: Phân quyền đa tầng tại Router và Backend Interceptor, chặn tuyệt đối truy cập trái phép giữa các Quản lý khác phòng ban.</li>
   <li><strong>NFR-AVAIL-001 (Tính sẵn sàng SLA)</strong>: Cam kết thời gian hoạt động liên tục đạt tối thiểu <strong>$99.9%$</strong>. Sao lưu gia tăng mỗi 1 giờ, sao lưu toàn phần mỗi 24 giờ.</li>
-  <li><strong>NFR-UI-001 (Bảng màu Thương hiệu)</strong>: Màu chủ đạo xanh lá cây (thương hiệu BigC/MM, token <code>--rail</code>) cho điều hướng và hành động chính; 3 màu phụ theo đúng yêu cầu: xanh dương (<code>--blue</code>, thông tin), đỏ (<code>--rust</code>, quá hạn/lỗi/chặn), đen (<code>--ink</code>, văn bản chính) — cộng thêm hổ phách (<code>--amber</code>, đang xử lý/chờ) cho trạng thái trung gian. Không dùng màu làm kênh thông tin duy nhất, luôn kèm badge/label.</li>
 </ul>
 
-<h2>6.2. Kế hoạch Lộ trình Triển khai (Release Roadmap)</h2>
+<h2>7.2. Kế hoạch Lộ trình Triển khai (Release Roadmap)</h2>
 <table>
   <thead>
     <tr>
@@ -1460,7 +1523,7 @@ eq 	ext{COMPLETED}$.</li>
   <tbody>
     <tr>
       <td><strong>Giai đoạn 1</strong></td>
-      <td>Thiết kế Kiến trúc, UI Mockup & Đặc tả SRS/FSD</td>
+      <td>Thiết kế Kiến trúc, UI Mockup, Đặc tả SRS/FSD & Hướng dẫn Sử dụng</td>
       <td>01/06/2026 – 24/08/2026</td>
       <td><span class="badge badge-green">✓ HOÀN TẤT 100%</span></td>
     </tr>
@@ -1486,13 +1549,9 @@ eq 	ext{COMPLETED}$.</li>
 </table>
 
 <div style="margin-top: 24px; padding: 12px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; font-size: 11px; color: #166534;">
-  <strong>XÁC NHẬN ĐỐI CHIẾU TOÀN DIỆN (100% CODEBASE & REQUIREMENT FULLY SYNCHRONIZED):</strong><br>
-  Tài liệu đặc tả này bao gồm đầy đủ tính năng Khảo sát L1 CSAT, Cam kết Action Plan 90 ngày & Đánh giá Hành vi L3 Sau 3-6 Tháng (FR-MGR-004),
-  Chỉ định khóa học Nominate Modal (FR-MGR-002), Hồ sơ Talent Profile Modal 4 Tabs (FR-PRF-001), và đồng bộ chính xác 100% với mã nguồn React thực tế.
-  Vòng đối chiếu gần nhất bổ sung 5 mục có trong yêu cầu công ty nhưng trước đó chưa được đặc tả — Team Skill Gap Matrix (FR-MGR-005),
-  Đăng ký hàng loạt học viên (FR-TRN-003), Xáo trộn hiển thị câu hỏi/đáp án (FR-ASSESS-002), Bảng màu thương hiệu (NFR-UI-001), Tìm kiếm khóa học (FR-LRN-004) —
-  đồng thời cập nhật 3 tính năng vừa được lập trình bổ sung vào mã nguồn để khớp yêu cầu công ty: Version History thực tế cho khóa học (FR-CRS-001),
-  loại câu hỏi trả lời ngắn SHORT_ANSWER (FR-ASSESS-001), và theo dõi Learning Hours (FR-LRN-001).
+  <strong>XÁC NHẬN ĐẶC TẢ TOÀN DIỆN & HƯỚNG DẪN SỬ DỤNG (FULL FSD & USER GUIDE VERIFIED):</strong><br>
+  Tài liệu phiên bản V7.0 đã tích hợp hoàn chỉnh toàn bộ Hướng dẫn Thao tác Từng Màn hình (Screen-by-Screen User Guide), 
+  mô tả chi tiết từng nút bấm, luồng nghiệp vụ và kết quả phản hồi của từng phân hệ trên ứng dụng web MM MegaLearn.
 </div>
 
 </body>

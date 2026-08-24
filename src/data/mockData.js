@@ -24,6 +24,7 @@ import {
   generated100Users,
   generated100Courses,
   generated100EnrollmentMatrix,
+  getCourseAccessControl,
 } from './generated100Data';
 
 
@@ -82,7 +83,7 @@ export const userAdminUser = {
   badgeTone: 'blue',
 };
 
-export const trainerUser = {
+export const trainerHungUser = {
   userId: 'USR-TR-001',
   employeeCode: 'MMVN-9003',
   fullName: 'Nguyen Van Hung (Master Trainer)',
@@ -103,6 +104,53 @@ export const trainerUser = {
   avatar: 'NH',
   badgeTone: 'sage',
 };
+
+export const trainerThanhUser = {
+  userId: 'USR-TR-002',
+  employeeCode: 'MMVN-9005',
+  fullName: 'Vu Duc Thanh (HSE Trainer)',
+  email: 'thanh.vu@mmvietnam.com',
+  role: 'trainer',
+  position: 'Giảng Viên An Toàn & HSE Director',
+  level: '4',
+  levelTitle: 'Senior HSE Faculty',
+  branch: 'SUPPORTING',
+  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-qa', divisionCode: 'QA-LP', divisionName: 'Loss Prevention & HSE',
+  departmentId: 'dept-hse', departmentCode: 'HSE', departmentName: 'Health, Safety & Environment',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'VT',
+  badgeTone: 'sage',
+};
+
+export const trainerQuangUser = {
+  userId: 'USR-TR-003',
+  employeeCode: 'MMVN-9006',
+  fullName: 'Tran Minh Quang (SGM Mentor)',
+  email: 'quang.tran@mmvietnam.com',
+  role: 'trainer',
+  position: 'Giảng Viên Quản Trị & Store General Manager',
+  level: '5',
+  levelTitle: 'Leadership & SGM Faculty Mentor',
+  branch: 'OPERATIONS',
+  branchName: 'Khối Vận hành Siêu thị (Operations)',
+  businessUnitId: 'bu-ops', businessUnitCode: 'OPS',
+  divisionId: 'div-ops-south', divisionCode: 'OPS-S', divisionName: 'Operations South Region',
+  departmentId: 'dept-store-ap', departmentCode: 'STR-AP', departmentName: 'MM Mega Market An Phú',
+  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
+  storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
+  managerId: 'USR-0001',
+  status: 'ACTIVE',
+  avatar: 'TQ',
+  badgeTone: 'sage',
+};
+
+export const trainerUser = trainerHungUser;
+export const allTrainers = [trainerHungUser, trainerThanhUser, trainerQuangUser];
 
 export const hrbpUser = {
   userId: 'USR-HRBP-001',
@@ -127,7 +175,18 @@ export const hrbpUser = {
 };
 
 export function allUsers() {
-  return [adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, managerUser, currentUser, ...demoUsers.slice(4)];
+  return [
+    adminUser,
+    userAdminUser,
+    sysAdminUser,
+    hrbpUser,
+    trainerHungUser,
+    trainerThanhUser,
+    trainerQuangUser,
+    managerUser,
+    currentUser,
+    ...demoUsers.slice(4),
+  ];
 }
 
 // Direct reports of Line Manager (Fresh Food & Operations) with authentic diverse cases
@@ -373,47 +432,31 @@ export const userEnrollmentsMap = generated100EnrollmentMatrix;
 
 
 
-// Returns true when `course` is in `user`'s assignment scope
+export { getCourseAccessControl };
+
+// Returns true when `course` is enrolled for `user`
 export function isCourseAssignedToUser(course, user) {
-  if (!user) return true;
-  if (course.courseType === 'OPTIONAL') return true;
-  const a = course.assignment;
-  if (!a) return true;
-  switch (a.assignmentType) {
-    case 'BUSINESS_UNIT': return user.businessUnitId === a.targetBusinessUnitId || user.businessUnitCode === a.targetBusinessUnitCode;
-    case 'DIVISION': return user.divisionId === a.targetDivisionId || user.divisionCode === a.targetDivisionCode;
-    case 'DEPARTMENT': return user.departmentId === a.targetDepartmentId || user.departmentCode === a.targetDepartmentCode;
-    case 'AREA': return user.areaId === a.targetAreaId;
-    case 'STORE_TYPE': return user.storeTypeId === a.targetStoreTypeId;
-    case 'CLUSTER': return user.clusterId === a.targetClusterId;
-    case 'STORE': return user.storeId === a.targetStoreId;
-    case 'LEVEL': return user.level === a.targetLevel;
-    case 'ROLE': return user.role === a.targetRole || (a.targetRole === 'MANAGER' && (user.role === 'manager' || user.role === 'admin')) || (a.targetRole === 'USER_LEARN' && user.role === 'learner');
-    case 'USER': return user.userId === a.targetUserId || user.employeeCode === a.targetEmployeeCode;
-    default: return true;
-  }
+  if (!user || !course) return false;
+  const userMap = userEnrollmentsMap[user.userId] || userEnrollmentsMap['USR-1042'] || {};
+  return Boolean(userMap[course.id]);
 }
 
 // "My Learning" list for a given user: dynamically merges user-specific enrollments
 export function myLearningCourses(courseList, user) {
   if (!user) return [];
   const enrollments = userEnrollmentsMap[user.userId] || userEnrollmentsMap['USR-1042'] || {};
-  return courseList
-    .filter((c) => isCourseAssignedToUser(c, user))
+  return (courseList || [])
+    .filter((c) => Boolean(enrollments[c.id]))
     .map((c) => {
       const userEnrollment = enrollments[c.id];
-      if (userEnrollment) {
-        return {
-          ...c,
-          enrollment: {
-            ...(c.enrollment || {}),
-            ...userEnrollment,
-          },
-        };
-      }
-      return c.enrollment ? c : null;
-    })
-    .filter(Boolean);
+      return {
+        ...c,
+        enrollment: {
+          ...(c.enrollment || {}),
+          ...userEnrollment,
+        },
+      };
+    });
 }
 
 
@@ -459,16 +502,27 @@ export function createBlankCourse() {
     code: '',
     title: 'Untitled course',
     description: '',
-    category: '',
+    category: 'Store Operations',
+    deliveryType: 'ONLINE_ELEARNING', // 'ONLINE_ELEARNING' | 'IN_PERSON_CLASSROOM'
     courseType: 'OPTIONAL',
     status: 'DRAFT',
+    modality: 'SCORM_PACKAGE',
+    format: 'SCORM 2004',
     version: 'v1.0',
     versionHistory: [{
       version: 'v1.0', updatedBy: adminUser.fullName, updatedAt: new Date().toISOString().slice(0, 10), note: 'Initial draft created.',
     }],
-    estimatedDuration: '',
+    estimatedHours: '2.0h',
     createdBy: adminUser.userId,
     publishedAt: null,
+    trainerId: 'tr-01',
+    trainerName: 'Nguyen Van Hung',
+    venueId: 'lab-ap-fresh',
+    venue: 'Fresh Food & Bakery Practical Lab (MM An Phu)',
+    scheduleDate: '2026-08-28',
+    scheduleTime: '08:30 - 11:30 (3.0 hours)',
+    maxCapacity: 25,
+    enrolledStudents: [],
     prerequisites: [],
     configuration: {
       assessmentEnabled: false,
