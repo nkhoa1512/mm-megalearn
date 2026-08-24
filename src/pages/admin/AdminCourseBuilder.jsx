@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
 } from '../../data/mockData';
+import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -10,24 +11,6 @@ const LESSON_ICON = {
   VIDEO: 'ti-video', DOCUMENT: 'ti-file-text', IMAGE: 'ti-photo',
   TEXT: 'ti-align-left', SCRIPT: 'ti-article', ASSESSMENT: 'ti-writing',
 };
-
-const ASSIGNMENT_TYPES = ['BUSINESS_UNIT', 'DIVISION', 'DEPARTMENT', 'LEVEL', 'ROLE', 'USER'];
-const TARGET_ID_FIELD = {
-  BUSINESS_UNIT: 'targetBusinessUnitId', DIVISION: 'targetDivisionId',
-  DEPARTMENT: 'targetDepartmentId', LEVEL: 'targetLevel', ROLE: 'targetRole', USER: 'targetUserId',
-};
-
-function targetOptionsFor(assignmentType) {
-  switch (assignmentType) {
-    case 'BUSINESS_UNIT': return businessUnits.map((b) => ({ id: b.id, label: b.name }));
-    case 'DIVISION': return divisions.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
-    case 'DEPARTMENT': return departments.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
-    case 'LEVEL': return jobLevels.map((l) => ({ id: l.level, label: `Level ${l.level} - ${l.title}` }));
-    case 'ROLE': return [{ id: 'admin', label: 'Admin (HRD Director Level 1)' }, { id: 'manager', label: 'Line Manager (Level 4-5)' }, { id: 'learner', label: 'Learner (Level 6-7, CL, IN)' }];
-    case 'USER': return (demoUsers || allUsers()).filter((u) => u.role !== 'admin').map((u) => ({ id: u.userId, label: `${u.fullName} (${u.employeeCode} · Lvl ${u.level} · ${u.divisionCode}-${u.departmentCode})` }));
-    default: return [];
-  }
-}
 
 
 function genId(prefix) {
@@ -346,12 +329,21 @@ export default function AdminCourseBuilder() {
             <select
               className="field-select"
               value={draft.modality || 'SCORM_PACKAGE'}
-              onChange={(e) => patch({ modality: e.target.value, format: e.target.value === 'SCORM_PACKAGE' ? 'SCORM 2004' : e.target.value === 'PPT_PRESENTATION' ? 'Interactive PPT Slides' : e.target.value === 'EXTERNAL_PLATFORM' ? 'LinkedIn Learning / Coursera Embed' : 'Interactive Video' })}
+              onChange={(e) => {
+                const modality = e.target.value;
+                const format = modality === 'SCORM_PACKAGE' ? 'SCORM 2004'
+                  : modality === 'PPT_PRESENTATION' ? 'Interactive PPT Slides'
+                  : modality === 'EXTERNAL_PLATFORM' ? 'LinkedIn Learning / Coursera Embed'
+                  : modality === 'YOUTUBE_LINK' ? 'YouTube Video (External Link)'
+                  : 'Interactive Video';
+                patch({ modality, format });
+              }}
             >
               <option value="SCORM_PACKAGE">SCORM 2004 Package</option>
               <option value="INTERACTIVE_VIDEO">Interactive Video Stream</option>
               <option value="PPT_PRESENTATION">PowerPoint Slide Deck</option>
               <option value="EXTERNAL_PLATFORM">External Platform (LinkedIn / Coursera / Udemy)</option>
+              <option value="YOUTUBE_LINK">YouTube Video (Link)</option>
               <option value="CLASSROOM_LAB">Store Practical Lab (ILT)</option>
             </select>
           </div>
@@ -364,6 +356,19 @@ export default function AdminCourseBuilder() {
             </select>
           </div>
         </div>
+
+        {draft.modality === 'YOUTUBE_LINK' && (
+          <div style={{ marginBottom: 14 }}>
+            <label className="field-label">YouTube Video URL</label>
+            <input
+              className="field-input"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={draft.content?.youtubeUrl || ''}
+              onChange={(e) => patch({ content: { ...draft.content, youtubeUrl: e.target.value } })}
+            />
+            <div className="field-hint">Paste a full YouTube watch/share/embed URL — learners will see it played inline on the lesson screen.</div>
+          </div>
+        )}
 
         {/* Version Audit Trail & Review Log */}
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>
@@ -404,7 +409,7 @@ export default function AdminCourseBuilder() {
                   <option key={o.id} value={o.id}>{o.label}</option>
                 ))}
               </select>
-              <div className="field-hint">Business Unit, Division, Department, Role, or a specific user.</div>
+              <div className="field-hint">Head Office (Business Unit / Division / Department), Operations (Area / Store Type / Cluster / Store), Level, Role, or a specific user.</div>
             </div>
             <div>
               <label className="field-label">Assigned by</label>
@@ -893,8 +898,4 @@ function QuestionEditor({ index, question, editing, onEdit, onDone, onChange, on
       <Button size="sm" variant="primary" icon="ti-check" onClick={onDone}>Done</Button>
     </div>
   );
-}
-
-function assignmentTypeLabel(t) {
-  return { BUSINESS_UNIT: 'Business Unit', DIVISION: 'Division', DEPARTMENT: 'Department', ROLE: 'Role', USER: 'Individual User' }[t];
 }

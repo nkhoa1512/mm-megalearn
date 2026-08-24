@@ -31,9 +31,9 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
     const nextRole = e.target.value;
     onRoleChange(nextRole);
     // Switch to a suitable demo user for this role if needed
-    if (nextRole === 'admin' || nextRole === 'sysadmin') {
+    if (nextRole === 'admin' || nextRole === 'sysadmin' || nextRole === 'useradmin') {
       switchUser(demoUsers[0].userId);
-      navigate('/admin');
+      navigate('/admin/config');
     } else if (nextRole === 'manager') {
       switchUser(demoUsers[1].userId);
       navigate('/manager');
@@ -104,6 +104,7 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
             <option value="trainer">L&amp;D Trainer / Instructor</option>
             <option value="admin">L&amp;D Admin (HR Director Level 1)</option>
             <option value="sysadmin">System Admin (IT Security)</option>
+            <option value="useradmin">User Admin (Employee &amp; Org Records)</option>
           </select>
         </div>
 

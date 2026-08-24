@@ -8,12 +8,27 @@ function flattenLessons(course) {
   return course.modules.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleId: m.id })));
 }
 
+function youtubeVideoId(url) {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
+    /(?:youtu\.be\/)([\w-]{11})/,
+    /(?:youtube\.com\/embed\/)([\w-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 function lessonTypeLabel(t) {
   switch (t) {
     case 'VIDEO': return 'Video Lecture';
     case 'SCORM': return 'SCORM 2004 Interactive Package';
     case 'PPT': return 'PowerPoint Presentation Deck';
     case 'EXTERNAL': return 'External Platform (LinkedIn / Coursera)';
+    case 'YOUTUBE': return 'YouTube Video (External Link)';
     case 'DOCUMENT': return 'Standard Operating Procedure (SOP PDF)';
     case 'SCRIPT': return 'Operational Scenario Script';
     case 'IMAGE': return 'Visual Process Gallery';
@@ -52,6 +67,7 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const isScorm = course.modality === 'SCORM_PACKAGE' || lesson.lessonType === 'SCORM';
   const isPpt = course.modality === 'PPT_PRESENTATION' || lesson.lessonType === 'PPT';
   const isExternal = course.modality === 'EXTERNAL_PLATFORM' || lesson.lessonType === 'EXTERNAL';
+  const isYoutube = course.modality === 'YOUTUBE_LINK' || lesson.lessonType === 'YOUTUBE';
 
   return (
     <>
@@ -71,7 +87,7 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
             </Badge>
           </div>
           <p>
-            {lessonTypeLabel(isScorm ? 'SCORM' : isPpt ? 'PPT' : isExternal ? 'EXTERNAL' : lesson.lessonType)} &middot; {lesson.isRequired ? 'Mandatory' : 'Optional'} &middot; Version: <strong>{course.configuration?.version || 'v2.1'}</strong>
+            {lessonTypeLabel(isScorm ? 'SCORM' : isPpt ? 'PPT' : isExternal ? 'EXTERNAL' : isYoutube ? 'YOUTUBE' : lesson.lessonType)} &middot; {lesson.isRequired ? 'Mandatory' : 'Optional'} &middot; Version: <strong>{course.configuration?.version || 'v2.1'}</strong>
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -95,6 +111,8 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
           <ScormPlayerSimulator course={course} lesson={lesson} onComplete={complete} />
         ) : isPpt ? (
           <PptSlidePlayer course={course} lesson={lesson} onComplete={complete} />
+        ) : isYoutube ? (
+          <YoutubeLesson course={course} onComplete={complete} />
         ) : isExternal ? (
           <ExternalPlatformPlayer course={course} lesson={lesson} onComplete={complete} />
         ) : lesson.lessonType === 'VIDEO' ? (
@@ -334,6 +352,53 @@ function PptSlidePlayer({ course, lesson, onComplete }) {
           }}
         >
           {currentSlide === totalSlides ? 'Complete PPT Presentation' : 'Next Slide →'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 2.5 YouTube Video Lesson Player (External Direct URL)
+// ---------------------------------------------------------------------------
+function YoutubeLesson({ course, onComplete }) {
+  const videoId = youtubeVideoId(course.content?.youtubeUrl) || 'dQw4w9WgXcQ';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div
+        style={{
+          background: '#E31B23', color: '#fff', padding: '14px 20px', borderRadius: 8,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="ti ti-brand-youtube" style={{ fontSize: 24 }} />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>YouTube Training Video</div>
+            <div style={{ fontSize: 11.5, opacity: 0.9 }}>External Link &middot; MMVN L&amp;D Hub</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: '#000', borderRadius: 8, overflow: 'hidden', height: 380 }}>
+        <iframe
+          width="100%"
+          height="100%"
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title="YouTube Training Video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+          Watch the video, then confirm completion to record it on your transcript.
+        </span>
+        <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
+          Confirm Video Watched
         </Button>
       </div>
     </div>

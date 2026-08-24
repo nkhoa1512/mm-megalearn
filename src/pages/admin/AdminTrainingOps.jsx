@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
 import {
   trainersDirectory,
   meetingRoomsAndLabs,
   classroomSessions,
 } from '../../data/mockData';
+import { initialRoomBookings } from '../../data/roomBookings';
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 
@@ -13,6 +13,36 @@ export default function AdminTrainingOps() {
 
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [selectedVenue, setSelectedVenue] = useState(null);
+  const [roomBookings, setRoomBookings] = useState(initialRoomBookings);
+  const [reserveDate, setReserveDate] = useState('2026-09-15');
+  const [reserveWorkshopName, setReserveWorkshopName] = useState('');
+  const [reserveError, setReserveError] = useState('');
+
+  function bookingsForRoom(roomId) {
+    return roomBookings.filter((b) => b.roomId === roomId).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function openReserveModal(venue) {
+    setSelectedVenue(venue);
+    setReserveDate('2026-09-15');
+    setReserveWorkshopName('');
+    setReserveError('');
+  }
+
+  function confirmReservation() {
+    if (!reserveWorkshopName.trim()) {
+      setReserveError('Enter a workshop name before confirming.');
+      return;
+    }
+    const conflict = roomBookings.find((b) => b.roomId === selectedVenue.id && b.date === reserveDate);
+    if (conflict) {
+      setReserveError(`Conflict: "${conflict.workshopName}" already booked in this room on ${reserveDate}.`);
+      return;
+    }
+    setRoomBookings((prev) => [...prev, { id: `book-${Date.now()}`, roomId: selectedVenue.id, date: reserveDate, workshopName: reserveWorkshopName.trim() }]);
+    setSelectedVenue(null);
+  }
+
   const [batchClassId, setBatchClassId] = useState(classrooms[0]?.id || 'ilt-001');
   const [csvInput, setCsvInput] = useState(
     'MMVN-1042, Minh Tran, Bakery Specialist, MM An Phu\nMMVN-1078, Sarah Johnson, Pastry Chef Associate, MM An Phu\nMMVN-1120, Carlos Reyes, Dough Prep Associate, MM An Phu'
@@ -180,11 +210,27 @@ export default function AdminTrainingOps() {
                   </div>
                 </div>
 
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>Upcoming Bookings:</div>
+                  {bookingsForRoom(v.id).length === 0 ? (
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>No bookings scheduled.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {bookingsForRoom(v.id).map((b) => (
+                        <div key={b.id} style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                          <i className="ti ti-calendar-event" style={{ marginRight: 4, color: 'var(--amber)' }} />
+                          {b.date} &middot; {b.workshopName}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
                   <span style={{ color: 'var(--sage)', fontWeight: 600 }}>
                     <i className="ti ti-circle-check" style={{ marginRight: 4 }} /> Available (No Conflict)
                   </span>
-                  <Button size="sm" variant="ghost" icon="ti-calendar-plus" onClick={() => setSelectedVenue(v)}>
+                  <Button size="sm" variant="ghost" icon="ti-calendar-plus" onClick={() => openReserveModal(v)}>
                     Reserve Room
                   </Button>
                 </div>
@@ -332,15 +378,33 @@ export default function AdminTrainingOps() {
         title="Reserve Training Room / Store Lab"
         subtitle={selectedVenue ? selectedVenue.name : ''}
         size="sm"
-        footer={<Button variant="primary" onClick={() => setSelectedVenue(null)}>Confirm Reservation</Button>}
+        footer={<Button variant="primary" onClick={confirmReservation}>Confirm Reservation</Button>}
       >
         {selectedVenue && (
           <div>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               Select cohort date and workshop title to schedule this venue.
             </p>
-            <input type="date" className="field-input" defaultValue="2026-09-15" style={{ width: '100%', marginBottom: 10 }} />
-            <input type="text" className="field-input" placeholder="Workshop Name (e.g. Store Lab HACCP)" style={{ width: '100%' }} />
+            <input
+              type="date"
+              className="field-input"
+              value={reserveDate}
+              onChange={(e) => setReserveDate(e.target.value)}
+              style={{ width: '100%', marginBottom: 10 }}
+            />
+            <input
+              type="text"
+              className="field-input"
+              placeholder="Workshop Name (e.g. Store Lab HACCP)"
+              value={reserveWorkshopName}
+              onChange={(e) => setReserveWorkshopName(e.target.value)}
+              style={{ width: '100%' }}
+            />
+            {reserveError && (
+              <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--rust)' }}>
+                <i className="ti ti-alert-triangle" style={{ marginRight: 4 }} />{reserveError}
+              </div>
+            )}
           </div>
         )}
       </Modal>

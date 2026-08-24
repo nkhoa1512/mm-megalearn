@@ -7,6 +7,7 @@ import {
   divisionComplianceLeague,
 } from '../../data/mockData';
 import { StatCard, Badge, Button, ProgressBar } from '../../components/ui';
+import { downloadCsv } from '../../lib/exportCsv';
 
 export default function AdminReports() {
   const [selectedInspectionPackage, setSelectedInspectionPackage] = useState('HACCP');
@@ -14,13 +15,38 @@ export default function AdminReports() {
   const [exportComplete, setExportComplete] = useState(false);
   const [activeReportTab, setActiveReportTab] = useState('ROI_KIRKPATRICK'); // ROI_KIRKPATRICK, HEATMAP, COST_BUDGET, COMPLIANCE_LEAGUE
 
-  function handleExportDossier(format = 'Excel') {
+  function activeReportRows() {
+    if (activeReportTab === 'HEATMAP') {
+      return [...companyHeatmapData.operations, ...companyHeatmapData.supportingOffice];
+    }
+    if (activeReportTab === 'COST_BUDGET') {
+      return costTrackingData.departmentSpend;
+    }
+    if (activeReportTab === 'COMPLIANCE_LEAGUE') {
+      return divisionComplianceLeague;
+    }
+    return [
+      { level: 'Level 1 - Reaction', ...kirkpatrickROI.level1 },
+      { level: 'Level 2 - Learning', ...kirkpatrickROI.level2 },
+    ];
+  }
+
+  function handleExportExcel() {
     setIsExporting(true);
     setTimeout(() => {
+      downloadCsv(`mmvn-lms-${activeReportTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, activeReportRows());
       setIsExporting(false);
       setExportComplete(true);
       setTimeout(() => setExportComplete(false), 3000);
-    }, 1500);
+    }, 800);
+  }
+
+  function handleExportDossier() {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+      window.print();
+    }, 800);
   }
 
   return (
@@ -38,19 +64,19 @@ export default function AdminReports() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Button
             variant="outline"
-            icon="ti-file-spreadsheet"
-            onClick={() => handleExportDossier('Excel')}
+            icon={exportComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-spreadsheet'}
+            onClick={handleExportExcel}
             disabled={isExporting}
           >
-            Export Excel Report
+            {exportComplete ? 'CSV Downloaded!' : 'Export Excel Report (CSV)'}
           </Button>
           <Button
             variant="primary"
-            icon={exportComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
-            onClick={() => handleExportDossier('PDF')}
+            icon={isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
+            onClick={handleExportDossier}
             disabled={isExporting}
           >
-            {exportComplete ? 'Inspection Dossier Generated!' : isExporting ? 'Generating Signed Dossier...' : 'Export Audit Dossier (Signed PDF)'}
+            {isExporting ? 'Preparing Print View...' : 'Export Audit Dossier (Print / Save as PDF)'}
           </Button>
         </div>
       </div>

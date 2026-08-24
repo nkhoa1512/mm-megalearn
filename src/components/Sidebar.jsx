@@ -10,6 +10,7 @@ const PROFILE_BY_ROLE = {
   hrbp: managerUser,
   trainer: adminUser,
   sysadmin: adminUser,
+  useradmin: adminUser,
 };
 
 const NAV_BY_ROLE = {
@@ -54,6 +55,11 @@ const NAV_BY_ROLE = {
     { to: '/admin/reports', label: 'Audit Logs & Heatmap', icon: 'ti-shield-lock' },
     { to: '/admin', label: 'System Overview', icon: 'ti-layout-dashboard' },
   ],
+  useradmin: [
+    { to: '/admin/config', label: 'Employee Master & Org Structure', icon: 'ti-users-group', end: true },
+    { to: '/admin/reports', label: 'Workforce Compliance Reports', icon: 'ti-chart-histogram' },
+    { to: '/admin', label: 'System Overview', icon: 'ti-layout-dashboard' },
+  ],
 };
 
 const ROLE_META = {
@@ -63,6 +69,7 @@ const ROLE_META = {
   trainer: { label: 'L&D Trainer / Instructor', icon: 'ti-school', tone: 'sage' },
   admin: { label: 'L&D Administrator', icon: 'ti-shield-lock', tone: 'sage' },
   sysadmin: { label: 'System Administrator (IT)', icon: 'ti-lock', tone: 'rust' },
+  useradmin: { label: 'User Administrator (HR Ops)', icon: 'ti-users-group', tone: 'blue' },
 };
 
 export default function Sidebar({ role, collapsed }) {

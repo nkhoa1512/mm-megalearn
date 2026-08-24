@@ -8,6 +8,8 @@ import {
   jobLevels,
   courses,
 } from '../../data/mockData';
+import { ASSIGNMENT_TYPES, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
+import OrgHierarchyBrowser from '../../components/OrgHierarchyBrowser';
 import { Button, Badge, Tabs } from '../../components/ui';
 
 export default function AdminConfig() {
@@ -21,8 +23,8 @@ export default function AdminConfig() {
       id: 'rule-1',
       name: 'Fresh Food Onboarding Mandatory Pack',
       triggerType: 'DEPARTMENT',
-      triggerTarget: 'PPF',
-      triggerLabel: 'PPF - Processed Fresh Food',
+      triggerTarget: 'dept-ppf',
+      triggerLabel: 'Department (Head Office): PPF - Processed Fresh Food',
       assignedCourseId: 'course-fsh-1',
       assignedCourseTitle: 'Food Safety & Hygiene Standards (HACCP)',
       completionDays: 14,
@@ -33,8 +35,8 @@ export default function AdminConfig() {
       id: 'rule-2',
       name: 'Supply Chain Warehouse Safety Pass',
       triggerType: 'DIVISION',
-      triggerTarget: 'SCM',
-      triggerLabel: 'SCM - Supply Chain Management',
+      triggerTarget: 'div-scm',
+      triggerLabel: 'Division (Head Office): SCM - Supply Chain Management',
       assignedCourseId: 'course-scm-1',
       assignedCourseTitle: 'Forklift & Reach Truck Safe Operation Certification',
       completionDays: 10,
@@ -44,9 +46,9 @@ export default function AdminConfig() {
     {
       id: 'rule-3',
       name: 'Manager Leadership Accreditation',
-      triggerType: 'JOB_LEVEL',
+      triggerType: 'LEVEL',
       triggerTarget: '4',
-      triggerLabel: 'Level 4 - Manager / Functional Expert',
+      triggerLabel: 'Job Level: Level 4 - Line Manager / Store Department Manager',
       assignedCourseId: 'course-ldr-1',
       assignedCourseTitle: 'Leadership Essentials for Managers: Coaching & Feedback',
       completionDays: 30,
@@ -69,7 +71,7 @@ export default function AdminConfig() {
 
   const [newRuleName, setNewRuleName] = useState('');
   const [newRuleTrigger, setNewRuleTrigger] = useState('DEPARTMENT');
-  const [newRuleTarget, setNewRuleTarget] = useState('PPF');
+  const [newRuleTarget, setNewRuleTarget] = useState('dept-ppf');
   const [newRuleCourse, setNewRuleCourse] = useState(courses[0]?.id || 'course-fsh-1');
   const [newRuleDays, setNewRuleDays] = useState(14);
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
@@ -190,12 +192,15 @@ export default function AdminConfig() {
   function handleAddRule(e) {
     e.preventDefault();
     const courseObj = courses.find((c) => c.id === newRuleCourse) || courses[0];
+    const targetLabel = newRuleTrigger === 'ALL_ASSOCIATES'
+      ? 'All 100 Associates (Company-wide)'
+      : targetOptionsFor(newRuleTrigger).find((o) => o.id === newRuleTarget)?.label || newRuleTarget;
     const newRule = {
       id: `rule-${Date.now()}`,
-      name: newRuleName || `Auto-Enrollment Rule for ${newRuleTarget}`,
+      name: newRuleName || `Auto-Enrollment Rule for ${targetLabel}`,
       triggerType: newRuleTrigger,
       triggerTarget: newRuleTarget,
-      triggerLabel: `${newRuleTrigger}: ${newRuleTarget}`,
+      triggerLabel: `${assignmentTypeLabel(newRuleTrigger) || 'All Associates'}: ${targetLabel}`,
       assignedCourseId: courseObj.id,
       assignedCourseTitle: courseObj.title,
       completionDays: Number(newRuleDays) || 14,
@@ -288,8 +293,9 @@ export default function AdminConfig() {
           { id: 'auto-rules', label: 'Auto-Assignment & Learning SLAs', icon: 'ti-wand', count: autoRules.length },
           { id: 'security', label: 'Security, Watermark & Anti-Cheat', icon: 'ti-shield-lock' },
           { id: 'hris', label: 'SAP SuccessFactors HRIS', icon: 'ti-cloud-computing', count: syncLogs.length },
+          { id: 'org-structure', label: 'Org Structure (Dual Hierarchy)', icon: 'ti-sitemap' },
           { id: 'gateways', label: 'Notifications & Message Templates', icon: 'ti-bell' },
-          { id: 'rbac', label: 'MMVN Matrix & RBAC Permissions', icon: 'ti-sitemap', count: 16 },
+          { id: 'rbac', label: 'MMVN Matrix & RBAC Permissions', icon: 'ti-users', count: 16 },
           { id: 'branding', label: 'Certificates & System Backup', icon: 'ti-certificate' },
         ]}
         activeTab={activeTab}
@@ -813,6 +819,22 @@ export default function AdminConfig() {
       )}
 
       {/* ========================================================================= */}
+      {/* TAB: ORG STRUCTURE (DUAL HIERARCHY) */}
+      {/* ========================================================================= */}
+      {activeTab === 'org-structure' && (
+        <div style={{ marginBottom: 28 }}>
+          <div className="card card-pad" style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
+              Browse MMVN's dual organizational hierarchy: the Supporting Functions branch (Division → Department)
+              on the left, and the Operations branch (Area → Cluster → Store) on the right. Employee master records
+              synced from SAP SuccessFactors (HRIS tab) attach to nodes in this tree.
+            </p>
+          </div>
+          <OrgHierarchyBrowser />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* TAB 4: NOTIFICATIONS & MESSAGE TEMPLATES */}
       {/* ========================================================================= */}
       {activeTab === 'gateways' && (
@@ -1165,25 +1187,30 @@ export default function AdminConfig() {
                   <select
                     className="field-select"
                     value={newRuleTrigger}
-                    onChange={(e) => setNewRuleTrigger(e.target.value)}
+                    onChange={(e) => {
+                      const nextType = e.target.value;
+                      setNewRuleTrigger(nextType);
+                      setNewRuleTarget(targetOptionsFor(nextType)[0]?.id || 'ALL');
+                    }}
                   >
-                    <option value="DEPARTMENT">Department Code</option>
-                    <option value="DIVISION">Division Code</option>
-                    <option value="JOB_LEVEL">Job Level</option>
-                    <option value="ALL_ASSOCIATES">All 100 Associates</option>
+                    {ASSIGNMENT_TYPES.filter((t) => t !== 'USER').map((t) => (
+                      <option key={t} value={t}>{assignmentTypeLabel(t)}</option>
+                    ))}
+                    <option value="ALL_ASSOCIATES">All 100 Associates (Company-wide)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="field-label">Target Scope Value</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    placeholder="e.g. PPF or SCM or Level 4"
-                    value={newRuleTarget}
-                    onChange={(e) => setNewRuleTarget(e.target.value)}
-                    required
-                  />
+                  <label className="field-label">Target Scope</label>
+                  {newRuleTrigger === 'ALL_ASSOCIATES' ? (
+                    <input type="text" className="field-input" value="All 100 Associates" disabled />
+                  ) : (
+                    <select className="field-select" value={newRuleTarget} onChange={(e) => setNewRuleTarget(e.target.value)}>
+                      {targetOptionsFor(newRuleTrigger).map((o) => (
+                        <option key={o.id} value={o.id}>{o.label}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
