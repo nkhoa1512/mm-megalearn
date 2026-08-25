@@ -11,12 +11,18 @@ import {
 import { Badge, ProgressBar, Button, BarChart } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 import { levelDefinition } from '../../data/levelSystem';
+import { normalizeRole, roleDefinition, ROLE_HOME } from '../../data/roles';
 import RoadmapTabsPanel from '../../components/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
   const { courses: allCourses, currentUser: authUser } = useCourseStore();
   const user = authUser || currentUser;
+  // Learner không có Cockpit riêng (đây chính là trang chủ của họ) — 5 role
+  // còn lại bấm "Xem Giao Diện Học Tập Cá Nhân" từ Cockpit của mình sang đây,
+  // nên cần 1 nút đối xứng để quay lại đúng Cockpit của role đó.
+  const userRole = normalizeRole(user.role);
+  const isNonLearner = userRole !== 'learner';
   const courses = myLearningCourses(allCourses, user);
   const certificates = deriveCertificates(allCourses, user);
   const mandatoryCourses = courses.filter((c) => c.courseType === 'MANDATORY');
@@ -39,13 +45,20 @@ export default function LearnerDashboard() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Xin chào, {user.fullName.split(' ').pop()}! 👋</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Xin chào, {firstNameOf(user.fullName)}! 👋</h1>
                 <Badge tone="rail" icon="ti-map-2">{levelDef.emoji} Level {user.level} &middot; {levelDef.shortVi}</Badge>
               </div>
               <p style={{ marginTop: 2, marginBottom: 0 }}><strong>{user.position}</strong> &middot; MM Mega Market</p>
             </div>
           </div>
-          <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>Khóa Học Của Tôi ({courses.length})</Button>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {isNonLearner && (
+              <Button variant="outline" icon="ti-layout-dashboard" onClick={() => navigate(ROLE_HOME[userRole] || '/learner')}>
+                Mở Bảng Điều Khiển {roleDefinition(userRole).shortVi}
+              </Button>
+            )}
+            <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>Khóa Học Của Tôi ({courses.length})</Button>
+          </div>
         </div>
       </div>
 
@@ -142,4 +155,11 @@ function ResourceCard({ icon, tone, title, value, onClick }) {
       </div>
     </div>
   );
+}
+
+// Vài persona (HRBP, User Admin, SysAdmin, Trainer...) có fullName kèm hậu tố
+// vai trò trong ngoặc, vd "Le Thi Mai (HRBP)" — bỏ hậu tố đó trước khi lấy từ
+// cuối cùng làm tên gọi thân mật, tránh chào "Xin chào, (HRBP)!".
+function firstNameOf(fullName) {
+  return (fullName || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(' ').pop();
 }

@@ -52,11 +52,16 @@ export default function ManagerDashboard() {
         </div>
 
 
-        {pendingApprovals.length > 0 && (
-          <Button variant="primary" icon="ti-clipboard-check" onClick={() => navigate('/manager/approvals')}>
-            Review {pendingApprovals.length} Pending Approvals
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+            Xem Giao Diện Học Tập Cá Nhân
           </Button>
-        )}
+          {pendingApprovals.length > 0 && (
+            <Button variant="primary" icon="ti-clipboard-check" onClick={() => navigate('/manager/approvals')}>
+              Review {pendingApprovals.length} Pending Approvals
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* AI Risk Prediction & Approvals Banner */}

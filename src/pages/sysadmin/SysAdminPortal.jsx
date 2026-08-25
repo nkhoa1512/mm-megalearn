@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   sysAdminUser,
   hrisSyncLogs,
@@ -29,6 +30,7 @@ const CAPABILITY_ROWS = [
 ];
 
 export default function SysAdminPortal({ initialTab = 'HRIS' }) {
+  const navigate = useNavigate();
   // HRIS | AUDIT_LOGS | POLICIES | ROLE_GOVERNANCE
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
@@ -72,24 +74,28 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>99.98%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hạ tầng SLA<br />Uptime Health</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>CONNECTED</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>SAP HRIS Sync<br />REST API Pipeline</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>0 Cảnh Báo</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sự cố Bảo mật<br />Trong 24 giờ qua</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>24</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phiên làm việc<br />Đang hoạt động</div>
-          </div>
+        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+          Xem Giao Diện Học Tập Cá Nhân
+        </Button>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>99.98%</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hạ tầng SLA<br />Uptime Health</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>CONNECTED</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>SAP HRIS Sync<br />REST API Pipeline</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>0 Cảnh Báo</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sự cố Bảo mật<br />Trong 24 giờ qua</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>24</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phiên làm việc<br />Đang hoạt động</div>
         </div>
       </div>
 

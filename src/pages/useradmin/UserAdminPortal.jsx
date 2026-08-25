@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   allUsers,
   userAdminUser,
@@ -19,6 +19,7 @@ import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from 
 import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
+  const navigate = useNavigate();
   // DIRECTORY | HIERARCHY | JOB_LEVELS | ALLOCATION | TRAINER_ASSIGNMENT
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
@@ -104,24 +105,28 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{rawUsers.length}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hồ sơ Nhân sự<br />Đang quản lý</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>6</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Chi nhánh Siêu thị<br />Hypermarket</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>12</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phòng ban Trụ sở<br />Head Office</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>7</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Cấp bậc Định biên<br />Level 7 → Level 1</div>
-          </div>
+        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+          Xem Giao Diện Học Tập Cá Nhân
+        </Button>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{rawUsers.length}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hồ sơ Nhân sự<br />Đang quản lý</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>6</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Chi nhánh Siêu thị<br />Hypermarket</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>12</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phòng ban Trụ sở<br />Head Office</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>7</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Cấp bậc Định biên<br />Level 7 → Level 1</div>
         </div>
       </div>
 

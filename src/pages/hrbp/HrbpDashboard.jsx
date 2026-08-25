@@ -68,24 +68,28 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </p>
         </div>
 
-        {/* Quick KPI stats */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>94.2%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>78.5%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sẵn sàng Kế nhiệm<br />(Talent Readiness)</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>4</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Khoảng cách Kỹ năng<br />Cần L&amp;D can thiệp</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>1,450</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự Phụ trách<br />Khu vực Miền Nam</div>
-          </div>
+        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+          Xem Giao Diện Học Tập Cá Nhân
+        </Button>
+      </div>
+
+      {/* Quick KPI stats */}
+      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>94.2%</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>78.5%</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sẵn sàng Kế nhiệm<br />(Talent Readiness)</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>4</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Khoảng cách Kỹ năng<br />Cần L&amp;D can thiệp</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>1,450</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự Phụ trách<br />Khu vực Miền Nam</div>
         </div>
       </div>
 

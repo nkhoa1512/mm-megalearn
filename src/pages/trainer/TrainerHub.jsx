@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   meetingRoomsAndLabs,
   classroomSessions,
@@ -12,6 +13,7 @@ import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
+  const navigate = useNavigate();
   const { courses, currentUser: authUser, users } = useCourseStore();
   // CLASSES | ATTENDANCE | FEEDBACK | LABS — chọn qua điều hướng sidebar
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -183,20 +185,24 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
           </div>
         </div>
 
-        {/* Quick KPI stats */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Điểm CSAT<br />Trung bình</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{trainerProfile.totalClassesTaught}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Buổi đào tạo<br />Đã giảng dạy</div>
-          </div>
-          <div className="card card-pad" style={{ padding: '8px 16px', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Học viên<br />Đã hoàn thành</div>
-          </div>
+        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+          Xem Giao Diện Học Tập Cá Nhân
+        </Button>
+      </div>
+
+      {/* Quick KPI stats */}
+      <div className="grid grid-3" style={{ marginBottom: 24 }}>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Điểm CSAT<br />Trung bình</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{trainerProfile.totalClassesTaught}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Buổi đào tạo<br />Đã giảng dạy</div>
+        </div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Học viên<br />Đã hoàn thành</div>
         </div>
       </div>
 
