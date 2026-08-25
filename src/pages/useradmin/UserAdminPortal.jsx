@@ -93,7 +93,6 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
   const TABS = [
     { id: 'DIRECTORY', labelVi: 'Danh Mục 100+ Nhân Sự', labelEn: '100+ Staff Directory', icon: 'ti-address-book' },
-    { id: 'COURSE_MANAGEMENT', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2', isNav: true, to: '/admin/courses' },
     { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu 2 Nhánh', labelEn: 'Dual Org Hierarchy Tree', icon: 'ti-binary-tree' },
     { id: 'JOB_LEVELS', labelVi: 'Khung 7 Cấp Bậc', labelEn: '7-Level Framework', icon: 'ti-id-badge-2' },
     { id: 'ALLOCATION', labelVi: 'Phân Bổ Khóa Học', labelEn: 'Course Allocation', icon: 'ti-stack-2' },
