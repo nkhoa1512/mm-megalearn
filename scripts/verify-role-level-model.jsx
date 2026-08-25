@@ -652,9 +652,11 @@ console.log('\n=== 18. LearnerDashboard restructure: real fields only, reachable
   const { weeklyStudyHours: seedWeeklyHours } = await import('../src/data/mockData');
   actAs('learner');
   const dashHtml = render('learner dashboard renders the restructured layout', <LearnerDashboard />, '/learner', '/learner');
-  check('dashboard shows the 4 real stat tiles', Boolean(dashHtml
+  check('dashboard shows the 3 real stat tiles', Boolean(dashHtml
     && dashHtml.includes('Giờ Học') && dashHtml.includes('Khóa Đã Hoàn Thành')
-    && dashHtml.includes('Lộ Trình Kế Cận') && dashHtml.includes('Khóa Bắt Buộc')));
+    && dashHtml.includes('Khóa Bắt Buộc')));
+  check('dashboard no longer has a standalone "Lộ Trình Kế Cận" stat tile (only the tab label remains)',
+    Boolean(dashHtml) && (dashHtml.match(/Lộ Trình Kế Cận/g) || []).length === 1);
   check('dashboard embeds the 4-tab roadmap panel inline', Boolean(dashHtml && dashHtml.includes('Trục Lộ Trình Đào Tạo')));
   check('dashboard shows the weekly study-hours chart section', Boolean(dashHtml && dashHtml.includes('Thời Lượng Học Tập')));
   check('dashboard does NOT show any fabricated field (favorites/wishlist/SOP library/daily goal)',

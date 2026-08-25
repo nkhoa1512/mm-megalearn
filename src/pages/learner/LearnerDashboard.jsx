@@ -15,7 +15,7 @@ import RoadmapTabsPanel from '../../components/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
-  const { courses: allCourses, currentUser: authUser, getUserRoadmapTabs } = useCourseStore();
+  const { courses: allCourses, currentUser: authUser } = useCourseStore();
   const user = authUser || currentUser;
   const courses = myLearningCourses(allCourses, user);
   const certificates = deriveCertificates(allCourses, user);
@@ -25,7 +25,6 @@ export default function LearnerDashboard() {
   const inProgressCourses = courses.filter((c) => c.enrollment.status === 'IN_PROGRESS');
   const completedCount = courses.filter((c) => c.enrollment.status === 'COMPLETED').length;
   const learningHours = totalLearningHours(allCourses, user);
-  const roadmap = getUserRoadmapTabs(user);
   const levelDef = levelDefinition(user.level);
   const chartData = weeklyStudyHours(user);
   const unreadCount = (notifications.learnerInbox || []).filter((n) => n.unread).length;
@@ -50,16 +49,12 @@ export default function LearnerDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+      {/* Chỉ 3 thẻ tóm tắt real-data ở đây — "Lộ Trình Kế Cận" đã bỏ vì phía
+          dưới đã có đủ 4 tab Lộ trình (trong đó có tab Kế Cận), để 1 thẻ cố
+          định lặp lại đúng 1 trong 4 tab đó là dư thừa và gây hiểu lầm. */}
+      <div className="grid grid-3" style={{ marginBottom: 24 }}>
         <StatTile label="Giờ Học" value={`${learningHours.toFixed(1)}h`} tone="blue" icon="ti-clock-hour-4" onClick={() => navigate('/learner/history')} />
         <StatTile label="Khóa Đã Hoàn Thành" value={completedCount} tone="sage" icon="ti-circle-check" onClick={() => navigate('/learner/courses')} />
-        <StatTile
-          label="Lộ Trình Kế Cận"
-          value={roadmap.nextLevel ? `${roadmap.succession.percent}%` : '—'}
-          tone={roadmap.succession.percent >= 100 ? 'sage' : 'amber'}
-          icon="ti-arrow-up-circle"
-          onClick={() => navigate('/learner/paths')}
-        />
         <StatTile label="Khóa Bắt Buộc" value={mandatoryCount} tone="amber" icon="ti-shield-alert" onClick={() => navigate('/learner/courses')} />
       </div>
 
