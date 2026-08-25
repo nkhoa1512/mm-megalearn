@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import Topbar from './components/Topbar';
+import AppHeader from './components/AppHeader';
+import AppFooterBar from './components/AppFooterBar';
 import AiAssistantDrawer from './components/AiAssistantDrawer';
 import TalentProfileModal from './components/TalentProfileModal';
 import PostTrainingSurveyModal from './components/PostTrainingSurveyModal';
@@ -34,6 +34,7 @@ import AdminCourseBuilder from './pages/admin/AdminCourseBuilder';
 import AdminConfig from './pages/admin/AdminConfig';
 import AdminReports from './pages/admin/AdminReports';
 import AdminTrainingOps from './pages/admin/AdminTrainingOps';
+import AdminLevelRoadmaps from './pages/admin/AdminLevelRoadmaps';
 import TrainerHub from './pages/trainer/TrainerHub';
 import MyLearning from './pages/shared/MyLearning';
 import MyCertificates from './pages/shared/MyCertificates';
@@ -54,6 +55,7 @@ const PAGE_META = {
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
 
   '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
+  '/my-learning-path': { title: 'Lộ Trình Học Tập Của Tôi — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
   '/trainer-ratings': { title: 'Đánh Giá Giảng Viên (CSAT) — Công Khai Cho Mọi Role', crumb: 'Học tập của tôi' },
   '/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Cấp quản lý' },
@@ -91,6 +93,8 @@ const PAGE_META = {
   '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
   '/admin/training-ops': { title: 'Đặt Phòng Thực Hành & Upload Danh Sách Học Viên', crumb: 'L&D Faculty' },
+  '/admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'L&D Faculty' },
+  '/user-admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'User Admin (Level 2)' },
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
   '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
 };
@@ -150,18 +154,17 @@ function Shell({ role, setRole }) {
 
   return (
     <div className="app-shell">
-      <Sidebar role={role} collapsed={collapsed} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Topbar
-          role={role}
-          onRoleChange={setRole}
-          onToggleSidebar={() => setCollapsed((v) => !v)}
-          title={meta.title}
-          crumb={meta.crumb}
-        />
-        <div className="main-scroll">
-          <div className="content">
-            <Routes>
+      <AppHeader
+        role={role}
+        onRoleChange={setRole}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
+        title={meta.title}
+        crumb={meta.crumb}
+      />
+      <div className="main-scroll">
+        <div className="content">
+          <Routes>
               {/* Learner Routes */}
               <Route path="/learner" element={<LearnerDashboard />} />
               <Route path="/learner/courses" element={<LearnerCourses />} />
@@ -179,6 +182,7 @@ function Shell({ role, setRole }) {
               <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
+              <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
               <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
 
@@ -208,6 +212,7 @@ function Shell({ role, setRole }) {
               <Route path="/user-admin/job-levels" element={<UserAdminPortal initialTab="JOB_LEVELS" />} />
               <Route path="/user-admin/allocation" element={<UserAdminPortal initialTab="ALLOCATION" />} />
               <Route path="/user-admin/trainers" element={<UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />} />
+              <Route path="/user-admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
               {/* System Admin (IT) Routes */}
               <Route path="/sysadmin" element={<SysAdminPortal initialTab="HRIS" />} />
@@ -236,12 +241,14 @@ function Shell({ role, setRole }) {
               <Route path="/admin/training-ops" element={<AdminTrainingOps />} />
               <Route path="/admin/config" element={<AdminConfig />} />
               <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
               <Route path="*" element={<Navigate to={roleHome} replace />} />
             </Routes>
-          </div>
         </div>
       </div>
+
+      <AppFooterBar role={role} />
 
       {/* Global AI Assistant Floating Drawer */}
       <AiAssistantDrawer />

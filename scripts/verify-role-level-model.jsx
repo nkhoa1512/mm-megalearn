@@ -16,7 +16,7 @@ const { CourseStoreProvider } = await import('../src/state/CourseStore');
 const { personaForRole, pendingApprovalRequests } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
-const Sidebar = (await import('../src/components/Sidebar')).default;
+const AppHeader = (await import('../src/components/AppHeader')).default;
 const LearnerDashboard = (await import('../src/pages/learner/LearnerDashboard')).default;
 const LearnerCourses = (await import('../src/pages/learner/LearnerCourses')).default;
 const LearnerCourseDetail = (await import('../src/pages/learner/LearnerCourseDetail')).default;
@@ -40,6 +40,7 @@ const AdminCourseBuilder = (await import('../src/pages/admin/AdminCourseBuilder'
 const AdminConfig = (await import('../src/pages/admin/AdminConfig')).default;
 const AdminReports = (await import('../src/pages/admin/AdminReports')).default;
 const AdminTrainingOps = (await import('../src/pages/admin/AdminTrainingOps')).default;
+const AdminLevelRoadmaps = (await import('../src/pages/admin/AdminLevelRoadmaps')).default;
 const TrainerHub = (await import('../src/pages/trainer/TrainerHub')).default;
 const HrbpDashboard = (await import('../src/pages/hrbp/HrbpDashboard')).default;
 const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal')).default;
@@ -50,6 +51,7 @@ const TrainerRatingsDirectory = (await import('../src/components/TrainerRatingsD
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const COURSES_KEY = 'mm-megalearn-courses-v6';
+const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 
 let failures = 0;
 function check(label, ok, extra = '') {
@@ -85,7 +87,15 @@ const mock = await import('../src/data/mockData');
 
 
 // --- Courses -------------------------------------------------------------
-check('100 courses generated', generated100Courses.length === 100, String(generated100Courses.length));
+check('122 courses generated (100 base + 22 Level 1-4 roadmap gap-fill)', generated100Courses.length === 122, String(generated100Courses.length));
+const newRoadmapDomains = [
+  'Train-The-Trainer & Coaching Standards', 'Master Trainer & Section Governance',
+  'Succession & Store P&L Governance', 'Corporate Governance & ESG',
+  'Executive Strategy Electives', 'Talent & Store Portfolio Electives',
+  'OJT Capstone & Promotion Defense',
+];
+check('all 7 gap-fill domains present', newRoadmapDomains.every((d) => generated100Courses.some((c) => c.domain === d)),
+  newRoadmapDomains.filter((d) => !generated100Courses.some((c) => c.domain === d)).join(','));
 const byLevel = {};
 for (const c of generated100Courses) byLevel[c.targetLevel] = (byLevel[c.targetLevel] || 0) + 1;
 console.log('      course targetLevel distribution:', JSON.stringify(byLevel));
@@ -201,7 +211,11 @@ const PAGES = [
   ['LearnerCertificates', <LearnerCertificates />, '/learner/certificates', '/learner/certificates'],
   ['LearnerHistory', <LearnerHistory />, '/learner/history', '/learner/history'],
   ['LearnerClassrooms', <LearnerClassrooms />, '/learner/classrooms', '/learner/classrooms'],
-  ['LearnerLearningPaths', <LearnerLearningPaths />, '/learner/paths', '/learner/paths'],
+  ['LearnerLearningPaths/CURRENT', <LearnerLearningPaths initialTab="CURRENT" />, '/learner/paths', '/learner/paths'],
+  ['SharedLearningPath', <LearnerLearningPaths />, '/my-learning-path', '/my-learning-path'],
+  ['LearnerLearningPaths/SUCCESSION', <LearnerLearningPaths initialTab="SUCCESSION" />, '/learner/paths', '/learner/paths'],
+  ['LearnerLearningPaths/SELF_PROPOSED', <LearnerLearningPaths initialTab="SELF_PROPOSED" />, '/learner/paths', '/learner/paths'],
+  ['LearnerLearningPaths/RECOMMENDED', <LearnerLearningPaths initialTab="RECOMMENDED" />, '/learner/paths', '/learner/paths'],
   ['AiLearningHub', <AiLearningHub />, '/learner/ai-hub', '/learner/ai-hub'],
   ['LessonPlayer L7', <LessonPlayer />, '/learner/courses/CRS-FSH-001/lessons/les-1-1-CRS-FSH-001', '/learner/courses/:courseId/lessons/:lessonId'],
   ['LessonPlayer L1 blocked', <LessonPlayer />, '/learner/courses/CRS-LEAD-058/lessons/les-1-1-CRS-LEAD-058', '/learner/courses/:courseId/lessons/:lessonId'],
@@ -236,6 +250,7 @@ const PAGES = [
   ['AdminReports', <AdminReports />, '/admin/reports', '/admin/reports'],
   ['AdminTrainingOps', <AdminTrainingOps />, '/admin/training-ops', '/admin/training-ops'],
   ['TrainerRatingsDirectory', <TrainerRatingsDirectory />, '/trainer-ratings', '/trainer-ratings'],
+  ['AdminLevelRoadmaps', <AdminLevelRoadmaps />, '/admin/roadmaps', '/admin/roadmaps'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -255,11 +270,15 @@ for (const role of ROLE_ORDER) {
 console.log('\n=== 2. Sidebar shows the right persona & nav per role ===');
 for (const role of ROLE_ORDER) {
   actAs(role);
-  const html = render('Sidebar/' + role, <Sidebar role={role} collapsed={false} />, '/', '/');
+  const html = render('Sidebar/' + role, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
   if (!html) continue;
   const persona = personaForRole(role);
   const def = roleDefinition(role);
-  const hasLearningGroup = role === 'learner' ? html.includes('Khóa Học Của Tôi') : html.includes('Học tập của tôi');
+  // AppHeader render các mục tự học ngay trong hàng tab ngang, không còn
+  // group label "Học tập của tôi" riêng như Sidebar dọc cũ — kiểm tra sự có
+  // mặt của chính mục "Khóa Học Của Tôi" (có ở cả ROLE_WORK_NAV.learner lẫn
+  // LEARNER_SELF_NAV dùng chung cho 5 role còn lại) thay vì group label.
+  const hasLearningGroup = html.includes('Khóa Học Của Tôi');
   const esc = (t) => t.replace(/&/g, '&amp;');
   check(`Sidebar/${role}: persona ${persona.fullName} + learner access`,
     html.includes(esc(persona.fullName)) && html.includes(esc(def.labelVi)) && hasLearningGroup);
@@ -291,13 +310,13 @@ console.log('\n=== 4. Approvals queue: ONLY User Admin & SysAdmin (Manager/Train
     check(`${role} no longer has the approvals queue (permission denied)`,
       html.includes('không có quyền phê duyệt'));
     actAs(role);
-    const sidebarHtml = render(`Sidebar-noapproval/${role}`, <Sidebar role={role} collapsed={false} />, '/', '/');
+    const sidebarHtml = render(`Sidebar-noapproval/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} has no "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
       sidebarHtml && !sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
   }
   for (const role of ['useradmin', 'sysadmin']) {
     actAs(role);
-    const sidebarHtml = render(`Sidebar-approval/${role}`, <Sidebar role={role} collapsed={false} />, '/', '/');
+    const sidebarHtml = render(`Sidebar-approval/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} still has "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
       sidebarHtml && sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
   }
@@ -506,6 +525,109 @@ console.log('\n=== 13. Training Ops trimmed to Room Booking + Batch Upload only 
   check('Batch Upload tab present', html.includes('Upload Danh Sách Học Viên'));
   check('Faculty Directory / CSAT tab removed (moved to shared directory)', !html.includes('Faculty Directory & CSAT Ratings'));
   check('duplicate Calendar tab removed', !html.includes('Enterprise Master Training Calendar'));
+}
+
+console.log('\n=== 14. 4-Tab Universal Learning Roadmap (Current / Succession / Self-Proposed / Recommended) ===');
+{
+  for (const role of ['useradmin', 'sysadmin']) {
+    const html = byRole[role]['AdminLevelRoadmaps'];
+    check(`${role} sees the Level/Branch roadmap editor`, html.includes('Cấp Bậc') && html.includes('Khối') && html.includes('Level 7'));
+  }
+  for (const role of ['manager', 'trainer', 'hrbp', 'learner']) {
+    const html = byRole[role]['AdminLevelRoadmaps'];
+    check(`${role} sees the permission-denied empty state on AdminLevelRoadmaps`, html.includes('Bạn không có quyền quản lý Lộ trình Cấp bậc'));
+  }
+
+  const currentHtml = byRole.learner['LearnerLearningPaths/CURRENT'];
+  check('learner sees all 4 tab labels', ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => currentHtml.includes(label)));
+  check('CURRENT tab renders the timeline (start avatar + flag)', currentHtml.includes('ti-user') && currentHtml.includes('ti-flag'));
+
+  const successionHtmlFresh = byRole.learner['LearnerLearningPaths/SUCCESSION'];
+  check('fresh learner sees the SUCCESSION tab locked banner', successionHtmlFresh.includes('phải hoàn thành 100% Lộ trình hiện tại'));
+  check('fresh learner does NOT see the promotion-request button yet', !successionHtmlFresh.includes('Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp'));
+
+  const selfProposedHtml = byRole.learner['LearnerLearningPaths/SELF_PROPOSED'];
+  check('SELF_PROPOSED tab lists at least one track', selfProposedHtml.includes('Bắt Đầu Track Này') || selfProposedHtml.includes('Hoàn Thành'));
+
+  const recommendedHtml = byRole.learner['LearnerLearningPaths/RECOMMENDED'];
+  check('RECOMMENDED tab renders its guidance banner', recommendedHtml.includes('Gợi ý dựa trên cấp bậc'));
+}
+
+console.log('\n=== 14b. Lộ Trình Học Tập là của TOÀN BỘ 6 role, không riêng Learner ===');
+{
+  for (const role of ['manager', 'trainer', 'hrbp', 'useradmin', 'sysadmin']) {
+    const html = byRole[role]['SharedLearningPath'];
+    check(`${role} can open the shared /my-learning-path and sees the 4 tabs`,
+      Boolean(html && ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => html.includes(label))));
+
+    actAs(role);
+    const sidebarHtml = render(`${role} sidebar has Lộ Trình Học Tập nav item`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+    check(`${role} sidebar links to /my-learning-path`, Boolean(sidebarHtml && sidebarHtml.includes('my-learning-path')));
+  }
+  const learnerSidebarHtml = byRole.learner ? render('learner sidebar uses its own /learner/paths, not the shared route', <AppHeader role="learner" onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/') : null;
+  check('learner sidebar links to its own /learner/paths (not the shared /my-learning-path)', Boolean(learnerSidebarHtml && learnerSidebarHtml.includes('/learner/paths') && !learnerSidebarHtml.includes('/my-learning-path')));
+}
+
+console.log('\n=== 15. End-to-end: Tab 1 + Tab 2 completion -> promotion request -> useradmin approval -> level bump ===');
+{
+  const { CURRENT_ROADMAPS: SeedRoadmaps, branchForUser: seedBranchForUser } = await import('../src/data/levelRoadmapMatrix');
+  const minh = generated100Users.find((u) => u.userId === 'USR-1042');
+  const minhBranch = seedBranchForUser(minh);
+  const currentIds = SeedRoadmaps['7'][minhBranch].courseIds;
+  const successionIds = SeedRoadmaps['6'][minhBranch].courseIds;
+
+  const fullEnrollments = { [minh.userId]: {} };
+  currentIds.forEach((id) => { fullEnrollments[minh.userId][id] = { status: 'COMPLETED' }; });
+  successionIds.forEach((id) => { fullEnrollments[minh.userId][id] = { status: 'COMPLETED' }; });
+  store.set(ENROLLMENT_KEY, JSON.stringify(fullEnrollments));
+
+  actAs('learner');
+  const successionReadyHtml = render('Minh (Tab1+Tab2 100%) sees the unlocked + ready succession tab',
+    <LearnerLearningPaths initialTab="SUCCESSION" />, '/learner/paths', '/learner/paths');
+  check('succession tab shows the unlock celebration banner', Boolean(successionReadyHtml && successionReadyHtml.includes('đã được mở khóa')));
+  check('succession tab shows an ENABLED promotion-request button', Boolean(successionReadyHtml
+    && successionReadyHtml.includes('Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp')
+    && !/disabled[^>]*>[^<]*Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp/.test(successionReadyHtml)));
+
+  store.set(APPROVAL_KEY, JSON.stringify([
+    {
+      id: 'req-roadmap-e2e', requestType: 'ROADMAP_PROMOTION', userId: minh.userId,
+      employeeId: minh.employeeCode, employeeName: minh.fullName, position: minh.position,
+      department: `${minh.departmentCode} - ${minh.departmentName}`, currentLevel: '7', targetLevel: '6',
+      requestDate: '2026-08-01', justification: 'E2E test.', status: 'PENDING',
+    },
+  ]));
+  actAs('useradmin');
+  const adminApprovalHtml = render('useradmin sees the pending e2e roadmap promotion', <ManagerApprovals />, '/approvals', '/approvals');
+  check("useradmin sees Minh Tran's roadmap promotion request", Boolean(adminApprovalHtml && adminApprovalHtml.includes(minh.fullName) && adminApprovalHtml.includes('Đề xuất Thăng cấp Lộ trình')));
+
+  actAs('manager');
+  const managerApprovalHtml = render('manager still cannot see any approvals queue', <ManagerApprovals />, '/manager/approvals', '/manager/approvals');
+  check('manager still sees the permission-denied empty state', Boolean(managerApprovalHtml && managerApprovalHtml.includes('Bạn không có quyền phê duyệt học vượt cấp')));
+
+  const fs = await import('node:fs');
+  const storeSource = fs.readFileSync('src/state/CourseStore.jsx', 'utf8');
+  check('approveRequest calls promoteUserLevel for ROADMAP_PROMOTION requests',
+    /requestType === 'ROADMAP_PROMOTION'[\s\S]{0,200}promoteUserLevel\(target\.userId, target\.targetLevel/.test(storeSource));
+
+  const managerTeamRoadmapHtml = byRole.manager['ManagerTeam'];
+  check('ManagerTeam renders the per-report roadmap drill-down icon button', managerTeamRoadmapHtml.includes('ti-map-2'));
+
+  store.set(ENROLLMENT_KEY, JSON.stringify({}));
+  store.set(APPROVAL_KEY, JSON.stringify(pendingApprovalRequests));
+}
+
+console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav, role badge, collapse ===');
+{
+  for (const role of ROLE_ORDER) {
+    actAs(role);
+    const html = render(`AppHeader/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="Test Title" crumb="Test Crumb" />, '/', '/');
+    check(`${role} AppHeader renders without crashing`, Boolean(html));
+    check(`${role} AppHeader shows the role badge`, Boolean(html && html.includes(roleDefinition(role).shortVi)));
+  }
+  actAs('manager');
+  const collapsedHtml = render('AppHeader collapsed hides tab labels via CSS class', <AppHeader role="manager" onRoleChange={() => {}} collapsed onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+  check('collapsed AppHeader carries the collapsed class', Boolean(collapsedHtml && collapsedHtml.includes('app-header collapsed')));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));

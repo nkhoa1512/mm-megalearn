@@ -1,129 +1,86 @@
 .app-shell {
   display: flex;
-  min-height: 100vh;
-  background: var(--paper);
-}
-
-/* ---------- Sidebar ---------- */
-.sidebar {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  background: var(--paper-raised);
-  border-right: 1px solid var(--line);
-  display: flex;
   flex-direction: column;
-  transition: margin-left 0.2s ease;
-}
-.sidebar.collapsed {
-  margin-left: calc(-1 * var(--sidebar-w));
+  height: 100vh;
+  background: var(--paper);
+  overflow: hidden;
 }
 
-.brand {
+/* ---------- App Header (top navbar, replaces Sidebar + Topbar) ---------- */
+.app-header {
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.app-header-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+}
+.app-header-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 22px 20px 18px;
+  flex-shrink: 0;
 }
 .brand-mark {
-  width: 30px;
-  height: 30px;
   border-radius: 8px;
-  background: var(--rail);
-  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-brand);
-  font-size: 15px;
 }
 .brand-name {
   font-family: var(--font-brand);
-  font-size: 16px;
   font-weight: 500;
   color: var(--ink);
+  white-space: nowrap;
 }
-.brand-sub {
-  font-size: 10.5px;
-  color: var(--ink-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
+.app-header.collapsed .app-header-brand-text { display: none; }
 
-.role-pill {
-  margin: 4px 16px 18px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
+.app-header-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  flex: 1;
+  min-width: 0;
 }
-.role-pill .ti { font-size: 16px; }
-.role-pill-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.75; }
-.role-pill-value { font-size: 13px; font-weight: 600; }
-
-.org-pill {
-  margin: -10px 16px 18px;
+.app-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--ink-soft);
-}
-.org-pill .ti { font-size: 14px; }
-.org-pill .role-pill-label { font-size: 11.5px; font-weight: 600; color: var(--ink); opacity: 1; text-transform: none; letter-spacing: 0; }
-.org-pill-value { font-size: 11px; color: var(--ink-faint); }
-
-.nav-group-label {
-  padding: 4px 20px 8px;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--ink-faint);
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  padding: 9px 20px;
-  background: transparent;
-  border: none;
-  border-left: 2px solid transparent;
-  text-align: left;
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  transition: background var(--ease) 120ms, color var(--ease) 120ms, border-color var(--ease) 120ms;
-}
-.nav-item .ti { font-size: 17px; width: 18px; text-align: center; }
-.nav-item:hover { background: var(--paper-sunken); color: var(--ink); }
-.nav-item.active {
-  background: var(--rail-soft);
-  color: var(--rail-soft-text);
-  border-left-color: var(--rail);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
   font-weight: 600;
-}
-
-.sidebar-foot {
-  margin-top: auto;
-  padding: 16px 20px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
-  color: var(--ink-faint);
-}
-
-/* ---------- Topbar ---------- */
-.topbar {
-  height: 60px;
+  color: var(--ink-soft);
+  white-space: nowrap;
   flex-shrink: 0;
-  background: var(--paper-raised);
-  border-bottom: 1px solid var(--line);
+}
+.app-tab:hover { background: var(--paper-sunken); color: var(--ink); }
+.app-tab.active { background: var(--rail-soft); color: var(--rail-soft-text); }
+.app-tab .ti { font-size: 16px; }
+.app-tab-sep { width: 1px; height: 20px; background: var(--line-strong); margin: 0 6px; flex-shrink: 0; }
+.app-tab-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; color: #fff; flex-shrink: 0; }
+.app-header.collapsed .app-tab span { display: none; }
+
+.app-header-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.role-switcher-select {
+  height: 32px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper-sunken);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 10px;
+  color: var(--ink);
 }
 .icon-btn {
   width: 32px;
@@ -140,29 +97,33 @@
 }
 .icon-btn:hover { background: var(--paper-sunken); border-color: var(--line); }
 
-.page-title { font-size: 15px; font-weight: 600; font-family: var(--font-body); color: var(--ink); }
-.page-crumb { font-size: 11.5px; color: var(--ink-faint); }
+/* Nút thu gọn nav cần luôn nhìn thấy được là 1 nút bấm (viền + nền), vì nó
+   không phụ thuộc icon font để hiện glyph — không chỉ hiện khi hover. */
+.sidebar-toggle-btn {
+  border-color: var(--line-strong);
+  background: var(--paper-sunken);
+}
+.app-notif-dot { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: var(--rust); border-radius: 50%; }
+.app-popover { position: absolute; right: 0; top: 44px; width: 340px; z-index: 1000; box-shadow: var(--shadow-modal); border-color: var(--line-strong); animation: fadeIn 0.15s ease; }
+.app-notif-row { padding: 8px 10px; border-radius: 6px; font-size: 12px; display: flex; gap: 8px; align-items: start; }
+.app-link-btn { background: none; border: none; font-size: 11.5px; color: var(--rail); cursor: pointer; font-weight: 600; }
+.app-profile-pill { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 6px; border-radius: 24px; background: var(--paper-raised); border: 1px solid var(--line); cursor: pointer; }
+.app-profile-pill-text { text-align: left; display: flex; flex-direction: column; white-space: nowrap; }
+.app-avatar { background: var(--rail); color: #fff; font-weight: 700; font-size: 12px; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.app-persona-row { padding: 6px 8px; border-radius: 6px; border: 1px solid; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; text-align: left; color: var(--ink); width: 100%; }
 
-.role-switcher {
+.app-crumb-row {
+  padding: 6px 20px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
-  gap: 8px;
 }
-.role-switcher select {
-  padding: 7px 30px 7px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--paper-raised);
-  font-size: 12.5px;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236E6A60' stroke-width='1.6'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
-  background-size: 13px;
-  transition: border-color var(--ease) 120ms, box-shadow var(--ease) 120ms;
-}
-.role-switcher select:hover { border-color: var(--ink-faint); }
-.role-switcher select:focus { outline: none; border-color: var(--rail); box-shadow: var(--focus-ring); }
+.app-title { font-weight: 600; color: var(--ink); }
+
+.page-title { font-size: 15px; font-weight: 600; font-family: var(--font-body); color: var(--ink); }
+.page-crumb { font-size: 11.5px; color: var(--ink-faint); }
 
 .avatar {
   width: 32px;
@@ -177,11 +138,27 @@
   font-weight: 600;
 }
 
+/* ---------- App Footer Bar ---------- */
+.app-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--paper-raised);
+  font-size: 11px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.app-footer-bar strong { color: var(--ink-soft); font-weight: 600; }
+.app-footer-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--sage); margin-right: 4px; }
+
 /* ---------- Main content ---------- */
 .main-scroll {
   flex: 1;
   overflow-y: auto;
-  height: 100vh;
 }
 .content {
   padding: 28px 36px 60px;
