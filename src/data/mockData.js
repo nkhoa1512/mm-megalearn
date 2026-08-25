@@ -1110,6 +1110,30 @@ export function getUserLearningHistory(user) {
   return userHistoryLogs[userId] || userHistoryLogs['USR-1042'] || [];
 }
 
+const WEEKDAY_LABELS_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+
+/**
+ * Tổng giờ học gộp theo THỨ trong tuần (Thứ 2 -> Chủ Nhật), tính từ toàn bộ
+ * timeSpent + timestamp thật trong getUserLearningHistory — không giới hạn
+ * theo 1 tuần lịch cụ thể, vì các mốc thời gian trong mock data là ngày cố
+ * định (2026) không khớp với đồng hồ hệ thống thật lúc chạy demo. Kết quả là
+ * "học viên này có xu hướng học nhiều vào thứ mấy", vẫn 100% dữ liệu thật,
+ * không phải số bịa, và không bao giờ rỗng cho persona có log (kể cả giới
+ * hạn fallback về USR-1042 cho các persona chưa có log riêng).
+ */
+export function weeklyStudyHours(user) {
+  const logs = getUserLearningHistory(user);
+  const hoursByDay = [0, 0, 0, 0, 0, 0, 0];
+  logs.forEach((log) => {
+    const ts = new Date(log.timestamp.replace(' ', 'T'));
+    const idx = (ts.getDay() + 6) % 7; // 0=Monday .. 6=Sunday
+    const minutes = parseInt(log.timeSpent, 10) || 0;
+    hoursByDay[idx] += minutes / 60;
+  });
+
+  return WEEKDAY_LABELS_VI.map((label, i) => ({ label, value: Math.round(hoursByDay[i] * 10) / 10 }));
+}
+
 
 export const notifications = {
   learnerInbox: [

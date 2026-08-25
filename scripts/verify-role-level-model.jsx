@@ -644,5 +644,30 @@ console.log('\n=== 17. RoadmapTabsPanel extraction + inline (non-modal) timeline
   check('VisualRoadmapTimeline renders an inline detail card on selection', timelineSource.includes('{selected && (') && timelineSource.includes('className="card card-pad"'));
 }
 
+console.log('\n=== 18. LearnerDashboard restructure: real fields only, reachable by every role ===');
+{
+  const { weeklyStudyHours: seedWeeklyHours } = await import('../src/data/mockData');
+  actAs('learner');
+  const dashHtml = render('learner dashboard renders the restructured layout', <LearnerDashboard />, '/learner', '/learner');
+  check('dashboard shows the 4 real stat tiles', Boolean(dashHtml
+    && dashHtml.includes('Giờ Học') && dashHtml.includes('Khóa Đã Hoàn Thành')
+    && dashHtml.includes('Lộ Trình Kế Cận') && dashHtml.includes('Khóa Bắt Buộc')));
+  check('dashboard embeds the 4-tab roadmap panel inline', Boolean(dashHtml && dashHtml.includes('Trục Lộ Trình Đào Tạo')));
+  check('dashboard shows the weekly study-hours chart section', Boolean(dashHtml && dashHtml.includes('Thời Lượng Học Tập')));
+  check('dashboard does NOT show any fabricated field (favorites/wishlist/SOP library/daily goal)',
+    !dashHtml.includes('yêu thích') && !dashHtml.includes('Kho tài liệu') && !dashHtml.includes('kế hoạch L&D'));
+
+  const minhForChart = generated100Users.find((u) => u.userId === 'USR-1042');
+  const hours = seedWeeklyHours(minhForChart);
+  check('weeklyStudyHours returns 7 Mon-Sun entries', Array.isArray(hours) && hours.length === 7 && hours[0].label === 'Thứ 2' && hours[6].label === 'Chủ Nhật');
+  check('weeklyStudyHours is not all-zero for a persona with real history logs', hours.some((h) => h.value > 0));
+
+  for (const role of ['manager', 'trainer', 'hrbp', 'useradmin', 'sysadmin']) {
+    actAs(role);
+    const html = render(`${role} can open the shared /my-learning-dashboard`, <LearnerDashboard />, '/my-learning-dashboard', '/my-learning-dashboard');
+    check(`${role} sees the personal dashboard with its own real data`, Boolean(html && html.includes('Trục Lộ Trình Đào Tạo')));
+  }
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);

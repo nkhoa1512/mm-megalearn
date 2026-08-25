@@ -55,6 +55,7 @@ const PAGE_META = {
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
 
   '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
+  '/my-learning-dashboard': { title: 'Bảng Điều Khiển Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-learning-path': { title: 'Lộ Trình Học Tập Của Tôi — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
   '/trainer-ratings': { title: 'Đánh Giá Giảng Viên (CSAT) — Công Khai Cho Mọi Role', crumb: 'Học tập của tôi' },
@@ -182,6 +183,7 @@ function Shell({ role, setRole }) {
               <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
+              <Route path="/my-learning-dashboard" element={<LearnerDashboard />} />
               <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
               <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
