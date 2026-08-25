@@ -67,12 +67,14 @@ const ROLE_WORK_NAV = {
   ],
 };
 
-export default function AppHeader({ role, onRoleChange, collapsed, onToggleCollapse, title, crumb }) {
+export default function AppHeader({ role, onRoleChange, title, crumb }) {
   const navigate = useNavigate();
   const { currentUser: authUser, approvals, gamification, openAiAssistant, logout, switchUser, openTalentProfile } = useCourseStore();
+  const [navOpen, setNavOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [inbox, setInbox] = useState(notifications.learnerInbox);
+  const navRef = useRef(null);
   const profileRef = useRef(null);
 
   const effectiveRole = normalizeRole(role);
@@ -89,6 +91,7 @@ export default function AppHeader({ role, onRoleChange, collapsed, onToggleColla
 
   useEffect(() => {
     function handleClickOutside(e) {
+      if (navRef.current && !navRef.current.contains(e.target)) setNavOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfileMenu(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -120,22 +123,34 @@ export default function AppHeader({ role, onRoleChange, collapsed, onToggleColla
     setInbox((prev) => prev.map((n) => ({ ...n, unread: false })));
   }
 
-  function renderTab(item) {
+  function renderNavItem(item) {
     const badge = item.approvalBadge ? (pendingApprovalCount > 0 ? String(pendingApprovalCount) : null) : item.badge;
     return (
-      <NavLink key={item.to} to={item.to} end={item.end} title={item.label} className={({ isActive }) => `app-tab ${isActive ? 'active' : ''}`}>
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        title={item.label}
+        onClick={() => setNavOpen(false)}
+        className={({ isActive }) => `app-nav-item ${isActive ? 'active' : ''}`}
+      >
         <i className={`ti ${item.icon}`} aria-hidden="true" />
-        <span>{item.label}</span>
+        <span style={{ flex: 1 }}>{item.label}</span>
         {badge && <span className="app-tab-badge" style={{ background: badge === 'AI' ? 'var(--ai-gradient)' : 'var(--amber)' }}>{badge}</span>}
       </NavLink>
     );
   }
 
   return (
-    <header className={`app-header ${collapsed ? 'collapsed' : ''}`}>
+    <header className="app-header">
       <div className="app-header-top">
-        <div className="app-header-brand">
-          <button className="icon-btn sidebar-toggle-btn" onClick={onToggleCollapse} aria-label="Thu gọn / Mở rộng thanh điều hướng" title="Thu gọn / Mở rộng thanh điều hướng">
+        <div className="app-header-brand" ref={navRef} style={{ position: 'relative' }}>
+          <button
+            className={`icon-btn sidebar-toggle-btn ${navOpen ? 'active' : ''}`}
+            onClick={() => setNavOpen((v) => !v)}
+            aria-label="Mở / Đóng danh sách điều hướng"
+            title="Mở / Đóng danh sách điều hướng"
+          >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <path d="M2.5 5H15.5M2.5 9H15.5M2.5 13H15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
@@ -149,15 +164,23 @@ export default function AppHeader({ role, onRoleChange, collapsed, onToggleColla
           <span title={def.labelVi}>
             <Badge tone={def.tone} icon={def.icon}>{def.shortVi}</Badge>
           </span>
+
+          {/* Cột điều hướng dạng dropdown bên trái, bật/tắt bằng nút hamburger —
+              DOM luôn render (để các trang khác/kiểm thử tìm thấy nội dung),
+              chỉ ẩn/hiện bằng CSS class "open" thay vì tháo lắp khỏi cây DOM. */}
+          <nav className={`app-nav-drawer ${navOpen ? 'open' : ''}`}>
+            <div className="app-nav-drawer-group-label">Công việc của {def.shortVi}</div>
+            {workItems.map(renderNavItem)}
+            {selfItems.length > 0 && (
+              <>
+                <div className="app-nav-drawer-group-label" style={{ marginTop: 10 }}>Học tập của tôi</div>
+                {selfItems.map(renderNavItem)}
+              </>
+            )}
+          </nav>
         </div>
 
-        <nav className="app-header-tabs">
-          {workItems.map(renderTab)}
-          {selfItems.length > 0 && <span className="app-tab-sep" aria-hidden="true" />}
-          {selfItems.map(renderTab)}
-        </nav>
-
-        <div className="app-header-actions">
+        <div className="app-header-actions" style={{ marginLeft: 'auto' }}>
           <Button variant="ai" size="sm" icon="ti-sparkles" onClick={() => openAiAssistant('tutor')}>AI Tutor</Button>
           <select className="role-switcher-select" value={effectiveRole} onChange={handleRoleSwitch} title="Xem trước vai trò khác (demo)">
             {ROLE_ORDER.map((r) => (<option key={r} value={r}>{roleDefinition(r).shortVi}</option>))}

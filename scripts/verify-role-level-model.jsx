@@ -270,7 +270,7 @@ for (const role of ROLE_ORDER) {
 console.log('\n=== 2. Sidebar shows the right persona & nav per role ===');
 for (const role of ROLE_ORDER) {
   actAs(role);
-  const html = render('Sidebar/' + role, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+  const html = render('Sidebar/' + role, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
   if (!html) continue;
   const persona = personaForRole(role);
   const def = roleDefinition(role);
@@ -310,13 +310,13 @@ console.log('\n=== 4. Approvals queue: ONLY User Admin & SysAdmin (Manager/Train
     check(`${role} no longer has the approvals queue (permission denied)`,
       html.includes('không có quyền phê duyệt'));
     actAs(role);
-    const sidebarHtml = render(`Sidebar-noapproval/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+    const sidebarHtml = render(`Sidebar-noapproval/${role}`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} has no "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
       sidebarHtml && !sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
   }
   for (const role of ['useradmin', 'sysadmin']) {
     actAs(role);
-    const sidebarHtml = render(`Sidebar-approval/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+    const sidebarHtml = render(`Sidebar-approval/${role}`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} still has "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
       sidebarHtml && sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
   }
@@ -561,10 +561,10 @@ console.log('\n=== 14b. Lộ Trình Học Tập là của TOÀN BỘ 6 role, kh�
       Boolean(html && ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => html.includes(label))));
 
     actAs(role);
-    const sidebarHtml = render(`${role} sidebar has Lộ Trình Học Tập nav item`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
+    const sidebarHtml = render(`${role} sidebar has Lộ Trình Học Tập nav item`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} sidebar links to /my-learning-path`, Boolean(sidebarHtml && sidebarHtml.includes('my-learning-path')));
   }
-  const learnerSidebarHtml = byRole.learner ? render('learner sidebar uses its own /learner/paths, not the shared route', <AppHeader role="learner" onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="" crumb="" />, '/', '/') : null;
+  const learnerSidebarHtml = byRole.learner ? render('learner sidebar uses its own /learner/paths, not the shared route', <AppHeader role="learner" onRoleChange={() => {}} title="" crumb="" />, '/', '/') : null;
   check('learner sidebar links to its own /learner/paths (not the shared /my-learning-path)', Boolean(learnerSidebarHtml && learnerSidebarHtml.includes('/learner/paths') && !learnerSidebarHtml.includes('/my-learning-path')));
 }
 
@@ -617,17 +617,20 @@ console.log('\n=== 15. End-to-end: Tab 1 + Tab 2 completion -> promotion request
   store.set(APPROVAL_KEY, JSON.stringify(pendingApprovalRequests));
 }
 
-console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav, role badge, collapse ===');
+console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav drawer, role badge ===');
 {
   for (const role of ROLE_ORDER) {
     actAs(role);
-    const html = render(`AppHeader/${role}`, <AppHeader role={role} onRoleChange={() => {}} collapsed={false} onToggleCollapse={() => {}} title="Test Title" crumb="Test Crumb" />, '/', '/');
+    const html = render(`AppHeader/${role}`, <AppHeader role={role} onRoleChange={() => {}} title="Test Title" crumb="Test Crumb" />, '/', '/');
     check(`${role} AppHeader renders without crashing`, Boolean(html));
     check(`${role} AppHeader shows the role badge`, Boolean(html && html.includes(roleDefinition(role).shortVi)));
   }
   actAs('manager');
-  const collapsedHtml = render('AppHeader collapsed hides tab labels via CSS class', <AppHeader role="manager" onRoleChange={() => {}} collapsed onToggleCollapse={() => {}} title="" crumb="" />, '/', '/');
-  check('collapsed AppHeader carries the collapsed class', Boolean(collapsedHtml && collapsedHtml.includes('app-header collapsed')));
+  const drawerHtml = render('AppHeader nav drawer is closed by default (CSS class, not "open")', <AppHeader role="manager" onRoleChange={() => {}} title="" crumb="" />, '/', '/');
+  check('nav drawer DOM exists but is not marked open by default', Boolean(drawerHtml
+    && drawerHtml.includes('app-nav-drawer') && !/app-nav-drawer open"/.test(drawerHtml)));
+  check('nav drawer still contains the work-nav item labels (hidden via CSS, not removed from DOM)',
+    Boolean(drawerHtml && drawerHtml.includes('Nhân Viên &amp; Khoảng Cách Năng Lực')));
 }
 
 console.log('\n=== 17. RoadmapTabsPanel extraction + inline (non-modal) timeline detail ===');

@@ -37,34 +37,50 @@
   color: var(--ink);
   white-space: nowrap;
 }
-.app-header.collapsed .app-header-brand-text { display: none; }
-
-.app-header-tabs {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px 4px;
-  flex: 1;
-  min-width: 0;
+/* Nav giờ là 1 dropdown cột dọc bật/tắt bằng nút hamburger (thay vì hàng tab
+   ngang luôn hiện, dễ bị vỡ dòng khi có nhiều mục) — DOM luôn render, chỉ ẩn
+   bằng CSS (display/visibility) để nội dung vẫn đọc được bởi SSR/kiểm thử. */
+.app-nav-drawer {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 300px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: 10px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
 }
-.app-tab {
+.app-nav-drawer.open { display: flex; }
+.app-nav-drawer-group-label {
+  padding: 6px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.app-nav-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 9px 10px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
-.app-tab:hover { background: var(--paper-sunken); color: var(--ink); }
-.app-tab.active { background: var(--rail-soft); color: var(--rail-soft-text); }
-.app-tab .ti { font-size: 16px; }
-.app-tab-sep { width: 1px; height: 20px; background: var(--line-strong); margin: 0 6px; flex-shrink: 0; }
+.app-nav-item:hover { background: var(--paper-sunken); color: var(--ink); }
+.app-nav-item.active { background: var(--rail-soft); color: var(--rail-soft-text); }
+.app-nav-item .ti { font-size: 17px; width: 18px; text-align: center; flex-shrink: 0; }
 .app-tab-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; color: #fff; flex-shrink: 0; }
-.app-header.collapsed .app-tab span { display: none; }
+.icon-btn.active { background: var(--rail-soft); color: var(--rail-soft-text); border-color: var(--rail); }
 
 .app-header-actions {
   display: flex;

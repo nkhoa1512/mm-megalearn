@@ -147,7 +147,6 @@ class ErrorBoundary extends React.Component {
 }
 
 function Shell({ role, setRole }) {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const safeRole = normalizeRole(role);
   const roleHome = ROLE_HOME[safeRole] || '/learner';
@@ -158,8 +157,6 @@ function Shell({ role, setRole }) {
       <AppHeader
         role={role}
         onRoleChange={setRole}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((v) => !v)}
         title={meta.title}
         crumb={meta.crumb}
       />
