@@ -9,6 +9,7 @@ import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../components/
 import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../state/CourseStore';
+import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 
 const LESSON_ICON = {
   VIDEO: 'ti-video', DOCUMENT: 'ti-file-text', IMAGE: 'ti-photo',
@@ -730,6 +731,133 @@ export default function AdminCourseBuilder() {
             <div className="field-hint">Paste a full YouTube watch/share/embed URL — learners will see it played inline on the lesson screen.</div>
           </div>
         )}
+
+        {/* Course Thumbnail & Roadmap Milestone Visual Image */}
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 10, padding: '16px', marginTop: 14, border: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-photo" style={{ color: 'var(--blue)', fontSize: 16 }} />
+              Hình Ảnh Đại Diện Khóa Học &amp; Mốc Lộ Trình (Course Thumbnail &amp; Roadmap Milestone Image)
+            </span>
+            <Badge tone="blue">Sinh động hóa lộ trình học</Badge>
+          </div>
+
+          <div className="grid grid-2" style={{ gap: 16, marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Đường dẫn ảnh (Image URL)</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder="https://images.unsplash.com/..."
+                  value={draft.thumbnail || draft.imageUrl || ''}
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    patch({ thumbnail: url, imageUrl: url, milestoneImage: url });
+                  }}
+                />
+                {(draft.thumbnail || draft.imageUrl) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="ti-x"
+                    onClick={() => patch({ thumbnail: '', imageUrl: '', milestoneImage: '' })}
+                    title="Xóa ảnh"
+                  />
+                )}
+              </div>
+              <div className="field-hint">
+                Ảnh đại diện sẽ hiển thị trên Catalog, thẻ bài giảng và vòng tròn mốc chặng trên Lộ trình học tập (Roadmap).
+              </div>
+
+              {/* Preset Gallery Picker */}
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
+                  Hoặc chọn nhanh từ thư viện ảnh mẫu MMVN:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8, maxHeight: 180, overflowY: 'auto', paddingRight: 4 }}>
+                  {COURSE_IMAGE_PRESETS.map((preset) => {
+                    const isSelected = (draft.thumbnail || draft.imageUrl) === preset.url;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => patch({ thumbnail: preset.url, imageUrl: preset.url, milestoneImage: preset.url })}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          padding: 6,
+                          borderRadius: 6,
+                          border: isSelected ? '2px solid var(--blue)' : '1px solid var(--line)',
+                          background: isSelected ? '#eff6ff' : '#fff',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <img
+                          src={preset.url}
+                          alt={preset.label}
+                          style={{ width: '100%', height: 50, objectFit: 'cover', borderRadius: 4, marginBottom: 4 }}
+                        />
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={preset.label}>
+                          {preset.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview Box */}
+            <div style={{ background: '#fff', borderRadius: 8, padding: 14, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-eye" style={{ color: 'var(--sage)' }} />
+                Xem trước hiển thị thực tế:
+              </div>
+
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* 1. Catalog Card Preview */}
+                <div style={{ width: 140, borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                  <img
+                    src={getCourseImage(draft)}
+                    alt="Preview"
+                    style={{ width: '100%', height: 70, objectFit: 'cover' }}
+                  />
+                  <div style={{ padding: '6px 8px' }}>
+                    <div style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{draft.code || 'CODE-001'}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {draft.title || 'Tên khóa học'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Roadmap Milestone Node Preview */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--blue)' }}>MỐC LỘ TRÌNH</div>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      border: '3px solid var(--blue)',
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
+                    }}
+                  >
+                    <img
+                      src={getCourseImage(draft)}
+                      alt="Roadmap Node Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-soft)' }}>Chặng học</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Version Audit Trail & Review Log */}
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>

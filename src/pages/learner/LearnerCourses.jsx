@@ -12,6 +12,7 @@ import {
   isCourseVisibleInCatalog,
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
+import { getCourseImage } from '../../data/courseImages';
 
 // Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
 export { JobLevelBadge };
@@ -33,6 +34,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     accessFor,
     requestLevelAdvanceApproval,
     myCourses,
+    language,
+    t,
   } = useCourseStore();
 
   const user = propUser || authUser || currentUser;
@@ -427,7 +430,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
               type="text"
               className="field-input"
               style={{ paddingLeft: 32, height: 34, fontSize: 12.5 }}
-              placeholder="Tìm mã khóa, tiêu đề..."
+              placeholder={language === 'en' ? 'Search course code, title, domain...' : 'Tìm mã khóa, tiêu đề...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -440,16 +443,16 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
           >
-            <option value="ALL">🎯 Tất cả Cấp Bậc (Level 7 → Level 1)</option>
+            <option value="ALL">{language === 'en' ? '🎯 All Job Levels (Level 7 → Level 1)' : '🎯 Tất cả Cấp Bậc (Level 7 → Level 1)'}</option>
             {[...LEVEL_DEFINITIONS].reverse().map((def) => (
               <option key={def.level} value={def.level}>
-                {def.emoji} Level {def.level}: {def.shortVi}
+                {def.emoji} Level {def.level}: {language === 'en' ? (def.shortEn || def.shortVi) : def.shortVi}
               </option>
             ))}
           </select>
 
           <select className="field-select" style={{ height: 34, fontSize: 12, minWidth: 170 }} value={domainFilter} onChange={(e) => setDomainFilter(e.target.value)}>
-            <option value="ALL">Tất cả Chuyên ngành (12 Domains)</option>
+            <option value="ALL">{language === 'en' ? 'All Domains (12 Domains)' : 'Tất cả Chuyên ngành (12 Domains)'}</option>
             <option value="Food Safety & Hygiene">Food Safety &amp; Hygiene</option>
             <option value="Information Security">Information Security</option>
             <option value="Health & Safety">Health &amp; Safety</option>
@@ -462,11 +465,11 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           </select>
 
           <select className="field-select" style={{ height: 34, fontSize: 12, minWidth: 140 }} value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
-            <option value="ALL">Tất cả Định dạng</option>
+            <option value="ALL">{language === 'en' ? 'All Formats' : 'Tất cả Định dạng'}</option>
             <option value="SCORM">SCORM Package</option>
             <option value="Video">Interactive Video</option>
             <option value="PPT">Interactive PPT</option>
-            <option value="CLASSROOM_LAB">Thực Hành Xưởng (ILT)</option>
+            <option value="CLASSROOM_LAB">{language === 'en' ? 'Classroom Lab (ILT)' : 'Thực Hành Xưởng (ILT)'}</option>
             <option value="EXTERNAL_PLATFORM">LinkedIn / Coursera</option>
           </select>
         </div>
@@ -478,13 +481,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           <table className="table" style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th>Khóa Học</th>
-                <th style={{ width: 96 }}>Cấp Bậc</th>
-                <th style={{ width: 118 }}>Truy Cập</th>
-                <th style={{ width: 150 }}>Định Dạng</th>
-                <th style={{ width: 112 }}>Tiến Độ</th>
-                <th style={{ width: 104 }}>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                <th>{language === 'en' ? 'Course Program' : 'Khóa Học'}</th>
+                <th style={{ width: 96 }}>{language === 'en' ? 'Level' : 'Cấp Bậc'}</th>
+                <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Truy Cập'}</th>
+                <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Định Dạng'}</th>
+                <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Tiến Độ'}</th>
+                <th style={{ width: 104 }}>{language === 'en' ? 'Status' : 'Trạng Thái'}</th>
+                <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
               </tr>
             </thead>
             <tbody>
@@ -508,20 +511,29 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                   return (
                     <tr key={c.id} style={isBlocked ? { opacity: 0.62 } : undefined}>
                       <td>
-                        <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span>
-                          <span>&middot;</span>
-                          <span>{c.category || c.domain}</span>
-                          <span>&middot;</span>
-                          <span>{c.estimatedHours || '3h'}</span>
-                        </div>
-                        {access.isLevelLocked && (
-                          <div style={{ fontSize: 11, color: isBlocked ? 'var(--rust)' : 'var(--blue)', marginTop: 4, maxWidth: 320, lineHeight: 1.4 }}>
-                            <i className={`ti ${isBlocked ? 'ti-ban' : 'ti-lock'}`} style={{ marginRight: 4 }} />
-                            {access.reason}
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <img
+                            src={getCourseImage(c)}
+                            alt={c.title}
+                            style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
+                            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span>
+                              <span>&middot;</span>
+                              <span>{c.category || c.domain}</span>
+                              <span>&middot;</span>
+                              <span>{c.estimatedHours || '3h'}</span>
+                            </div>
+                            {access.isLevelLocked && (
+                              <div style={{ fontSize: 11, color: isBlocked ? 'var(--rust)' : 'var(--blue)', marginTop: 4, maxWidth: 320, lineHeight: 1.4 }}>
+                                <i className={`ti ${isBlocked ? 'ti-ban' : 'ti-lock'}`} style={{ marginRight: 4 }} />
+                                {access.reason}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </td>
 
                       <td><JobLevelBadge level={c.targetLevel} title={c.targetLevelTitle} compact /></td>
@@ -580,42 +592,57 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             const isCompleted = enr?.status === 'COMPLETED';
             const def = levelDefinition(c.targetLevel);
             const isBlocked = access.state === ACCESS_STATE.LOCKED_LEVEL_GAP;
+            const courseImg = getCourseImage(c);
 
             return (
               <div
                 key={c.id}
-                className="card card-pad"
+                className="card"
                 style={{
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                   borderTop: `3px solid ${def.colors.border}`,
                   opacity: isBlocked ? 0.62 : 1,
+                  overflow: 'hidden',
                 }}
               >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{c.code}</span>
+                {/* Course Banner Image */}
+                <div style={{ position: 'relative', width: '100%', height: 130, background: 'var(--paper-sunken)' }}>
+                  <img
+                    src={courseImg}
+                    alt={c.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', top: 8, right: 8 }}>
                     <JobLevelBadge level={c.targetLevel} compact />
                   </div>
-                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{c.title}</div>
-                  <div style={{ marginBottom: 8 }}><LevelAccessBadge access={access} /></div>
-                  <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, marginBottom: 12 }}>
-                    {access.isLevelLocked ? access.reason : (c.description || 'Chương trình đào tạo chuyên môn theo tiêu chuẩn MM Mega Market.')}
-                  </p>
+                  <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>
+                    {c.code}
+                  </div>
                 </div>
 
-                <div>
-                  {enr && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                        <span>Tiến độ:</span>
-                        <strong>{enr.progressPercent || 0}%</strong>
+                <div style={{ padding: '14px 16px 8px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{c.title}</div>
+                    <div style={{ marginBottom: 8 }}><LevelAccessBadge access={access} /></div>
+                    <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, marginBottom: 12 }}>
+                      {access.isLevelLocked ? access.reason : (c.description || 'Chương trình đào tạo chuyên môn theo tiêu chuẩn MM Mega Market.')}
+                    </p>
+                  </div>
+
+                  <div>
+                    {enr && (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                          <span>Tiến độ:</span>
+                          <strong>{enr.progressPercent || 0}%</strong>
+                        </div>
+                        <ProgressBar value={enr.progressPercent || 0} tone={isCompleted ? 'sage' : 'amber'} size="sm" />
                       </div>
-                      <ProgressBar value={enr.progressPercent || 0} tone={isCompleted ? 'sage' : 'amber'} size="sm" />
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 10, gap: 8 }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>
+                      {renderAction(c, access)}
                     </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 10, gap: 8 }}>
-                    <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>
-                    {renderAction(c, access)}
                   </div>
                 </div>
               </div>

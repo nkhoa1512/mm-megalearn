@@ -22,6 +22,7 @@ import {
   levelTitle,
   levelValue,
 } from './levelSystem';
+import { getCourseImage } from './courseImages';
 
 // ---------------------------------------------------------------------------
 // 1. GENERATE 100 REALISTIC ENTERPRISE USERS (WITH FULL TALENT PROFILES)
@@ -693,12 +694,50 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const targetLevel = resolveCourseTargetLevel(tpl.codePrefix, idx);
     const targetLevelTitle = `Level ${targetLevel}: ${levelTitle(targetLevel)}`;
 
+    // Resolve domain/topic-specific vibrant thumbnail image
+    const lowerTitle = (title || '').toLowerCase();
+    let courseThumb;
+    if (lowerTitle.includes('bakery') || lowerTitle.includes('bánh') || lowerTitle.includes('confectionery')) {
+      courseThumb = 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('meat') || lowerTitle.includes('thịt') || lowerTitle.includes('poultry') || lowerTitle.includes('butcher')) {
+      courseThumb = 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('seafood') || lowerTitle.includes('thủy sản') || lowerTitle.includes('hải sản') || lowerTitle.includes('fish')) {
+      courseThumb = 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('produce') || lowerTitle.includes('rau') || lowerTitle.includes('fruit') || lowerTitle.includes('vegetable')) {
+      courseThumb = 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('cold') || lowerTitle.includes('lạnh') || lowerTitle.includes('chilled') || lowerTitle.includes('temperature')) {
+      courseThumb = 'https://images.unsplash.com/photo-1584483766114-2cea6facdf57?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('pos') || lowerTitle.includes('cashier') || lowerTitle.includes('checkout') || lowerTitle.includes('thu ngân')) {
+      courseThumb = 'https://images.unsplash.com/photo-1556742049-0a67e5572263?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('security') || lowerTitle.includes('phishing') || lowerTitle.includes('cyber') || lowerTitle.includes('privacy')) {
+      courseThumb = idx % 2 === 0
+        ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80'
+        : 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('forklift') || lowerTitle.includes('warehouse') || lowerTitle.includes('logistics') || lowerTitle.includes('fleet')) {
+      courseThumb = idx % 2 === 0
+        ? 'https://images.unsplash.com/photo-1586528116493-a029325540fa?auto=format&fit=crop&w=600&q=80'
+        : 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('leadership') || lowerTitle.includes('coach') || lowerTitle.includes('manage') || lowerTitle.includes('lãnh đạo')) {
+      courseThumb = idx % 2 === 0
+        ? 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80'
+        : 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80';
+    } else if (lowerTitle.includes('fire') || lowerTitle.includes('safety') || lowerTitle.includes('pccc') || lowerTitle.includes('hse') || lowerTitle.includes('hazard')) {
+      courseThumb = idx % 2 === 0
+        ? 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80'
+        : 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80';
+    } else {
+      courseThumb = getCourseImage({ domain: tpl.domain, category: tpl.cat });
+    }
+
     generatedCourseList.push({
       id: courseId,
       code,
       title,
       category: tpl.cat,
       domain: tpl.domain,
+      thumbnail: courseThumb,
+      imageUrl: courseThumb,
+      milestoneImage: courseThumb,
       deliveryType,
       targetLevel,
       targetLevelTitle,

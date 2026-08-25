@@ -19,6 +19,7 @@ import {
   addCourseToCurrentRoadmap,
   removeCourseFromCurrentRoadmap,
 } from '../data/levelRoadmapMatrix';
+import { translate } from '../data/i18n';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -31,6 +32,8 @@ const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 const USERS_KEY = 'mm-megalearn-users-v6';
 const ROADMAP_KEY = 'mm-megalearn-roadmaps-v6';
+const THEME_KEY = 'mm-megalearn-theme';
+const LANG_KEY = 'mm-megalearn-lang';
 
 const CourseStoreContext = createContext(null);
 
@@ -82,6 +85,19 @@ export function CourseStoreProvider({ children }) {
   const [talentProfileUser, setTalentProfileUser] = useState(null);
   const [surveyModalConfig, setSurveyModalConfig] = useState({ isOpen: false, course: null, type: 'L1', learner: null });
 
+  // Theme (light | dark) & Language (en | vi)
+  const [theme, setThemeState] = useState(() => {
+    const saved = loadItem(THEME_KEY, null);
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
+  });
+
+  const [language, setLanguageState] = useState(() => {
+    const saved = loadItem(LANG_KEY, null);
+    if (saved === 'en' || saved === 'vi') return saved;
+    return 'vi';
+  });
+
   useEffect(() => {
     try {
       if (isAuthenticated && currentUser) {
@@ -97,10 +113,35 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
       localStorage.setItem(ENROLLMENT_KEY, JSON.stringify(enrollments));
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
+      localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+      localStorage.setItem(LANG_KEY, JSON.stringify(language));
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, theme, language]);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  const setTheme = useCallback((nextTheme) => {
+    if (nextTheme === 'dark' || nextTheme === 'light') setThemeState(nextTheme);
+  }, []);
+
+  const toggleLanguage = useCallback(() => {
+    setLanguageState((prev) => (prev === 'en' ? 'vi' : 'en'));
+  }, []);
+
+  const setLanguage = useCallback((nextLang) => {
+    if (nextLang === 'en' || nextLang === 'vi') setLanguageState(nextLang);
+  }, []);
+
+  const t = useCallback((key, fallback = '') => {
+    return translate(key, language, fallback);
+  }, [language]);
 
   // Auth actions
   const login = useCallback((userObj) => {
@@ -592,6 +633,13 @@ export function CourseStoreProvider({ children }) {
         surveyModalConfig,
         openSurveyModal,
         closeSurveyModal,
+        theme,
+        toggleTheme,
+        setTheme,
+        language,
+        toggleLanguage,
+        setLanguage,
+        t,
       }}
     >
       {children}

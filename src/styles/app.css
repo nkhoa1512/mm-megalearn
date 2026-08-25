@@ -452,6 +452,7 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--paper-raised);
+  color: var(--ink);
   font-size: 13px;
   transition: border-color var(--ease) 120ms, box-shadow var(--ease) 120ms;
 }

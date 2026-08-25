@@ -24,7 +24,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
-  const { courses, users, promoteUserLevel, assignTrainerToCourse } = useCourseStore();
+  const { courses, users, promoteUserLevel, assignTrainerToCourse, language, t } = useCourseStore();
 
   // Nguồn Giảng viên đủ chuẩn: L&D, HRBP, User Admin, System Admin (mọi role
   // có canBeAssignedToClass) — không chỉ riêng role Trainer/L&D như trước.
@@ -91,23 +91,51 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     return matchSearch && matchBranch && matchSubDept && matchLevel;
   });
 
+  const TABS = [
+    { id: 'DIRECTORY', labelVi: 'Danh Mục 100+ Nhân Sự', labelEn: '100+ Staff Directory', icon: 'ti-address-book' },
+    { id: 'COURSE_MANAGEMENT', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2', isNav: true, to: '/admin/courses' },
+    { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu 2 Nhánh', labelEn: 'Dual Org Hierarchy Tree', icon: 'ti-binary-tree' },
+    { id: 'JOB_LEVELS', labelVi: 'Khung 7 Cấp Bậc', labelEn: '7-Level Framework', icon: 'ti-id-badge-2' },
+    { id: 'ALLOCATION', labelVi: 'Phân Bổ Khóa Học', labelEn: 'Course Allocation', icon: 'ti-stack-2' },
+    { id: 'TRAINER_ASSIGNMENT', labelVi: 'Phân Công Giảng Viên', labelEn: 'Faculty Assignment', icon: 'ti-school' },
+  ];
+
   return (
     <>
       {/* HEADER */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Quản Trị Nhân Sự &amp; Cây Cơ Cấu Tổ Chức</h1>
+            <h1>{language === 'en' ? 'User Administration & Dual Org Tree' : 'Quản Trị Nhân Sự & Cây Cơ Cấu Tổ Chức'}</h1>
             <Badge tone="blue" icon="ti-users-group">User Administrator</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Quản trị viên Nhân sự: <strong>{userAdminUser.fullName}</strong> &middot; {userAdminUser.department} &middot; Quản lý hồ sơ nhân viên &amp; định biên sơ đồ tổ chức MM Mega Market
+            {language === 'en'
+              ? <>HR Administrator: <strong>{userAdminUser.fullName}</strong> &middot; {userAdminUser.department} &middot; Manage employee master &amp; MM Mega Market organization structure</>
+              : <>Quản trị viên Nhân sự: <strong>{userAdminUser.fullName}</strong> &middot; {userAdminUser.department} &middot; Quản lý hồ sơ nhân viên &amp; định biên sơ đồ tổ chức MM Mega Market</>}
           </p>
         </div>
 
-        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
-          Xem Giao Diện Học Tập Cá Nhân
-        </Button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="primary"
+            icon="ti-plus"
+            onClick={() => navigate('/admin/courses/new')}
+            style={{
+              background: 'linear-gradient(135deg, #007A38 0%, #005A28 100%)',
+              borderColor: '#007A38',
+              fontWeight: 800,
+            }}
+          >
+            {language === 'en' ? '+ Create Course (Online & In-Person)' : '+ Tạo Khóa Học (Online & Trực Tiếp)'}
+          </Button>
+          <Button variant="outline" icon="ti-stack-2" onClick={() => navigate('/admin/courses')}>
+            {language === 'en' ? 'Manage Course Catalog' : 'Quản Lý Danh Mục Khóa Học'}
+          </Button>
+          <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+            {language === 'en' ? 'Personal Dashboard' : 'Xem Giao Diện Cá Nhân'}
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -126,83 +154,77 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>7</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Cấp bậc Định biên<br />Level 7 → Level 1</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{language === 'en' ? 'Levels' : 'Cấp bậc Định biên'}</div>
         </div>
       </div>
 
-      {/* TABS SWITCHER */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
-        {[
-          { id: 'DIRECTORY', label: 'Danh Mục 100+ Nhân Sự (Employee Master)', icon: 'ti-address-book', count: rawUsers.length },
-          { id: 'HIERARCHY', label: 'Cây Cơ Cấu Tổ Chức 2 Nhánh', icon: 'ti-binary-tree', count: '2 Nhánh' },
-          { id: 'JOB_LEVELS', label: 'Khung 7 Cấp Bậc Định Biên', icon: 'ti-id-badge-2', count: '7 Bậc' },
-          { id: 'ALLOCATION', label: 'Phân Bổ Khóa Học Cho Khối / Phòng Ban', icon: 'ti-stack-2', count: courses.length },
-          { id: 'TRAINER_ASSIGNMENT', label: 'Phân Công Giảng Viên Đứng Lớp', icon: 'ti-school', count: eligibleTrainers.length },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className="btn btn-sm"
-            style={{
-              background: activeTab === tab.id ? 'var(--blue)' : 'var(--paper-raised)',
-              color: activeTab === tab.id ? '#fff' : 'var(--ink)',
-              borderColor: activeTab === tab.id ? 'var(--blue)' : 'var(--line-strong)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontWeight: activeTab === tab.id ? 700 : 500,
-            }}
-          >
-            <i className={`ti ${tab.icon}`} />
-            <span>{tab.label}</span>
-            <span style={{
-              background: activeTab === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--line)',
-              padding: '1px 6px',
-              borderRadius: 10,
-              fontSize: 10.5,
-              fontWeight: 700,
-            }}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+      {/* 5 TABS NAVIGATION */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+        {TABS.map((tab) => {
+          const tabLabel = language === 'en' ? tab.labelEn : tab.labelVi;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                if (tab.isNav) navigate(tab.to);
+                else setActiveTab(tab.id);
+              }}
+              className="btn btn-sm"
+              style={{
+                background: activeTab === tab.id ? 'var(--blue)' : 'var(--paper-raised)',
+                color: activeTab === tab.id ? '#fff' : 'var(--ink)',
+                borderColor: activeTab === tab.id ? 'var(--blue)' : 'var(--line-strong)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: activeTab === tab.id ? 700 : 500,
+              }}
+            >
+              <i className={`ti ${tab.icon}`} />
+              {tabLabel}
+            </button>
+          );
+        })}
       </div>
 
-      {/* TAB 1: EMPLOYEE DIRECTORY */}
+      {/* TAB 1: DIRECTORY */}
       {activeTab === 'DIRECTORY' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Tìm nhân viên theo tên, mã NV, chức vụ..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ width: 280 }}
-              />
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
+              <div style={{ position: 'relative', minWidth: 240, flex: 1 }}>
+                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 10, color: 'var(--ink-faint)', fontSize: 14 }} />
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder={language === 'en' ? 'Search employee code, name, position...' : 'Tìm kiếm theo tên, mã NV, chức danh...'}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{ paddingLeft: 32 }}
+                />
+              </div>
 
               <select
                 className="field-select"
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                style={{ width: 170 }}
+                style={{ width: 180 }}
               >
-                <option value="ALL">Toàn bộ 2 Nhánh</option>
-                <option value="HEAD_OFFICE">Khối Trụ Sở (Head Office)</option>
-                <option value="OPERATIONS">Khối Siêu Thị (Operations)</option>
+                <option value="ALL">{language === 'en' ? '🏢 All Branches' : '🏢 Tất cả Khối Cơ Cấu'}</option>
+                <option value="HEAD_OFFICE">{language === 'en' ? 'Trụ sở Head Office' : 'Trụ sở Head Office (Khối Hỗ Trợ)'}</option>
+                <option value="OPERATIONS">{language === 'en' ? 'Siêu thị Vận hành' : 'Siêu thị Vận hành (Khối Cửa Hàng)'}</option>
               </select>
 
               <select
                 className="field-select"
-                value={selectedSubDept}
-                onChange={(e) => setSelectedSubDept(e.target.value)}
-                style={{ width: 220 }}
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                style={{ width: 180 }}
               >
-                <option value="ALL">Tất cả Bộ phận (Sub-Depts)</option>
-                {subDepartments.map((sub) => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name}
+                <option value="ALL">{language === 'en' ? 'All Departments' : 'Tất cả Phòng ban'}</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
                   </option>
                 ))}
               </select>
@@ -213,31 +235,27 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 onChange={(e) => setSelectedLevel(e.target.value)}
                 style={{ width: 160 }}
               >
-                <option value="ALL">Tất cả Cấp bậc (7 → 1)</option>
+                <option value="ALL">{language === 'en' ? 'All Levels (7 → 1)' : 'Tất cả Cấp bậc (7 → 1)'}</option>
                 {[...LEVEL_DEFINITIONS].reverse().map((def) => (
                   <option key={def.level} value={def.level}>
-                    {def.emoji} Level {def.level} — {def.shortVi}
+                    {def.emoji} Level {def.level} — {language === 'en' ? (def.shortEn || def.shortVi) : def.shortVi}
                   </option>
                 ))}
               </select>
             </div>
-
-            <Button variant="primary" icon="ti-user-plus" onClick={() => handleOpenEdit({ userId: `MMVN-${Date.now().toString().slice(-4)}`, fullName: '', email: '', title: '', department: 'Fresh Food', level: '7', role: 'learner' })}>
-              Thêm Nhân Sự Mới
-            </Button>
           </div>
 
           <div className="card" style={{ overflowX: 'auto' }}>
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Mã Nhân Viên</th>
-                  <th>Họ và Tên</th>
-                  <th>Chức Danh &amp; Vị Trí</th>
-                  <th>Cơ Cấu &amp; Bộ Phận</th>
-                  <th>Cấp Bậc (Level)</th>
-                  <th>Vai Trò Hệ Thống</th>
-                  <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                  <th>{language === 'en' ? 'Employee Code' : 'Mã Nhân Viên'}</th>
+                  <th>{language === 'en' ? 'Full Name' : 'Họ và Tên'}</th>
+                  <th>{language === 'en' ? 'Job Title & Position' : 'Chức Danh & Vị Trí'}</th>
+                  <th>{language === 'en' ? 'Org Unit & Dept' : 'Cơ Cấu & Bộ Phận'}</th>
+                  <th>{language === 'en' ? 'Job Level' : 'Cấp Bậc (Level)'}</th>
+                  <th>{language === 'en' ? 'System Role' : 'Vai Trò Hệ Thống'}</th>
+                  <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,13 +297,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         variant="primary"
                         icon="ti-id-badge-2"
                         onClick={() => setTranscriptUser(u)}
-                        title="Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp"
+                        title={language === 'en' ? 'Open staff profile: details, courses, level promotion' : 'Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp'}
                         style={{
                           background: 'linear-gradient(135deg, #1E40AF 0%, #4338CA 100%)',
                           fontSize: 11.5,
                         }}
                       >
-                        Hồ Sơ Nhân Sự
+                        {language === 'en' ? 'Staff Profile' : 'Hồ Sơ Nhân Sự'}
                       </Button>
                     </td>
                   </tr>
@@ -294,7 +312,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </table>
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'right' }}>
-            Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự
+            {language === 'en' ? (
+              <>Showing <strong>{filteredUsers.length}</strong> / {userList.length} associates</>
+            ) : (
+              <>Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự</>
+            )}
           </div>
         </div>
       )}

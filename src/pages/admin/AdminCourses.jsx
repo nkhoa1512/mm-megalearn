@@ -4,6 +4,7 @@ import { courseHasParticipants, userAdminUser } from '../../data/mockData';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
+import { getCourseImage } from '../../data/courseImages';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
@@ -25,7 +26,7 @@ const CATEGORIES = [
 
 export default function AdminCourses() {
   const navigate = useNavigate();
-  const { courses, updateCourse, removeCourse, currentUser } = useCourseStore();
+  const { courses, updateCourse, removeCourse, currentUser, language, t } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
   // User Admin & SysAdmin quản lý TOÀN BỘ khóa học (canAuthorOnlineCourses là
@@ -76,11 +77,13 @@ export default function AdminCourses() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Course Catalog &amp; Program Governance</h1>
-            <Badge tone="sage">{courses.length} Total Programs</Badge>
+            <h1>{language === 'en' ? 'Course Catalog & Program Governance' : 'Danh Mục & Quản Trị Khóa Học'}</h1>
+            <Badge tone="sage">{courses.length} {language === 'en' ? 'Total Programs' : 'Khóa Học'}</Badge>
           </div>
           <p>
-            Define curriculum modules, author interactive quizzes, import question banks, and target mandatory compliance by Business Unit, Division, Department, or Job Level.
+            {language === 'en'
+              ? 'Define curriculum modules, author interactive quizzes, import question banks, and target mandatory compliance by Business Unit, Division, Department, or Job Level.'
+              : 'Thiết lập mô-đun bài học, bài kiểm tra tương tác, ngân hàng câu hỏi và phân bổ đào tạo bắt buộc theo Khối, Phòng ban hoặc Cấp bậc định biên.'}
           </p>
         </div>
         {isAdmin && (
@@ -99,7 +102,7 @@ export default function AdminCourses() {
               type="text"
               className="field-input"
               style={{ paddingLeft: 32, height: 34, fontSize: 12.5 }}
-              placeholder="Search 100 courses by title, code..."
+              placeholder={language === 'en' ? 'Search 100 courses by title, code...' : 'Tìm kiếm theo tên, mã khóa...'}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -154,9 +157,18 @@ export default function AdminCourses() {
               return (
                 <tr key={c.id}>
                   <td>
-                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{c.title}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {c.category} &middot; Version {c.version}
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <img
+                        src={getCourseImage(c)}
+                        alt={c.title}
+                        style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {c.category} &middot; Version {c.version}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td><CourseTypeBadge courseType={c.courseType} /></td>

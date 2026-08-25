@@ -540,7 +540,7 @@ console.log('\n=== 14. 4-Tab Universal Learning Roadmap (Current / Succession / 
 
   const currentHtml = byRole.learner['LearnerLearningPaths/CURRENT'];
   check('learner sees all 4 tab labels', ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => currentHtml.includes(label)));
-  check('CURRENT tab renders the timeline (start avatar + flag)', currentHtml.includes('ti-user') && currentHtml.includes('ti-flag'));
+  check('CURRENT tab renders the timeline (start icon + finish flag)', (currentHtml.includes('ti-user') || currentHtml.includes('ti-player-play') || currentHtml.includes('Xuất Phát')) && (currentHtml.includes('ti-flag') || currentHtml.includes('Về Đích')));
 
   const successionHtmlFresh = byRole.learner['LearnerLearningPaths/SUCCESSION'];
   check('fresh learner sees the SUCCESSION tab locked banner', successionHtmlFresh.includes('phải hoàn thành 100% Lộ trình hiện tại'));

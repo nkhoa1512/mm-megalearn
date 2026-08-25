@@ -4,6 +4,7 @@ import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLeve
 import { useCourseStore } from '../../state/CourseStore';
 import { currentUser } from '../../data/mockData';
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
+import { getCourseImage } from '../../data/courseImages';
 
 function statusLabel(status) {
   switch (status) {
@@ -87,17 +88,36 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
       <div className="page-crumb" style={{ marginBottom: 6 }}>
         <Link to={basePath} style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Khóa Học Của Tôi</Link> / {course.title}
       </div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-            <h1>{course.title}</h1>
-            <JobLevelBadge level={course.targetLevel} title={course.targetLevelTitle} />
+      <div className="card" style={{ marginBottom: 20, overflow: 'hidden', border: '1px solid var(--line)' }}>
+        <div style={{ position: 'relative', width: '100%', height: 180, background: 'var(--paper-sunken)' }}>
+          <img
+            src={getCourseImage(course)}
+            alt={course.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%)' }} />
+          <div style={{ position: 'absolute', bottom: 14, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                <span style={{ background: 'rgba(255,255,255,0.9)', color: 'var(--ink)', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                  {course.code}
+                </span>
+                <JobLevelBadge level={course.targetLevel} compact />
+                <CourseTypeBadge courseType={course.courseType} />
+              </div>
+              <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
+                {course.title}
+              </h1>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span>{course.category || course.domain}</span>
+              <span>&middot;</span>
+              <span>{course.estimatedDuration || '3h'}</span>
+              <span>&middot;</span>
+              <span>{course.version || 'v2.1'}</span>
+            </div>
           </div>
-          <p style={{ margin: 0 }}>
-            {course.category || course.domain} &middot; Thời lượng: {course.estimatedDuration || '3h'} &middot; Phiên bản: {course.version || 'v2.1'}
-          </p>
         </div>
-        <CourseTypeBadge courseType={course.courseType} />
       </div>
 
       {notice && (

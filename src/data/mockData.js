@@ -29,6 +29,9 @@ import {
 } from './generated100Data';
 import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from './levelSystem';
 import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
+import { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
+
+export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 
 // Thang 7 cấp bậc & mô hình 6 role được tái xuất khẩu ở đây để các màn hình chỉ
 // cần import từ một nơi duy nhất.
@@ -647,6 +650,9 @@ export function createBlankCourse() {
     title: 'Untitled course',
     description: '',
     category: 'Store Operations',
+    thumbnail: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
+    imageUrl: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
+    milestoneImage: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
     // Mặc định khóa mới nhắm tới cấp thấp nhất (Level 7) để mở tối đa cho học viên;
     // người biên soạn nâng cấp bậc mục tiêu trong Course Builder nếu cần.
     targetLevel: '7',

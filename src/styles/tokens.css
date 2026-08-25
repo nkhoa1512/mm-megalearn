@@ -110,6 +110,78 @@
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ==========================================================================
+   MM MegaLearn - Dark Mode Design Tokens
+   ========================================================================== */
+[data-theme="dark"] {
+  --paper: #0B1120;        /* deep slate background */
+  --paper-raised: #1E293B; /* elevated card background */
+  --paper-sunken: #0F172A; /* recessed input / table header background */
+  --paper-glass: rgba(30, 41, 59, 0.95);
+
+  --ink: #F8FAFC;          /* primary text - crisp bright white */
+  --ink-soft: #94A3B8;     /* secondary text - slate-400 */
+  --ink-faint: #64748B;    /* muted text / placeholders - slate-500 */
+
+  --line: #334155;         /* subtle border */
+  --line-strong: #475569;  /* emphasized border */
+
+  /* Primary Brand: Big C Green for Dark Mode */
+  --bigc-green: #10B981;
+  --bigc-green-hover: #059669;
+  --bigc-green-soft: #064E3B;
+  --bigc-green-soft-text: #6EE7B7;
+  --rail: var(--bigc-green);
+  --rail-hover: var(--bigc-green-hover);
+  --rail-soft: var(--bigc-green-soft);
+  --rail-soft-text: var(--bigc-green-soft-text);
+
+  /* Secondary Brand: MM Blue for Dark Mode */
+  --mm-blue: #3B82F6;
+  --mm-blue-hover: #2563EB;
+  --mm-blue-soft: #1E3A8A;
+  --mm-blue-soft-text: #93C5FD;
+  --navy: var(--mm-blue);
+  --navy-soft: var(--mm-blue-soft);
+  --navy-soft-text: var(--mm-blue-soft-text);
+  --blue: var(--mm-blue);
+  --blue-soft: var(--mm-blue-soft);
+  --blue-soft-text: var(--mm-blue-soft-text);
+
+  /* Secondary Brand: MM Red for Dark Mode */
+  --mm-red: #F87171;
+  --mm-red-hover: #EF4444;
+  --mm-red-soft: #7F1D1D;
+  --mm-red-soft-text: #FCA5A5;
+  --rust: var(--mm-red);
+  --rust-soft: var(--mm-red-soft);
+  --rust-soft-text: var(--mm-red-soft-text);
+
+  /* Corporate Black / Contrast */
+  --black: #F8FAFC;
+  --black-hover: #FFFFFF;
+  --black-soft: #334155;
+  --black-soft-text: #F8FAFC;
+
+  /* State Colors */
+  --amber: #FBBF24;
+  --amber-soft: #78350F;
+  --amber-soft-text: #FDE68A;
+
+  --sage: #10B981;
+  --sage-soft: #064E3B;
+  --sage-soft-text: #6EE7B7;
+
+  --slate: #94A3B8;
+  --slate-soft: #1E293B;
+  --slate-soft-text: #E2E8F0;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+}
+
 * { box-sizing: border-box; }
 
 html, body, #root {
