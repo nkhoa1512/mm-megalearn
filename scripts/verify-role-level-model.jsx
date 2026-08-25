@@ -630,5 +630,19 @@ console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav, role badge, colla
   check('collapsed AppHeader carries the collapsed class', Boolean(collapsedHtml && collapsedHtml.includes('app-header collapsed')));
 }
 
+console.log('\n=== 17. RoadmapTabsPanel extraction + inline (non-modal) timeline detail ===');
+{
+  actAs('learner');
+  const pathsHtml = render('LearnerLearningPaths still shows all 4 tabs after extraction', <LearnerLearningPaths initialTab="CURRENT" />, '/learner/paths', '/learner/paths');
+  check('extracted RoadmapTabsPanel still renders all 4 tab labels', Boolean(pathsHtml
+    && pathsHtml.includes('Lộ Trình Hiện Tại') && pathsHtml.includes('Lộ Trình Kế Cận')
+    && pathsHtml.includes('Lộ Trình Tự Đề Xuất') && pathsHtml.includes('Khóa Học Gợi Ý')));
+
+  const fs = await import('node:fs');
+  const timelineSource = fs.readFileSync('src/components/VisualRoadmapTimeline.jsx', 'utf8');
+  check('VisualRoadmapTimeline no longer imports Modal', !/import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*'\.\/ui'/.test(timelineSource));
+  check('VisualRoadmapTimeline renders an inline detail card on selection', timelineSource.includes('{selected && (') && timelineSource.includes('className="card card-pad"'));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);

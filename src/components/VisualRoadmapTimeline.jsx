@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Modal } from './ui';
+import { Badge, Button } from './ui';
 
 const STATUS_META = {
   COMPLETED: { color: 'var(--sage)', bg: 'var(--sage-soft)', icon: 'ti-check' },
@@ -9,8 +9,9 @@ const STATUS_META = {
 const LOCKED_META = { color: 'var(--ink-faint)', bg: 'var(--paper-sunken)', icon: 'ti-lock' };
 
 // Bản đồ hành trình dạng timeline ngang: avatar học viên -> các chặng môn học
-// so le trên/dưới, nối bằng 1 đường thẳng -> cờ đích. Bấm vào 1 chặng mở popup
-// chi tiết khóa học kèm nút Vào Học Ngay / Xem Lại Bài Giảng.
+// so le trên/dưới, nối bằng 1 đường thẳng -> cờ đích. Bấm vào 1 chặng hiện chi
+// tiết khóa học ngay bên dưới timeline (không che màn hình), kèm nút Vào Học
+// Ngay / Xem Lại Bài Giảng.
 export default function VisualRoadmapTimeline({ milestones, locked = false, onOpenCourse }) {
   const [selected, setSelected] = useState(null);
 
@@ -25,7 +26,7 @@ export default function VisualRoadmapTimeline({ milestones, locked = false, onOp
   const allCompleted = !locked && milestones.every((m) => m.completed);
 
   return (
-    <>
+    <div>
       <div style={{ overflowX: 'auto', padding: '44px 10px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', minWidth: milestones.length * 140 + 120, position: 'relative' }}>
           <div style={{ position: 'absolute', left: 44, right: 44, top: '50%', height: 3, background: 'var(--line-strong)', zIndex: 0 }} />
@@ -37,6 +38,7 @@ export default function VisualRoadmapTimeline({ milestones, locked = false, onOp
           {milestones.map((m, idx) => {
             const isTop = idx % 2 === 0;
             const meta = locked ? LOCKED_META : (STATUS_META[m.status] || STATUS_META.NOT_STARTED);
+            const isSelected = selected?.course.id === m.course.id;
             return (
               <div key={m.course.id} style={{ flex: 1, minWidth: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
                 {isTop && (
@@ -49,10 +51,11 @@ export default function VisualRoadmapTimeline({ milestones, locked = false, onOp
                 )}
                 <button
                   type="button"
-                  onClick={() => !locked && setSelected(m)}
+                  onClick={() => !locked && setSelected(isSelected ? null : m)}
                   disabled={locked}
                   style={{
-                    width: 46, height: 46, borderRadius: '50%', border: `3px solid ${meta.color}`,
+                    width: 46, height: 46, borderRadius: '50%',
+                    border: `3px solid ${meta.color}`, boxShadow: isSelected ? `0 0 0 3px ${meta.bg}` : 'none',
                     background: meta.bg, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 18, cursor: locked ? 'default' : 'pointer', flexShrink: 0,
                   }}
@@ -87,30 +90,34 @@ export default function VisualRoadmapTimeline({ milestones, locked = false, onOp
         </div>
       </div>
 
-      <Modal
-        isOpen={Boolean(selected)}
-        onClose={() => setSelected(null)}
-        title={selected?.course.title}
-        subtitle={selected ? `${selected.course.code} · ${selected.course.estimatedHours || ''}` : ''}
-      >
-        {selected && (
-          <div>
+      {selected && (
+        <div className="card card-pad" style={{ marginTop: 4, borderColor: 'var(--rail)', borderWidth: 1.5 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--ink)' }}>{selected.course.title}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                {selected.course.code} &middot; {selected.course.estimatedHours || ''}
+              </div>
+            </div>
+            <button onClick={() => setSelected(null)} className="icon-btn" aria-label="Đóng chi tiết"><i className="ti ti-x" /></button>
+          </div>
+          <div style={{ marginTop: 10 }}>
             <Badge tone={selected.completed ? 'sage' : selected.status === 'IN_PROGRESS' ? 'amber' : 'slate'} icon={selected.completed ? 'ti-check' : 'ti-clock'}>
               {selected.completed ? 'Đã hoàn thành' : selected.status === 'IN_PROGRESS' ? 'Đang học' : 'Chưa bắt đầu'}
             </Badge>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.6 }}>{selected.course.description}</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-              <Button
-                variant="primary"
-                icon={selected.completed ? 'ti-rotate' : 'ti-player-play'}
-                onClick={() => onOpenCourse && onOpenCourse(selected.course)}
-              >
-                {selected.completed ? 'Xem Lại Bài Giảng' : 'Vào Học Ngay'}
-              </Button>
-            </div>
           </div>
-        )}
-      </Modal>
-    </>
+          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.6 }}>{selected.course.description}</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+            <Button
+              variant="primary"
+              icon={selected.completed ? 'ti-rotate' : 'ti-player-play'}
+              onClick={() => onOpenCourse && onOpenCourse(selected.course)}
+            >
+              {selected.completed ? 'Xem Lại Bài Giảng' : 'Vào Học Ngay'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
