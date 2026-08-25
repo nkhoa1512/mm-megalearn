@@ -75,28 +75,48 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
       {/* Quick KPI stats */}
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>94.2%</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-shield-check" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>94.2%</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>78.5%</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sẵn sàng Kế nhiệm<br />(Talent Readiness)</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-chart-pie" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>78.5%</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sẵn sàng Kế nhiệm<br />(Talent Readiness)</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>4</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Khoảng cách Kỹ năng<br />Cần L&amp;D can thiệp</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-alert-triangle" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>4</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Khoảng cách Kỹ năng<br />Cần L&amp;D can thiệp</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>1,450</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự Phụ trách<br />Khu vực Miền Nam</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-users" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>1,450</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự Phụ trách<br />Khu vực Miền Nam</div>
+          </div>
         </div>
       </div>
 
       {/* TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-radar', count: '4 Điểm nghẽn' },
+          { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-dots', count: '4 Điểm nghẽn' },
           { id: 'SUCCESSION', label: 'Quy Hoạch Kế Nhiệm & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: '12 Kế nhiệm' },
           { id: 'COMPLIANCE', label: 'Bản Đồ Tuân Thủ Bắt Buộc Theo Siêu Thị (Regional Heatmap)', icon: 'ti-shield-check', count: '94.2%' },
         ].map((tab) => (

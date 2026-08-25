@@ -81,21 +81,41 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
 
       {/* Quick Stats */}
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>99.98%</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hạ tầng SLA<br />Uptime Health</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-activity" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>99.98%</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hạ tầng SLA<br />Uptime Health</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>CONNECTED</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>SAP HRIS Sync<br />REST API Pipeline</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-cloud-computing" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>CONNECTED</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>SAP HRIS Sync<br />REST API Pipeline</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>0 Cảnh Báo</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sự cố Bảo mật<br />Trong 24 giờ qua</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-shield-check" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>0 Cảnh Báo</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sự cố Bảo mật<br />Trong 24 giờ qua</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>24</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phiên làm việc<br />Đang hoạt động</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-user-check" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>24</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Phiên làm việc<br />Đang hoạt động</div>
+          </div>
         </div>
       </div>
 
@@ -104,7 +124,7 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
         {[
           { id: 'HRIS', label: 'Tích Hợp & Đồng Bộ Dữ Liệu HRIS (API Pipeline)', icon: 'ti-refresh', count: 'Active' },
           { id: 'AUDIT_LOGS', label: 'Nhật Ký Bảo Mật & Giám Sát Phiên (Security Audit Logs)', icon: 'ti-shield-check', count: '100% Secure' },
-          { id: 'POLICIES', label: 'Chính Sách Bảo Mật & Chống Gian Lận (Security Policies)', icon: 'ti-lock-access', count: 'Standard' },
+          { id: 'POLICIES', label: 'Chính Sách Bảo Mật & Chống Gian Lận (Security Policies)', icon: 'ti-shield-lock', count: 'Standard' },
           { id: 'ROLE_GOVERNANCE', label: 'Quản Trị Toàn Bộ 6 Role & Ma Trận Phân Quyền', icon: 'ti-users-group', count: '6 Role' },
         ].map((tab) => (
           <button

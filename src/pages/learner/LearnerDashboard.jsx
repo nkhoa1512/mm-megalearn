@@ -68,7 +68,7 @@ export default function LearnerDashboard() {
       <div className="grid grid-3" style={{ marginBottom: 24 }}>
         <StatTile label="Giờ Học" value={`${learningHours.toFixed(1)}h`} tone="blue" icon="ti-clock-hour-4" onClick={() => navigate('/learner/history')} />
         <StatTile label="Khóa Đã Hoàn Thành" value={completedCount} tone="sage" icon="ti-circle-check" onClick={() => navigate('/learner/courses')} />
-        <StatTile label="Khóa Bắt Buộc" value={mandatoryCount} tone="amber" icon="ti-shield-alert" onClick={() => navigate('/learner/courses')} />
+        <StatTile label="Khóa Bắt Buộc" value={mandatoryCount} tone="amber" icon="ti-alert-triangle" onClick={() => navigate('/learner/courses')} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -116,7 +116,7 @@ export default function LearnerDashboard() {
 
       <div className="grid grid-3" style={{ gap: 16 }}>
         <ResourceCard icon="ti-certificate" tone="sage" title="Chứng Chỉ Đạt Được" value={`${certificates.length} chứng chỉ`} onClick={() => navigate('/learner/certificates')} />
-        <ResourceCard icon="ti-shield-alert" tone="amber" title="Khóa Bắt Buộc Còn Lại" value={`${mandatoryOutstanding} khóa`} onClick={() => navigate('/learner/courses')} />
+        <ResourceCard icon="ti-alert-triangle" tone="amber" title="Khóa Bắt Buộc Còn Lại" value={`${mandatoryOutstanding} khóa`} onClick={() => navigate('/learner/courses')} />
         {/* Không có trang chi tiết thông báo riêng trong app (chỉ có dropdown
             chuông ở AppHeader, state cục bộ không lift lên được dễ dàng) — thẻ
             này không có onClick, tránh giả vờ điều hướng đến nơi không tồn tại. */}
@@ -133,7 +133,7 @@ function StatTile({ label, value, tone, icon, onClick }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
         <div className="stat-label">{label}</div>
         {icon && (
-          <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)` }}>
+          <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
             <i className={`ti ${icon}`} />
           </div>
         )}

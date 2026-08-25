@@ -106,43 +106,49 @@ export default function AdminDashboard() {
 
       {/* 6 Executive KPI Stat Cards */}
       <div className="grid grid-3" style={{ marginBottom: 16 }}>
-        <div className="card card-pad stat">
-          <div className="stat-label">Total Enterprise Headcount</div>
-          <div className="stat-value">{orgReport.totalEmployees.toLocaleString()} Associates</div>
-          <div className="stat-sublabel">186 Managers &middot; 1,959 Frontline/Staff</div>
-        </div>
-
-        <div className="card card-pad stat">
-          <div className="stat-label">Overall Compliance Rate</div>
-          <div className="stat-value" style={{ color: 'var(--sage)' }}>{orgReport.overallCompletionRate}%</div>
-          <div className="stat-sublabel">Target benchmark: &ge;80.0%</div>
-        </div>
-
-        <div className="card card-pad stat">
-          <div className="stat-label">Certified Competencies Issued</div>
-          <div className="stat-value" style={{ color: 'var(--rail)' }}>{orgReport.totalCompleted.toLocaleString()} Credentials</div>
-          <div className="stat-sublabel">Verifiable digital QR certificates</div>
-        </div>
+        <StatCard
+          label="Total Enterprise Headcount"
+          value={`${orgReport.totalEmployees.toLocaleString()} Associates`}
+          icon="ti-users"
+          sublabel="186 Managers · 1,959 Frontline/Staff"
+        />
+        <StatCard
+          label="Overall Compliance Rate"
+          value={`${orgReport.overallCompletionRate}%`}
+          tone="sage"
+          icon="ti-shield-check"
+          sublabel="Target benchmark: ≥80.0%"
+        />
+        <StatCard
+          label="Certified Competencies Issued"
+          value={`${orgReport.totalCompleted.toLocaleString()} Credentials`}
+          tone="rail"
+          icon="ti-certificate"
+          sublabel="Verifiable digital QR certificates"
+        />
       </div>
 
       <div className="grid grid-3" style={{ marginBottom: 24 }}>
-        <div className="card card-pad stat">
-          <div className="stat-label">Active Catalog Programs</div>
-          <div className="stat-value">{orgReport.totalActiveCourses} Courses</div>
-          <div className="stat-sublabel">{mandatoryCount} Mandatory &middot; {optionalCount} Elective</div>
-        </div>
-
-        <div className="card card-pad stat">
-          <div className="stat-label">Overdue Compliance Enrollments</div>
-          <div className="stat-value" style={{ color: 'var(--rust)' }}>{orgReport.totalOverdue} Associates</div>
-          <div className="stat-sublabel">Down -14% vs last month</div>
-        </div>
-
-        <div className="card card-pad stat">
-          <div className="stat-label">Average Assessment Score</div>
-          <div className="stat-value" style={{ color: 'var(--amber)' }}>{orgReport.avgPassingScore}%</div>
-          <div className="stat-sublabel">{orgReport.firstTimePassRate}% First-attempt pass rate</div>
-        </div>
+        <StatCard
+          label="Active Catalog Programs"
+          value={`${orgReport.totalActiveCourses} Courses`}
+          icon="ti-stack-2"
+          sublabel={`${mandatoryCount} Mandatory · ${optionalCount} Elective`}
+        />
+        <StatCard
+          label="Overdue Compliance Enrollments"
+          value={`${orgReport.totalOverdue} Associates`}
+          tone="rust"
+          icon="ti-alert-triangle"
+          sublabel="Down -14% vs last month"
+        />
+        <StatCard
+          label="Average Assessment Score"
+          value={`${orgReport.avgPassingScore}%`}
+          tone="amber"
+          icon="ti-award"
+          sublabel={`${orgReport.firstTimePassRate}% First-attempt pass rate`}
+        />
       </div>
 
       {/* 16 MMVN Divisions Compliance League Table */}

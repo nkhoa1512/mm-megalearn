@@ -192,17 +192,32 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
 
       {/* Quick KPI stats */}
       <div className="grid grid-3" style={{ marginBottom: 24 }}>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Điểm CSAT<br />Trung bình</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-star" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Điểm CSAT<br />Trung bình</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{trainerProfile.totalClassesTaught}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Buổi đào tạo<br />Đã giảng dạy</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-school" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{trainerProfile.totalClassesTaught}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Buổi đào tạo<br />Đã giảng dạy</div>
+          </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Học viên<br />Đã hoàn thành</div>
+        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 40, height: 40, fontSize: 20 }}>
+            <i className="ti ti-users" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Học viên<br />Đã hoàn thành</div>
+          </div>
         </div>
       </div>
 

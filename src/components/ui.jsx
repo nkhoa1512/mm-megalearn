@@ -128,7 +128,7 @@ export function Button({ children, variant = 'default', size, icon, onClick, blo
 
 export function CourseTypeBadge({ courseType }) {
   return courseType === 'MANDATORY'
-    ? <Badge tone="amber" icon="ti-shield-alert">Mandatory (Compliance)</Badge>
+    ? <Badge tone="amber" icon="ti-alert-triangle">Mandatory (Compliance)</Badge>
     : <Badge tone="slate" icon="ti-book-2">Optional (Elective)</Badge>;
 }
 
