@@ -14,6 +14,7 @@ export {
   storeSections,
   divisions,
   departments,
+  subDepartments,
   jobLevels,
   competencyFramework,
   meetingRoomsAndLabs,
@@ -27,7 +28,7 @@ import {
   getCourseAccessControl,
 } from './generated100Data';
 import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from './levelSystem';
-import { normalizeRole, managedRolesOf, canManage, roleDefinition } from './roles';
+import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
 
 // Thang 7 cấp bậc & mô hình 6 role được tái xuất khẩu ở đây để các màn hình chỉ
 // cần import từ một nơi duy nhất.
@@ -45,6 +46,7 @@ export {
   nextLevelUp,
   levelRoadmap,
   checkCourseAccessRule,
+  isCourseVisibleInCatalog,
 } from './levelSystem';
 
 export {
@@ -60,6 +62,7 @@ export {
   canManage,
   capabilitiesOf,
   hasCapability,
+  canAuthorAnyCourse,
 } from './roles';
 
 
@@ -286,6 +289,40 @@ export function getManagedUsers(actor) {
   }
 
   return pool;
+}
+
+// Nguồn duy nhất cho "ai được phép đứng lớp": mọi nhân sự có capability
+// canBeAssignedToClass (Trainer/L&D, HRBP, User Admin, System Admin) — thay
+// vì hồ sơ tĩnh trainersDirectory (chỉ 4 người, ID không khớp tài khoản hệ
+// thống thật) từng dùng cho việc chọn Giảng viên khi tạo khóa Trực tiếp.
+export function teachingEligibleUsers() {
+  return allUsers().filter((u) => hasCapability(normalizeRole(u.role), 'canBeAssignedToClass'));
+}
+
+// Chỉ số hiệu suất giảng dạy (CSAT, số buổi đã dạy, tổng học viên) cho 6 nhân
+// sự "gương mặt" hay xuất hiện trong demo — có sẵn ở classroomSessions/khóa
+// học mẫu nên số liệu dựng sẵn khớp với những gì hiển thị trên các trang khác.
+const CURATED_TRAINER_STATS = {
+  [trainerHungUser.userId]: { rating: 4.9, totalClassesTaught: 48, totalLearners: 1240 },
+  [trainerThanhUser.userId]: { rating: 4.92, totalClassesTaught: 52, totalLearners: 1850 },
+  [trainerQuangUser.userId]: { rating: 4.96, totalClassesTaught: 24, totalLearners: 410 },
+  [hrbpUser.userId]: { rating: 4.85, totalClassesTaught: 9, totalLearners: 210 },
+  [userAdminUser.userId]: { rating: 4.88, totalClassesTaught: 14, totalLearners: 340 },
+  [sysAdminUser.userId]: { rating: 4.83, totalClassesTaught: 6, totalLearners: 180 },
+};
+
+/** Chỉ số CSAT/giảng dạy cho bất kỳ ai đủ điều kiện đứng lớp. Nhân sự chưa có
+ *  số liệu dựng sẵn (giảng viên phát sinh trong 100 nhân sự mẫu) được gán một
+ *  con số hợp lý, ổn định theo userId thay vì random mỗi lần render. */
+export function trainerStatsFor(userId) {
+  if (CURATED_TRAINER_STATS[userId]) return CURATED_TRAINER_STATS[userId];
+  let hash = 0;
+  for (const ch of String(userId)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return {
+    rating: Math.round((4.5 + (hash % 41) / 100) * 100) / 100, // 4.50 - 4.90
+    totalClassesTaught: 3 + (hash % 12),
+    totalLearners: 60 + (hash % 25) * 15,
+  };
 }
 
 // Direct reports of Line Manager (Fresh Food & Operations) with authentic diverse cases
@@ -626,8 +663,10 @@ export function createBlankCourse() {
     estimatedHours: '2.0h',
     createdBy: adminUser.userId,
     publishedAt: null,
-    trainerId: 'tr-01',
-    trainerName: 'Nguyen Van Hung',
+    // ID nhân sự thật (không phải trainersDirectory cũ) để đồng bộ với
+    // teachingEligibleUsers() — nơi chọn Giảng viên khi tạo khóa Trực tiếp.
+    trainerId: trainerHungUser.userId,
+    trainerName: trainerHungUser.fullName,
     venueId: 'lab-ap-fresh',
     venue: 'Fresh Food & Bakery Practical Lab (MM An Phu)',
     scheduleDate: '2026-08-28',
@@ -1335,8 +1374,8 @@ export const classroomSessions = [
     title: 'Store Practical Lab: Food Safety Standards & Commercial Bakery Deck Operations',
     category: 'Fresh Food Practice',
     modality: 'OFFLINE_STORE',
-    trainerId: 'tr-01',
-    trainerName: 'Nguyen Van Hung',
+    trainerId: trainerHungUser.userId,
+    trainerName: trainerHungUser.fullName,
     trainerTitle: 'Master Trainer (L&OD)',
     trainerRating: 4.9,
     date: '2026-08-28',
@@ -1363,8 +1402,8 @@ export const classroomSessions = [
     title: 'Store Emergency Response: Fire Drills, Evacuation & First Aid',
     category: 'Compliance & Safety',
     modality: 'OFFLINE_STORE',
-    trainerId: 'tr-03',
-    trainerName: 'Vu Duc Thanh',
+    trainerId: trainerThanhUser.userId,
+    trainerName: trainerThanhUser.fullName,
     trainerTitle: 'Loss Prevention & HSE Director',
     trainerRating: 4.92,
     date: '2026-09-05',
@@ -1387,9 +1426,11 @@ export const classroomSessions = [
     title: 'Webinar: POS Terminal Information Security & Anti-Phishing Tactics',
     category: 'Information Security',
     modality: 'ONLINE_WEBINAR',
-    trainerId: 'tr-02',
-    trainerName: 'Dang Thanh Mai',
-    trainerTitle: 'Senior L&OD Specialist',
+    // Minh họa System Admin cũng đứng lớp khi được phân công — chủ đề bảo mật
+    // thông tin khớp đúng chuyên môn IT/Cybersecurity của SysAdmin.
+    trainerId: sysAdminUser.userId,
+    trainerName: sysAdminUser.fullName,
+    trainerTitle: 'Lead IT Systems Administrator & Cybersecurity Lead',
     trainerRating: 4.85,
     date: '2026-08-15',
     time: '10:00 - 11:30 (1.5 hours)',
@@ -1411,9 +1452,11 @@ export const classroomSessions = [
     title: 'Store Practical Lab: High-Speed POS Checkout & Customer Complaint Handling',
     category: 'Frontline Excellence',
     modality: 'OFFLINE_STORE',
-    trainerId: 'tr-02',
-    trainerName: 'Dang Thanh Mai',
-    trainerTitle: 'Senior L&OD Specialist',
+    // Minh họa HRBP cũng đứng lớp khi được phân công — chủ đề xử lý khiếu nại
+    // khách hàng gắn liền với năng lực People Partnering của HRBP.
+    trainerId: hrbpUser.userId,
+    trainerName: hrbpUser.fullName,
+    trainerTitle: 'HR Business Partner - Head of People Partnering',
     trainerRating: 4.85,
     date: '2026-09-12',
     time: '09:00 - 12:00 (3.0 hours)',
@@ -2002,8 +2045,11 @@ export const gamificationData = {
 // ---------------------------------------------------------------------------
 
 // Đơn xin học vượt cấp (Sequential Level Gate). Mỗi đơn xin đúng MỘT khóa học
-// nằm cao hơn học viên đúng 1 cấp liền kề; Manager duyệt từng khóa một chứ
-// không mở nguyên cấp bậc.
+// nằm cao hơn học viên đúng 1 cấp liền kề. Người duyệt luôn là User Admin
+// hoặc System Admin — 2 role duy nhất còn giữ canApproveLevelSkip — bất kể
+// người gửi đơn là role nào; Manager/Trainer/L&D/HRBP chỉ còn gửi đơn cho
+// chính mình, không duyệt cho ai nữa. 6 đơn dưới đây minh họa cả 5 role đều
+// tự gửi đơn xin vượt cấp cho bản thân, tất cả cùng đổ về 1 hàng đợi chung.
 export const pendingApprovalRequests = [
   {
     id: 'req-001',
@@ -2017,8 +2063,7 @@ export const pendingApprovalRequests = [
     courseLevel: '6',
     courseId: 'CRS-FSH-004',
     courseName: 'Bakery & Confectionery Sanitation Protocols',
-    approverRole: 'manager',
-    approverId: 'USR-0245',
+    requesterRole: 'learner',
     requestDate: '2026-08-19',
     justification: 'Em đã hoàn thành các khóa vệ sinh cơ bản Level 7 và muốn học sớm quy trình HACCP chuyên sâu của Level 6 để chuẩn bị lên Chuyên viên vận hành quầy bánh.',
     courseCost: 'Free (Internal Talent Program)',
@@ -2036,11 +2081,82 @@ export const pendingApprovalRequests = [
     courseLevel: '6',
     courseId: 'CRS-HSE-023',
     courseName: 'Hazardous Chemical Handling & Safety Data Sheets (SDS)',
-    approverRole: 'manager',
-    approverId: 'USR-0245',
+    requesterRole: 'learner',
     requestDate: '2026-08-20',
     justification: 'Em tham gia đội phản ứng nhanh PCCC của MM An Phú và cần chứng chỉ vận hành thiết bị chuyên dụng ở cấp Chuyên viên.',
     courseCost: 'Free (Internal HSE Program)',
+    status: 'PENDING',
+  },
+  {
+    id: 'req-003',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-0245',
+    userId: 'USR-0245',
+    employeeName: 'David Tran',
+    position: 'Department Manager - Fresh Food & Bakery',
+    department: 'PPF - Processed Fresh Food',
+    currentLevel: '4',
+    courseLevel: '3',
+    courseId: 'CRS-LEAD-052',
+    courseName: 'Strategic Thinking & Annual Retail Business Planning',
+    requesterRole: 'manager',
+    requestDate: '2026-08-21',
+    justification: 'Tôi muốn chuẩn bị năng lực hoạch định chiến lược trước khi được quy hoạch lên vị trí Store General Manager.',
+    courseCost: 'Internal MMVN complimentary',
+    status: 'PENDING',
+  },
+  {
+    id: 'req-004',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-9003',
+    userId: 'USR-9003',
+    employeeName: 'Nguyen Van Hung (Master Trainer)',
+    position: 'Master Trainer & L&D Specialist (Faculty Lead)',
+    department: 'L&OD - Learning & Org Development',
+    currentLevel: '3',
+    courseLevel: '2',
+    courseId: 'CRS-LEAD-056',
+    courseName: 'Performance Appraisal & KPI Setting Workshops',
+    requesterRole: 'trainer',
+    requestDate: '2026-08-21',
+    justification: 'Cần chuẩn hóa kỹ năng đánh giá KPI để đồng bộ với khung năng lực Level 2 trước khi triển khai đại trà cho đội giảng viên.',
+    courseCost: 'Internal MMVN complimentary',
+    status: 'PENDING',
+  },
+  {
+    id: 'req-005',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-9004',
+    userId: 'USR-9004',
+    employeeName: 'Le Thi Mai (HRBP)',
+    position: 'HR Business Partner - Head of People Partnering',
+    department: 'HRBP - HR Business Partnering',
+    currentLevel: '2',
+    courseLevel: '1',
+    courseId: 'CRS-LEAD-058',
+    courseName: 'Emotional Intelligence & Resilient Leadership in Retail',
+    requesterRole: 'hrbp',
+    requestDate: '2026-08-22',
+    justification: 'Đăng ký học trước khung năng lực lãnh đạo Level 1 phục vụ lộ trình kế nhiệm Trưởng phòng Nhân sự.',
+    courseCost: 'Internal MMVN complimentary',
+    status: 'PENDING',
+  },
+  {
+    id: 'req-006',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-9002',
+    userId: 'USR-9002',
+    employeeName: 'Pham Thanh Thao (User Admin)',
+    position: 'User Administration Lead & HR Master Data Owner',
+    department: 'C&B - Compensation, Benefits & HR Ops',
+    currentLevel: '2',
+    courseLevel: '1',
+    courseId: 'CRS-LEAD-058',
+    courseName: 'Emotional Intelligence & Resilient Leadership in Retail',
+    requesterRole: 'useradmin',
+    requestDate: '2026-08-22',
+    justification: 'Chuẩn bị năng lực lãnh đạo Level 1 trước khi mở rộng phạm vi quản trị nhân sự toàn hệ thống.',
+    courseCost: 'Internal MMVN complimentary',
     status: 'PENDING',
   },
 ];

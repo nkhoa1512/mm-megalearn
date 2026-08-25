@@ -40,6 +40,7 @@ const TrainerHub = (await import('../src/pages/trainer/TrainerHub')).default;
 const HrbpDashboard = (await import('../src/pages/hrbp/HrbpDashboard')).default;
 const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal')).default;
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
+const UserTranscriptModal = (await import('../src/components/UserTranscriptModal')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 
@@ -110,10 +111,10 @@ function cellRunWidth(cellHtml, charW, cellAttrs = '') {
   for (const m of cellHtml.matchAll(/<span[^>]*white-space:\s*nowrap[^>]*>([\s\S]*?)<\/span>/g)) {
     widest = Math.max(widest, textOf(m[1]).length * CH.badge + 18);
   }
-  // Ô hoặc thẻ con đặt nowrap -> toàn bộ nội dung là một khối liền.
-  if (/white-space:\s*nowrap/.test(cellHtml.split('>')[0] || '')) {
-    widest = Math.max(widest, textOf(cellHtml).length * charW);
-  }
+  // Lưu ý: KHÔNG suy ra "cả ô nowrap" từ thẻ con đầu tiên. Một badge nowrap
+  // không làm các phần tử anh em của nó mất khả năng xuống dòng; nowrap của
+  // chính ô đã được xử lý ở nhánh cellAttrs bên trên.
+
   // Phần chữ còn lại: chỉ từ dài nhất mới không xuống dòng được.
   const plain = textOf(cellHtml.replace(/<span class="badge[\s\S]*?<\/span>/g, '').replace(/<button[\s\S]*?<\/button>/g, ''));
   for (const word of plain.split(' ')) {
@@ -140,6 +141,10 @@ function measureTables(html) {
       cells.forEach((c, i) => {
         const isTh = c[1] === 'th';
         const w = cellRunWidth(c[3], isTh ? CH.th : CH.td, c[2]) + CELL_PAD;
+        // DEBUG_COL=<index>: in ra ô nào đang giữ bề ngang của cột đó.
+        if (process.env.DEBUG_COL && Number(process.env.DEBUG_COL) === i && w > (cols[i] || 0)) {
+          console.log(`[debug][${globalThis.__label}] cột ${i} -> ${Math.round(w)}px :: ${c[3].slice(0, 600)}`);
+        }
         cols[i] = Math.max(cols[i] || 0, w);
         if (isTh) headers[i] = textOf(c[3]);
       });
@@ -196,6 +201,10 @@ const PAGES = [
   ['L&D · Cấu hình & RBAC', <AdminConfig />, '/admin/config'],
   ['L&D · Báo cáo ROI', <AdminReports />, '/admin/reports'],
   ['L&D · Training Ops', <AdminTrainingOps />, '/admin/training-ops'],
+  // Modal (không phải route riêng) — vẫn phải đo vì trước đây từng lọt lưới:
+  // các trang thường mở nó bằng state (transcriptUser !== null) nên route-only
+  // audit không bao giờ chạm tới bảng bên trong.
+  ['Hồ Sơ Nhân Sự (UserTranscriptModal)', <UserTranscriptModal targetUser={personaForRole('learner')} isOpen onClose={() => {}} />, '/manager/team'],
 ];
 
 const VIEWPORTS = [1920, 1600, 1440, 1280];
@@ -206,11 +215,13 @@ console.log("Vùng nội dung khả dụng:");
 for (const v of VIEWPORTS) console.log(`  màn ${v}px -> bảng có ${budgetAt(v)}px`);
 console.log('');
 
+globalThis.__label = "";
 const offenders = [];
 const all = new Map();
 for (const role of ROLE_ORDER) {
   store.set(AUTH_KEY, JSON.stringify(personaForRole(role)));
   for (const [label, element, path] of PAGES) {
+    globalThis.__label = label;
     const html = render(element, path, path);
     for (const t of measureTables(html)) {
       const key = label + '|' + t.columns;
@@ -225,10 +236,16 @@ for (const role of ROLE_ORDER) {
 }
 
 console.log('10 bảng rộng nhất hiện tại:');
-for (const t of [...all.values()].sort((a, b) => b.minWidth - a.minWidth).slice(0, 10)) {
+const ranked = [...all.values()].sort((a, b) => b.minWidth - a.minWidth);
+ranked.slice(0, 10).forEach((t, i) => {
   const narrowest = VIEWPORTS.filter((v) => t.minWidth <= budgetAt(v)).pop();
   console.log(`  ${String(t.minWidth).padStart(5)}px  ${String(t.columns).padStart(2)} cột  ${t.label.padEnd(30)} vừa từ màn ${narrowest ? narrowest + 'px' : '>1920px'}`);
-}
+  // 3 bảng đầu: in luôn cột nào đang giữ bề ngang, để biết chỗ cần rút gọn.
+  if (i < 3 && t.widest) {
+    const top = [...t.widest].sort((a, b) => b.w - a.w).slice(0, 3);
+    console.log(`         cột nặng nhất: ${top.map((w) => `${w.header} ${w.w}px`).join(' · ')}`);
+  }
+});
 console.log('');
 
 // Gộp theo trang: cùng một bảng thường lặp lại ở nhiều role.

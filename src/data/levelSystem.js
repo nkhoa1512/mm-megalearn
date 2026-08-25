@@ -147,6 +147,18 @@ export function levelRoadmap(fromLevel, toLevel) {
   return steps;
 }
 
+/**
+ * Khóa học có được PHÉP HIỂN THỊ trên danh mục (catalog) của học viên không?
+ * Khác với checkCourseAccessRule (quyết định có VÀO HỌC được không), hàm này
+ * quyết định khóa có được LIỆT KÊ ra hay không. Học viên chỉ thấy khóa cùng
+ * cấp/thấp hơn và tối đa 1 cấp liền kề phía trên; khóa nhảy cóc từ 2 cấp trở
+ * lên bị ẩn hoàn toàn khỏi danh mục thay vì hiện dạng khóa bị chặn — tránh gây
+ * rối vì học viên không cách nào học được những khóa đó trong tương lai gần.
+ */
+export function isCourseVisibleInCatalog(userLevel, courseLevel) {
+  return levelGap(userLevel, courseLevel) <= 1;
+}
+
 // ---------------------------------------------------------------------------
 // Quy tắc chặn quyền & học vượt cấp tuần tự (Sequential Level Gate)
 // ---------------------------------------------------------------------------

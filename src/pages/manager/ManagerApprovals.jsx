@@ -2,20 +2,22 @@ import React, { useState } from 'react';
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, JobLevelBadge } from '../../components/ui';
 import { normalizeLevel, nextLevelUp, levelShortLabel } from '../../data/levelSystem';
-import { roleDefinition, managedScopeLabel, hasCapability, normalizeRole } from '../../data/roles';
+import { roleDefinition, hasCapability, normalizeRole } from '../../data/roles';
 
 export default function ManagerApprovals() {
-  const { approvals, approveRequest, rejectRequest, currentUser, courses, myCourses } = useCourseStore();
+  const { approveRequest, rejectRequest, currentUser, courses, myCourses, levelAdvanceRequestsFor } = useCourseStore();
   const [activeTab, setActiveTab] = useState('PENDING');
 
   const role = normalizeRole(currentUser?.role);
   const roleDef = roleDefinition(role);
   const canApprove = hasCapability(role, 'canApproveLevelSkip');
 
-  const pendingList = approvals.filter((a) => a.status === 'PENDING');
-  const processedList = approvals.filter((a) => a.status !== 'PENDING');
-  const levelSkipPending = pendingList.filter((a) => a.requestType === 'LEVEL_ADVANCE');
-  const otherPending = pendingList.filter((a) => a.requestType !== 'LEVEL_ADVANCE');
+  // Chỉ đơn do đúng role liền dưới mình gửi lên (Manager<-Learner,
+  // Trainer/L&D<-Manager, HRBP<-Trainer, UserAdmin<-HRBP, SysAdmin<-UserAdmin) —
+  // không phải mọi đơn trong hệ thống.
+  const myScopeRequests = levelAdvanceRequestsFor(currentUser);
+  const pendingList = myScopeRequests.filter((a) => a.status === 'PENDING');
+  const processedList = myScopeRequests.filter((a) => a.status !== 'PENDING');
 
   if (!canApprove) {
     return (
@@ -165,8 +167,8 @@ export default function ManagerApprovals() {
             <Badge tone="amber" icon="ti-clipboard-check">{pendingList.length} đơn chờ xử lý</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Bạn đang duyệt với vai trò <strong>{roleDef.labelVi}</strong> &middot; Phạm vi quản lý:{' '}
-            <strong>{managedScopeLabel(role)}</strong>
+            Bạn đang duyệt với vai trò <strong>{roleDef.labelVi}</strong> &middot; Xử lý đơn học vượt cấp của{' '}
+            <strong>toàn bộ nhân sự trong hệ thống</strong> (Learner, Manager, Trainer/L&amp;D, HRBP đều gửi đơn về đây).
           </p>
         </div>
       </div>
@@ -196,21 +198,7 @@ export default function ManagerApprovals() {
               <p>Không còn đơn nào chờ xử lý.</p>
             </div>
           ) : (
-            <>
-              {levelSkipPending.length > 0 && (
-                <div className="section-label" style={{ marginBottom: 0 }}>
-                  Đơn xin học vượt cấp ({levelSkipPending.length})
-                </div>
-              )}
-              {levelSkipPending.map(renderRequestCard)}
-
-              {otherPending.length > 0 && (
-                <div className="section-label" style={{ marginTop: 10, marginBottom: 0 }}>
-                  Đơn đăng ký khóa học khác ({otherPending.length})
-                </div>
-              )}
-              {otherPending.map(renderRequestCard)}
-            </>
+            pendingList.map(renderRequestCard)
           )}
         </div>
       )}

@@ -9,6 +9,8 @@ import { levelShortLabel } from '../data/levelSystem';
 const LEARNER_SELF_NAV = [
   { to: '/my-learning', label: 'Khóa Học Của Tôi', icon: 'ti-book-2' },
   { to: '/my-certificates', label: 'Chứng Chỉ Của Tôi', icon: 'ti-certificate' },
+  // Công khai cho cả 6 role — không riêng gì Trainer/L&D.
+  { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', icon: 'ti-star' },
 ];
 
 // Nhóm "Công việc của <role>" — đặc thù từng role.
@@ -21,11 +23,11 @@ const ROLE_WORK_NAV = {
     { to: '/learner/ai-hub', label: 'AI Learning Hub', icon: 'ti-sparkles', badge: 'AI' },
     { to: '/learner/certificates', label: 'Chứng Chỉ', icon: 'ti-certificate' },
     { to: '/learner/history', label: 'Lịch Sử Học Tập', icon: 'ti-history' },
+    { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', icon: 'ti-star' },
   ],
   manager: [
     { to: '/manager', label: 'Bảng Điều Khiển Đội Ngũ', icon: 'ti-layout-dashboard', end: true },
     { to: '/manager/team', label: 'Nhân Viên & Khoảng Cách Năng Lực', icon: 'ti-users' },
-    { to: '/manager/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
     { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', icon: 'ti-stack-2' },
     { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', icon: 'ti-chart-bar' },
   ],
@@ -36,13 +38,14 @@ const ROLE_WORK_NAV = {
     { to: '/trainer/courses', label: 'Tạo & Quản Lý Khóa Học', icon: 'ti-stack-2' },
     { to: '/trainer/training-ops', label: 'Lịch Giảng & Xưởng Thực Hành', icon: 'ti-building' },
     { to: '/trainer/reports', label: 'Báo Cáo ROI & Kirkpatrick', icon: 'ti-chart-histogram' },
-    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
   hrbp: [
-    { to: '/hrbp', label: 'Ma Trận Khoảng Cách Năng Lực', icon: 'ti-chart-radar', end: true },
-    { to: '/hrbp/succession', label: 'Lộ Trình Kế Nhiệm 70-20-10', icon: 'ti-git-branch' },
-    { to: '/hrbp/compliance', label: 'Báo Cáo Tuân Thủ Theo Vùng', icon: 'ti-shield-check' },
-    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
+    // Khoảng Cách Năng Lực / Kế Nhiệm / Tuân Thủ Vùng chỉ là 3 tab của CÙNG một
+    // trang (HrbpDashboard) — gộp về 1 mục sidebar, chuyển tab bằng 3 nút bấm
+    // ngay trong trang thay vì 3 mục điều hướng riêng.
+    { to: '/hrbp', label: 'Phân Tích Nhân Tài & Tuân Thủ', icon: 'ti-chart-radar', end: false },
+    // HRBP không tạo khóa học nhưng có thể được phân công đứng lớp cấp cao.
+    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', icon: 'ti-school' },
   ],
   useradmin: [
     { to: '/user-admin', label: 'Danh Mục 100+ Nhân Sự', icon: 'ti-address-book', end: true },
@@ -50,6 +53,7 @@ const ROLE_WORK_NAV = {
     { to: '/user-admin/job-levels', label: 'Khung 7 Cấp Bậc Định Biên', icon: 'ti-id-badge-2' },
     { to: '/user-admin/allocation', label: 'Phân Bổ Khóa Học', icon: 'ti-stack-2' },
     { to: '/user-admin/trainers', label: 'Phân Công Giảng Viên Đứng Lớp', icon: 'ti-school' },
+    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', icon: 'ti-chalkboard' },
     { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
   sysadmin: [
@@ -58,6 +62,7 @@ const ROLE_WORK_NAV = {
     { to: '/sysadmin/policies', label: 'Chính Sách Chống Gian Lận', icon: 'ti-lock-access' },
     { to: '/sysadmin/roles', label: 'Quản Trị Toàn Bộ 6 Role', icon: 'ti-users-group' },
     { to: '/sysadmin/org-config', label: 'Cấu Hình HRIS & Cây Tổ Chức', icon: 'ti-settings' },
+    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', icon: 'ti-school' },
     { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
 };

@@ -1,40 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import {
-  trainersDirectory,
   meetingRoomsAndLabs,
   classroomSessions,
+  allUsers,
+  teachingEligibleUsers,
+  trainerStatsFor,
 } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
+import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
+import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
-  const { courses, currentUser: authUser } = useCourseStore();
+  const { courses, currentUser: authUser, users } = useCourseStore();
   // CLASSES | ATTENDANCE | FEEDBACK | LABS — chọn qua điều hướng sidebar
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED
+  const [transcriptUser, setTranscriptUser] = useState(null);
 
-  // Active Trainer profile selection (default to active trainer user or first in directory)
-  const [selectedTrainerId, setSelectedTrainerId] = useState(
-    authUser?.userId === 'USR-9005' ? 'tr-03' :
-    authUser?.userId === 'USR-9006' ? 'tr-04' : 'tr-01'
-  );
+  const authRole = normalizeRole(authUser?.role);
+  const canBeAssignedToClass = hasCapability(authRole, 'canBeAssignedToClass');
 
-  const trainerProfile = trainersDirectory.find((t) => t.id === selectedTrainerId) || trainersDirectory[0];
+  // Danh sách người đủ chuẩn đứng lớp: Trainer/L&D, HRBP, User Admin, SysAdmin.
+  // Mặc định xem lịch dạy của chính người đang đăng nhập; vẫn giữ dropdown để
+  // xem thử lịch của người khác (tiện demo), nhưng nguồn dữ liệu giờ là nhân
+  // sự thật thay vì hồ sơ tĩnh trainersDirectory.
+  const eligibleTrainers = teachingEligibleUsers();
+  const [selectedTrainerId, setSelectedTrainerId] = useState(authUser?.userId || eligibleTrainers[0]?.userId);
+  useEffect(() => {
+    if (authUser?.userId) setSelectedTrainerId(authUser.userId);
+  }, [authUser?.userId]);
+
+  const trainerUser = eligibleTrainers.find((t) => t.userId === selectedTrainerId) || eligibleTrainers[0] || authUser;
+  const trainerProfile = { ...trainerUser, ...trainerStatsFor(trainerUser?.userId) };
 
   // Filter in-person courses taught specifically by selected trainer
   const inPersonCourses = courses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB');
 
   const myTeachingClasses = [
-    ...classroomSessions.filter((s) => s.trainerName === trainerProfile.name || s.trainerId === trainerProfile.id),
-    ...inPersonCourses.filter((c) => (c.trainerName === trainerProfile.name || c.trainerId === trainerProfile.id) && !classroomSessions.some((s) => s.title === c.title)),
+    ...classroomSessions.filter((s) => s.trainerId === trainerProfile.userId || s.trainerName === trainerProfile.fullName),
+    ...inPersonCourses.filter((c) => (c.trainerId === trainerProfile.userId || c.trainerName === trainerProfile.fullName) && !classroomSessions.some((s) => s.title === c.title)),
   ].map((c) => ({
     id: c.id,
     code: c.code,
     title: c.title,
     category: c.category,
-    trainerName: c.trainerName || trainerProfile.name,
-    trainerTitle: c.trainerTitle || trainerProfile.role,
+    trainerName: c.trainerName || trainerProfile.fullName,
+    trainerTitle: c.trainerTitle || roleDefinition(trainerProfile.role).labelVi,
     date: c.date || c.scheduleDate || '2026-08-28',
     time: c.time || c.scheduleTime || '08:30 - 11:30 (3.0 hours)',
     venue: c.venue || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
@@ -134,14 +147,23 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
     );
   }
 
+  if (!canBeAssignedToClass) {
+    return (
+      <div className="empty-state">
+        <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
+        <p>Vai trò của bạn không được phân công đứng lớp.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* HEADER WITH TRAINER PROFILE */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Cổng Quản Lý Lớp Học Giảng Viên (Trainer Portal)</h1>
-            <Badge tone="blue" icon="ti-school">Giảng viên Đứng lớp</Badge>
+            <h1>Cổng Lớp Giảng Dạy &amp; Live QR</h1>
+            <Badge tone="blue" icon="ti-school">{roleDefinition(trainerProfile.role).labelVi}</Badge>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
             <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Đang xem lịch dạy của:</span>
@@ -151,9 +173,10 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
               value={selectedTrainerId}
               onChange={(e) => setSelectedTrainerId(e.target.value)}
             >
-              {trainersDirectory.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} &mdash; {t.role.split('/')[0]} ({t.department})
+              {eligibleTrainers.map((t) => (
+                <option key={t.userId} value={t.userId}>
+                  {t.fullName} &mdash; {roleDefinition(t.role).shortVi}
+                  {t.userId === authUser?.userId ? ' (bạn)' : ''}
                 </option>
               ))}
             </select>
@@ -182,7 +205,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
         {[
           { id: 'CLASSES', label: 'Lớp Học Tôi Phụ Trách Giảng Dạy', icon: 'ti-chalkboard', count: myTeachingClasses.length },
           { id: 'ATTENDANCE', label: 'Quản Lý Điểm Danh Học Viên', icon: 'ti-user-check', count: totalRosterCount },
-          { id: 'FEEDBACK', label: 'Đánh Giá & Phản Hồi CSAT Từ Học Viên', icon: 'ti-star', count: '4.9★' },
+          { id: 'FEEDBACK', label: 'Đánh Giá & Phản Hồi CSAT Từ Học Viên', icon: 'ti-star', count: `${trainerProfile.rating}★` },
           { id: 'LABS', label: 'Danh Mục Xưởng Thực Hành Siêu Thị', icon: 'ti-building', count: meetingRoomsAndLabs.length },
         ].map((tab) => (
           <button
@@ -397,6 +420,21 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                             : <Badge tone="amber" icon="ti-clock">Chờ quét QR</Badge>}
                       </td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <Button size="sm" variant="outline" icon="ti-eye"
+                          onClick={() => {
+                            const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                            const found = list.find(u => u.userId === row.student.id || u.employeeCode === row.student.id || u.fullName === row.student.name) || {
+                              userId: row.student.id,
+                              employeeCode: row.student.id,
+                              fullName: row.student.name,
+                              position: row.student.position,
+                              storeName: row.student.store,
+                              level: '7',
+                            };
+                            setTranscriptUser(found);
+                          }}>
+                          Chi Tiết
+                        </Button>{' '}
                         <Button size="sm" variant={state === 'CONFIRMED' ? 'outline' : 'primary'} icon="ti-check"
                           onClick={() => setAttendanceState(row, state === 'CONFIRMED' ? 'PENDING' : 'CONFIRMED')}>
                           {state === 'CONFIRMED' ? 'Hủy điểm danh' : 'Điểm danh'}
@@ -420,14 +458,14 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
           <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', borderColor: 'var(--amber)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#92400E' }}>Đánh Giá Chất Lượng Giảng Dạy Của Thầy Nguyễn Văn Hùng (CSAT)</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#92400E' }}>Đánh Giá Chất Lượng Giảng Dạy Của {trainerProfile.fullName} (CSAT)</div>
                 <p style={{ fontSize: 12.5, color: '#B45309', margin: '4px 0 0' }}>
-                  Tổng hợp từ 1,240 phiếu khảo sát Level 1 CSAT của học viên sau khi kết thúc các lớp thực hành.
+                  Tổng hợp từ {trainerProfile.totalLearners.toLocaleString()} phiếu khảo sát Level 1 CSAT của học viên sau khi kết thúc các lớp thực hành.
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ fontSize: 36, fontWeight: 900, color: '#92400E' }}>4.90 <span style={{ fontSize: 20 }}>/ 5.0 ★</span></div>
-                <Badge tone="amber">98.5% Hài Lòng Rất Cao</Badge>
+                <div style={{ fontSize: 36, fontWeight: 900, color: '#92400E' }}>{trainerProfile.rating.toFixed(2)} <span style={{ fontSize: 20 }}>/ 5.0 ★</span></div>
+                <Badge tone="amber">{Math.round(trainerProfile.rating / 5 * 1000) / 10}% Hài Lòng Rất Cao</Badge>
               </div>
             </div>
           </div>
@@ -686,6 +724,13 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
           </div>
         </Modal>
       )}
+
+      {/* USER TRANSCRIPT DRILL-DOWN MODAL */}
+      <UserTranscriptModal
+        targetUser={transcriptUser}
+        isOpen={Boolean(transcriptUser)}
+        onClose={() => setTranscriptUser(null)}
+      />
     </>
   );
 }

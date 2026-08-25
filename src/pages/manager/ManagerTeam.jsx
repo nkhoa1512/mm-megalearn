@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { getTeamMembersForManager, managerUser as defaultManager, teamSkillGapMatrix } from '../../data/mockData';
+import { getTeamMembersForManager, managerUser as defaultManager, teamSkillGapMatrix, allUsers } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
 import { canManage } from '../../data/roles';
 import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../components/ui';
+import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 const STATUS_META = {
   NOT_STARTED: { tone: 'slate', label: 'Not Started' },
@@ -15,7 +16,7 @@ const STATUS_META = {
 const FILTERS = ['All', 'Not Started', 'In Progress', 'Completed', 'Failed', 'Overdue'];
 
 export default function ManagerTeam() {
-  const { currentUser: authUser, openNominateModal, openSurveyModal, actionPlans, updateActionPlan } = useCourseStore();
+  const { currentUser: authUser, openSurveyModal, actionPlans, updateActionPlan, users } = useCourseStore();
   const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
   const teamMembers = getTeamMembersForManager(activeManager);
 
@@ -23,6 +24,7 @@ export default function ManagerTeam() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [transcriptUser, setTranscriptUser] = useState(null);
   const [reminderSent, setReminderSent] = useState(false);
 
   const filtered = teamMembers.filter((m) => {
@@ -56,7 +58,7 @@ export default function ManagerTeam() {
             </Badge>
           </div>
           <p>
-            Monitor learning progress, assign developmental courses, analyze team skill gaps, and conduct 3-6 month Level 3 behavioral evaluations for {teamMembers.length} direct reports under {activeManager.fullName}.
+            Monitor learning progress, analyze team skill gaps, and conduct 3-6 month Level 3 behavioral evaluations for {teamMembers.length} direct reports under {activeManager.fullName}. Course assignment is handled by User Admin.
           </p>
         </div>
       </div>
@@ -127,10 +129,10 @@ export default function ManagerTeam() {
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '20%' }}>Employee</th>
-                  <th style={{ width: '22%' }}>Assigned Curriculum</th>
-                  <th style={{ width: '10%' }}>Type</th>
-                  <th style={{ width: '14%' }}>Progress</th>
+                  <th style={{ width: '21%' }}>Employee</th>
+                  <th style={{ width: '23%' }}>Assigned Curriculum</th>
+                  <th style={{ width: '9%' }}>Type</th>
+                  <th style={{ width: '13%' }}>Progress</th>
                   <th style={{ width: '10%' }}>Status</th>
                   <th style={{ width: '6%' }}>Score</th>
                   <th style={{ width: '9%' }}>Due Date</th>
@@ -190,26 +192,22 @@ export default function ManagerTeam() {
                         <td style={{ color: m.overdue ? 'var(--rust)' : 'var(--ink-soft)', fontSize: 12, fontWeight: m.overdue ? 700 : 400 }}>
                           {m.dueDate}
                         </td>
+                        {/* Manager chỉ xem, không được gán khóa học — việc gán thuộc quyền
+                            User Admin / System Admin. */}
                         <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              icon="ti-user-plus"
-                              onClick={() => openNominateModal(m)}
-                              title="Nominate / Assign Course"
-                            >
-                              Assign
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              icon="ti-eye"
-                              onClick={() => setSelectedMember(m)}
-                            >
-                              View
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon="ti-eye"
+                            onClick={() => {
+                              const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                              const fullUser = list.find(u => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
+                              setTranscriptUser(fullUser);
+                            }}
+                            title="Xem toàn bộ khóa học nhân sự này đang học"
+                          >
+                            Chi Tiết
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -226,7 +224,7 @@ export default function ManagerTeam() {
         <div style={{ marginBottom: 28 }}>
           <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, marginBottom: 18 }}>
             <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
-            Diagnostic matrix comparing <strong>Required Competencies for Target Succession Roles</strong> against <strong>Actual Demonstrated Skill Scores</strong>. Managers can assign developmental electives with 1 click.
+            Diagnostic matrix comparing <strong>Required Competencies for Target Succession Roles</strong> against <strong>Actual Demonstrated Skill Scores</strong>. Assigning the suggested course is done by User Admin.
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -245,14 +243,6 @@ export default function ManagerTeam() {
                       Current Role: <strong>{item.position}</strong> &rarr; Target Succession: <strong>{item.targetRole}</strong>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    icon="ti-plus"
-                    onClick={() => openNominateModal(item)}
-                  >
-                    Assign Developmental Course
-                  </Button>
                 </div>
 
                 {/* Skill Items Breakdown */}
@@ -282,14 +272,8 @@ export default function ManagerTeam() {
                         <ProgressBar value={sk.actual} tone={isGap ? 'rust' : 'sage'} size="sm" />
 
                         {sk.suggestedCourse && (
-                          <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--rail)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>Suggested Course: <strong>{sk.suggestedCourse}</strong></span>
-                            <button
-                              onClick={() => openNominateModal({ ...item, name: item.employeeName, employeeId: item.employeeId })}
-                              style={{ background: 'none', border: 'none', color: 'var(--rail)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 11.5 }}
-                            >
-                              Assign Now
-                            </button>
+                          <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--rail)' }}>
+                            Suggested Course: <strong>{sk.suggestedCourse}</strong>
                           </div>
                         )}
                       </div>
@@ -411,6 +395,13 @@ export default function ManagerTeam() {
           </div>
         )}
       </Modal>
+
+      {/* USER TRANSCRIPT DRILL-DOWN MODAL */}
+      <UserTranscriptModal
+        targetUser={transcriptUser}
+        isOpen={Boolean(transcriptUser)}
+        onClose={() => setTranscriptUser(null)}
+      />
     </>
   );
 }

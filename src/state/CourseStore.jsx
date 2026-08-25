@@ -23,6 +23,7 @@ const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
+const USERS_KEY = 'mm-megalearn-users-v6';
 
 const CourseStoreContext = createContext(null);
 
@@ -52,6 +53,7 @@ export function CourseStoreProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(loadItem(AUTH_KEY, defaultUser)));
 
   // App data state
+  const [users, setUsers] = useState(() => loadItem(USERS_KEY, allUsers()));
   const [courses, setCourses] = useState(() => loadItem(STORAGE_KEY, initialCourses));
   const [classrooms, setClassrooms] = useState(() => loadItem(CLASSROOM_KEY, initialClassrooms));
   const [approvals, setApprovals] = useState(() => loadItem(APPROVAL_KEY, initialApprovals));
@@ -68,7 +70,6 @@ export function CourseStoreProvider({ children }) {
 
   const [talentProfileUser, setTalentProfileUser] = useState(null);
   const [surveyModalConfig, setSurveyModalConfig] = useState({ isOpen: false, course: null, type: 'L1', learner: null });
-  const [nominateModalConfig, setNominateModalConfig] = useState({ isOpen: false, member: null });
 
   useEffect(() => {
     try {
@@ -77,6 +78,7 @@ export function CourseStoreProvider({ children }) {
       } else {
         localStorage.removeItem(AUTH_KEY);
       }
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
       localStorage.setItem(CLASSROOM_KEY, JSON.stringify(classrooms));
       localStorage.setItem(APPROVAL_KEY, JSON.stringify(approvals));
@@ -86,7 +88,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, courses, classrooms, approvals, gamification, actionPlans, enrollments]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments]);
 
   // Auth actions
   const login = useCallback((userObj) => {
@@ -100,13 +102,40 @@ export function CourseStoreProvider({ children }) {
   }, []);
 
   const switchUser = useCallback((userId) => {
-    const list = allUsers ? allUsers() : demoUsers;
+    const list = users && users.length > 0 ? users : allUsers ? allUsers() : demoUsers;
     const found = list.find((u) => u.userId === userId || u.employeeCode === userId);
     if (found) {
       setCurrentUser(hydrateUser(found));
       setIsAuthenticated(true);
     }
-  }, []);
+  }, [users]);
+
+  /** Thăng cấp bậc (Job Level Promotion) - Chỉ User Admin & SysAdmin được gọi */
+  const promoteUserLevel = useCallback(
+    (userId, newLevel, reason = '') => {
+      const normalizedLvl = normalizeLevel(newLevel);
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.userId === userId || u.employeeCode === userId) {
+            const updated = {
+              ...u,
+              level: normalizedLvl,
+              levelTitle: levelTitle(normalizedLvl),
+              lastPromotedAt: todayIso(),
+              promotionReason: reason || 'Hoàn thành chương trình đào tạo & thẩm định năng lực đạt chuẩn.',
+            };
+            if (currentUser && (currentUser.userId === u.userId || currentUser.employeeCode === u.employeeCode)) {
+              setCurrentUser(updated);
+            }
+            return updated;
+          }
+          return u;
+        })
+      );
+      return { ok: true, newLevel: normalizedLvl };
+    },
+    [currentUser]
+  );
 
   const addCourse = useCallback((course) => {
     setCourses((prev) => [...prev, course]);
@@ -218,6 +247,11 @@ export function CourseStoreProvider({ children }) {
         return { ok: false, reason: access.reason || 'Khóa học này không thuộc diện xin học vượt cấp.', access };
       }
 
+      // Người duyệt cố định là User Admin / System Admin cho MỌI người gửi đơn
+      // (Learner, Manager, Trainer/L&D, HRBP đều xin vượt cấp cho chính mình
+      // và đều gửi tới cùng 1 hàng đợi) — không còn theo chuỗi role liền trên
+      // như trước, vì Manager/Trainer/HRBP đã bị bỏ quyền duyệt.
+      const requesterRole = normalizeRole(user.role);
       const request = {
         id: `req-lvl-${Date.now()}`,
         requestType: 'LEVEL_ADVANCE',
@@ -230,8 +264,7 @@ export function CourseStoreProvider({ children }) {
         courseLevel: access.courseLevel,
         courseId: course.id,
         courseName: course.title,
-        approverRole: 'manager',
-        approverId: user.managerId || null,
+        requesterRole,
         requestDate: todayIso(),
         justification:
           justification.trim() ||
@@ -299,10 +332,16 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
-  /** Đơn xin học vượt cấp mà `approver` có quyền xử lý. */
+  /**
+   * Đơn xin học vượt cấp mà `approver` có quyền xử lý. Chỉ User Admin và
+   * System Admin có capability `canApproveLevelSkip` (Manager/Trainer/HRBP đã
+   * bị bỏ quyền này), và cả hai thấy TOÀN BỘ hàng đợi — không chia theo cấp
+   * bậc/role người gửi nữa.
+   */
   const levelAdvanceRequestsFor = useCallback(
     (approver = currentUser) => {
-      if (!approver || !hasCapability(normalizeRole(approver.role), 'canApproveLevelSkip')) return [];
+      const approverRole = normalizeRole(approver?.role);
+      if (!approver || !hasCapability(approverRole, 'canApproveLevelSkip')) return [];
       return approvals.filter((a) => a.requestType === 'LEVEL_ADVANCE');
     },
     [approvals, currentUser]
@@ -416,37 +455,6 @@ export function CourseStoreProvider({ children }) {
     setSurveyModalConfig({ isOpen: false, course: null, type: 'L1', learner: null });
   }, []);
 
-  // Manager Nominate Modal
-  const openNominateModal = useCallback((member) => {
-    setNominateModalConfig({ isOpen: true, member });
-  }, []);
-
-  const closeNominateModal = useCallback(() => {
-    setNominateModalConfig({ isOpen: false, member: null });
-  }, []);
-
-  const nominateCourse = useCallback((member, course) => {
-    const newApproval = {
-      id: `req-nom-${Date.now()}`,
-      requestType: 'MANAGER_NOMINATION',
-      userId: member.userId || null,
-      employeeId: member.employeeId || member.employeeCode,
-      employeeName: member.name || member.fullName,
-      position: member.position,
-      department: member.departmentName || member.departmentCode || 'Operations',
-      currentLevel: normalizeLevel(member.level),
-      courseLevel: normalizeLevel(course.targetLevel),
-      courseId: course.id,
-      courseName: course.title,
-      requestDate: todayIso(),
-      justification: 'Nominated by Line Manager for competency development and career succession roadmap.',
-      courseCost: course.modality === 'EXTERNAL_PLATFORM' ? 'Included in enterprise license package' : 'Internal MMVN complimentary',
-      status: 'APPROVED',
-    };
-    setApprovals((prev) => [newApproval, ...prev]);
-    closeNominateModal();
-  }, [closeNominateModal]);
-
   // AI assistant helpers
   const openAiAssistant = useCallback((tab = 'tutor') => {
     setActiveAiTab(tab);
@@ -467,6 +475,9 @@ export function CourseStoreProvider({ children }) {
         logout,
         switchUser,
         demoUsers,
+        users,
+        setUsers,
+        promoteUserLevel,
         courses,
         addCourse,
         updateCourse,
@@ -504,10 +515,6 @@ export function CourseStoreProvider({ children }) {
         surveyModalConfig,
         openSurveyModal,
         closeSurveyModal,
-        nominateModalConfig,
-        openNominateModal,
-        closeNominateModal,
-        nominateCourse,
       }}
     >
       {children}

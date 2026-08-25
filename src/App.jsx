@@ -5,7 +5,6 @@ import Topbar from './components/Topbar';
 import AiAssistantDrawer from './components/AiAssistantDrawer';
 import TalentProfileModal from './components/TalentProfileModal';
 import PostTrainingSurveyModal from './components/PostTrainingSurveyModal';
-import ManagerNominateModal from './components/ManagerNominateModal';
 import { CourseStoreProvider, useCourseStore } from './state/CourseStore';
 import { normalizeRole, ROLE_HOME } from './data/roles';
 import LoginPage from './pages/auth/LoginPage';
@@ -38,6 +37,7 @@ import AdminTrainingOps from './pages/admin/AdminTrainingOps';
 import TrainerHub from './pages/trainer/TrainerHub';
 import MyLearning from './pages/shared/MyLearning';
 import MyCertificates from './pages/shared/MyCertificates';
+import TrainerRatingsDirectory from './components/TrainerRatingsDirectory';
 import ManagerApprovals from './pages/manager/ManagerApprovals';
 import HrbpDashboard from './pages/hrbp/HrbpDashboard';
 import UserAdminPortal from './pages/useradmin/UserAdminPortal';
@@ -55,6 +55,7 @@ const PAGE_META = {
 
   '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
   '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
+  '/trainer-ratings': { title: 'Đánh Giá Giảng Viên (CSAT) — Công Khai Cho Mọi Role', crumb: 'Học tập của tôi' },
   '/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Cấp quản lý' },
 
   '/trainer': { title: 'Lớp Giảng Dạy & Mã Live QR Điểm Danh', crumb: 'Trainer / L&D (Level 3)' },
@@ -89,7 +90,7 @@ const PAGE_META = {
 
   '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
-  '/admin/training-ops': { title: 'Faculty Command, Store Labs & Calendar', crumb: 'L&D Faculty' },
+  '/admin/training-ops': { title: 'Đặt Phòng Thực Hành & Upload Danh Sách Học Viên', crumb: 'L&D Faculty' },
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
   '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
 };
@@ -179,6 +180,7 @@ function Shell({ role, setRole }) {
               <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
+              <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
 
               {/* Phê duyệt học vượt cấp: mọi role từ Manager trở lên */}
               <Route path="/approvals" element={<ManagerApprovals />} />
@@ -244,10 +246,9 @@ function Shell({ role, setRole }) {
       {/* Global AI Assistant Floating Drawer */}
       <AiAssistantDrawer />
 
-      {/* Global Modals: Talent Profile, L1/L3 Surveys, Manager Nominate */}
+      {/* Global Modals: Talent Profile, L1/L3 Surveys */}
       <TalentProfileModal />
       <PostTrainingSurveyModal />
-      <ManagerNominateModal />
     </div>
   );
 }

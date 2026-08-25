@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   hrbpUser,
   retailStores,
@@ -7,13 +8,29 @@ import {
 } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
+import UserTranscriptModal from '../../components/UserTranscriptModal';
+
+const TAB_PATH = {
+  SKILL_GAP: '/hrbp',
+  SUCCESSION: '/hrbp/succession',
+  COMPLIANCE: '/hrbp/compliance',
+};
 
 export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
-  const { courses } = useCourseStore();
-  // SKILL_GAP | SUCCESSION | COMPLIANCE — chọn qua điều hướng sidebar
+  const { courses, users } = useCourseStore();
+  const navigate = useNavigate();
+  // SKILL_GAP | SUCCESSION | COMPLIANCE — 1 trang, 3 tab. Bấm tab đổi luôn URL
+  // (thay vì chỉ đổi state) để tiêu đề trang và nút back của trình duyệt khớp
+  // với nội dung đang xem, dù sidebar giờ chỉ còn 1 mục trỏ vào trang này.
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
+
+  function goToTab(tabId) {
+    setActiveTab(tabId);
+    navigate(TAB_PATH[tabId] || '/hrbp');
+  }
   const [selectedStore, setSelectedStore] = useState('ALL');
+  const [transcriptUser, setTranscriptUser] = useState(null);
 
   // Modal States
   const [interventionModal, setInterventionModal] = useState(false);
@@ -81,7 +98,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => goToTab(tab.id)}
             className="btn btn-sm"
             style={{
               background: activeTab === tab.id ? 'var(--blue)' : 'var(--paper-raised)',
@@ -331,8 +348,24 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     </div>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <Button size="sm" variant="ghost" icon="ti-user-check">
-                      Hồ Sơ Tài Năng
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon="ti-eye"
+                      onClick={() => {
+                        const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                        const found = list.find(u => u.userId === talent.id || u.employeeCode === talent.id || u.fullName === talent.name) || {
+                          userId: talent.id,
+                          employeeCode: talent.id,
+                          fullName: talent.name,
+                          position: talent.currentRole,
+                          storeName: talent.store,
+                          level: '6',
+                        };
+                        setTranscriptUser(found);
+                      }}
+                    >
+                      Chi Tiết Khóa Học
                     </Button>
                   </td>
                 </tr>
@@ -457,6 +490,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </div>
         </Modal>
       )}
+
+      {/* USER TRANSCRIPT DRILL-DOWN MODAL */}
+      <UserTranscriptModal
+        targetUser={transcriptUser}
+        isOpen={Boolean(transcriptUser)}
+        onClose={() => setTranscriptUser(null)}
+      />
     </>
   );
 }

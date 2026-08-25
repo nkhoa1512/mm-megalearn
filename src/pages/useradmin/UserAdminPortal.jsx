@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   allUsers,
   userAdminUser,
-  allTrainers,
+  teachingEligibleUsers,
   businessUnits,
   divisions,
   departments,
+  subDepartments,
   retailStores,
   jobLevels,
 } from '../../data/mockData';
 import OrgHierarchyBrowser from '../../components/OrgHierarchyBrowser';
 import { Badge, Button, Modal, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
-import { LEVEL_DEFINITIONS, normalizeLevel, levelShortLabel } from '../../data/levelSystem';
+import { LEVEL_DEFINITIONS, normalizeLevel, levelShortLabel, levelDefinition } from '../../data/levelSystem';
 import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from '../../data/roles';
+import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   // DIRECTORY | HIERARCHY | JOB_LEVELS | ALLOCATION | TRAINER_ASSIGNMENT
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
-  const { courses, assignTrainerToCourse } = useCourseStore();
+  const { courses, users, promoteUserLevel, assignTrainerToCourse } = useCourseStore();
+
+  // Nguồn Giảng viên đủ chuẩn: L&D, HRBP, User Admin, System Admin (mọi role
+  // có canBeAssignedToClass) — không chỉ riêng role Trainer/L&D như trước.
+  const eligibleTrainers = teachingEligibleUsers();
 
   // Phân bổ khóa học cho khối / phòng ban
   const [allocationCourseId, setAllocationCourseId] = useState('');
@@ -36,7 +43,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [assignFeedback, setAssignFeedback] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL'); // ALL, HEAD_OFFICE, OPERATIONS
+  const [selectedDept, setSelectedDept] = useState('ALL');
+  const [selectedSubDept, setSelectedSubDept] = useState('ALL');
   const [selectedLevel, setSelectedLevel] = useState('ALL');
+  const [transcriptUser, setTranscriptUser] = useState(null);
 
   const rawUsers = typeof allUsers === 'function' ? allUsers() : (allUsers || []);
 
@@ -58,20 +68,26 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     }, 1500);
   }
 
-  const filteredUsers = rawUsers.filter((u) => {
+  const userList = users && users.length > 0 ? users : rawUsers;
+
+  const filteredUsers = userList.filter((u) => {
     const matchSearch = !search ||
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
       u.userId.toLowerCase().includes(search.toLowerCase()) ||
       (u.title && u.title.toLowerCase().includes(search.toLowerCase())) ||
-      (u.department && u.department.toLowerCase().includes(search.toLowerCase()));
+      (u.department && u.department.toLowerCase().includes(search.toLowerCase())) ||
+      (u.departmentName && u.departmentName.toLowerCase().includes(search.toLowerCase())) ||
+      (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(search.toLowerCase()));
 
     const matchBranch = selectedBranch === 'ALL' ||
-      (selectedBranch === 'HEAD_OFFICE' && (u.branch === 'HEAD_OFFICE' || !u.store)) ||
+      (selectedBranch === 'HEAD_OFFICE' && (u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' || !u.store)) ||
       (selectedBranch === 'OPERATIONS' && (u.branch === 'OPERATIONS' || Boolean(u.store)));
+
+    const matchSubDept = selectedSubDept === 'ALL' || u.subDepartmentId === selectedSubDept || (u.subDepartmentCode && u.subDepartmentCode === selectedSubDept);
 
     const matchLevel = selectedLevel === 'ALL' || String(u.level) === String(selectedLevel);
 
-    return matchSearch && matchBranch && matchLevel;
+    return matchSearch && matchBranch && matchSubDept && matchLevel;
   });
 
   return (
@@ -116,7 +132,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
           { id: 'HIERARCHY', label: 'Cây Cơ Cấu Tổ Chức 2 Nhánh', icon: 'ti-binary-tree', count: '2 Nhánh' },
           { id: 'JOB_LEVELS', label: 'Khung 7 Cấp Bậc Định Biên', icon: 'ti-id-badge-2', count: '7 Bậc' },
           { id: 'ALLOCATION', label: 'Phân Bổ Khóa Học Cho Khối / Phòng Ban', icon: 'ti-stack-2', count: courses.length },
-          { id: 'TRAINER_ASSIGNMENT', label: 'Phân Công Giảng Viên Đứng Lớp', icon: 'ti-school', count: allTrainers.length },
+          { id: 'TRAINER_ASSIGNMENT', label: 'Phân Công Giảng Viên Đứng Lớp', icon: 'ti-school', count: eligibleTrainers.length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -165,11 +181,25 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 className="field-select"
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                style={{ width: 200 }}
+                style={{ width: 170 }}
               >
                 <option value="ALL">Toàn bộ 2 Nhánh</option>
                 <option value="HEAD_OFFICE">Khối Trụ Sở (Head Office)</option>
                 <option value="OPERATIONS">Khối Siêu Thị (Operations)</option>
+              </select>
+
+              <select
+                className="field-select"
+                value={selectedSubDept}
+                onChange={(e) => setSelectedSubDept(e.target.value)}
+                style={{ width: 220 }}
+              >
+                <option value="ALL">Tất cả Bộ phận (Sub-Depts)</option>
+                {subDepartments.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
               </select>
 
               <select
@@ -199,36 +229,58 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   <th>Mã Nhân Viên</th>
                   <th>Họ và Tên</th>
                   <th>Chức Danh &amp; Vị Trí</th>
-                  <th>Cơ Cấu Trực Thuộc</th>
+                  <th>Cơ Cấu &amp; Bộ Phận</th>
                   <th>Cấp Bậc (Level)</th>
                   <th>Vai Trò Hệ Thống</th>
                   <th style={{ textAlign: 'right' }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.slice(0, 20).map((u) => (
+                {filteredUsers.slice(0, 25).map((u) => (
                   <tr key={u.userId}>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.userId}</td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.employeeCode || u.userId}</td>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{u.fullName}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.email}</div>
                     </td>
-                    <td>{u.title || 'Store Associate'}</td>
+                    <td>{u.position || u.title || 'Store Associate'}</td>
                     <td>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{u.store || u.department || 'MM An Phú'}</div>
-                      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{u.branch === 'HEAD_OFFICE' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{u.storeName || u.departmentName || u.department || 'MM An Phú'}</div>
+                      {u.subDepartmentName && (
+                        <div style={{ fontSize: 11, color: 'var(--rail)', fontWeight: 600, marginTop: 2 }}>
+                          <i className="ti ti-git-branch" style={{ marginRight: 3 }} /> {u.subDepartmentName}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)' }}>{u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}</div>
                     </td>
+                    {/* Huy hiệu gọn + tên cấp bậc ở dòng dưới (được phép xuống dòng),
+                        thay vì một nhãn nowrap dài kéo giãn cả bảng. */}
                     <td>
-                      <JobLevelBadge level={u.level} />
+                      <JobLevelBadge level={u.level} compact />
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 3, lineHeight: 1.35 }}>
+                        {levelDefinition(u.level).shortVi}
+                      </div>
                     </td>
                     <td>
                       <Badge tone={roleDefinition(u.role).tone}>
                         {roleDefinition(u.role).shortVi}
                       </Badge>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <Button size="sm" variant="ghost" icon="ti-edit" onClick={() => handleOpenEdit(u)}>
-                        Sửa Hồ Sơ
+                    {/* Một cửa duy nhất: mở hồ sơ nhân sự, mọi thao tác (sửa thông tin,
+                        thăng cấp, xem khóa học) nằm gọn bên trong hồ sơ đó. */}
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon="ti-id-badge-2"
+                        onClick={() => setTranscriptUser(u)}
+                        title="Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp"
+                        style={{
+                          background: 'linear-gradient(135deg, #1E40AF 0%, #4338CA 100%)',
+                          fontSize: 11.5,
+                        }}
+                      >
+                        Hồ Sơ Nhân Sự
                       </Button>
                     </td>
                   </tr>
@@ -237,7 +289,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </table>
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'right' }}>
-            Hiển thị <strong>{filteredUsers.length}</strong> / {rawUsers.length} nhân sự
+            Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự
           </div>
         </div>
       )}
@@ -333,6 +385,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <select className="field-select" value={allocationTargetType} onChange={(e) => { setAllocationTargetType(e.target.value); setAllocationTargetId(''); }}>
                   <option value="DIVISION">Khối (Division)</option>
                   <option value="DEPARTMENT">Phòng ban (Department)</option>
+                  <option value="SUBDEPARTMENT">Bộ phận trực thuộc (Sub-Department)</option>
                   <option value="STORE">Chi nhánh siêu thị (Store)</option>
                 </select>
               </div>
@@ -340,7 +393,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <label className="field-label">Đối tượng cụ thể</label>
                 <select className="field-select" value={allocationTargetId} onChange={(e) => setAllocationTargetId(e.target.value)}>
                   <option value="">— Chọn —</option>
-                  {(allocationTargetType === 'DIVISION' ? divisions : allocationTargetType === 'DEPARTMENT' ? departments : retailStores).map((t) => (
+                  {(allocationTargetType === 'DIVISION' ? divisions : allocationTargetType === 'DEPARTMENT' ? departments : allocationTargetType === 'SUBDEPARTMENT' ? subDepartments : retailStores).map((t) => (
                     <option key={t.id} value={t.id}>{t.code} — {t.name}</option>
                   ))}
                 </select>
@@ -353,12 +406,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               disabled={!allocationCourseId || !allocationTargetId}
               onClick={() => {
                 const course = courses.find((c) => c.id === allocationCourseId);
-                const pool = allocationTargetType === 'DIVISION' ? divisions : allocationTargetType === 'DEPARTMENT' ? departments : retailStores;
+                const pool = allocationTargetType === 'DIVISION' ? divisions : allocationTargetType === 'DEPARTMENT' ? departments : allocationTargetType === 'SUBDEPARTMENT' ? subDepartments : retailStores;
                 const target = pool.find((t) => t.id === allocationTargetId);
                 const affected = rawUsers.filter((u) =>
                   allocationTargetType === 'DIVISION' ? u.divisionId === target.id
                     : allocationTargetType === 'DEPARTMENT' ? u.departmentId === target.id
-                      : u.storeId === target.id
+                      : allocationTargetType === 'SUBDEPARTMENT' ? u.subDepartmentId === target.id
+                        : u.storeId === target.id
                 ).length;
                 setAllocationLog((prev) => [
                   {
@@ -411,9 +465,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {activeTab === 'TRAINER_ASSIGNMENT' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad">
-            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Phân Công Giảng Viên Vào Lớp Trực Tiếp</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>Phân Công Giảng Viên Vào Lớp Trực Tiếp</div>
+              <Link to="/trainer">
+                <Button size="sm" variant="outline" icon="ti-school">Xem Khóa Học &amp; Lớp Trực Tiếp Tôi Đứng Dạy</Button>
+              </Link>
+            </div>
             <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '0 0 14px' }}>
-              User Admin xếp lịch và chỉ định Giảng viên (role Trainer / L&amp;D) đứng lớp thực hành tại từng chi nhánh siêu thị.
+              User Admin xếp lịch và chỉ định Giảng viên (Trainer/L&amp;D, HRBP, User Admin, System Admin) đứng lớp thực hành tại từng chi nhánh siêu thị.
               Giảng viên sẽ thấy lớp được giao trong cổng "Lớp Giảng Dạy &amp; Live QR" của mình.
             </p>
 
@@ -431,8 +490,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <label className="field-label">Giảng viên đứng lớp</label>
                 <select className="field-select" value={assignTrainerId} onChange={(e) => setAssignTrainerId(e.target.value)}>
                   <option value="">— Chọn giảng viên —</option>
-                  {allTrainers.map((t) => (
-                    <option key={t.userId} value={t.userId}>{t.fullName} (Level {normalizeLevel(t.level)})</option>
+                  {eligibleTrainers.map((t) => (
+                    <option key={t.userId} value={t.userId}>
+                      {t.fullName} — {roleDefinition(t.role).shortVi} (Level {normalizeLevel(t.level)})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -457,7 +518,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 icon="ti-user-check"
                 disabled={!assignCourseId || !assignTrainerId || !assignStoreId}
                 onClick={() => {
-                  const trainer = allTrainers.find((t) => t.userId === assignTrainerId);
+                  const trainer = eligibleTrainers.find((t) => t.userId === assignTrainerId);
                   const store = retailStores.find((st) => st.id === assignStoreId);
                   const course = courses.find((c) => c.id === assignCourseId);
                   assignTrainerToCourse(assignCourseId, trainer, {
@@ -587,6 +648,17 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
           </div>
         </Modal>
       )}
+
+      {/* USER TRANSCRIPT & PROMOTION MODAL */}
+      <UserTranscriptModal
+        targetUser={transcriptUser}
+        isOpen={Boolean(transcriptUser)}
+        onClose={() => setTranscriptUser(null)}
+        onEdit={(u) => {
+          setTranscriptUser(null);
+          handleOpenEdit(u);
+        }}
+      />
     </>
   );
 }

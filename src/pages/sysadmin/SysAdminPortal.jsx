@@ -9,6 +9,7 @@ import {
 import { Badge, Button, Modal, ProgressBar, JobLevelBadge } from '../../components/ui';
 import { ROLE_DEFINITIONS, roleDefinition, normalizeRole, managedScopeLabel, capabilitiesOf } from '../../data/roles';
 import { normalizeLevel } from '../../data/levelSystem';
+import UserTranscriptModal from '../../components/UserTranscriptModal';
 
 // Các năng lực hiển thị trên ma trận phân quyền theo role.
 const CAPABILITY_ROWS = [
@@ -16,8 +17,10 @@ const CAPABILITY_ROWS = [
   { key: 'canRequestLevelSkip', label: 'Gửi đơn xin học vượt cấp' },
   { key: 'canApproveLevelSkip', label: 'Phê duyệt học vượt cấp cho cấp dưới' },
   { key: 'canTeach', label: 'Đứng lớp & chiếu Live QR điểm danh' },
-  { key: 'canAuthorCourses', label: 'Tạo & biên soạn khóa học' },
+  { key: 'canAuthorOnlineCourses', label: 'Tạo khóa học Trực tuyến (Online)' },
+  { key: 'canAuthorOfflineCourses', label: 'Tạo khóa học Trực tiếp (Offline/ILT)' },
   { key: 'canAssignTrainers', label: 'Phân công Giảng viên vào lớp' },
+  { key: 'canViewCsat', label: 'Xem đánh giá CSAT của Giảng viên' },
   { key: 'canViewOrgProgress', label: 'Theo dõi tiến độ học toàn tổ chức' },
   { key: 'canManageUsers', label: 'Quản trị hồ sơ nhân sự (master data)' },
   { key: 'canConfigureSystem', label: 'Cấu hình hệ thống (HRIS / SSO / bảo mật)' },
@@ -31,6 +34,8 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  // Hồ sơ nhân sự đang mở trong modal (null = đóng).
+  const [transcriptUser, setTranscriptUser] = useState(null);
 
   // Security Policy States
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
@@ -392,6 +397,7 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
                   <th>Cấp Bậc Mặc Định</th>
                   <th>Số Tài Khoản</th>
                   <th>Phạm Vi Quản Lý</th>
+                  <th style={{ textAlign: 'right' }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -410,6 +416,17 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
                       <td><JobLevelBadge level={def.defaultLevel} /></td>
                       <td><Badge tone="blue">{users.length} tài khoản</Badge></td>
                       <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{managedScopeLabel(def.id)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          icon="ti-eye"
+                          onClick={() => setTranscriptUser(persona)}
+                          style={{ fontSize: 11.5 }}
+                        >
+                          Chi Tiết &amp; Thăng Level
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -444,6 +461,13 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
           </div>
         </div>
       )}
+
+      {/* USER TRANSCRIPT & PROMOTION MODAL */}
+      <UserTranscriptModal
+        targetUser={transcriptUser}
+        isOpen={Boolean(transcriptUser)}
+        onClose={() => setTranscriptUser(null)}
+      />
     </>
   );
 }

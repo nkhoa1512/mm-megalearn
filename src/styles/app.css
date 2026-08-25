@@ -346,9 +346,26 @@
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
-  /* Chữ dài phải tự xuống dòng thay vì đẩy bảng tràn ngang. */
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  /* Chữ dài phải tự xuống dòng thay vì đẩy bảng tràn ngang — nhưng CHỈ được
+     dùng overflow-wrap:break-word, không được dùng overflow-wrap:anywhere lẫn
+     word-break:break-word. Theo spec, word-break:break-word tương đương hệt
+     overflow-wrap:anywhere (cả cách ngắt chữ lẫn cách tính min-content-width),
+     dù tên nghe có vẻ an toàn hơn. Cả hai đều khiến table-layout:auto co cột
+     không đặt width cố định xuống còn vài ký tự khi đứng cạnh cột có width cố
+     định khác — tiêu đề khóa học vỡ chữ dọc trang thay vì xuống dòng bình
+     thường. overflow-wrap:break-word là giá trị DUY NHẤT chỉ ngắt từ khi thật
+     sự tràn dòng, không ảnh hưởng tới min-content-width. */
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+/* Nhãn nút / badge trong bảng không được vỡ chữ theo từng ký tự khi cột hẹp —
+   để nút tự xuống hàng nguyên khối (xem .table td .btn-row), không xé nhỏ chữ. */
+.table .btn,
+.table .badge {
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .table th {
   text-align: left;

@@ -186,6 +186,52 @@ export const departments = [
 ];
 
 // ---------------------------------------------------------------------------
+// Sub-Departments Hierarchy (Phòng ban con / Bộ phận nhỏ dưới Department)
+// ---------------------------------------------------------------------------
+
+export const subDepartments = [
+  // 1. Processed Fresh Food (dept-ppf)
+  { id: 'sub-bakery', departmentId: 'dept-ppf', code: 'SUB-BAKERY', name: 'Quầy Bánh Tươi & Bánh Mì (Bakery & Confectionery)' },
+  { id: 'sub-meat', departmentId: 'dept-ppf', code: 'SUB-MEAT', name: 'Sơ Chế Thịt & Gia Cầm (Meat Processing)' },
+  { id: 'sub-seafood', departmentId: 'dept-ppf', code: 'SUB-SEAFOOD', name: 'Sơ Chế Thủy Hải Sản (Seafood Processing)' },
+  { id: 'sub-rte', departmentId: 'dept-ppf', code: 'SUB-RTE', name: 'Bếp Nấu Sẵn Ready-to-Eat (RTE Delicatessen)' },
+
+  // 2. MIS / Information Technology (dept-mis)
+  { id: 'sub-it-hw', departmentId: 'dept-mis', code: 'SUB-IT-HW', name: 'Phần Cứng & Hạ Tầng Mạng (Hardware & Infra)' },
+  { id: 'sub-it-dev', departmentId: 'dept-mis', code: 'SUB-IT-DEV', name: 'Phát Triển Phần Mềm & Ứng Dụng (Software Dev)' },
+  { id: 'sub-it-qa', departmentId: 'dept-mis', code: 'SUB-IT-QA', name: 'Kiểm Thử Chất Lượng (QA / Tester)' },
+  { id: 'sub-it-ba', departmentId: 'dept-mis', code: 'SUB-IT-BA', name: 'Phân Tích Nghiệp Vụ & Dữ Liệu (Business Analyst)' },
+
+  // 3. Front-End & Cashier (dept-fe)
+  { id: 'sub-fe-pos', departmentId: 'dept-fe', code: 'SUB-FE-POS', name: 'Thu Ngân & Quét Mã POS (Cashier Operations)' },
+  { id: 'sub-fe-cs', departmentId: 'dept-fe', code: 'SUB-FE-CS', name: 'Dịch Vụ Khách Hàng & M-Card (Customer Service)' },
+  { id: 'sub-fe-trolley', departmentId: 'dept-fe', code: 'SUB-FE-TRL', name: 'Logistics Bãi Xe & Quản Lý Xe Đẩy (Trolley & Parking)' },
+
+  // 4. Supply Chain & Logistics (dept-ssp / dept-fsp / dept-rdc)
+  { id: 'sub-scm-cold', departmentId: 'dept-fsp', code: 'SUB-SCM-COLD', name: 'Vận Hành Kho Lạnh (Cold Chain & Storage)' },
+  { id: 'sub-scm-forklift', departmentId: 'dept-ssp', code: 'SUB-SCM-FORK', name: 'Lái Xe Nâng Hàng & Bốc Dỡ (Forklift Operations)' },
+  { id: 'sub-scm-fleet', departmentId: 'dept-rdc', code: 'SUB-SCM-FLEET', name: 'Điều Phối Đội Xe Giao Hàng (Fleet Dispatch)' },
+
+  // 5. Learning & Organizational Development (dept-lod)
+  { id: 'sub-lod-store', departmentId: 'dept-lod', code: 'SUB-LOD-STORE', name: 'Đào Tạo Vận Hành Siêu Thị & Thực Hành Xưởng (Store Training)' },
+  { id: 'sub-lod-lead', departmentId: 'dept-lod', code: 'SUB-LOD-LEAD', name: 'Đào Tạo Lãnh Đạo & Kỹ Năng Mềm (Leadership & Soft Skills)' },
+  { id: 'sub-lod-lms', departmentId: 'dept-lod', code: 'SUB-LOD-LMS', name: 'Quản Trị Hệ Thống LMS & E-Learning (Digital Learning)' },
+
+  // 6. HR Business Partnering (dept-hrbp)
+  { id: 'sub-hrbp-ops', departmentId: 'dept-hrbp', code: 'SUB-HRBP-OPS', name: 'HRBP Khối Vận Hành Siêu Thị (Operations HRBP)' },
+  { id: 'sub-hrbp-ho', departmentId: 'dept-hrbp', code: 'SUB-HRBP-HO', name: 'HRBP Khối Văn Phòng & Hỗ Trợ (Corporate HRBP)' },
+
+  // 7. HR Services & Operations (dept-hrs)
+  { id: 'sub-hrs-admin', departmentId: 'dept-hrs', code: 'SUB-HRS-ADMIN', name: 'Quản Trị Hồ Sơ Nhân Sự & Hợp Đồng (Employee Master Records)' },
+  { id: 'sub-hrs-payroll', departmentId: 'dept-hrs', code: 'SUB-HRS-PAY', name: 'Chính Sách & Tiền Lương (Payroll & Benefits)' },
+
+  // 8. Loss Prevention & QA (dept-lp / dept-qa)
+  { id: 'sub-lp-sec', departmentId: 'dept-lp', code: 'SUB-LP-SEC', name: 'An Ninh & Chống Thất Thoát (Loss Prevention)' },
+  { id: 'sub-lp-qa', departmentId: 'dept-qa', code: 'SUB-LP-QA', name: 'Kiểm Soát Vệ Sinh & HACCP (Food Safety QA)' },
+  { id: 'sub-lp-hse', departmentId: 'dept-lp', code: 'SUB-LP-HSE', name: 'An Toàn Lao Động & PCCC (HSE Safety)' },
+];
+
+// ---------------------------------------------------------------------------
 // Khung 7 Cấp Bậc Định Biên (thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất)
 // Nguồn chân lý duy nhất là `LEVEL_DEFINITIONS` trong ./levelSystem.js; bảng dưới
 // đây chỉ bổ sung phần mô tả nghiệp vụ HR (authority, typicalRoles, headcount).

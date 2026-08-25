@@ -19,7 +19,7 @@ export const ROLE_DEFINITIONS = [
     tone: 'rail',
     home: '/learner',
     summaryVi: 'Học các khóa thuộc cấp bậc của mình và gửi đơn xin học vượt đúng 1 cấp liền kề.',
-    capabilities: ['canLearn', 'canRequestLevelSkip'],
+    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewCsat'],
   },
   {
     id: 'manager',
@@ -31,8 +31,10 @@ export const ROLE_DEFINITIONS = [
     icon: 'ti-briefcase',
     tone: 'amber',
     home: '/manager',
-    summaryVi: 'Quản lý nhân viên phòng ban và phê duyệt đơn xin học vượt cấp của họ.',
-    capabilities: ['canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam'],
+    summaryVi: 'Quản lý nhân viên phòng ban và theo dõi tiến độ học tập của đội ngũ.',
+    // Duyệt đơn học vượt cấp KHÔNG còn ở Manager — chỉ User Admin/SysAdmin
+    // mới thấy và duyệt (xem roles useradmin/sysadmin bên dưới).
+    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat'],
   },
   {
     id: 'trainer',
@@ -46,8 +48,11 @@ export const ROLE_DEFINITIONS = [
     home: '/trainer',
     summaryVi: 'Tạo khóa học trực tiếp, đứng lớp, chiếu Live QR điểm danh và theo dõi CSAT.',
     capabilities: [
-      'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
-      'canTeach', 'canBeAssignedToClass', 'canAuthorCourses', 'canManageAttendance', 'canViewCsat',
+      'canLearn', 'canRequestLevelSkip', 'canViewTeam',
+      // Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy) — không có
+      // canAuthorOnlineCourses, không có canAssignTrainers (chỉ tự đứng lớp).
+      // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
+      'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance', 'canViewCsat',
     ],
   },
   {
@@ -62,8 +67,12 @@ export const ROLE_DEFINITIONS = [
     home: '/hrbp',
     summaryVi: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ theo vùng.',
     capabilities: [
-      'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
-      'canViewOrgProgress', 'canManageSkillMatrix', 'canManageSuccession',
+      'canLearn', 'canRequestLevelSkip', 'canViewTeam',
+      'canViewOrgProgress', 'canManageSkillMatrix', 'canManageSuccession', 'canViewCsat',
+      // HRBP không có quyền tạo khóa học (online lẫn offline) — chỉ có thể
+      // được User Admin/SysAdmin phân công đứng lớp các khóa cấp cao.
+      // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
+      'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
     ],
   },
   {
@@ -79,8 +88,10 @@ export const ROLE_DEFINITIONS = [
     summaryVi: 'Quản trị hồ sơ 100+ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
-      'canViewOrgProgress', 'canAuthorCourses', 'canManageUsers', 'canAllocateCourses',
-      'canAssignTrainers', 'canConfigureOrg',
+      'canViewOrgProgress', 'canManageUsers', 'canAllocateCourses',
+      'canAssignTrainers', 'canConfigureOrg', 'canViewCsat',
+      // Toàn quyền tạo cả khóa Online lẫn Offline, và có thể tự đứng lớp.
+      'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
     ],
   },
   {
@@ -96,9 +107,10 @@ export const ROLE_DEFINITIONS = [
     summaryVi: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
-      'canViewOrgProgress', 'canAuthorCourses', 'canManageUsers', 'canAllocateCourses',
+      'canViewOrgProgress', 'canManageUsers', 'canAllocateCourses',
       'canAssignTrainers', 'canConfigureOrg', 'canConfigureSystem', 'canViewAuditLogs',
-      'canManageAllRoles', 'canDevelopPlatform',
+      'canManageAllRoles', 'canDevelopPlatform', 'canViewCsat',
+      'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
     ],
   },
 ];
@@ -160,6 +172,12 @@ export function capabilitiesOf(role) {
 
 export function hasCapability(role, capability) {
   return capabilitiesOf(role).includes(capability);
+}
+
+/** Được tạo khóa học ở bất kỳ hình thức nào (Online hoặc Offline/ILT)? Dùng để
+ *  quyết định có hiện nút "Tạo Khóa Học Mới" hay không. */
+export function canAuthorAnyCourse(role) {
+  return hasCapability(role, 'canAuthorOnlineCourses') || hasCapability(role, 'canAuthorOfflineCourses');
 }
 
 /** Nhãn mô tả phạm vi quản lý, dùng cho header các trang team/scope. */

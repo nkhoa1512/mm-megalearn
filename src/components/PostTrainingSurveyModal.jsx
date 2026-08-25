@@ -18,11 +18,21 @@ export default function PostTrainingSurveyModal() {
   const [l3BehaviorRating, setL3BehaviorRating] = useState(5);
   const [l3ProductivityGain, setL3ProductivityGain] = useState('+15%');
   const [l3ManagerNote, setL3ManagerNote] = useState('');
+
+  // CLASSROOM_CSAT Form state (bắt buộc sau khi điểm danh lớp trực tiếp)
+  const [csatTrainerRating, setCsatTrainerRating] = useState(5);
+  const [csatContentRating, setCsatContentRating] = useState(5);
+  const [csatFacilityRating, setCsatFacilityRating] = useState(5);
+  const [csatComment, setCsatComment] = useState(
+    'Buổi học thực hành rất trực quan, giảng viên hướng dẫn nhiệt tình và giải thích cặn kẽ từng bước thao tác.'
+  );
+
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   if (!isOpen) return null;
 
   const isL1 = type === 'L1';
+  const isClassroomCsat = type === 'CLASSROOM_CSAT';
   const courseTitle = course?.title || 'Food Safety & Hygiene Standards (HACCP)';
 
   function handleSubmit() {
@@ -59,16 +69,26 @@ export default function PostTrainingSurveyModal() {
     <Modal
       isOpen={isOpen}
       onClose={closeSurveyModal}
-      title={isL1 ? 'Post-Course Feedback & Action Plan (Kirkpatrick Level 1 CSAT)' : 'Post-Training Impact Review 3-6 Months (Kirkpatrick Level 3)'}
-      subtitle={isL1 ? `Course: ${courseTitle}` : `Evaluating Direct Report: ${learner?.name || learner?.fullName || 'Minh Tran'}`}
+      title={
+        isL1 ? 'Post-Course Feedback & Action Plan (Kirkpatrick Level 1 CSAT)'
+        : isClassroomCsat ? 'Khảo Sát Đánh Giá Chất Lượng Đào Tạo (Level 1 CSAT)'
+        : 'Post-Training Impact Review 3-6 Months (Kirkpatrick Level 3)'
+      }
+      subtitle={
+        isL1 ? `Course: ${courseTitle}`
+        : isClassroomCsat ? `${course?.title || ''} · Giảng viên: ${course?.trainerName || ''}`
+        : `Evaluating Direct Report: ${learner?.name || learner?.fullName || 'Minh Tran'}`
+      }
       size="md"
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Button variant="ghost" onClick={closeSurveyModal} disabled={isSubmitted}>
-            Cancel
-          </Button>
+          {isClassroomCsat ? <span /> : (
+            <Button variant="ghost" onClick={closeSurveyModal} disabled={isSubmitted}>
+              Cancel
+            </Button>
+          )}
           <Button variant="primary" icon={isSubmitted ? 'ti-check' : 'ti-send'} onClick={handleSubmit} disabled={isSubmitted}>
-            {isSubmitted ? 'Saved!' : isL1 ? 'Submit CSAT & Unlock Certificate' : 'Confirm Level 3 Evaluation'}
+            {isSubmitted ? 'Saved!' : isL1 ? 'Submit CSAT & Unlock Certificate' : isClassroomCsat ? 'Gửi Đánh Giá' : 'Confirm Level 3 Evaluation'}
           </Button>
         </div>
       }
@@ -79,11 +99,67 @@ export default function PostTrainingSurveyModal() {
             <i className="ti ti-check" />
           </div>
           <h3 style={{ fontSize: 18, color: 'var(--sage)', marginBottom: 8 }}>
-            {isL1 ? 'Thank you for completing your evaluation!' : 'Level 3 Evaluation Recorded!'}
+            {isL1 ? 'Thank you for completing your evaluation!' : isClassroomCsat ? 'Cảm Ơn Bạn Đã Gửi Đánh Giá!' : 'Level 3 Evaluation Recorded!'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>
-            {isL1 ? 'Your digital certificate of completion is now unlocked. Your action plan has been routed to your Line Manager.' : 'Behavioral impact scores have been updated in enterprise training analytics.'}
+            {isL1
+              ? 'Your digital certificate of completion is now unlocked. Your action plan has been routed to your Line Manager.'
+              : isClassroomCsat
+              ? `Ý kiến của bạn đã được chuyển trực tiếp cho Giảng viên ${course?.trainerName || ''} và Ban L&D để cải tiến các khóa học tiếp theo (+50 XP).`
+              : 'Behavioral impact scores have been updated in enterprise training analytics.'}
           </p>
+        </div>
+      ) : isClassroomCsat ? (
+        /* CLASSROOM CSAT (bắt buộc sau khi điểm danh lớp trực tiếp) */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Badge tone="amber" icon="ti-alert-circle">
+            Bắt buộc: học viên tham gia lớp trực tiếp phải gửi đánh giá này
+          </Badge>
+
+          {[
+            { label: `1. Mức độ hài lòng về kỹ năng giảng dạy của ${course?.trainerName || 'Giảng viên'}`, value: csatTrainerRating, set: setCsatTrainerRating },
+            { label: '2. Chất lượng nội dung & tài liệu thực hành', value: csatContentRating, set: setCsatContentRating },
+            { label: '3. Cơ sở vật chất / Xưởng thực hành', value: csatFacilityRating, set: setCsatFacilityRating },
+          ].map((q, qi) => (
+            <div key={qi} className="card card-pad" style={{ padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{q.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{q.value} / 5 Sao</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => q.set(star)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 0',
+                      borderRadius: 6,
+                      border: '1px solid',
+                      borderColor: q.value >= star ? 'var(--amber)' : 'var(--line)',
+                      background: q.value >= star ? 'var(--amber-soft)' : 'var(--paper-raised)',
+                      color: q.value >= star ? 'var(--amber-soft-text)' : 'var(--ink-faint)',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div>
+            <label className="field-label">Nhận xét thêm (tùy chọn)</label>
+            <textarea
+              className="field-input"
+              rows={3}
+              value={csatComment}
+              onChange={(e) => setCsatComment(e.target.value)}
+              style={{ width: '100%', fontSize: 12.5 }}
+            />
+          </div>
         </div>
       ) : isL1 ? (
         /* LEVEL 1 SURVEY (Learner) */

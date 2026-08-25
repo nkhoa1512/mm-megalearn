@@ -3,20 +3,12 @@ import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 
 export default function LearnerClassrooms() {
-  const { classrooms, checkInClassroom, enrollClassroom, currentUser } = useCourseStore();
+  const { classrooms, checkInClassroom, enrollClassroom, currentUser, openSurveyModal } = useCourseStore();
   const [filter, setFilter] = useState('ALL');
 
   // Scanner Modal state (Simulated Camera Viewfinder)
   const [scanningSession, setScanningSession] = useState(null);
   const [scanState, setScanState] = useState('SCANNING'); // SCANNING, VERIFYING, SUCCESS
-
-  // CSAT Survey Modal state
-  const [surveySession, setSurveySession] = useState(null);
-  const [trainerRating, setTrainerRating] = useState(5);
-  const [contentRating, setContentRating] = useState(5);
-  const [facilityRating, setFacilityRating] = useState(5);
-  const [surveyComment, setSurveyComment] = useState('');
-  const [surveySubmitted, setSurveySubmitted] = useState(false);
 
   const filteredSessions = classrooms.filter((s) => {
     if (filter === 'UPCOMING') return s.status === 'UPCOMING' || s.status === 'OPEN';
@@ -31,6 +23,13 @@ export default function LearnerClassrooms() {
     setScanState('SCANNING');
   }
 
+  // Khảo sát CSAT dùng chung (PostTrainingSurveyModal, type CLASSROOM_CSAT) —
+  // trước đây trang này tự dựng modal riêng, giờ dùng lại component chung
+  // với ManagerTeam (L3) và LessonPlayer (L1) để tránh trùng lặp code.
+  function handleOpenSurvey(session) {
+    openSurveyModal(session, 'CLASSROOM_CSAT');
+  }
+
   function handleSimulateScan() {
     setScanState('VERIFYING');
     setTimeout(() => {
@@ -39,27 +38,14 @@ export default function LearnerClassrooms() {
       }
       setScanState('SUCCESS');
       setTimeout(() => {
+        const checkedInSession = scanningSession;
         setScanningSession(null);
         setScanState('SCANNING');
+        // Bắt buộc gửi CSAT sau khi điểm danh: form đánh giá tự bật lên ngay
+        // sau khi quét QR thành công, không đợi học viên tự bấm "Đánh giá".
+        if (checkedInSession) handleOpenSurvey(checkedInSession);
       }, 1500);
     }, 1000);
-  }
-
-  function handleOpenSurvey(session) {
-    setSurveySession(session);
-    setTrainerRating(5);
-    setContentRating(5);
-    setFacilityRating(5);
-    setSurveyComment('Buổi học thực hành rất trực quan, giảng viên hướng dẫn nhiệt tình và giải thích cặn kẽ từng bước thao tác.');
-    setSurveySubmitted(false);
-  }
-
-  function handleSubmitSurvey() {
-    setSurveySubmitted(true);
-    setTimeout(() => {
-      setSurveySubmitted(false);
-      setSurveySession(null);
-    }, 1600);
   }
 
   return (
@@ -306,146 +292,6 @@ export default function LearnerClassrooms() {
         </Modal>
       )}
 
-      {/* MODAL 2: LEVEL 1 CSAT EVALUATION SURVEY */}
-      {surveySession && (
-        <Modal
-          isOpen={Boolean(surveySession)}
-          onClose={() => setSurveySession(null)}
-          title="Khảo Sát Đánh Giá Chất Lượng Đào Tạo (Level 1 CSAT)"
-          size="md"
-        >
-          <div>
-            <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>{surveySession.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                Giảng viên: <strong>{surveySession.trainerName}</strong> &middot; Địa điểm: {surveySession.venue}
-              </div>
-            </div>
-
-            {surveySubmitted ? (
-              <div style={{ textAlign: 'center', padding: '24px 10px' }}>
-                <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--sage-soft)', color: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 12px' }}>
-                  <i className="ti ti-check" />
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--sage)', marginBottom: 4 }}>
-                  Cảm Ơn Bạn Đã Gửi Đánh Giá!
-                </div>
-                <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
-                  Ý kiến của bạn đã được chuyển trực tiếp cho Giảng viên <strong>{surveySession.trainerName}</strong> và Ban L&amp;D để cải tiến các khóa học tiếp theo (+50 XP).
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Metric 1: Trainer Rating */}
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                      1. Mức độ hài lòng về kỹ năng giảng dạy của Thầy/Cô {surveySession.trainerName}:
-                    </span>
-                    <span style={{ fontWeight: 800, color: 'var(--amber)' }}>{trainerRating} ★</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setTrainerRating(star)}
-                        className="btn btn-sm"
-                        style={{
-                          flex: 1,
-                          background: trainerRating >= star ? '#FEF3C7' : 'var(--paper-sunken)',
-                          color: trainerRating >= star ? '#B45309' : 'var(--ink-soft)',
-                          borderColor: trainerRating >= star ? 'var(--amber)' : 'var(--line)',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {star} ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Metric 2: Practical Content */}
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                      2. Nội dung bài giảng sát thực tế công việc tại siêu thị:
-                    </span>
-                    <span style={{ fontWeight: 800, color: 'var(--amber)' }}>{contentRating} ★</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setContentRating(star)}
-                        className="btn btn-sm"
-                        style={{
-                          flex: 1,
-                          background: contentRating >= star ? '#FEF3C7' : 'var(--paper-sunken)',
-                          color: contentRating >= star ? '#B45309' : 'var(--ink-soft)',
-                          borderColor: contentRating >= star ? 'var(--amber)' : 'var(--line)',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {star} ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Metric 3: Facilities */}
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                      3. Trang thiết bị &amp; dụng cụ thực hành tại phòng lab / xưởng:
-                    </span>
-                    <span style={{ fontWeight: 800, color: 'var(--amber)' }}>{facilityRating} ★</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFacilityRating(star)}
-                        className="btn btn-sm"
-                        style={{
-                          flex: 1,
-                          background: facilityRating >= star ? '#FEF3C7' : 'var(--paper-sunken)',
-                          color: facilityRating >= star ? '#B45309' : 'var(--ink-soft)',
-                          borderColor: facilityRating >= star ? 'var(--amber)' : 'var(--line)',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {star} ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Text comment */}
-                <div style={{ marginBottom: 16 }}>
-                  <label className="field-label">Góp ý hoặc cảm nhận của bạn sau buổi học:</label>
-                  <textarea
-                    className="field-input"
-                    rows={3}
-                    value={surveyComment}
-                    onChange={(e) => setSurveyComment(e.target.value)}
-                    placeholder="Chia sẻ nhận xét của bạn về buổi học..."
-                  />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                  <Button variant="ghost" onClick={() => setSurveySession(null)}>Đóng</Button>
-                  <Button variant="primary" icon="ti-send" onClick={handleSubmitSurvey}>
-                    Gửi Đánh Giá (+50 XP)
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
     </>
   );
 }

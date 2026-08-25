@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
-  trainersDirectory, meetingRoomsAndLabs,
+  meetingRoomsAndLabs, teachingEligibleUsers,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../components/ui';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
+import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../state/CourseStore';
 
 const LESSON_ICON = {
@@ -135,7 +136,37 @@ export default function AdminCourseBuilder() {
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
-  const [draft, setDraft] = useState(() => withVersionDefaults(cloneCourse(existing || createBlankCourse())));
+  // Ma trận phân quyền tạo khóa học: User Admin/SysAdmin toàn quyền cả 2 hình
+  // thức; Trainer/L&D chỉ tạo được Trực tiếp (và tự động là giảng viên đứng
+  // lớp — không chọn người khác); HRBP/Manager/Learner không có quyền này.
+  const authRole = normalizeRole(authUser?.role);
+  const canAuthorOnline = hasCapability(authRole, 'canAuthorOnlineCourses');
+  const canAuthorOffline = hasCapability(authRole, 'canAuthorOfflineCourses');
+  const isTrainerOnly = canAuthorOffline && !canAuthorOnline;
+  // Danh sách Giảng viên đủ chuẩn: L&D, HRBP, User Admin, SysAdmin (mọi role
+  // có canBeAssignedToClass) — thay cho trainersDirectory cũ chỉ 4 hồ sơ tĩnh.
+  const eligibleTrainers = teachingEligibleUsers();
+
+  // Khóa mới do Trainer/L&D tạo phải bắt đầu ở dạng Trực tiếp với chính họ là
+  // giảng viên — createBlankCourse() mặc định Online nên phải ghi đè ở đây.
+  function withRoleDefaults(course) {
+    if (!isNew) return course;
+    // Gắn đúng người tạo thật (không phải adminUser mặc định của
+    // createBlankCourse()) để trang danh mục biết khóa này thuộc quyền quản
+    // lý của ai: Trainer/L&D chỉ sửa/xóa được khóa do chính họ tạo.
+    const base = { ...course, createdBy: authUser?.userId };
+    if (!isTrainerOnly) return base;
+    return {
+      ...base,
+      deliveryType: 'IN_PERSON_CLASSROOM',
+      modality: 'CLASSROOM_LAB',
+      format: 'Store Practical Lab / ILT',
+      trainerId: authUser.userId,
+      trainerName: authUser.fullName,
+    };
+  }
+
+  const [draft, setDraft] = useState(() => withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))));
   const [activeModuleId, setActiveModuleId] = useState(draft.modules[0]?.id);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -143,7 +174,7 @@ export default function AdminCourseBuilder() {
   const [importMessage, setImportMessage] = useState('');
 
   useEffect(() => {
-    const fresh = withVersionDefaults(cloneCourse(existing || createBlankCourse()));
+    const fresh = withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())));
     setDraft(fresh);
     setActiveModuleId(fresh.modules[0]?.id);
     setSaved(false);
@@ -151,11 +182,33 @@ export default function AdminCourseBuilder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
+  if (!canAuthorOnline && !canAuthorOffline) {
+    return (
+      <div className="empty-state">
+        <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
+        <p>Bạn không có quyền tạo hoặc chỉnh sửa khóa học.</p>
+        <Link to="/admin/courses">Back to courses</Link>
+      </div>
+    );
+  }
+
   if (!isNew && !existing) {
     return (
       <div className="empty-state">
         <i className="ti ti-mood-empty" aria-hidden="true" />
         <p>Course not found.</p>
+        <Link to="/admin/courses">Back to courses</Link>
+      </div>
+    );
+  }
+
+  // Trainer/L&D chỉ được đụng vào khóa Trực tiếp — nếu mở nhầm 1 khóa Online
+  // đã có sẵn (do gõ thẳng URL) thì chặn luôn, không chỉ chặn lúc tạo mới.
+  if (isTrainerOnly && draft.deliveryType === 'ONLINE_ELEARNING') {
+    return (
+      <div className="empty-state">
+        <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
+        <p>Giảng viên / L&amp;D chỉ được tạo và chỉnh sửa khóa học Trực tiếp (ILT), không có quyền với khóa Trực tuyến.</p>
         <Link to="/admin/courses">Back to courses</Link>
       </div>
     );
@@ -343,30 +396,38 @@ export default function AdminCourseBuilder() {
           </Badge>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <button
-            type="button"
-            onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004' })}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 16px',
-              borderRadius: 8,
-              border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail)' : '1px solid var(--line)',
-              background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft)' : '#fff',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-              <i className="ti ti-device-laptop" />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Học Trực Tuyến (Online E-learning)</div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học qua Video, YouTube, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm</div>
-            </div>
-          </button>
+        {isTrainerOnly && (
+          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10 }}>
+            <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
+            Giảng viên / L&amp;D chỉ tạo được khóa Trực Tiếp và tự động là người đứng lớp.
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: canAuthorOnline ? '1fr 1fr' : '1fr', gap: 12 }}>
+          {canAuthorOnline && (
+            <button
+              type="button"
+              onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004' })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail)' : '1px solid var(--line)',
+                background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft)' : '#fff',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                <i className="ti ti-device-laptop" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Học Trực Tuyến (Online E-learning)</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học qua Video, YouTube, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm</div>
+              </div>
+            </button>
+          )}
 
           <button
             type="button"
@@ -374,8 +435,8 @@ export default function AdminCourseBuilder() {
               deliveryType: 'IN_PERSON_CLASSROOM',
               modality: 'CLASSROOM_LAB',
               format: 'Store Practical Lab / ILT',
-              trainerId: draft.trainerId || trainersDirectory[0]?.id || 'tr-01',
-              trainerName: draft.trainerName || trainersDirectory[0]?.name || 'Nguyen Van Hung',
+              trainerId: isTrainerOnly ? authUser.userId : (draft.trainerId || eligibleTrainers[0]?.userId),
+              trainerName: isTrainerOnly ? authUser.fullName : (draft.trainerName || eligibleTrainers[0]?.fullName),
               venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
               venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
               scheduleDate: draft.scheduleDate || '2026-08-28',
@@ -419,21 +480,30 @@ export default function AdminCourseBuilder() {
           <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
               <label className="field-label">Giảng viên Đứng lớp (Assigned Trainer / Faculty)</label>
-              <select
-                className="field-select"
-                value={draft.trainerId || 'tr-01'}
-                onChange={(e) => {
-                  const tr = trainersDirectory.find((t) => t.id === e.target.value);
-                  patch({ trainerId: tr?.id, trainerName: tr?.name });
-                }}
-              >
-                {trainersDirectory.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} — {t.role} (CSAT {t.rating}★ &middot; {t.totalClassesTaught} sessions)
-                  </option>
-                ))}
-              </select>
-              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Trainer và mở mã QR Điểm danh tại lớp.</div>
+              {isTrainerOnly ? (
+                // Trainer/L&D tự động là giảng viên đứng lớp — không chọn được người khác.
+                <div className="field-input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)' }}>
+                  <i className="ti ti-user-check" style={{ color: 'var(--blue)' }} />
+                  {authUser.fullName} — {roleDefinition(authRole).labelVi} (chính bạn)
+                </div>
+              ) : (
+                <select
+                  className="field-select"
+                  value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
+                  onChange={(e) => {
+                    const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
+                    patch({ trainerId: tr?.userId, trainerName: tr?.fullName });
+                  }}
+                >
+                  {eligibleTrainers.map((t) => (
+                    <option key={t.userId} value={t.userId}>
+                      {t.fullName} — {roleDefinition(t.role).labelVi}
+                      {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Giảng Dạy và mở mã QR Điểm danh tại lớp.</div>
             </div>
 
             <div>

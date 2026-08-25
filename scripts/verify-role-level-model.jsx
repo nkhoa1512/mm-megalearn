@@ -44,9 +44,12 @@ const TrainerHub = (await import('../src/pages/trainer/TrainerHub')).default;
 const HrbpDashboard = (await import('../src/pages/hrbp/HrbpDashboard')).default;
 const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal')).default;
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
+const UserTranscriptModal = (await import('../src/components/UserTranscriptModal')).default;
+const TrainerRatingsDirectory = (await import('../src/components/TrainerRatingsDirectory')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
+const COURSES_KEY = 'mm-megalearn-courses-v6';
 
 let failures = 0;
 function check(label, ok, extra = '') {
@@ -77,7 +80,7 @@ function render(label, element, path, pattern) {
 // ---------------------------------------------------------------------------
 console.log('=== 0. Data model: 7 levels, 6 roles, sequential gate ===');
 const { generated100Users, generated100Courses, generated100EnrollmentMatrix } = await import('../src/data/generated100Data');
-const { checkCourseAccessRule, ACCESS_STATE } = await import('../src/data/levelSystem');
+const { checkCourseAccessRule, ACCESS_STATE, isCourseVisibleInCatalog } = await import('../src/data/levelSystem');
 const mock = await import('../src/data/mockData');
 
 
@@ -156,6 +159,11 @@ check('L7 -> L5 hard locked', checkCourseAccessRule(c5, L7).state === ACCESS_STA
 check('L7 -> L5 not requestable', checkCourseAccessRule(c5, L7).requiresApproval === false);
 check('L7 -> L1 hard locked', checkCourseAccessRule(c1, L7).state === ACCESS_STATE.LOCKED_LEVEL_GAP);
 check('approval cannot bypass 2-level jump', checkCourseAccessRule(c5, L7, { approvedCourseIds: ['c5'] }).canAccess === false);
+check('catalog visibility: L7 sees L7 (gap 0)', isCourseVisibleInCatalog('7', '7') === true);
+check('catalog visibility: L7 sees L6 (gap 1)', isCourseVisibleInCatalog('7', '6') === true);
+check('catalog visibility: L7 hides L5 (gap 2)', isCourseVisibleInCatalog('7', '5') === false);
+check('catalog visibility: L7 hides L1 (gap 6)', isCourseVisibleInCatalog('7', '1') === false);
+check('catalog visibility: L7 sees courses below their own level too', isCourseVisibleInCatalog('7', '7') === true);
 check('L4 manager -> L7 course OPEN', checkCourseAccessRule(c7, { level: '4' }).state === ACCESS_STATE.OPEN);
 check('L4 manager -> L3 course REQUESTABLE', checkCourseAccessRule({ id: 'x', targetLevel: '3' }, { level: '4' }).state === ACCESS_STATE.REQUESTABLE);
 check('L1 BOM -> L1 course OPEN', checkCourseAccessRule(c1, { level: '1' }).state === ACCESS_STATE.OPEN);
@@ -227,6 +235,7 @@ const PAGES = [
   ['AdminConfig', <AdminConfig />, '/admin/config', '/admin/config'],
   ['AdminReports', <AdminReports />, '/admin/reports', '/admin/reports'],
   ['AdminTrainingOps', <AdminTrainingOps />, '/admin/training-ops', '/admin/training-ops'],
+  ['TrainerRatingsDirectory', <TrainerRatingsDirectory />, '/trainer-ratings', '/trainer-ratings'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -270,20 +279,45 @@ console.log('\n=== 3. Sequential level gate — Minh Tran (Level 7 learner) ==='
   check('learner cannot open the approvals queue', p['ManagerApprovals'].includes('không có quyền phê duyệt'));
 }
 
-console.log('\n=== 4. Approvals queue for the 5 management roles ===');
-for (const role of ROLE_ORDER.filter((r) => r !== 'learner')) {
-  const html = byRole[role]['ManagerApprovals'];
-  check(`${role} sees the level-skip queue`,
-    html.includes('Học vượt cấp') && html.includes('Phê Duyệt Đơn Học Vượt Cấp'));
+console.log('\n=== 4. Approvals queue: ONLY User Admin & SysAdmin (Manager/Trainer/HRBP removed) ===');
+{
+  for (const role of ['useradmin', 'sysadmin']) {
+    const html = byRole[role]['ManagerApprovals'];
+    check(`${role} sees the level-skip queue`,
+      html.includes('Học vượt cấp') && html.includes('Phê Duyệt Đơn Học Vượt Cấp'));
+  }
+  for (const role of ['manager', 'trainer', 'hrbp']) {
+    const html = byRole[role]['ManagerApprovals'];
+    check(`${role} no longer has the approvals queue (permission denied)`,
+      html.includes('không có quyền phê duyệt'));
+    actAs(role);
+    const sidebarHtml = render(`Sidebar-noapproval/${role}`, <Sidebar role={role} collapsed={false} />, '/', '/');
+    check(`${role} has no "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
+      sidebarHtml && !sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
+  }
+  for (const role of ['useradmin', 'sysadmin']) {
+    actAs(role);
+    const sidebarHtml = render(`Sidebar-approval/${role}`, <Sidebar role={role} collapsed={false} />, '/', '/');
+    check(`${role} still has "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
+      sidebarHtml && sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
+  }
 }
 
-console.log('\n=== 5. Seeded approval requests are coherent ===');
+console.log('\n=== 5. Seeded approval requests: all visible to User Admin & SysAdmin, hidden elsewhere ===');
 {
-  const html = byRole.manager['ManagerApprovals'];
+  // Không còn chia theo cấp — mọi đơn cùng đổ về 1 hàng đợi chung mà chỉ User
+  // Admin và SysAdmin xử lý được, bất kể ai gửi đơn.
   for (const req of pendingApprovalRequests) {
-    check(`request from ${req.employeeName} is listed`, html.includes(req.employeeName));
+    for (const approverRole of ['useradmin', 'sysadmin']) {
+      check(`request from ${req.employeeName} is listed for ${approverRole}`,
+        byRole[approverRole]['ManagerApprovals'].includes(req.employeeName));
+    }
+    for (const otherRole of ['learner', 'manager', 'trainer', 'hrbp']) {
+      check(`request from ${req.employeeName} is NOT visible to ${otherRole}`,
+        !byRole[otherRole]['ManagerApprovals'].includes(req.employeeName));
+    }
   }
-  check('request cards mark a 1-level jump as valid', html.includes('Vượt đúng 1 cấp liền kề — hợp lệ'));
+  check('request cards mark a 1-level jump as valid', byRole.useradmin['ManagerApprovals'].includes('Vượt đúng 1 cấp liền kề — hợp lệ'));
 }
 
 console.log('\n=== 6. Every role reaches its own learning portal ===');
@@ -324,6 +358,154 @@ console.log('\n=== 7. Request -> approve -> unlock state transitions (L7 -> L6) 
   html = render('approved 2-level jump', <LearnerCourseDetail />, '/learner/courses/CRS-LEAD-058', '/learner/courses/:courseId');
   check('an approval cannot unlock a 2+ level jump', html.includes('Bị Chặn Nhảy Cóc Cấp Bậc'));
   store.delete(APPROVAL_KEY);
+}
+
+console.log('\n=== 8. Manager "Chi Tiết" drill-down opens without crashing, and cannot assign courses ===');
+{
+  // Trước đây UserTranscriptModal gọi enrollmentsForUser(courses, targetUser) —
+  // sai thứ tự tham số và sai kiểu trả về (object, không phải mảng) — nên bấm
+  // "Chi Tiết" từ Manager/Trainer/HRBP luôn crash "userCourses.filter is not a
+  // function". Static page render không bắt được lỗi này vì modal chỉ mở khi
+  // transcriptUser !== null, nên phải render trực tiếp UserTranscriptModal với
+  // isOpen=true để tái hiện đúng đường crash.
+  actAs('manager');
+  const minhTran = personaForRole('learner');
+  const html = render(
+    'UserTranscriptModal open',
+    <UserTranscriptModal targetUser={minhTran} isOpen={true} onClose={() => {}} />,
+    '/manager/team', '/manager/team'
+  );
+  check('transcript modal renders without crashing', html !== null);
+  if (html) {
+    check('transcript modal lists the target user name', html.includes(minhTran.fullName));
+  }
+
+  const teamHtml = byRole.manager['ManagerTeam'];
+  check('Manager sees "Chi Tiết" (view-only) on direct reports', teamHtml.includes('Chi Tiết'));
+  check('Manager has no "Gán Khóa" / assign-course action', !teamHtml.includes('Gán Khóa') && !teamHtml.includes('Assign Developmental Course') && !teamHtml.includes('Assign Now'));
+
+  for (const role of ['trainer', 'hrbp']) {
+    const html2 = byRole[role]['ManagerApprovals'];
+    check(`${role} approvals page has no assign/allocate action either`, !html2.includes('Gán Khóa'));
+  }
+}
+
+console.log('\n=== 9. .table CSS cannot collapse an unconstrained column to a few characters ===');
+{
+  // Bug thực tế: overflow-wrap:anywhere trên .table tham gia vào tính
+  // min-content-width của table-layout:auto, nên cột "Khóa Học" (không đặt
+  // width cố định) bị co lại khi đứng cạnh các cột có width cố định khác,
+  // làm tiêu đề khóa học vỡ chữ dọc trang thay vì xuống dòng bình thường.
+  // word-break:break-word tương đương HỆT overflow-wrap:anywhere theo spec
+  // (cả cách ngắt chữ lẫn cách tính min-content-width) dù tên nghe an toàn
+  // hơn — chỉ overflow-wrap:break-word mới không co min-width. Đây là lỗi
+  // thuần CSS, server-rendered HTML text vẫn đúng dù layout vỡ, nên không
+  // thể bắt bằng cách check nội dung text; phải khoá trực tiếp CSS.
+  const fs = await import('node:fs');
+  // Bỏ comment /* ... */ trước khi match, vì chính comment giải thích lý do
+  // tránh các giá trị này lại chứa cụm từ đó trong văn bản.
+  const css = fs.readFileSync('src/styles/app.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const tableRule = css.match(/\.table\s*\{[\s\S]*?\}/);
+  check('.table rule exists in app.css', Boolean(tableRule));
+  if (tableRule) {
+    check('.table does not use overflow-wrap:anywhere (collapses auto-layout columns)',
+      !/overflow-wrap:\s*anywhere/.test(tableRule[0]));
+    check('.table does not use word-break:break-word (same collapse, different property name)',
+      !/word-break:\s*break-word/.test(tableRule[0]));
+    check('.table still uses overflow-wrap:break-word so long titles wrap instead of overflowing',
+      /overflow-wrap:\s*break-word/.test(tableRule[0]));
+  }
+}
+
+console.log('\n=== 10. Course authoring permission matrix (Online vs Offline vs none) ===');
+{
+  // HRBP: không có quyền tạo khóa nào cả.
+  check('hrbp sees a permission-denied CourseBuilder', byRole.hrbp['AdminCourseBuilder'].includes('không có quyền tạo hoặc chỉnh sửa khóa học'));
+  check('hrbp has no "Create New Course" button on AdminCourses', !byRole.hrbp['AdminCourses'].includes('Create New Course'));
+  check('manager has no "Create New Course" button either', !byRole.manager['AdminCourses'].includes('Create New Course'));
+  check('learner has no "Create New Course" button either', !byRole.learner['AdminCourses'].includes('Create New Course'));
+
+  // Trainer/L&D: chỉ tạo Offline, tự động là giảng viên đứng lớp.
+  const trainerBuilder = byRole.trainer['AdminCourseBuilder'];
+  check('trainer sees the CourseBuilder (not permission-denied)', !trainerBuilder.includes('không có quyền tạo hoặc chỉnh sửa khóa học'));
+  check('trainer does NOT see the Online delivery mode option', !trainerBuilder.includes('Khóa Học Trực Tuyến (Online E-learning)'));
+  check('trainer sees the offline-only notice', trainerBuilder.includes('chỉ tạo được khóa Trực Tiếp'));
+  check('trainer is locked in as their own instructor (chính bạn)', trainerBuilder.includes('(chính bạn)'));
+  check('trainer has a "Create New Course" button on AdminCourses', byRole.trainer['AdminCourses'].includes('Create New Course'));
+
+  // User Admin & SysAdmin: toàn quyền cả 2 hình thức.
+  for (const role of ['useradmin', 'sysadmin']) {
+    const html = byRole[role]['AdminCourseBuilder'];
+    check(`${role} sees the Online delivery mode option`, html.includes('Khóa Học Trực Tuyến (Online E-learning)'));
+    check(`${role} sees the Offline/In-person delivery mode option`, html.includes('Khóa Đào Tạo Trực Tiếp (In-Person Workshop)'));
+    check(`${role} has a "Create New Course" button on AdminCourses`, byRole[role]['AdminCourses'].includes('Create New Course'));
+  }
+}
+
+console.log('\n=== 10b. Course ownership: Trainer only edits their own courses, User Admin/SysAdmin manage all ===');
+{
+  const trainerHtml = byRole.trainer['AdminCourses'];
+  const trainerEditCount = (trainerHtml.match(/>Edit</g) || []).length;
+  const trainerViewCount = (trainerHtml.match(/View Course/g) || []).length;
+  check('trainer has 0 Edit buttons on the seed catalog (none created by them)', trainerEditCount === 0);
+  check('trainer sees View Course (read-only) on every listed course instead', trainerViewCount > 0 && trainerEditCount === 0);
+
+  for (const role of ['useradmin', 'sysadmin']) {
+    const html = byRole[role]['AdminCourses'];
+    const editCount = (html.match(/>Edit</g) || []).length;
+    const viewCount = (html.match(/View Course/g) || []).length;
+    check(`${role} can Edit every listed course (manages the whole catalog)`, editCount > 0 && viewCount === 0);
+  }
+
+  // Once the trainer actually authors a course themselves, it should switch
+  // to Edit/Delete for them specifically — ownership, not role, decides it.
+  const hungTrainer = mock.personaForRole('trainer');
+  const ownCourse = {
+    id: 'course-owned-by-hung', code: 'OWN-001', title: 'Trainer-Authored Sample Course',
+    category: 'Store Operations', version: 'v1.0', courseType: 'OPTIONAL', status: 'DRAFT',
+    targetLevel: '6', deliveryType: 'IN_PERSON_CLASSROOM', modality: 'CLASSROOM_LAB',
+    createdBy: hungTrainer.userId, modules: [], assignment: null,
+  };
+  store.set(COURSES_KEY, JSON.stringify([ownCourse]));
+  actAs('trainer');
+  const ownHtml = render('trainer own course', <AdminCourses />, '/admin/courses', '/admin/courses');
+  check('trainer CAN Edit a course they personally authored', ownHtml.includes('>Edit<'));
+  check('trainer sees no "View Course" fallback for their own course', !ownHtml.includes('View Course'));
+  store.delete(COURSES_KEY);
+}
+
+console.log('\n=== 11. Teaching capability opened to L&D, HRBP, User Admin, SysAdmin ===');
+{
+  for (const role of ['trainer', 'hrbp', 'useradmin', 'sysadmin']) {
+    const html = byRole[role]['TrainerHub/CLASSES'];
+    check(`${role} can open "Lớp Giảng Dạy & Live QR"`, !html.includes('không được phân công đứng lớp'));
+  }
+  for (const role of ['manager', 'learner']) {
+    const html = byRole[role]['TrainerHub/CLASSES'];
+    check(`${role} is blocked from the teaching portal`, html.includes('không được phân công đứng lớp'));
+  }
+}
+
+console.log('\n=== 12. Trainer Ratings Directory (CSAT) is public to all 6 roles ===');
+{
+  const mockAgain = await import('../src/data/mockData');
+  const eligible = mockAgain.teachingEligibleUsers();
+  for (const role of ROLE_ORDER) {
+    const html = byRole[role]['TrainerRatingsDirectory'];
+    check(`${role} can open the CSAT directory`, html.includes('Đánh Giá Giảng Viên'));
+    check(`${role} sees every eligible trainer listed`, eligible.every((t) => html.includes(t.fullName)));
+  }
+  check('HRBP/UserAdmin/SysAdmin personas appear in the eligible-trainer pool',
+    ['hrbp', 'useradmin', 'sysadmin'].every((r) => eligible.some((t) => t.role === r)));
+}
+
+console.log('\n=== 13. Training Ops trimmed to Room Booking + Batch Upload only ===');
+{
+  const html = byRole.trainer['AdminTrainingOps'];
+  check('Room Booking tab present', html.includes('Đặt Phòng / Xưởng Thực Hành'));
+  check('Batch Upload tab present', html.includes('Upload Danh Sách Học Viên'));
+  check('Faculty Directory / CSAT tab removed (moved to shared directory)', !html.includes('Faculty Directory & CSAT Ratings'));
+  check('duplicate Calendar tab removed', !html.includes('Enterprise Master Training Calendar'));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));

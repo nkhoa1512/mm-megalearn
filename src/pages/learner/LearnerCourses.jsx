@@ -9,6 +9,7 @@ import {
   levelShortLabel,
   nextLevelUp,
   normalizeLevel,
+  isCourseVisibleInCatalog,
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -80,7 +81,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     navigate(`${basePath}/${course.id}`);
   }
 
-  const activeCourseList = scopeTab === 'MY_COURSES' ? enrolledCourses : allCourses;
+  // Full Catalog chỉ hiện khóa cùng cấp/thấp hơn hoặc vượt đúng 1 cấp liền kề —
+  // khóa nhảy cóc từ 2 cấp trở lên bị ẩn hoàn toàn khỏi danh mục, không hiện
+  // dạng khóa bị chặn nữa (khác với "Khóa Học Của Tôi": khóa đã gán thì luôn
+  // hiện đủ, không lọc theo cấp bậc).
+  const activeCourseList = scopeTab === 'MY_COURSES'
+    ? enrolledCourses
+    : allCourses.filter((c) => isCourseVisibleInCatalog(userLevel, c.targetLevel));
 
   // Bảng tra cứu trạng thái truy cập theo cấp bậc cho danh sách đang hiển thị.
   const accessById = {};
@@ -95,7 +102,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
       (statusFilter === 'LEVEL_UP' && access.state === ACCESS_STATE.REQUESTABLE) ||
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
-      (statusFilter === 'LOCKED' && access.state === ACCESS_STATE.LOCKED_LEVEL_GAP) ||
       s === statusFilter;
 
     const matchLevel = levelFilter === 'ALL' || normalizeLevel(c.targetLevel) === String(levelFilter);
@@ -273,15 +279,15 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--amber)' }}>{pendingCount} / {approvedCount}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Bị chặn do nhảy cóc ≥ 2 cấp</div>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Ẩn khỏi danh mục (nhảy cóc ≥ 2 cấp)</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--rust)' }}>{hardLockedCount}</div>
           </div>
         </div>
 
         <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.5, background: 'var(--paper-sunken)', padding: '8px 12px', borderRadius: 6 }}>
           Khóa <strong>Level {userLevel}</strong> trở xuống: học ngay. Khóa <strong>Level {oneLevelUp || '—'}</strong> (vượt đúng 1 cấp):
-          phải gửi đơn và được Quản lý phê duyệt từng khóa. Khóa từ <strong>2 cấp trở lên</strong>: khóa cứng — bắt buộc hoàn thành
-          toàn bộ chương trình Level {oneLevelUp || '—'} trước.
+          phải gửi đơn và được Quản lý phê duyệt từng khóa. Khóa từ <strong>2 cấp trở lên</strong>: ẩn hoàn toàn khỏi danh mục —
+          bắt buộc hoàn thành toàn bộ chương trình Level {oneLevelUp || '—'} trước mới xuất hiện.
         </div>
       </div>
 
@@ -399,7 +405,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               <i className="ti ti-info-circle" style={{ color: 'var(--blue)', marginRight: 4 }} />
-              Toàn bộ <strong>{allCourses.length} khóa học</strong>. Thang cấp bậc <strong>đảo ngược</strong>: Level 7 thấp nhất → Level 1 cao nhất.
+              Hiện <strong>{activeCourseList.length}/{allCourses.length} khóa học</strong> (đã ẩn {hardLockedCount} khóa nhảy cóc ≥ 2 cấp).
+              Thang cấp bậc <strong>đảo ngược</strong>: Level 7 thấp nhất → Level 1 cao nhất.
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
@@ -408,13 +415,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 style={{ fontSize: 12, fontWeight: 700 }}
               >
                 🔒 Xin Học Vượt 1 Cấp (Level {oneLevelUp || '—'}) ({requestableCount})
-              </button>
-              <button
-                onClick={() => setStatusFilter(statusFilter === 'LOCKED' ? 'ALL' : 'LOCKED')}
-                className={`btn btn-sm ${statusFilter === 'LOCKED' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ fontSize: 12, fontWeight: 700 }}
-              >
-                ⛔ Bị Chặn Nhảy Cóc ({hardLockedCount})
               </button>
             </div>
           </div>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { courseHasParticipants } from '../../data/mockData';
+import { courseHasParticipants, userAdminUser } from '../../data/mockData';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
-import { hasCapability, normalizeRole } from '../../data/roles';
+import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
@@ -26,7 +26,22 @@ const CATEGORIES = [
 export default function AdminCourses() {
   const navigate = useNavigate();
   const { courses, updateCourse, removeCourse, currentUser } = useCourseStore();
-  const isAdmin = hasCapability(normalizeRole(currentUser?.role), 'canAuthorCourses');
+  const role = normalizeRole(currentUser?.role);
+  const isAdmin = canAuthorAnyCourse(role);
+  // User Admin & SysAdmin quản lý TOÀN BỘ khóa học (canAuthorOnlineCourses là
+  // tín hiệu phân biệt họ với Trainer/L&D — chỉ 2 role này có). Trainer/L&D
+  // chỉ được sửa/xóa đúng khóa do chính họ tạo; 100 khóa danh mục gốc chưa có
+  // trường createdBy được coi là do User Admin thiết lập (chủ sở hữu mặc định
+  // của danh mục chính thức), nên Trainer không có quyền với chúng.
+  const isFullAdmin = hasCapability(role, 'canAuthorOnlineCourses');
+  function ownerIdOf(course) {
+    return course.createdBy || userAdminUser.userId;
+  }
+  function canManageCourse(course) {
+    if (isFullAdmin) return true;
+    if (isAdmin) return ownerIdOf(course) === currentUser?.userId;
+    return false;
+  }
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
@@ -135,6 +150,7 @@ export default function AdminCourses() {
           <tbody>
             {paginated.map((c) => {
               const hasParticipants = courseHasParticipants(c);
+              const canManage = canManageCourse(c);
               return (
                 <tr key={c.id}>
                   <td>
@@ -161,8 +177,8 @@ export default function AdminCourses() {
                     </Badge>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      {isAdmin ? (
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      {canManage ? (
                         <>
                           <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
                           {c.status === 'DRAFT' && <Button size="sm" variant="primary" onClick={() => publish(c)}>Publish</Button>}
@@ -171,7 +187,15 @@ export default function AdminCourses() {
                           </span>
                         </>
                       ) : (
-                        <Button size="sm" variant="outline" icon="ti-eye" onClick={() => navigate(`/learner/courses/${c.id}`)}>View Course</Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          icon="ti-eye"
+                          onClick={() => navigate(`/learner/courses/${c.id}`)}
+                          title={isAdmin ? 'Khóa này không do bạn tạo — chỉ xem, không sửa/xóa được.' : undefined}
+                        >
+                          View Course
+                        </Button>
                       )}
                     </div>
                   </td>
