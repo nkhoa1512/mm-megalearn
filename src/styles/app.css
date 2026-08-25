@@ -346,6 +346,9 @@
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
+  /* Chữ dài phải tự xuống dòng thay vì đẩy bảng tràn ngang. */
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .table th {
   text-align: left;
@@ -354,12 +357,13 @@
   letter-spacing: 0.06em;
   color: var(--ink-soft);
   font-weight: 700;
-  padding: 12px 22px;
+  /* Padding ngang gọn lại: 7 cột x 20px tiết kiệm được ~140px bề ngang. */
+  padding: 12px 12px;
   background: var(--paper-sunken);
   border-bottom: 1px solid var(--line);
 }
 .table td {
-  padding: 13px 22px;
+  padding: 13px 12px;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
   vertical-align: middle;

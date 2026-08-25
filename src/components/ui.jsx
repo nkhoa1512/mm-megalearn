@@ -31,16 +31,17 @@ export function JobLevelBadge({ level, title, compact = false }) {
 /** Nhãn trạng thái mở khóa của một khóa học theo quy tắc học vượt cấp tuần tự. */
 export function LevelAccessBadge({ access }) {
   if (!access) return null;
+  // Nhãn ngắn để bảng không bị đẩy tràn ngang; mô tả đầy đủ nằm ở tooltip.
   const map = {
-    [ACCESS_STATE.OPEN]: { tone: 'sage', icon: 'ti-lock-open', label: 'Mở — đúng cấp bậc' },
-    [ACCESS_STATE.APPROVED]: { tone: 'sage', icon: 'ti-circle-check', label: 'Đã duyệt học vượt cấp' },
-    [ACCESS_STATE.PENDING_APPROVAL]: { tone: 'amber', icon: 'ti-clock', label: 'Chờ Quản lý duyệt' },
-    [ACCESS_STATE.REJECTED]: { tone: 'rust', icon: 'ti-x', label: 'Đơn bị từ chối' },
-    [ACCESS_STATE.REQUESTABLE]: { tone: 'blue', icon: 'ti-lock', label: 'Cần xin phê duyệt' },
-    [ACCESS_STATE.LOCKED_LEVEL_GAP]: { tone: 'rust', icon: 'ti-ban', label: 'Chặn nhảy cóc' },
+    [ACCESS_STATE.OPEN]: { tone: 'sage', icon: 'ti-lock-open', label: 'Đúng cấp', hint: 'Khóa ở cấp bậc của bạn hoặc thấp hơn — học ngay' },
+    [ACCESS_STATE.APPROVED]: { tone: 'sage', icon: 'ti-circle-check', label: 'Đã duyệt', hint: 'Quản lý đã phê duyệt học vượt cấp cho khóa này' },
+    [ACCESS_STATE.PENDING_APPROVAL]: { tone: 'amber', icon: 'ti-clock', label: 'Chờ duyệt', hint: 'Đơn xin học vượt cấp đang chờ Quản lý phê duyệt' },
+    [ACCESS_STATE.REJECTED]: { tone: 'rust', icon: 'ti-x', label: 'Bị từ chối', hint: 'Quản lý đã từ chối đơn — bạn có thể gửi lại' },
+    [ACCESS_STATE.REQUESTABLE]: { tone: 'blue', icon: 'ti-lock', label: 'Cần xin duyệt', hint: 'Vượt đúng 1 cấp — phải được Quản lý phê duyệt' },
+    [ACCESS_STATE.LOCKED_LEVEL_GAP]: { tone: 'rust', icon: 'ti-ban', label: 'Chặn nhảy cóc', hint: 'Cách từ 2 cấp trở lên — phải leo tuần tự từng bậc' },
   };
   const cfg = map[access.state] || map[ACCESS_STATE.OPEN];
-  return <Badge tone={cfg.tone} icon={cfg.icon}>{cfg.label}</Badge>;
+  return <span title={access.reason || cfg.hint}><Badge tone={cfg.tone} icon={cfg.icon}>{cfg.label}</Badge></span>;
 }
 
 export function Badge({ tone = 'slate', children, icon, size }) {

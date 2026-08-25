@@ -155,13 +155,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         return (
           <Button size={size} variant="outline" icon="ti-ban" disabled
             title={access.reason}>
-            ⛔ Chặn Nhảy Cóc: Phải hoàn thành Level {oneLevelUp} trước
+            ⛔ Chặn Nhảy Cóc
           </Button>
         );
       case ACCESS_STATE.PENDING_APPROVAL:
         return (
           <Button size={size} variant="outline" icon="ti-clock" disabled title={access.reason}>
-            ⏳ Đang Chờ Quản Lý Duyệt
+            ⏳ Chờ Duyệt
           </Button>
         );
       case ACCESS_STATE.REJECTED:
@@ -169,7 +169,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         return (
           <Button size={size} variant="primary" icon="ti-lock"
             onClick={() => openRequestModal(c, access)}>
-            🔒 Xin Phê Duyệt Học Vượt Cấp
+            🔒 Xin Duyệt Vượt Cấp
           </Button>
         );
       default:
@@ -179,7 +179,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     if (isInPerson) {
       return (
         <Button size={size} variant="primary" icon="ti-calendar-event" onClick={() => navigate('/learner/classrooms')}>
-          Xem Lịch &amp; QR
+          Xem Lịch QR
         </Button>
       );
     }
@@ -202,7 +202,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         icon={access.state === ACCESS_STATE.APPROVED ? 'ti-player-play' : 'ti-plus'}
         onClick={() => handleStart(c, access)}
       >
-        {access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay (Đã Duyệt)' : 'Đăng Ký Học'}
+        {access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay' : 'Đăng Ký Học'}
       </Button>
     );
   }
@@ -479,11 +479,11 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <thead>
               <tr>
                 <th>Khóa Học</th>
-                <th style={{ width: 150 }}>Cấp Bậc Yêu Cầu</th>
-                <th style={{ width: 150 }}>Quyền Truy Cập</th>
-                <th>Định Dạng / Giảng Viên</th>
-                <th style={{ width: 130 }}>Tiến Độ</th>
-                <th style={{ width: 110 }}>Trạng Thái</th>
+                <th style={{ width: 96 }}>Cấp Bậc</th>
+                <th style={{ width: 118 }}>Truy Cập</th>
+                <th style={{ width: 150 }}>Định Dạng</th>
+                <th style={{ width: 112 }}>Tiến Độ</th>
+                <th style={{ width: 104 }}>Trạng Thái</th>
                 <th style={{ textAlign: 'right' }}>Thao Tác</th>
               </tr>
             </thead>
@@ -509,7 +509,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     <tr key={c.id} style={isBlocked ? { opacity: 0.62 } : undefined}>
                       <td>
                         <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
                           <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span>
                           <span>&middot;</span>
                           <span>{c.category || c.domain}</span>
@@ -517,20 +517,20 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                           <span>{c.estimatedHours || '3h'}</span>
                         </div>
                         {access.isLevelLocked && (
-                          <div style={{ fontSize: 11, color: isBlocked ? 'var(--rust)' : 'var(--blue)', marginTop: 4, maxWidth: 460, lineHeight: 1.4 }}>
+                          <div style={{ fontSize: 11, color: isBlocked ? 'var(--rust)' : 'var(--blue)', marginTop: 4, maxWidth: 320, lineHeight: 1.4 }}>
                             <i className={`ti ${isBlocked ? 'ti-ban' : 'ti-lock'}`} style={{ marginRight: 4 }} />
                             {access.reason}
                           </div>
                         )}
                       </td>
 
-                      <td><JobLevelBadge level={c.targetLevel} title={c.targetLevelTitle} /></td>
+                      <td><JobLevelBadge level={c.targetLevel} title={c.targetLevelTitle} compact /></td>
                       <td><LevelAccessBadge access={access} /></td>
 
                       <td>
                         <div style={{ fontSize: 12, fontWeight: 600 }}>
                           {isInPerson ? (
-                            <span style={{ color: 'var(--blue)' }}><i className="ti ti-building-store" style={{ marginRight: 4 }} /> Thực Hành Xưởng ILT</span>
+                            <span style={{ color: 'var(--blue)' }}><i className="ti ti-building-store" style={{ marginRight: 4 }} /> Xưởng ILT</span>
                           ) : (
                             <span>{c.format || 'E-learning Online'}</span>
                           )}
@@ -563,7 +563,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                         )}
                       </td>
 
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{renderAction(c, access)}</td>
+                      <td style={{ textAlign: 'right' }}>{renderAction(c, access)}</td>
                     </tr>
                   );
                 })
