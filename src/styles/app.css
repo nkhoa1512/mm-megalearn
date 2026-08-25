@@ -77,8 +77,21 @@
   color: var(--ink-soft);
 }
 .app-nav-item:hover { background: var(--paper-sunken); color: var(--ink); }
-.app-nav-item.active { background: var(--rail-soft); color: var(--rail-soft-text); }
-.app-nav-item .ti { font-size: 17px; width: 18px; text-align: center; flex-shrink: 0; }
+.app-nav-item.active { background: var(--rail-soft); color: var(--rail-soft-text); font-weight: 700; }
+.app-nav-item i, .app-nav-item .ti {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+}
+.app-nav-item:hover i, .app-nav-item:hover .ti,
+.app-nav-item.active i, .app-nav-item.active .ti {
+  color: var(--rail);
+}
 .app-tab-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; color: #fff; flex-shrink: 0; }
 .icon-btn.active { background: var(--rail-soft); color: var(--rail-soft-text); border-color: var(--rail); }
 

@@ -19,7 +19,7 @@ import {
   addCourseToCurrentRoadmap,
   removeCourseFromCurrentRoadmap,
 } from '../data/levelRoadmapMatrix';
-import { translate } from '../data/i18n';
+import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -640,6 +640,10 @@ export function CourseStoreProvider({ children }) {
         toggleLanguage,
         setLanguage,
         t,
+        tDomain: (d) => translateDomain(d, language),
+        tStatus: (s) => translateStatus(s, language),
+        tDelivery: (del) => translateDelivery(del, language),
+        localizeCourse: (c) => getLocalizedCourse(c, language),
       }}
     >
       {children}

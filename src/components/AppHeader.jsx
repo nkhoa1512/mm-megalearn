@@ -212,9 +212,9 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '4px 10px',
-              height: 32,
-              fontSize: 12,
+              padding: '4px 12px',
+              height: 34,
+              fontSize: 12.5,
               fontWeight: 700,
               borderRadius: 8,
               border: '1px solid var(--line-strong)',
@@ -223,7 +223,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               cursor: 'pointer',
             }}
           >
-            <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} style={{ fontSize: 14, color: theme === 'dark' ? '#f59e0b' : '#6366f1' }} />
+            <span style={{ fontSize: 14 }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
             <span>{theme === 'dark' ? (language === 'en' ? 'Dark' : 'Tối') : (language === 'en' ? 'Light' : 'Sáng')}</span>
           </button>
 
@@ -237,9 +237,9 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '4px 10px',
-              height: 32,
-              fontSize: 12,
+              padding: '4px 12px',
+              height: 34,
+              fontSize: 12.5,
               fontWeight: 800,
               borderRadius: 8,
               border: '1px solid var(--rail)',
@@ -248,7 +248,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               cursor: 'pointer',
             }}
           >
-            <i className="ti ti-world" style={{ fontSize: 14, color: 'var(--rail)' }} />
+            <span style={{ fontSize: 14 }}>{language === 'en' ? '🇺🇸' : '🇻🇳'}</span>
             <span>{language === 'en' ? 'EN' : 'VI'}</span>
           </button>
 

@@ -300,9 +300,86 @@ export function translate(key, lang = 'vi', fallback = '') {
   if (dict && dict[key] !== undefined) {
     return dict[key];
   }
-  const enDict = TRANSLATIONS.en;
-  if (enDict && enDict[key] !== undefined) {
-    return enDict[key];
+  const fallbackDict = TRANSLATIONS.en || {};
+  if (fallbackDict[key] !== undefined) {
+    return fallbackDict[key];
   }
   return fallback || key;
+}
+
+export const DOMAIN_TRANSLATIONS = {
+  'Food Safety & Hygiene': { vi: 'Vệ Sinh & An Toàn Thực Phẩm', en: 'Food Safety & Hygiene' },
+  'Information Security': { vi: 'An Toàn Thông Tin & Bảo Mật', en: 'Information Security' },
+  'Health & Safety': { vi: 'An Toàn Lao Động & PCCC', en: 'Health & Safety' },
+  'Cold Chain': { vi: 'Chuỗi Cung Ứng Lạnh (Cold Chain)', en: 'Cold Chain Logistics' },
+  'Store Operations': { vi: 'Vận Hành & Khai Thác Siêu Thị', en: 'Store Operations' },
+  'Leadership & Management': { vi: 'Kỹ Năng Lãnh Đạo & Quản Lý', en: 'Leadership & Management' },
+  'Leadership': { vi: 'Kỹ Năng Lãnh Đạo & Quản Lý', en: 'Leadership & Management' },
+  'Supply Chain & Logistics': { vi: 'Chuỗi Cung Ứng & Kho Vận', en: 'Supply Chain & Logistics' },
+  'Supply Chain': { vi: 'Chuỗi Cung Ứng & Kho Vận', en: 'Supply Chain & Logistics' },
+  'Merchandising & Sales': { vi: 'Trưng Bày Hàng Hóa & Bán Hàng', en: 'Merchandising & Sales' },
+  'Merchandising': { vi: 'Trưng Bày Hàng Hóa & Bán Hàng', en: 'Merchandising & Sales' },
+  'Digital & E-Commerce': { vi: 'Thương Mại Điện Tử & Số Hóa', en: 'Digital & E-Commerce' },
+  'E-Commerce': { vi: 'Thương Mại Điện Tử & Số Hóa', en: 'Digital & E-Commerce' },
+  'Customer Service': { vi: 'Dịch Vụ Khách Hàng Chuẩn Mực', en: 'Customer Service Excellence' },
+  'Loss Prevention & QA': { vi: 'Kiểm Soát Thất Thoát & QA', en: 'Loss Prevention & QA' },
+  'Finance & Accounting': { vi: 'Tài Chính & Kế Toán Quản Trị', en: 'Finance & Accounting' },
+  'Corporate Governance': { vi: 'Quản Trị Doanh Nghiệp & Tuân Thủ', en: 'Corporate Governance' },
+};
+
+export const STATUS_TRANSLATIONS = {
+  COMPLETED: { vi: 'Đã Hoàn Thành', en: 'Completed' },
+  IN_PROGRESS: { vi: 'Đang Học', en: 'In Progress' },
+  NOT_STARTED: { vi: 'Chưa Bắt Đầu', en: 'Not Started' },
+  OVERDUE: { vi: 'Quá Hạn', en: 'Overdue' },
+  FAILED: { vi: 'Cần Thi Lại', en: 'Needs Retake' },
+  PUBLISHED: { vi: 'Đã Xuất Bản', en: 'Published' },
+  DRAFT: { vi: 'Bản Thảo', en: 'Draft' },
+  ARCHIVED: { vi: 'Lưu Trữ', en: 'Archived' },
+};
+
+export const DELIVERY_TRANSLATIONS = {
+  ONLINE_ELEARNING: { vi: 'Trực Tuyến E-learning', en: 'Online E-learning' },
+  IN_PERSON_CLASSROOM: { vi: 'Đào Tạo Trực Tiếp (ILT)', en: 'In-Person Workshop (ILT)' },
+  CLASSROOM_LAB: { vi: 'Thực Hành Xưởng (ILT)', en: 'Classroom Lab (ILT)' },
+  SCORM_PACKAGE: { vi: 'Gói Chuẩn SCORM', en: 'SCORM Package' },
+  VIDEO: { vi: 'Video Tương Tác', en: 'Interactive Video' },
+  PPT: { vi: 'Slide Bài Giảng PPT', en: 'Interactive PPT' },
+  EXTERNAL_PLATFORM: { vi: 'Nền Tảng Liên Kết', en: 'External Platform' },
+};
+
+export function translateDomain(domain, lang = 'vi') {
+  if (!domain) return '';
+  const match = DOMAIN_TRANSLATIONS[domain];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return domain;
+}
+
+export function translateStatus(status, lang = 'vi') {
+  if (!status) return '';
+  const match = STATUS_TRANSLATIONS[status];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return status;
+}
+
+export function translateDelivery(delivery, lang = 'vi') {
+  if (!delivery) return '';
+  const match = DELIVERY_TRANSLATIONS[delivery];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return delivery;
+}
+
+/**
+ * Trả về thông tin hiển thị đã được bản địa hóa cho một đối tượng Course
+ */
+export function getLocalizedCourse(course, lang = 'vi') {
+  if (!course) return null;
+  return {
+    ...course,
+    displayTitle: lang === 'vi' ? (course.titleVi || course.title) : (course.titleEn || course.title),
+    displayCategory: translateDomain(course.category || course.domain, lang),
+    displayDomain: translateDomain(course.domain || course.category, lang),
+    displayDescription: lang === 'vi' ? (course.descriptionVi || course.description) : (course.descriptionEn || course.description),
+    displayFormat: translateDelivery(course.format || course.modality, lang),
+  };
 }
