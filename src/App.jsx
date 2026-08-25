@@ -7,6 +7,7 @@ import TalentProfileModal from './components/TalentProfileModal';
 import PostTrainingSurveyModal from './components/PostTrainingSurveyModal';
 import ManagerNominateModal from './components/ManagerNominateModal';
 import { CourseStoreProvider, useCourseStore } from './state/CourseStore';
+import { normalizeRole, ROLE_HOME } from './data/roles';
 import LoginPage from './pages/auth/LoginPage';
 
 import LearnerDashboard from './pages/learner/LearnerDashboard';
@@ -35,6 +36,9 @@ import AdminConfig from './pages/admin/AdminConfig';
 import AdminReports from './pages/admin/AdminReports';
 import AdminTrainingOps from './pages/admin/AdminTrainingOps';
 import TrainerHub from './pages/trainer/TrainerHub';
+import MyLearning from './pages/shared/MyLearning';
+import MyCertificates from './pages/shared/MyCertificates';
+import ManagerApprovals from './pages/manager/ManagerApprovals';
 import HrbpDashboard from './pages/hrbp/HrbpDashboard';
 import UserAdminPortal from './pages/useradmin/UserAdminPortal';
 import SysAdminPortal from './pages/sysadmin/SysAdminPortal';
@@ -49,27 +53,45 @@ const PAGE_META = {
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
 
-  '/trainer': { title: 'Trainer Command & In-Person Faculty Portal', crumb: 'Faculty & Instructor (L&OD)' },
+  '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
+  '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
+  '/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Cấp quản lý' },
 
-  '/hrbp': { title: 'HRBP Strategic Talent & Regional Workforce Portal', crumb: 'HR Business Partner (HRD)' },
+  '/trainer': { title: 'Lớp Giảng Dạy & Mã Live QR Điểm Danh', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/attendance': { title: 'Quản Lý Điểm Danh Học Viên Theo Lớp', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/feedback': { title: 'Báo Cáo Đánh Giá CSAT Từ Học Viên', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/courses': { title: 'Tạo & Quản Lý Khóa Học (SCORM, ILT, Lab)', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/training-ops': { title: 'Lịch Giảng Dạy, Xưởng Thực Hành & Phòng Lab', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/dashboard': { title: 'Bảng Điều Khiển L&D & Trợ Lý AI Chiến Lược', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/reports': { title: 'Kirkpatrick ROI, Heatmap & Ngân Sách Đào Tạo', crumb: 'Trainer / L&D (Level 3)' },
 
-  '/user-admin': { title: 'User Administration & Dual-Branch Org Structure', crumb: 'User Administrator (HR Ops)' },
+  '/hrbp': { title: 'Ma Trận Khoảng Cách Năng Lực (Skill Gap Matrix)', crumb: 'HRBP (Level 2)' },
+  '/hrbp/succession': { title: 'Lộ Trình Kế Nhiệm 70-20-10 & Thánh Gióng Pipeline', crumb: 'HRBP (Level 2)' },
+  '/hrbp/compliance': { title: 'Báo Cáo Tuân Thủ Đào Tạo Theo Vùng & Siêu Thị', crumb: 'HRBP (Level 2)' },
 
-  '/sysadmin': { title: 'IT Security, HRIS Integration & Infrastructure Command', crumb: 'System Administrator (IT)' },
+  '/user-admin': { title: 'Quản Trị Danh Mục 100+ Nhân Sự (Employee Master)', crumb: 'User Admin (Level 2)' },
+  '/user-admin/hierarchy': { title: 'Cây Cơ Cấu Tổ Chức 2 Nhánh (Dual-Branch Org Tree)', crumb: 'User Admin (Level 2)' },
+  '/user-admin/job-levels': { title: 'Khung 7 Cấp Bậc Định Biên (Level 7 → Level 1)', crumb: 'User Admin (Level 2)' },
+  '/user-admin/allocation': { title: 'Phân Bổ Khóa Học Cho Khối / Phòng Ban', crumb: 'User Admin (Level 2)' },
+  '/user-admin/trainers': { title: 'Phân Công Giảng Viên Đứng Lớp Tại Chi Nhánh', crumb: 'User Admin (Level 2)' },
 
-  '/manager': { title: 'Team Operations Command Dashboard', crumb: 'Line Manager & HRBP' },
-  '/manager/team': { title: 'Direct Reports, Skill Gaps & Level 3 Review', crumb: 'Line Manager & HRBP' },
-  '/manager/approvals': { title: 'Course Approvals & Training Budget Sign-off', crumb: 'Line Manager & HRBP' },
-  '/manager/courses': { title: 'Department Mandatory Training Curriculum', crumb: 'Line Manager & HRBP' },
-  '/manager/reports': { title: 'Associate Progress & Compliance Reports', crumb: 'Line Manager & HRBP' },
-  '/manager/learning': { title: 'Manager Personal Curriculum', crumb: 'Line Manager & HRBP' },
-  '/manager/certificates': { title: 'Leadership Credentials & Badges', crumb: 'Line Manager & HRBP' },
+  '/sysadmin': { title: 'Hạ Tầng IT & API Pipeline Đồng Bộ SAP HRIS', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/audit': { title: 'Nhật Ký Bảo Mật & Giám Sát Phiên (ISO 27001)', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/policies': { title: 'Chính Sách Chống Gian Lận & Watermark', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/roles': { title: 'Quản Trị Toàn Bộ 6 Role & Ma Trận Phân Quyền', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/org-config': { title: 'Cấu Hình Cây Tổ Chức & Đồng Bộ HRIS', crumb: 'System Admin IT (Level 1)' },
 
-  '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Admin (Level 1)' },
-  '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Admin (Level 1)' },
-  '/admin/training-ops': { title: 'Faculty Command, Store Labs & Calendar', crumb: 'L&D Admin (Level 1)' },
-  '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'L&D Admin (Level 1)' },
-  '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Admin (Level 1)' },
+  '/manager': { title: 'Bảng Điều Khiển Vận Hành Đội Ngũ', crumb: 'Manager (Level 4)' },
+  '/manager/team': { title: 'Nhân Viên Trực Thuộc & Khoảng Cách Năng Lực', crumb: 'Manager (Level 4)' },
+  '/manager/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Manager (Level 4)' },
+  '/manager/courses': { title: 'Chương Trình Bắt Buộc Của Phòng Ban', crumb: 'Manager (Level 4)' },
+  '/manager/reports': { title: 'Tiến Độ Học Viên & Báo Cáo Tuân Thủ', crumb: 'Manager (Level 4)' },
+
+  '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
+  '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
+  '/admin/training-ops': { title: 'Faculty Command, Store Labs & Calendar', crumb: 'L&D Faculty' },
+  '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
+  '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
 };
 
 class ErrorBoundary extends React.Component {
@@ -121,7 +143,8 @@ class ErrorBoundary extends React.Component {
 function Shell({ role, setRole }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const safeRole = role || 'learner';
+  const safeRole = normalizeRole(role);
+  const roleHome = ROLE_HOME[safeRole] || '/learner';
   const meta = PAGE_META[location.pathname] || { title: 'MM MegaLearn Platform', crumb: safeRole.charAt(0).toUpperCase() + safeRole.slice(1) };
 
   return (
@@ -150,9 +173,20 @@ function Shell({ role, setRole }) {
               <Route path="/learner/certificates" element={<LearnerCertificates />} />
               <Route path="/learner/history" element={<LearnerHistory />} />
 
+              {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
+              <Route path="/my-learning" element={<MyLearning />} />
+              <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
+              <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
+              <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
+              <Route path="/my-certificates" element={<MyCertificates />} />
+
+              {/* Phê duyệt học vượt cấp: mọi role từ Manager trở lên */}
+              <Route path="/approvals" element={<ManagerApprovals />} />
+
               {/* Manager Routes */}
               <Route path="/manager" element={<ManagerDashboard />} />
               <Route path="/manager/team" element={<ManagerTeam />} />
+              <Route path="/manager/approvals" element={<ManagerApprovals />} />
               <Route path="/manager/courses" element={<ManagerCourses />} />
               <Route path="/manager/reports" element={<ManagerReports />} />
               <Route path="/manager/learning" element={<ManagerLearning />} />
@@ -162,18 +196,37 @@ function Shell({ role, setRole }) {
               <Route path="/manager/certificates" element={<ManagerCertificates />} />
 
               {/* HRBP Routes */}
-              <Route path="/hrbp" element={<HrbpDashboard />} />
+              <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />
+              <Route path="/hrbp/succession" element={<HrbpDashboard initialTab="SUCCESSION" />} />
+              <Route path="/hrbp/compliance" element={<HrbpDashboard initialTab="COMPLIANCE" />} />
 
               {/* User Admin Routes */}
-              <Route path="/user-admin" element={<UserAdminPortal />} />
+              <Route path="/user-admin" element={<UserAdminPortal initialTab="DIRECTORY" />} />
+              <Route path="/user-admin/hierarchy" element={<UserAdminPortal initialTab="HIERARCHY" />} />
+              <Route path="/user-admin/job-levels" element={<UserAdminPortal initialTab="JOB_LEVELS" />} />
+              <Route path="/user-admin/allocation" element={<UserAdminPortal initialTab="ALLOCATION" />} />
+              <Route path="/user-admin/trainers" element={<UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />} />
 
               {/* System Admin (IT) Routes */}
-              <Route path="/sysadmin" element={<SysAdminPortal />} />
+              <Route path="/sysadmin" element={<SysAdminPortal initialTab="HRIS" />} />
+              <Route path="/sysadmin/audit" element={<SysAdminPortal initialTab="AUDIT_LOGS" />} />
+              <Route path="/sysadmin/policies" element={<SysAdminPortal initialTab="POLICIES" />} />
+              <Route path="/sysadmin/roles" element={<SysAdminPortal initialTab="ROLE_GOVERNANCE" />} />
+              <Route path="/sysadmin/org-config" element={<AdminConfig />} />
 
-              {/* Trainer Routes */}
-              <Route path="/trainer" element={<TrainerHub />} />
+              {/* Trainer / L&D Routes */}
+              <Route path="/trainer" element={<TrainerHub initialTab="CLASSES" />} />
+              <Route path="/trainer/attendance" element={<TrainerHub initialTab="ATTENDANCE" />} />
+              <Route path="/trainer/feedback" element={<TrainerHub initialTab="FEEDBACK" />} />
+              <Route path="/trainer/labs" element={<TrainerHub initialTab="LABS" />} />
+              <Route path="/trainer/courses" element={<AdminCourses />} />
+              <Route path="/trainer/courses/new" element={<AdminCourseBuilder />} />
+              <Route path="/trainer/courses/:courseId" element={<AdminCourseBuilder />} />
+              <Route path="/trainer/training-ops" element={<AdminTrainingOps />} />
+              <Route path="/trainer/dashboard" element={<AdminDashboard />} />
+              <Route path="/trainer/reports" element={<AdminReports />} />
 
-              {/* Admin Routes */}
+              {/* Đường dẫn /admin/* của bản cũ (role `admin` nay là `trainer`) */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/courses" element={<AdminCourses />} />
               <Route path="/admin/courses/new" element={<AdminCourseBuilder />} />
@@ -182,7 +235,7 @@ function Shell({ role, setRole }) {
               <Route path="/admin/config" element={<AdminConfig />} />
               <Route path="/admin/reports" element={<AdminReports />} />
 
-              <Route path="*" element={<Navigate to="/learner" replace />} />
+              <Route path="*" element={<Navigate to={roleHome} replace />} />
             </Routes>
           </div>
         </div>
@@ -201,13 +254,13 @@ function Shell({ role, setRole }) {
 
 function AppRoutes() {
   const { isAuthenticated, currentUser } = useCourseStore();
-  const [role, setRole] = useState(() => currentUser?.role || 'learner');
+  const [role, setRole] = useState(() => normalizeRole(currentUser?.role));
   const location = useLocation();
 
   // Sync role with active user
   useEffect(() => {
     if (currentUser?.role) {
-      setRole(currentUser.role);
+      setRole(normalizeRole(currentUser.role));
     }
   }, [currentUser]);
 
@@ -220,10 +273,9 @@ function AppRoutes() {
     );
   }
 
-  // If authenticated and on /login, redirect to role home
+  // If authenticated and on /login, redirect to the home page of that role
   if (location.pathname === '/login') {
-    const targetPath = currentUser?.role === 'admin' ? '/admin' : currentUser?.role === 'manager' ? '/manager' : '/learner';
-    return <Navigate to={targetPath} replace />;
+    return <Navigate to={ROLE_HOME[normalizeRole(currentUser?.role)] || '/learner'} replace />;
   }
 
   return <Shell role={role} setRole={setRole} />;

@@ -8,6 +8,7 @@ import {
   jobLevels,
   courses,
 } from '../../data/mockData';
+import { ROLE_DEFINITIONS, managedScopeLabel } from '../../data/roles';
 import { ASSIGNMENT_TYPES, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import OrgHierarchyBrowser from '../../components/OrgHierarchyBrowser';
 import { Button, Badge, Tabs } from '../../components/ui';
@@ -137,17 +138,16 @@ export default function AdminConfig() {
     },
   });
 
-  // 5. RBAC Permission Matrix State
+  // 5. Ma trận RBAC — trục là ROLE (6 vai trò), không phải cấp bậc định biên.
+  // Cấp bậc (Level 7 -> 1) quyết định học viên được học khóa nào; role quyết định
+  // họ được thao tác gì trên hệ thống. Hai trục này độc lập với nhau.
   const [rbacMatrix, setRbacMatrix] = useState({
-    '1': { viewReports: true, createCourses: true, approveCourses: true, issueCertificates: true, manageSettings: true, exportAudit: true },
-    '2': { viewReports: true, createCourses: true, approveCourses: true, issueCertificates: true, manageSettings: false, exportAudit: true },
-    '3': { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: true, manageSettings: false, exportAudit: true },
-    '4': { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: false, manageSettings: false, exportAudit: false },
-    '5': { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: false, manageSettings: false, exportAudit: false },
-    '6': { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
-    '7': { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
-    'CL': { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
-    'IN': { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
+    learner: { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
+    manager: { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: false, manageSettings: false, exportAudit: false },
+    trainer: { viewReports: true, createCourses: true, approveCourses: true, issueCertificates: true, manageSettings: false, exportAudit: false },
+    hrbp: { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: true, manageSettings: false, exportAudit: true },
+    useradmin: { viewReports: true, createCourses: true, approveCourses: true, issueCertificates: true, manageSettings: true, exportAudit: true },
+    sysadmin: { viewReports: true, createCourses: true, approveCourses: true, issueCertificates: true, manageSettings: true, exportAudit: true },
   });
 
   // 6. Branding & Certificate
@@ -995,13 +995,18 @@ export default function AdminConfig() {
       {/* ========================================================================= */}
       {activeTab === 'rbac' && (
         <>
-          <div className="section-label">Enterprise Role-Based Access Control (RBAC) Matrix across 9 Job Levels</div>
+          <div className="section-label">Ma Trận Phân Quyền RBAC Theo 6 Vai Trò Hệ Thống</div>
+          <div className="card card-pad" style={{ marginBottom: 14, fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+            Phân quyền thao tác bám theo <strong>vai trò hệ thống</strong> (Learner → System Admin IT), độc lập với{' '}
+            <strong>cấp bậc định biên</strong> (Level 7 thấp nhất → Level 1 cao nhất). Cấp bậc chỉ quyết định học viên được
+            học khóa nào theo quy tắc học vượt cấp tuần tự.
+          </div>
           <div className="card" style={{ marginBottom: 28, overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 90 }}>Job Level</th>
-                  <th>Corporate Title &amp; Scope</th>
+                  <th style={{ width: 90 }}>Rank</th>
+                  <th>Vai Trò Hệ Thống &amp; Phạm Vi Quản Lý</th>
                   <th style={{ textAlign: 'center', width: 110 }}>View Reports</th>
                   <th style={{ textAlign: 'center', width: 110 }}>Author Courses</th>
                   <th style={{ textAlign: 'center', width: 120 }}>Approve Requests</th>
@@ -1011,35 +1016,27 @@ export default function AdminConfig() {
                 </tr>
               </thead>
               <tbody>
-                {jobLevels.map((lvl) => {
-                  const perms = rbacMatrix[lvl.level] || {};
+                {ROLE_DEFINITIONS.map((def) => {
+                  const perms = rbacMatrix[def.id] || {};
                   return (
-                    <tr key={lvl.level}>
+                    <tr key={def.id}>
                       <td>
-                        <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>Level {lvl.level}</strong>
+                        <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{def.rank}/6</strong>
                       </td>
                       <td>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>{lvl.title}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Authority: {lvl.authority}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>{def.labelVi}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Quản lý: {managedScopeLabel(def.id)}</div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.viewReports} onChange={() => handleToggleRbac(lvl.level, 'viewReports')} style={{ width: 16, height: 16 }} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.createCourses} onChange={() => handleToggleRbac(lvl.level, 'createCourses')} style={{ width: 16, height: 16 }} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.approveCourses} onChange={() => handleToggleRbac(lvl.level, 'approveCourses')} style={{ width: 16, height: 16 }} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.issueCertificates} onChange={() => handleToggleRbac(lvl.level, 'issueCertificates')} style={{ width: 16, height: 16 }} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.manageSettings} onChange={() => handleToggleRbac(lvl.level, 'manageSettings')} style={{ width: 16, height: 16 }} />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={perms.exportAudit} onChange={() => handleToggleRbac(lvl.level, 'exportAudit')} style={{ width: 16, height: 16 }} />
-                      </td>
+                      {['viewReports', 'createCourses', 'approveCourses', 'issueCertificates', 'manageSettings', 'exportAudit'].map((key) => (
+                        <td key={key} style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(perms[key])}
+                            onChange={() => handleToggleRbac(def.id, key)}
+                            style={{ width: 16, height: 16 }}
+                          />
+                        </td>
+                      ))}
                     </tr>
                   );
                 })}

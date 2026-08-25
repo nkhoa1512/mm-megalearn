@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../state/CourseStore';
-import { notifications, adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, managerUser, currentUser } from '../data/mockData';
+import { notifications, personaForRole, currentUser } from '../data/mockData';
+import { normalizeRole, roleDefinition, ROLE_HOME, ROLE_ORDER } from '../data/roles';
+import { levelShortLabel, levelDefinition } from '../data/levelSystem';
 import { Button, Badge } from './ui';
 
 export default function Topbar({ role, onRoleChange, onToggleSidebar, title, crumb }) {
@@ -11,7 +13,8 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [inbox, setInbox] = useState(notifications.learnerInbox);
 
-  const profile = authUser || adminUser;
+  const profile = authUser || currentUser;
+  const rolePersonaList = ROLE_ORDER.map((r) => personaForRole(r));
   const unreadCount = inbox.filter((n) => n.unread).length;
 
   const profileRef = useRef(null);
@@ -28,40 +31,18 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
   }, []);
 
   function handleRoleChange(e) {
-    const nextRole = e.target.value;
+    const nextRole = normalizeRole(e.target.value);
     onRoleChange(nextRole);
-    // Switch to the dedicated demo persona for each enterprise role
-    if (nextRole === 'admin') {
-      switchUser(adminUser.userId);
-      navigate('/admin');
-    } else if (nextRole === 'sysadmin') {
-      switchUser(sysAdminUser.userId);
-      navigate('/sysadmin');
-    } else if (nextRole === 'useradmin') {
-      switchUser(userAdminUser.userId);
-      navigate('/user-admin');
-    } else if (nextRole === 'trainer') {
-      switchUser(trainerUser.userId);
-      navigate('/trainer');
-    } else if (nextRole === 'hrbp') {
-      switchUser(hrbpUser.userId);
-      navigate('/hrbp');
-    } else if (nextRole === 'manager') {
-      switchUser(managerUser.userId);
-      navigate('/manager');
-    } else {
-      switchUser(currentUser.userId);
-      navigate('/learner');
-    }
+    switchUser(personaForRole(nextRole).userId);
+    navigate(ROLE_HOME[nextRole] || '/learner');
   }
 
   function handleSwitchPersona(user) {
+    const nextRole = normalizeRole(user.role);
     switchUser(user.userId);
-    onRoleChange(user.role);
+    onRoleChange(nextRole);
     setShowProfileMenu(false);
-    if (user.role === 'admin') navigate('/admin');
-    else if (user.role === 'manager') navigate('/manager');
-    else navigate('/learner');
+    navigate(ROLE_HOME[nextRole] || '/learner');
   }
 
   function handleLogout() {
@@ -261,8 +242,8 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
               <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: 12, marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                   <div style={{ fontWeight: 800, fontSize: 14 }}>{profile.fullName}</div>
-                  <Badge tone={profile.role === 'admin' ? 'ai' : profile.role === 'manager' ? 'amber' : 'sage'}>
-                    Level {profile.level}
+                  <Badge tone={roleDefinition(profile.role).tone}>
+                    {levelShortLabel(profile.level)}
                   </Badge>
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
@@ -300,10 +281,10 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
               {/* Quick Persona Switcher */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-faint)', marginBottom: 6 }}>
-                  Switch Demo Persona:
+                  Đổi nhanh 6 Persona (thấp → cao):
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 150, overflowY: 'auto' }}>
-                  {demoUsers.slice(0, 10).map((u) => (
+                  {rolePersonaList.map((u) => (
                     <button
                       key={u.userId}
                       onClick={() => handleSwitchPersona(u)}
@@ -325,7 +306,7 @@ export default function Topbar({ role, onRoleChange, onToggleSidebar, title, cru
                       <div>
                         <div style={{ fontWeight: u.userId === profile.userId ? 700 : 500 }}>{u.fullName}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>
-                          Lvl {u.level} &middot; {u.storeName ? u.storeName.split(' ')[0] + ' ' + u.storeName.split(' ')[1] : u.divisionCode}
+                          {roleDefinition(u.role).shortVi} &middot; {levelShortLabel(u.level)}
                         </div>
                       </div>
                       {u.userId === profile.userId && <i className="ti ti-check" style={{ color: 'var(--rail)' }} />}

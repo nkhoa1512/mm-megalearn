@@ -1,13 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   sysAdminUser,
   hrisSyncLogs,
   securityComplianceConfig,
+  allUsers,
+  personaForRole,
 } from '../../data/mockData';
-import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
+import { Badge, Button, Modal, ProgressBar, JobLevelBadge } from '../../components/ui';
+import { ROLE_DEFINITIONS, roleDefinition, normalizeRole, managedScopeLabel, capabilitiesOf } from '../../data/roles';
+import { normalizeLevel } from '../../data/levelSystem';
 
-export default function SysAdminPortal() {
-  const [activeTab, setActiveTab] = useState('HRIS'); // HRIS, AUDIT_LOGS, POLICIES
+// Các năng lực hiển thị trên ma trận phân quyền theo role.
+const CAPABILITY_ROWS = [
+  { key: 'canLearn', label: 'Học khóa học (cổng Learner cá nhân)' },
+  { key: 'canRequestLevelSkip', label: 'Gửi đơn xin học vượt cấp' },
+  { key: 'canApproveLevelSkip', label: 'Phê duyệt học vượt cấp cho cấp dưới' },
+  { key: 'canTeach', label: 'Đứng lớp & chiếu Live QR điểm danh' },
+  { key: 'canAuthorCourses', label: 'Tạo & biên soạn khóa học' },
+  { key: 'canAssignTrainers', label: 'Phân công Giảng viên vào lớp' },
+  { key: 'canViewOrgProgress', label: 'Theo dõi tiến độ học toàn tổ chức' },
+  { key: 'canManageUsers', label: 'Quản trị hồ sơ nhân sự (master data)' },
+  { key: 'canConfigureSystem', label: 'Cấu hình hệ thống (HRIS / SSO / bảo mật)' },
+  { key: 'canViewAuditLogs', label: 'Xem nhật ký bảo mật & audit log' },
+  { key: 'canDevelopPlatform', label: 'Sửa code, schema & hạ tầng nền tảng' },
+];
+
+export default function SysAdminPortal({ initialTab = 'HRIS' }) {
+  // HRIS | AUDIT_LOGS | POLICIES | ROLE_GOVERNANCE
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
 
@@ -73,6 +94,7 @@ export default function SysAdminPortal() {
           { id: 'HRIS', label: 'Tích Hợp & Đồng Bộ Dữ Liệu HRIS (API Pipeline)', icon: 'ti-refresh', count: 'Active' },
           { id: 'AUDIT_LOGS', label: 'Nhật Ký Bảo Mật & Giám Sát Phiên (Security Audit Logs)', icon: 'ti-shield-check', count: '100% Secure' },
           { id: 'POLICIES', label: 'Chính Sách Bảo Mật & Chống Gian Lận (Security Policies)', icon: 'ti-lock-access', count: 'Standard' },
+          { id: 'ROLE_GOVERNANCE', label: 'Quản Trị Toàn Bộ 6 Role & Ma Trận Phân Quyền', icon: 'ti-users-group', count: '6 Role' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -269,6 +291,155 @@ export default function SysAdminPortal() {
               <Button variant="primary" icon="ti-device-floppy" onClick={handleSavePolicy}>
                 Lưu Cấu Hình Bảo Mật
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: QUẢN TRỊ TOÀN BỘ 6 ROLE & MA TRẬN PHÂN QUYỀN */}
+      {activeTab === 'ROLE_GOVERNANCE' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)', borderColor: '#FCA5A5' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#991B1B' }}>
+              System Admin (IT) — Quyền Cao Nhất Toàn Hệ Thống
+            </div>
+            <p style={{ fontSize: 12.5, color: '#7F1D1D', margin: '4px 0 0' }}>
+              System Admin quản lý được <strong>tất cả 5 role còn lại, kể cả User Admin</strong>. Điểm khác biệt duy nhất so với
+              User Admin là quyền <strong>can thiệp code, schema và hạ tầng nền tảng</strong> — User Admin chỉ quản trị nghiệp vụ nhân sự và khóa học.
+            </p>
+          </div>
+
+          {/* Chuỗi phân cấp 6 role */}
+          <div className="card card-pad">
+            <div className="section-label">Chuỗi Phân Cấp 6 Role (thấp → cao)</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'stretch' }}>
+              {ROLE_DEFINITIONS.map((def, idx) => {
+                const persona = personaForRole(def.id);
+                return (
+                  <React.Fragment key={def.id}>
+                    {idx > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', color: 'var(--ink-faint)' }}>
+                        <i className="ti ti-chevron-right" />
+                      </div>
+                    )}
+                    <div
+                      className="card card-pad"
+                      style={{ flex: '1 1 190px', minWidth: 190, background: `var(--${def.tone}-soft)`, borderColor: 'transparent' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <i className={`ti ${def.icon}`} />
+                        <strong style={{ fontSize: 12.5 }}>{def.rank}. {def.shortVi}</strong>
+                      </div>
+                      <div style={{ fontSize: 11.5, marginBottom: 6 }}>{persona.fullName}</div>
+                      <JobLevelBadge level={persona.level} compact />
+                      <div style={{ fontSize: 11, marginTop: 8, lineHeight: 1.45 }}>{def.summaryVi}</div>
+                      <div style={{ fontSize: 10.5, marginTop: 8, opacity: 0.85 }}>
+                        <strong>Quản lý:</strong> {managedScopeLabel(def.id)}
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ma trận năng lực theo role */}
+          <div className="card" style={{ overflowX: 'auto' }}>
+            <div className="card-pad" style={{ paddingBottom: 0 }}>
+              <div className="section-label">Ma Trận Phân Quyền Theo Role (không theo cấp bậc)</div>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 280 }}>Năng lực hệ thống</th>
+                  {ROLE_DEFINITIONS.map((def) => (
+                    <th key={def.id} style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {def.rank}. {def.shortVi}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {CAPABILITY_ROWS.map((row) => (
+                  <tr key={row.key}>
+                    <td style={{ fontWeight: 600, fontSize: 12.5 }}>{row.label}</td>
+                    {ROLE_DEFINITIONS.map((def) => {
+                      const has = capabilitiesOf(def.id).includes(row.key);
+                      return (
+                        <td key={def.id} style={{ textAlign: 'center' }}>
+                          {has
+                            ? <i className="ti ti-circle-check" style={{ color: 'var(--sage)', fontSize: 17 }} />
+                            : <span style={{ color: 'var(--ink-faint)' }}>—</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phân bổ tài khoản theo role */}
+          <div className="card" style={{ overflowX: 'auto' }}>
+            <div className="card-pad" style={{ paddingBottom: 0 }}>
+              <div className="section-label">Phân Bổ Tài Khoản Theo Role & Cấp Bậc</div>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Persona Đại Diện</th>
+                  <th>Cấp Bậc Mặc Định</th>
+                  <th>Số Tài Khoản</th>
+                  <th>Phạm Vi Quản Lý</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ROLE_DEFINITIONS.map((def) => {
+                  const users = allUsers().filter((u) => normalizeRole(u.role) === def.id);
+                  const persona = personaForRole(def.id);
+                  return (
+                    <tr key={def.id}>
+                      <td>
+                        <Badge tone={def.tone}>{def.rank}. {def.labelVi}</Badge>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{persona.fullName}</div>
+                        <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--ink-faint)' }}>{persona.userId}</div>
+                      </td>
+                      <td><JobLevelBadge level={def.defaultLevel} /></td>
+                      <td><Badge tone="blue">{users.length} tài khoản</Badge></td>
+                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{managedScopeLabel(def.id)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Hành động chỉ dành cho System Admin */}
+          <div className="card card-pad">
+            <div className="section-label">Hành Động Chỉ System Admin (IT) Được Phép</div>
+            <div className="grid grid-2" style={{ gap: 12 }}>
+              {[
+                { icon: 'ti-code', title: 'Thêm Function & Sửa Schema Nền Tảng', desc: 'Triển khai module mới, thay đổi cấu trúc dữ liệu và migration.' },
+                { icon: 'ti-plug-connected', title: 'Cấu Hình SAP HRIS REST API & SSO', desc: 'Khóa API, endpoint đồng bộ, chứng chỉ SAML/OIDC.' },
+                { icon: 'ti-server-bolt', title: 'Quản Trị Hạ Tầng & Sao Lưu', desc: 'Máy chủ, CDN, lịch backup và khôi phục thảm họa.' },
+                { icon: 'ti-shield-lock', title: 'Chính Sách Bảo Mật ISO 27001', desc: 'Watermark, chống gian lận, audit log bất biến.' },
+              ].map((item) => (
+                <div key={item.title} className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'start' }}>
+                    <i className={`ti ${item.icon}`} style={{ fontSize: 20, color: 'var(--rust)' }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{item.title}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>{item.desc}</div>
+                      <div style={{ fontSize: 11, color: 'var(--rust)', marginTop: 6, fontWeight: 600 }}>
+                        User Admin bị chặn thao tác này
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

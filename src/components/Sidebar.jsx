@@ -1,73 +1,113 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useCourseStore } from '../state/CourseStore';
-import { currentUser, managerUser, adminUser, sysAdminUser, userAdminUser, trainerUser, hrbpUser, orgPathLabel } from '../data/mockData';
+import { personaForRole, orgPathLabel } from '../data/mockData';
+import { normalizeRole, roleDefinition, managedScopeLabel, hasCapability } from '../data/roles';
+import { levelShortLabel } from '../data/levelSystem';
 
-const PROFILE_BY_ROLE = {
-  learner: currentUser,
-  manager: managerUser,
-  admin: adminUser,
-  hrbp: hrbpUser,
-  trainer: trainerUser,
-  sysadmin: sysAdminUser,
-  useradmin: userAdminUser,
-};
+// Nhóm "Học tập của tôi" — giống hệt nhau cho cả 6 role, vì role nào cũng là Learner.
+const LEARNER_SELF_NAV = [
+  { to: '/my-learning', label: 'Khóa Học Của Tôi', icon: 'ti-book-2' },
+  { to: '/my-certificates', label: 'Chứng Chỉ Của Tôi', icon: 'ti-certificate' },
+];
 
-const NAV_BY_ROLE = {
+// Nhóm "Công việc của <role>" — đặc thù từng role.
+const ROLE_WORK_NAV = {
   learner: [
-    { to: '/learner', label: 'Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/learner/courses', label: 'My Courses', icon: 'ti-book-2' },
-    { to: '/learner/classrooms', label: 'Classrooms & QR Check-in', icon: 'ti-chalkboard' },
-    { to: '/learner/paths', label: 'Learning Paths & 70/20/10', icon: 'ti-git-branch' },
+    { to: '/learner', label: 'Bảng Điều Khiển Học Tập', icon: 'ti-layout-dashboard', end: true },
+    { to: '/learner/courses', label: 'Khóa Học Của Tôi', icon: 'ti-book-2' },
+    { to: '/learner/classrooms', label: 'Lớp Trực Tiếp & QR Check-in', icon: 'ti-chalkboard' },
+    { to: '/learner/paths', label: 'Lộ Trình Nghề Nghiệp 70/20/10', icon: 'ti-git-branch' },
     { to: '/learner/ai-hub', label: 'AI Learning Hub', icon: 'ti-sparkles', badge: 'AI' },
-    { to: '/learner/certificates', label: 'Certificates', icon: 'ti-certificate' },
-    { to: '/learner/history', label: 'Learning History', icon: 'ti-history' },
+    { to: '/learner/certificates', label: 'Chứng Chỉ', icon: 'ti-certificate' },
+    { to: '/learner/history', label: 'Lịch Sử Học Tập', icon: 'ti-history' },
   ],
   manager: [
-    { to: '/manager', label: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/team', label: 'Direct Reports & Skill Gaps', icon: 'ti-users' },
-    { to: '/manager/courses', label: 'Team Courses', icon: 'ti-stack-2' },
-    { to: '/manager/reports', label: 'Reports & Compliance', icon: 'ti-chart-bar' },
-    { to: '/manager/learning', label: 'My Learning', icon: 'ti-book-2' },
-    { to: '/manager/certificates', label: 'My Certificates', icon: 'ti-certificate' },
-  ],
-  hrbp: [
-    { to: '/hrbp', label: 'HRBP Talent & Workforce Hub', icon: 'ti-users', end: true },
+    { to: '/manager', label: 'Bảng Điều Khiển Đội Ngũ', icon: 'ti-layout-dashboard', end: true },
+    { to: '/manager/team', label: 'Nhân Viên & Khoảng Cách Năng Lực', icon: 'ti-users' },
+    { to: '/manager/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
+    { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', icon: 'ti-stack-2' },
+    { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', icon: 'ti-chart-bar' },
   ],
   trainer: [
     { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', icon: 'ti-school', end: true },
+    { to: '/trainer/attendance', label: 'Quản Lý Điểm Danh Học Viên', icon: 'ti-user-check' },
+    { to: '/trainer/feedback', label: 'Báo Cáo CSAT Từ Học Viên', icon: 'ti-star' },
+    { to: '/trainer/courses', label: 'Tạo & Quản Lý Khóa Học', icon: 'ti-stack-2' },
+    { to: '/trainer/training-ops', label: 'Lịch Giảng & Xưởng Thực Hành', icon: 'ti-building' },
+    { to: '/trainer/reports', label: 'Báo Cáo ROI & Kirkpatrick', icon: 'ti-chart-histogram' },
+    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
-  admin: [
-    { to: '/admin', label: 'Executive Dashboard & AI', icon: 'ti-layout-dashboard', end: true },
-    { to: '/admin/courses', label: 'Course Catalog & Builder', icon: 'ti-stack-2' },
-    { to: '/admin/training-ops', label: 'Training Ops, Trainers & Labs', icon: 'ti-school' },
-    { to: '/admin/reports', label: 'Strategic ROI & Audit Center', icon: 'ti-chart-histogram' },
-    { to: '/admin/config', label: 'HRIS & MMVN Dual Hierarchy', icon: 'ti-settings' },
-  ],
-  sysadmin: [
-    { to: '/sysadmin', label: 'Hạ Tầng IT & Nhật Ký Bảo Mật', icon: 'ti-shield-lock', end: true },
+  hrbp: [
+    { to: '/hrbp', label: 'Ma Trận Khoảng Cách Năng Lực', icon: 'ti-chart-radar', end: true },
+    { to: '/hrbp/succession', label: 'Lộ Trình Kế Nhiệm 70-20-10', icon: 'ti-git-branch' },
+    { to: '/hrbp/compliance', label: 'Báo Cáo Tuân Thủ Theo Vùng', icon: 'ti-shield-check' },
+    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
   useradmin: [
-    { to: '/user-admin', label: 'Quản Trị Nhân Sự & Cây Tổ Chức', icon: 'ti-users-group', end: true },
+    { to: '/user-admin', label: 'Danh Mục 100+ Nhân Sự', icon: 'ti-address-book', end: true },
+    { to: '/user-admin/hierarchy', label: 'Cây Cơ Cấu Tổ Chức 2 Nhánh', icon: 'ti-binary-tree' },
+    { to: '/user-admin/job-levels', label: 'Khung 7 Cấp Bậc Định Biên', icon: 'ti-id-badge-2' },
+    { to: '/user-admin/allocation', label: 'Phân Bổ Khóa Học', icon: 'ti-stack-2' },
+    { to: '/user-admin/trainers', label: 'Phân Công Giảng Viên Đứng Lớp', icon: 'ti-school' },
+    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
-};
-
-const ROLE_META = {
-  learner: { label: 'Employee / Learner (Store & HO)', icon: 'ti-user', tone: 'rail' },
-  manager: { label: 'Line Manager (Operations / Dept)', icon: 'ti-briefcase', tone: 'amber' },
-  hrbp: { label: 'Đối tác Nhân sự (HRBP Strategic Partner)', icon: 'ti-users', tone: 'blue' },
-  trainer: { label: 'Giảng viên Đứng lớp (Trainer / Faculty)', icon: 'ti-school', tone: 'blue' },
-  admin: { label: 'L&D Administrator', icon: 'ti-shield-lock', tone: 'sage' },
-  sysadmin: { label: 'Quản trị Kỹ thuật (IT System Admin)', icon: 'ti-lock', tone: 'rust' },
-  useradmin: { label: 'Quản trị Nhân sự (User Admin - HR Ops)', icon: 'ti-users-group', tone: 'blue' },
+  sysadmin: [
+    { to: '/sysadmin', label: 'Hạ Tầng IT & API Pipeline', icon: 'ti-server-cog', end: true },
+    { to: '/sysadmin/audit', label: 'Nhật Ký Bảo Mật (Audit Logs)', icon: 'ti-shield-check' },
+    { to: '/sysadmin/policies', label: 'Chính Sách Chống Gian Lận', icon: 'ti-lock-access' },
+    { to: '/sysadmin/roles', label: 'Quản Trị Toàn Bộ 6 Role', icon: 'ti-users-group' },
+    { to: '/sysadmin/org-config', label: 'Cấu Hình HRIS & Cây Tổ Chức', icon: 'ti-settings' },
+    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', icon: 'ti-clipboard-check', approvalBadge: true },
+  ],
 };
 
 export default function Sidebar({ role, collapsed }) {
-  const { currentUser: authUser } = useCourseStore();
-  const effectiveRole = NAV_BY_ROLE[role] ? role : 'learner';
-  const items = NAV_BY_ROLE[effectiveRole] || NAV_BY_ROLE.learner;
-  const meta = ROLE_META[effectiveRole] || ROLE_META.learner;
-  const profile = (authUser && authUser.role === effectiveRole) ? authUser : (PROFILE_BY_ROLE[effectiveRole] || currentUser);
+  const { currentUser: authUser, approvals } = useCourseStore();
+  const effectiveRole = normalizeRole(role);
+  const def = roleDefinition(effectiveRole);
+  const workItems = ROLE_WORK_NAV[effectiveRole] || ROLE_WORK_NAV.learner;
+
+  // Learner đã có "Khóa học của tôi" ngay trong nhóm công việc của mình.
+  const selfItems = effectiveRole === 'learner' ? [] : LEARNER_SELF_NAV;
+
+  const profile =
+    authUser && normalizeRole(authUser.role) === effectiveRole ? authUser : personaForRole(effectiveRole);
+
+  const pendingApprovalCount = hasCapability(effectiveRole, 'canApproveLevelSkip')
+    ? (approvals || []).filter((a) => a.status === 'PENDING').length
+    : 0;
+
+  function renderItem(item) {
+    const badge = item.approvalBadge
+      ? (pendingApprovalCount > 0 ? String(pendingApprovalCount) : null)
+      : item.badge;
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+      >
+        <i className={`ti ${item.icon}`} aria-hidden="true" />
+        <span style={{ flex: 1 }}>{item.label}</span>
+        {badge && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '1px 6px',
+              borderRadius: 10,
+              background: badge === 'AI' ? 'var(--ai-gradient)' : 'var(--amber)',
+              color: '#fff',
+            }}
+          >
+            {badge}
+          </span>
+        )}
+      </NavLink>
+    );
+  }
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -101,56 +141,40 @@ export default function Sidebar({ role, collapsed }) {
       <div
         className="role-pill"
         style={{
-          background: `var(--${meta.tone}-soft)`,
-          color: `var(--${meta.tone}-soft-text)`,
+          background: `var(--${def.tone}-soft)`,
+          color: `var(--${def.tone}-soft-text)`,
         }}
+        title={`Role ${def.rank}/6 · Quản lý: ${managedScopeLabel(effectiveRole)}`}
       >
-        <i className={`ti ${meta.icon}`} aria-hidden="true" />
+        <i className={`ti ${def.icon}`} aria-hidden="true" />
         <div>
-          <div className="role-pill-label">Viewing as</div>
-          <div className="role-pill-value">{meta.label}</div>
+          <div className="role-pill-label">Đang truy cập với vai trò {def.rank}/6</div>
+          <div className="role-pill-value">{def.labelVi}</div>
         </div>
       </div>
+
       {profile && (
-        <div className="org-pill" title="Your Business Unit / Division / Department / Store">
+        <div className="org-pill" title="Cấp bậc định biên & đơn vị công tác">
           <i className="ti ti-sitemap" aria-hidden="true" />
           <div>
             <div className="role-pill-label">{profile.fullName}</div>
-            <div className="org-pill-value">
-              {profile.storeName ? `${profile.storeName} (${profile.branchName ? 'Ops' : 'HO'})` : `MMVN · ${orgPathLabel(profile)}`}
+            <div className="org-pill-value">{levelShortLabel(profile.level)}</div>
+            <div className="org-pill-value" style={{ opacity: 0.85 }}>
+              {profile.storeName ? `${profile.storeName}` : `MMVN · ${orgPathLabel(profile)}`}
             </div>
           </div>
         </div>
       )}
 
-      <div className="nav-group-label">Navigate</div>
-      <nav>
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <i className={`ti ${item.icon}`} aria-hidden="true" />
-            <span style={{ flex: 1 }}>{item.label}</span>
-            {item.badge && (
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '1px 6px',
-                  borderRadius: 10,
-                  background: item.badge === 'AI' ? 'var(--ai-gradient)' : 'var(--amber)',
-                  color: '#fff',
-                }}
-              >
-                {item.badge}
-              </span>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+      <div className="nav-group-label">Công việc của {def.shortVi}</div>
+      <nav>{workItems.map(renderItem)}</nav>
+
+      {selfItems.length > 0 && (
+        <>
+          <div className="nav-group-label" style={{ marginTop: 14 }}>Học tập của tôi</div>
+          <nav>{selfItems.map(renderItem)}</nav>
+        </>
+      )}
 
       <div className="sidebar-foot">
         MM Mega Market &middot; LMS 2026 Production Standard

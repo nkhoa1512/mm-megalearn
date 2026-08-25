@@ -1,6 +1,7 @@
 import React from 'react';
 import { getTeamMembersForManager, managerUser as defaultManager } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
+import { canManage } from '../../data/roles';
 import { Badge, BarChart, CourseTypeBadge } from '../../components/ui';
 
 function groupByCourse(members) {
@@ -24,7 +25,7 @@ function groupByCourse(members) {
 
 export default function ManagerCourses() {
   const { currentUser: authUser } = useCourseStore();
-  const activeManager = authUser?.role === 'manager' || authUser?.role === 'admin' ? authUser : defaultManager;
+  const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
   const teamMembers = getTeamMembersForManager(activeManager);
   const groups = groupByCourse(teamMembers);
 

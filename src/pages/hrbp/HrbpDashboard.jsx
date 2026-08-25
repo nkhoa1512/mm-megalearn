@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   hrbpUser,
   retailStores,
@@ -8,9 +8,11 @@ import {
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 
-export default function HrbpDashboard() {
+export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   const { courses } = useCourseStore();
-  const [activeTab, setActiveTab] = useState('SKILL_GAP'); // SKILL_GAP, SUCCESSION, COMPLIANCE
+  // SKILL_GAP | SUCCESSION | COMPLIANCE — chọn qua điều hướng sidebar
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [selectedStore, setSelectedStore] = useState('ALL');
 
   // Modal States

@@ -4,6 +4,8 @@
 // 2. Operations (Areas -> Store Types -> Clusters -> Stores -> Depts -> Positions)
 // ===========================================================================
 
+import { LEVEL_DEFINITIONS } from './levelSystem';
+
 export const businessUnits = [
   { id: 'bu-mmvn', code: 'MMVN', name: 'MM Mega Market Vietnam (Retail & Wholesale)' },
 ];
@@ -183,16 +185,74 @@ export const departments = [
   { id: 'dept-tu', divisionId: 'div-tu', code: 'TU', name: 'Trade Union & Labor Relations' },
 ];
 
-export const jobLevels = [
-  { level: '1', code: 'LVL-1', title: 'Head of Division (Director) / Board of Management (BOM)', authority: 'SUPREME_ADMIN' },
-  { level: '2', code: 'LVL-2', title: 'Head of Department / Store General Manager (SGM)', authority: 'DIVISION_LEAD' },
-  { level: '3', code: 'LVL-3', title: 'Senior Manager / Deputy SGM', authority: 'SENIOR_MANAGER' },
-  { level: '4', code: 'LVL-4', title: 'Line Manager / Store Department Manager', authority: 'LINE_MANAGER' },
-  { level: '5', code: 'LVL-5', title: 'Section Supervisor / Shift Leader / Specialist', authority: 'SUPERVISOR' },
-  { level: '6', code: 'LVL-6', title: 'Senior Associate / Specialist / Store Executive', authority: 'LEARNER' },
-  { level: '7', code: 'LVL-7', title: 'Junior Associate / Store Counter Staff', authority: 'LEARNER' },
-  { level: 'CL', code: 'LVL-CL', title: 'Casual Labor / Seasonal Associate', authority: 'LEARNER' },
-  { level: 'IN', code: 'LVL-IN', title: 'Internship / Management Trainee', authority: 'LEARNER' },
+// ---------------------------------------------------------------------------
+// Khung 7 Cấp Bậc Định Biên (thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất)
+// Nguồn chân lý duy nhất là `LEVEL_DEFINITIONS` trong ./levelSystem.js; bảng dưới
+// đây chỉ bổ sung phần mô tả nghiệp vụ HR (authority, typicalRoles, headcount).
+// ---------------------------------------------------------------------------
+
+const LEVEL_HR_META = {
+  '1': {
+    authority: 'SUPREME_EXECUTIVE',
+    typicalRoles: ['sysadmin'],
+    descVi: 'Ban điều hành / Giám đốc toàn quyền: hoạch định chiến lược tập đoàn, quản trị rủi ro & khủng hoảng toàn quốc.',
+    headcount: 2,
+  },
+  '2': {
+    authority: 'DIVISION_LEAD',
+    typicalRoles: ['hrbp', 'useradmin'],
+    descVi: 'Giám đốc siêu thị (SGM) / Trưởng khối: chịu trách nhiệm P&L siêu thị, ngân sách và quy hoạch nhân tài kế nhiệm.',
+    headcount: 4,
+  },
+  '3': {
+    authority: 'SENIOR_MANAGER',
+    typicalRoles: ['trainer'],
+    descVi: 'Trưởng ngành hàng / Master Trainer L&D: quản trị chi phí ngành hàng, đàm phán nhà cung cấp, đứng lớp đào tạo.',
+    headcount: 8,
+  },
+  '4': {
+    authority: 'LINE_MANAGER',
+    typicalRoles: ['manager'],
+    descVi: 'Trưởng bộ phận siêu thị (Line Manager): quản lý nhân sự phòng ban, phân ca, kèm cặp 1-on-1 và duyệt học vượt cấp.',
+    headcount: 14,
+  },
+  '5': {
+    authority: 'SUPERVISOR',
+    typicalRoles: ['manager', 'learner'],
+    descVi: 'Giám sát ca / Trưởng nhóm: kiểm soát tuân thủ SOP trong ca, kiểm kê thất thoát, an toàn xe nâng.',
+    headcount: 17,
+  },
+  '6': {
+    authority: 'PROFESSIONAL',
+    typicalRoles: ['learner'],
+    descVi: 'Chuyên viên vận hành chính thức: HACCP chuyên sâu, bảo quản hàng tươi sống, vận hành thiết bị chuyên dụng.',
+    headcount: 25,
+  },
+  '7': {
+    authority: 'ENTRY',
+    typicalRoles: ['learner'],
+    descVi: 'Nhân viên tuyến đầu / mới vào: nhập môn văn hóa, vệ sinh cơ bản, PCCC cơ bản và thao tác quầy.',
+    headcount: 30,
+  },
+};
+
+export const jobLevels = LEVEL_DEFINITIONS.map((def) => ({
+  level: def.level,
+  rank: Number(def.level),
+  code: `LVL-${def.level}`,
+  emoji: def.emoji,
+  title: def.titleEn,
+  viTitle: def.titleVi,
+  shortVi: def.shortVi,
+  band: def.band,
+  colors: def.colors,
+  ...LEVEL_HR_META[def.level],
+}));
+
+// Các mã cấp bậc cũ của HRIS (Casual Labor / Internship) quy về Level 7 để không vỡ dữ liệu.
+export const legacyLevelAliases = [
+  { legacy: 'CL', mapsTo: '7', title: 'Casual Labor / Seasonal Associate' },
+  { legacy: 'IN', mapsTo: '7', title: 'Internship / Management Trainee' },
 ];
 
 // ---------------------------------------------------------------------------

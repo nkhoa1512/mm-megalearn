@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTeamMembersForManager, managerUser as defaultManager, notifications } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
+import { canManage } from '../../data/roles';
 import { Badge, Button, StatCard, StatusStackedBar, Modal } from '../../components/ui';
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
   const { approvals, currentUser: authUser } = useCourseStore();
-  const activeManager = authUser?.role === 'manager' || authUser?.role === 'admin' ? authUser : defaultManager;
+  const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
   const teamMembers = getTeamMembersForManager(activeManager);
 
   const [remindTarget, setRemindTarget] = useState(null);

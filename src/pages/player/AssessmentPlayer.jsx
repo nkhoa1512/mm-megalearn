@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyAssessmentAttempt, drawAssessmentQuestions, getCourseAccessControl, currentUser } from '../../data/mockData';
-import { Badge, Button } from '../../components/ui';
+import { applyAssessmentAttempt, drawAssessmentQuestions, currentUser } from '../../data/mockData';
+import { Badge, Button, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
 function requiredLessonsOf(course) {
@@ -25,9 +25,12 @@ function isAnswerCorrect(question, selectedIds) {
 export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, updateCourse, currentUser: authUser } = useCourseStore();
+  const { courses, saveCourseProgress, currentUser: authUser, accessFor, myEnrollments } = useCourseStore();
   const user = authUser || currentUser;
-  const course = courses.find((c) => c.id === courseId);
+  const rawCourse = courses.find((c) => c.id === courseId);
+  const course = rawCourse
+    ? { ...rawCourse, enrollment: myEnrollments[rawCourse.id] || rawCourse.enrollment }
+    : null;
 
   const [phase, setPhase] = useState('start');
   const [questions, setQuestions] = useState([]);
@@ -36,28 +39,9 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const [result, setResult] = useState(null);
   const submittedRef = useRef(false);
 
-  if (!course || !course.enrollment || !course.configuration.assessmentEnabled) {
-    return (
-      <div className="empty-state">
-        <i className="ti ti-mood-empty" aria-hidden="true" />
-        <p>Assessment not found.</p>
-        <Link to={basePath}>Back to my courses</Link>
-      </div>
-    );
-  }
+  const access = accessFor(course, user);
 
-  const access = getCourseAccessControl(course, user);
-  if (access.isLocked) {
-    return (
-      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 500 }}>
-        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học dành riêng cho Cấp Quản lý</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
-        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
-      </div>
-    );
-  }
-
+  // Toàn bộ hook phải chạy trước mọi nhánh return sớm (rules of hooks).
   useEffect(() => {
     if (phase !== 'in-progress' || secondsLeft <= 0) return;
     const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
@@ -70,6 +54,22 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft, phase]);
+
+  if (access.isLevelLocked) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
+        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học chưa mở theo quy tắc cấp bậc tuần tự</h2>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '10px 0' }}>
+          <JobLevelBadge level={access.userLevel} />
+          <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
+          <JobLevelBadge level={access.courseLevel} />
+        </div>
+        <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
+      </div>
+    );
+  }
 
   if (!course || !course.enrollment || !course.configuration.assessmentEnabled) {
     return (
@@ -123,7 +123,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     const answeredCount = questions.filter((q) => (answers[q.id] || []).length > 0).length;
 
     const updated = applyAssessmentAttempt(course, { score, passed, answered: answeredCount });
-    updateCourse(course.id, updated);
+    saveCourseProgress(course.id, updated);
     setResult({ score, passed, updatedCourse: updated, isFinalAttempt: attempts.length + 1 >= cfg.maxAttempts });
     setPhase('result');
   }

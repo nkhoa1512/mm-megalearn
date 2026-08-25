@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyLessonProgress, getCourseAccessControl, currentUser } from '../../data/mockData';
-import { Badge, Button, ProgressBar } from '../../components/ui';
+import { applyLessonProgress, currentUser } from '../../data/mockData';
+import { Badge, Button, ProgressBar, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
 function flattenLessons(course) {
@@ -40,16 +40,20 @@ function lessonTypeLabel(t) {
 export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const { courses, updateCourse, openSurveyModal, currentUser: authUser } = useCourseStore();
+  const { courses, saveCourseProgress, openSurveyModal, currentUser: authUser, accessFor, myEnrollments } = useCourseStore();
   const user = authUser || currentUser;
-  const course = courses.find((c) => c.id === courseId);
+  const rawCourse = courses.find((c) => c.id === courseId);
+  // Ghi danh nằm ở ma trận HRIS + overlay của store, không nằm trong object khóa học.
+  const course = rawCourse
+    ? { ...rawCourse, enrollment: myEnrollments[rawCourse.id] || rawCourse.enrollment }
+    : null;
   const lesson = course?.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
 
   const flat = useMemo(() => (course ? flattenLessons(course) : []), [course]);
   const currentIndex = flat.findIndex((l) => l.id === lessonId);
   const nextLesson = currentIndex >= 0 ? flat[currentIndex + 1] : null;
 
-  if (!course || !course.enrollment || !lesson) {
+  if (!course || !lesson) {
     return (
       <div className="empty-state">
         <i className="ti ti-mood-empty" aria-hidden="true" />
@@ -59,12 +63,19 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
     );
   }
 
-  const access = getCourseAccessControl(course, user);
-  if (access.isLocked) {
+  // Quy tắc cấp bậc được kiểm tra trước cả trạng thái ghi danh: học viên vào
+  // thẳng bằng URL một khóa vượt cấp phải thấy đúng lý do bị chặn.
+  const access = accessFor(course, user);
+  if (access.isLevelLocked) {
     return (
-      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 500 }}>
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
         <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học dành riêng cho Cấp Quản lý</h2>
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học chưa mở theo quy tắc cấp bậc tuần tự</h2>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '10px 0' }}>
+          <JobLevelBadge level={access.userLevel} />
+          <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
+          <JobLevelBadge level={access.courseLevel} />
+        </div>
         <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
         <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
       </div>
@@ -73,7 +84,7 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
 
   function complete(extra) {
     const updated = applyLessonProgress(course, lesson.id, { status: 'COMPLETED', progressPercent: 100, ...extra });
-    updateCourse(course.id, updated);
+    saveCourseProgress(course.id, updated, user);
   }
 
   const isComplete = lesson.status === 'COMPLETED';

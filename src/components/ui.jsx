@@ -1,5 +1,47 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { levelDefinition, ACCESS_STATE } from '../data/levelSystem';
+
+/**
+ * Huy hiệu cấp bậc trên thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất.
+ * Màu đậm dần khi lên cấp cao (Level 1 đỏ đô, Level 7 xám nhạt).
+ */
+export function JobLevelBadge({ level, title, compact = false }) {
+  const def = levelDefinition(level);
+  return (
+    <span
+      title={title || def.titleVi}
+      style={{
+        background: def.colors.bg,
+        color: def.colors.text,
+        border: `1px solid ${def.colors.border}`,
+        padding: '2px 8px',
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 800,
+        whiteSpace: 'nowrap',
+        display: 'inline-block',
+      }}
+    >
+      {def.emoji} Level {def.level}{compact ? '' : `: ${def.shortVi}`}
+    </span>
+  );
+}
+
+/** Nhãn trạng thái mở khóa của một khóa học theo quy tắc học vượt cấp tuần tự. */
+export function LevelAccessBadge({ access }) {
+  if (!access) return null;
+  const map = {
+    [ACCESS_STATE.OPEN]: { tone: 'sage', icon: 'ti-lock-open', label: 'Mở — đúng cấp bậc' },
+    [ACCESS_STATE.APPROVED]: { tone: 'sage', icon: 'ti-circle-check', label: 'Đã duyệt học vượt cấp' },
+    [ACCESS_STATE.PENDING_APPROVAL]: { tone: 'amber', icon: 'ti-clock', label: 'Chờ Quản lý duyệt' },
+    [ACCESS_STATE.REJECTED]: { tone: 'rust', icon: 'ti-x', label: 'Đơn bị từ chối' },
+    [ACCESS_STATE.REQUESTABLE]: { tone: 'blue', icon: 'ti-lock', label: 'Cần xin phê duyệt' },
+    [ACCESS_STATE.LOCKED_LEVEL_GAP]: { tone: 'rust', icon: 'ti-ban', label: 'Chặn nhảy cóc' },
+  };
+  const cfg = map[access.state] || map[ACCESS_STATE.OPEN];
+  return <Badge tone={cfg.tone} icon={cfg.icon}>{cfg.label}</Badge>;
+}
 
 export function Badge({ tone = 'slate', children, icon, size }) {
   return (
@@ -63,7 +105,7 @@ export function StatCard({ label, value, tone, icon, trend, sublabel }) {
   );
 }
 
-export function Button({ children, variant = 'default', size, icon, onClick, block, type = 'button', disabled = false, className = '' }) {
+export function Button({ children, variant = 'default', size, icon, onClick, block, type = 'button', disabled = false, className = '', title }) {
   const cls = ['btn'];
   if (variant === 'primary') cls.push('btn-primary');
   if (variant === 'ghost') cls.push('btn-ghost');
@@ -76,7 +118,7 @@ export function Button({ children, variant = 'default', size, icon, onClick, blo
   if (block) cls.push('btn-block');
   if (className) cls.push(className);
   return (
-    <button type={type} className={cls.join(' ')} onClick={onClick} disabled={disabled}>
+    <button type={type} className={cls.join(' ')} onClick={onClick} disabled={disabled} title={title}>
       {icon && <i className={`ti ${icon}`} aria-hidden="true" />}
       {children}
     </button>

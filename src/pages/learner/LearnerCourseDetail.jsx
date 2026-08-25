@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge } from '../../components/ui';
+import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 import { currentUser } from '../../data/mockData';
-import { JobLevelBadge } from './LearnerCourses';
+import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 
 function statusLabel(status) {
   switch (status) {
@@ -28,9 +28,17 @@ function formatDate(iso) {
 export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, currentUser: authUser, enrollCourse } = useCourseStore();
+  const { courses, currentUser: authUser, enrollCourse, accessFor, requestLevelAdvanceApproval, myEnrollments } = useCourseStore();
   const user = authUser || currentUser;
-  const course = courses.find((c) => c.id === courseId);
+  const rawCourse = courses.find((c) => c.id === courseId);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [justification, setJustification] = useState('');
+  const [notice, setNotice] = useState(null);
+
+  // Gộp ghi danh phát sinh trong phiên (ví dụ vừa được duyệt học vượt cấp).
+  const course = rawCourse
+    ? { ...rawCourse, enrollment: myEnrollments[rawCourse.id] || rawCourse.enrollment }
+    : null;
 
   const allRequiredLessons = useMemo(() => {
     if (!course || !course.modules) return [];
@@ -47,10 +55,11 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
     );
   }
 
-  // Check prerequisites
+  // Điều kiện tiên quyết được đối chiếu với ghi danh thật của học viên
+  // (ma trận HRIS + overlay), không phải field `enrollment` của object khóa học.
   const unmetPrerequisites = (course.prerequisites || []).filter((pid) => {
     const p = courses.find((c) => c.id === pid);
-    return !p || p.enrollment?.status !== 'COMPLETED';
+    return !p || myEnrollments[pid]?.status !== 'COMPLETED';
   });
   const isPrereqLocked = unmetPrerequisites.length > 0;
 
@@ -59,8 +68,19 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
     ? Math.round((completedRequired / allRequiredLessons.length) * 100)
     : 100;
   const cfg = course.configuration || {};
-  const assessmentUnlocked = !isPrereqLocked && completionPct >= 100 && cfg.assessmentEnabled;
-  const isHigherLevel = Number(course.targetLevel || 1) > Number(user.level || 1);
+  const access = accessFor(course, user);
+  const isLevelLocked = access.isLevelLocked;
+  const assessmentUnlocked = !isPrereqLocked && !isLevelLocked && completionPct >= 100 && cfg.assessmentEnabled;
+
+  function submitRequest() {
+    const result = requestLevelAdvanceApproval(course, justification, user);
+    setRequestOpen(false);
+    setNotice(
+      result.ok
+        ? 'Đã gửi đơn xin học vượt cấp tới Quản lý trực tiếp. Khóa học sẽ mở ngay khi được phê duyệt.'
+        : result.reason
+    );
+  }
 
   return (
     <>
@@ -80,34 +100,97 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         <CourseTypeBadge courseType={course.courseType} />
       </div>
 
-      {isPrereqLocked ? (
+      {notice && (
+        <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--sage)', background: '#F0FDF4', fontSize: 13, color: '#166534', fontWeight: 600 }}>
+          <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
+          {notice}
+        </div>
+      )}
+
+      {/* BẢNG SO SÁNH CẤP BẬC & QUYỀN TRUY CẬP */}
+      <div className="card card-pad" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Cấp bậc của bạn:</span>
+          <JobLevelBadge level={access.userLevel} />
+          <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Cấp bậc khóa học:</span>
+          <JobLevelBadge level={access.courseLevel} />
+        </div>
+        <LevelAccessBadge access={access} />
+      </div>
+
+      {isLevelLocked ? (
+        /* KHÓA BỞI QUY TẮC CẤP BẬC TUẦN TỰ */
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 20,
+            borderLeft: `4px solid ${access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? 'var(--rust)' : 'var(--blue)'}`,
+            background: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? '#FEF2F2' : '#EFF6FF',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+            <div style={{ maxWidth: 640 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? '#991B1B' : '#1E40AF', marginBottom: 4 }}>
+                {access.state === ACCESS_STATE.LOCKED_LEVEL_GAP
+                  ? '⛔ Bị Chặn Nhảy Cóc Cấp Bậc'
+                  : access.state === ACCESS_STATE.PENDING_APPROVAL
+                    ? '⏳ Đơn Học Vượt Cấp Đang Chờ Duyệt'
+                    : '🔒 Khóa Học Vượt 1 Cấp — Cần Phê Duyệt'}
+              </div>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>{access.reason}</p>
+
+              {access.state === ACCESS_STATE.LOCKED_LEVEL_GAP && access.blockedRoadmap?.length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Lộ trình bắt buộc phải đi qua:</span>
+                  {access.blockedRoadmap.map((lvl, idx) => (
+                    <React.Fragment key={lvl}>
+                      {idx > 0 && <i className="ti ti-arrow-right" style={{ fontSize: 11, color: 'var(--ink-faint)' }} />}
+                      <JobLevelBadge level={lvl} compact />
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {access.requiresApproval && (
+              <Button variant="primary" icon="ti-lock" onClick={() => setRequestOpen(true)}>
+                🔒 Xin Phê Duyệt Học Vượt Cấp
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : isPrereqLocked ? (
         /* PREREQUISITES LOCKED */
         <div className="card card-pad empty-state" style={{ marginBottom: 20 }}>
           <i className="ti ti-lock" aria-hidden="true" />
           <p>Khóa học này yêu cầu bạn phải hoàn thành trước: {unmetPrerequisites.map((pid) => courses.find((c) => c.id === pid)?.title).join(', ')}.</p>
         </div>
       ) : !course.enrollment ? (
-        /* NOT ENROLLED YET (CAN ENROLL SELF-PACED) */
-        <div className="card card-pad" style={{ background: isHigherLevel ? 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)' : '#EFF6FF', borderColor: isHigherLevel ? '#C084FC' : 'var(--blue)', marginBottom: 20 }}>
+        /* CHƯA GHI DANH — ĐƯỢC PHÉP HỌC NGAY */
+        <div
+          className="card card-pad"
+          style={{
+            background: access.state === ACCESS_STATE.APPROVED ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : '#EFF6FF',
+            borderColor: access.state === ACCESS_STATE.APPROVED ? 'var(--sage)' : 'var(--blue)',
+            marginBottom: 20,
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: isHigherLevel ? '#6B21A8' : '#1E40AF' }}>
-                {isHigherLevel ? `Khóa Học Nâng Cao (Chuẩn Bị Lộ Trình Thăng Tiến Level ${course.targetLevel})` : 'Khóa Học Tự Chọn Chưa Đăng Ký'}
+              <div style={{ fontSize: 15, fontWeight: 800, color: access.state === ACCESS_STATE.APPROVED ? '#166534' : '#1E40AF' }}>
+                {access.state === ACCESS_STATE.APPROVED
+                  ? `✅ Quản Lý Đã Duyệt Học Vượt Lên ${levelShortLabel(access.courseLevel)}`
+                  : 'Khóa Học Thuộc Cấp Bậc Của Bạn — Học Ngay Không Cần Duyệt'}
               </div>
-              <p style={{ fontSize: 12.5, color: isHigherLevel ? '#7E22CE' : '#1E3A8A', margin: '2px 0 0' }}>
-                {isHigherLevel
-                  ? `Khóa học này được thiết kế theo chuẩn định biên của ${course.targetLevelTitle}. Học viên cấp dưới có thể tự đăng ký học nâng cao kỹ năng.`
-                  : 'Khóa học này mở tự do cho nhân viên. Bấm nút bên phải để ghi danh và bắt đầu học ngay!'}
+              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+                {access.state === ACCESS_STATE.APPROVED
+                  ? 'Bạn đã được phê duyệt riêng cho khóa học này. Bấm để ghi danh và bắt đầu.'
+                  : 'Khóa học ở cấp bậc hiện tại hoặc thấp hơn của bạn nên mở tự do. Bấm để ghi danh và bắt đầu học.'}
               </p>
             </div>
-            <Button
-              variant="primary"
-              icon="ti-plus"
-              onClick={() => {
-                enrollCourse(course.id);
-              }}
-            >
-              {isHigherLevel ? 'Đăng Ký Học Nâng Cao' : 'Đăng Ký Học Ngay'}
+            <Button variant="primary" icon="ti-plus" onClick={() => enrollCourse(course.id, user)}>
+              {access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay' : 'Đăng Ký Học Ngay'}
             </Button>
           </div>
         </div>
@@ -142,8 +225,9 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         <div className="card-pad" style={{ paddingTop: 4 }}>
           <ModuleList
             modules={course.modules || []}
+            disabled={isLevelLocked}
             getLessonHref={(l) => {
-              if (isPrereqLocked) return null;
+              if (isPrereqLocked || isLevelLocked) return null;
               return l.lessonType === 'ASSESSMENT' ? null : `${basePath}/${course.id}/lessons/${l.id}`;
             }}
           />
@@ -171,11 +255,44 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                 Vào Làm Bài Thi
               </Button>
             ) : (
-              <Badge tone="slate" icon="ti-lock">Hoàn thành bài học để mở bài thi</Badge>
+              <Badge tone="slate" icon="ti-lock">
+                {isLevelLocked ? 'Khóa học chưa được mở theo cấp bậc' : 'Hoàn thành bài học để mở bài thi'}
+              </Badge>
             )}
           </div>
         </div>
       )}
+
+      {/* MODAL: GỬI ĐƠN XIN HỌC VƯỢT CẤP */}
+      <Modal
+        isOpen={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        title="Đơn Xin Phê Duyệt Học Vượt Cấp"
+        subtitle={`Xin học vượt từ ${levelShortLabel(access.userLevel)} lên ${levelShortLabel(access.courseLevel)} cho riêng khóa học này.`}
+        size="md"
+      >
+        <div>
+          <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 16 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 6 }}>{course.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Người duyệt: <strong>Quản lý trực tiếp ({user.managerId || 'Line Manager'})</strong> &middot; Khóa vượt đúng 1 cấp liền kề nên hợp lệ để xin.
+            </div>
+          </div>
+          <label className="field-label">Lý do xin học vượt cấp</label>
+          <textarea
+            className="field-input"
+            rows={4}
+            style={{ resize: 'vertical', marginBottom: 16 }}
+            placeholder="Nêu rõ lý do phát triển năng lực và mức độ sẵn sàng của bạn..."
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Button variant="ghost" onClick={() => setRequestOpen(false)}>Hủy</Button>
+            <Button variant="primary" icon="ti-send" onClick={submitRequest}>Gửi Đơn Cho Quản Lý</Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

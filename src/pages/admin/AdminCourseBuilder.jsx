@@ -5,7 +5,8 @@ import {
   trainersDirectory, meetingRoomsAndLabs,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
-import { Badge, Button, CourseTypeBadge } from '../../components/ui';
+import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../components/ui';
+import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
 
 const LESSON_ICON = {
@@ -565,6 +566,39 @@ export default function AdminCourseBuilder() {
           <div>
             <label className="field-label">Category</label>
             <input className="field-input" value={draft.category} onChange={(e) => patch({ category: e.target.value })} />
+          </div>
+        </div>
+        <div className="grid grid-2" style={{ marginBottom: 14 }}>
+          <div>
+            <label className="field-label">Cấp bậc mục tiêu (Target job level)</label>
+            <select
+              className="field-select"
+              value={normalizeLevel(draft.targetLevel)}
+              onChange={(e) => {
+                const targetLevel = e.target.value;
+                patch({
+                  targetLevel,
+                  targetLevelTitle: `Level ${targetLevel}: ${levelTitle(targetLevel)}`,
+                  assignment: draft.assignment ? { ...draft.assignment, targetLevel } : draft.assignment,
+                });
+              }}
+            >
+              {[...LEVEL_DEFINITIONS].reverse().map((def) => (
+                <option key={def.level} value={def.level}>
+                  {def.emoji} Level {def.level} — {def.shortVi}
+                </option>
+              ))}
+            </select>
+            <div className="field-hint">
+              Thang cấp bậc đảo ngược: <strong>Level 7 là thấp nhất</strong>, <strong>Level 1 là cao nhất</strong>. Học viên
+              thấp hơn đúng 1 cấp phải được Quản lý phê duyệt mới học được; thấp hơn từ 2 cấp trở lên sẽ bị chặn cứng.
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ background: 'var(--paper-sunken)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 6 }}>Xem trước huy hiệu cấp bậc trên danh mục:</div>
+              <JobLevelBadge level={draft.targetLevel} />
+            </div>
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>

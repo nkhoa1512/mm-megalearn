@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getTeamMembersForManager, managerUser as defaultManager, teamSkillGapMatrix } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
+import { canManage } from '../../data/roles';
 import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../components/ui';
 
 const STATUS_META = {
@@ -15,7 +16,7 @@ const FILTERS = ['All', 'Not Started', 'In Progress', 'Completed', 'Failed', 'Ov
 
 export default function ManagerTeam() {
   const { currentUser: authUser, openNominateModal, openSurveyModal, actionPlans, updateActionPlan } = useCourseStore();
-  const activeManager = authUser?.role === 'manager' || authUser?.role === 'admin' ? authUser : defaultManager;
+  const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
   const teamMembers = getTeamMembersForManager(activeManager);
 
   const [activeTab, setActiveTab] = useState('ROSTER'); // ROSTER, SKILL_GAP, ACTION_PLANS

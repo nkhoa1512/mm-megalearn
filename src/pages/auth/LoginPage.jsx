@@ -4,36 +4,36 @@ import { useCourseStore } from '../../state/CourseStore';
 import {
   demoUsers,
   allUsers,
-  adminUser,
-  sysAdminUser,
-  userAdminUser,
-  trainerUser,
-  hrbpUser,
-  managerUser,
+  personaForRole,
   currentUser,
   divisions,
   departments,
   jobLevels,
 } from '../../data/mockData';
+import { ROLE_ORDER, ROLE_HOME, normalizeRole, roleDefinition } from '../../data/roles';
+import { levelShortLabel } from '../../data/levelSystem';
 import { Badge, Button } from '../../components/ui';
 
+// Nhãn hiển thị của 6 role, xếp theo rank từ thấp lên cao.
+const ROLE_BADGE_EMOJI = {
+  learner: '👤',
+  manager: '💼',
+  trainer: '🎓',
+  hrbp: '📊',
+  useradmin: '👥',
+  sysadmin: '🔒',
+};
+
 function getRoleBadge(role) {
-  switch (role) {
-    case 'admin': return <Badge tone="ai">👑 L&amp;D Admin</Badge>;
-    case 'sysadmin': return <Badge tone="rust">🔒 Sys Admin</Badge>;
-    case 'useradmin': return <Badge tone="blue">👥 User Admin</Badge>;
-    case 'trainer': return <Badge tone="sage">🎓 Trainer</Badge>;
-    case 'hrbp': return <Badge tone="blue">📊 HRBP</Badge>;
-    case 'manager': return <Badge tone="amber">💼 Manager</Badge>;
-    default: return <Badge tone="rail">👤 Learner</Badge>;
-  }
+  const def = roleDefinition(role);
+  return <Badge tone={def.tone}>{ROLE_BADGE_EMOJI[def.id]} {def.shortVi}</Badge>;
 }
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useCourseStore();
-  const [selectedUser, setSelectedUser] = useState(adminUser);
-  const [employeeId, setEmployeeId] = useState(adminUser.employeeCode);
+  const [selectedUser, setSelectedUser] = useState(currentUser);
+  const [employeeId, setEmployeeId] = useState(currentUser.employeeCode);
   const [password, setPassword] = useState('••••••••');
   const [ssoLoading, setSsoLoading] = useState(false);
   const [allUsersSearch, setAllUsersSearch] = useState('');
@@ -42,15 +42,17 @@ export default function LoginPage() {
 
   const totalUserList = allUsers ? allUsers() : demoUsers;
 
-  const featuredUsers = [
-    { ...adminUser, roleBadge: '👑 L&D Admin (Director)', roleTone: 'ai' },
-    { ...userAdminUser, roleBadge: '👥 Quản Trị Nhân Sự (User Admin)', roleTone: 'blue' },
-    { ...sysAdminUser, roleBadge: '🔒 Quản Trị Kỹ Thuật (IT Admin)', roleTone: 'rust' },
-    { ...trainerUser, roleBadge: '🎓 Giảng Viên Đứng Lớp (Trainer)', roleTone: 'blue' },
-    { ...hrbpUser, roleBadge: '📊 Đối Tác Nhân Sự (HRBP)', roleTone: 'blue' },
-    { ...managerUser, roleBadge: '💼 Quản Lý Trực Tiếp (Manager)', roleTone: 'amber' },
-    { ...currentUser, roleBadge: '👤 Nhân Viên Tuyến Đầu (Learner)', roleTone: 'rail' },
-  ];
+  // 6 persona chuẩn, xếp đúng thứ tự phân cấp: Learner -> ... -> System Admin (IT).
+  const featuredUsers = ROLE_ORDER.map((roleId, idx) => {
+    const def = roleDefinition(roleId);
+    const user = personaForRole(roleId);
+    return {
+      ...user,
+      roleBadge: `${ROLE_BADGE_EMOJI[roleId]} ${idx + 1}. ${def.labelVi}`,
+      roleTone: def.tone,
+      roleSummary: def.summaryVi,
+    };
+  });
 
   const filteredAllUsers = totalUserList.filter((u) => {
     const matchDiv = divisionFilter === 'ALL' || u.divisionCode === divisionFilter;
@@ -73,13 +75,7 @@ export default function LoginPage() {
   function handleDirectLogin(userToLogin) {
     const target = userToLogin || selectedUser;
     login(target);
-    if (target.role === 'admin') navigate('/admin');
-    else if (target.role === 'useradmin') navigate('/user-admin');
-    else if (target.role === 'sysadmin') navigate('/sysadmin');
-    else if (target.role === 'trainer') navigate('/trainer');
-    else if (target.role === 'hrbp') navigate('/hrbp');
-    else if (target.role === 'manager') navigate('/manager');
-    else navigate('/learner');
+    navigate(ROLE_HOME[normalizeRole(target.role)] || '/learner');
   }
 
   function handleSsoLogin() {
@@ -166,7 +162,7 @@ export default function LoginPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-users" style={{ color: 'var(--rail)' }} />
-                  Featured Personas (Key Roles &amp; Levels)
+                  6 Persona Chuẩn Theo Thứ Tự Phân Cấp (Learner → System Admin IT)
                 </div>
                 <Button size="sm" variant="ai" icon="ti-search" onClick={() => setShowAllUsersModal(true)}>
                   Browse All 100 Users ({demoUsers.length})
@@ -197,11 +193,11 @@ export default function LoginPage() {
                       <div>
                         {/* Top role & level tag */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontSize: 10.5, fontWeight: 700, background: user.role === 'admin' || user.role === 'sysadmin' || user.role === 'useradmin' ? 'var(--ai-gradient)' : user.role === 'manager' ? '#FEF3C7' : 'var(--paper-sunken)', color: user.role === 'admin' || user.role === 'sysadmin' || user.role === 'useradmin' ? '#fff' : user.role === 'manager' ? '#92400E' : 'var(--ink)', padding: '2px 7px', borderRadius: 12 }}>
-                            {user.roleBadge || (user.role === 'admin' ? '👑 Admin / BOM' : user.role === 'manager' ? '💼 Line Manager' : '👤 Learner')}
+                          <span style={{ fontSize: 10.5, fontWeight: 700, background: `var(--${user.roleTone}-soft)`, color: `var(--${user.roleTone}-soft-text)`, padding: '2px 7px', borderRadius: 12 }}>
+                            {user.roleBadge}
                           </span>
-                          <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink-faint)' }}>
-                            Level {user.level}
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink-faint)' }}>
+                            {levelShortLabel(user.level)}
                           </span>
                         </div>
 
@@ -209,8 +205,11 @@ export default function LoginPage() {
                         <div style={{ fontWeight: 700, fontSize: 13.5, color: isSelected ? 'var(--rail-soft-text)' : 'var(--ink)', marginBottom: 2 }}>
                           {user.fullName}
                         </div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 6 }}>
+                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
                           {user.position}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6, lineHeight: 1.4 }}>
+                          {user.roleSummary}
                         </div>
 
                         {/* Org Dept Tag */}
@@ -442,7 +441,7 @@ export default function LoginPage() {
                         {getRoleBadge(u.role)}
                       </td>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        Lvl {u.level}
+                        {levelShortLabel(u.level)}
                       </td>
                       <td style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
                         <strong>{u.divisionCode}</strong> / {u.departmentCode}

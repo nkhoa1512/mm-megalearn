@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../../state/CourseStore';
+import { levelValue } from '../../data/levelSystem';
 import { currentUser as defaultUser } from '../../data/mockData';
 import { Badge, Button, Tabs } from '../../components/ui';
 
@@ -29,7 +30,8 @@ export default function AiLearningHub() {
   // Recommends courses created by Admin that the user has NOT completed yet
   const uncompletedCourses = allCourses.filter((c) => {
     const isCompleted = c.enrollment?.status === 'COMPLETED';
-    const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && Number(user.level) < 4;
+    // Thang cấp bậc đảo ngược: số càng nhỏ càng cao, nên Level > 4 nghĩa là dưới cấp Quản lý.
+    const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && levelValue(user.level) > 4;
     return !isCompleted && !isManagerCourse;
   });
 

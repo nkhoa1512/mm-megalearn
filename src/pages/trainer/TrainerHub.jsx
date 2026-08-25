@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   trainersDirectory,
   meetingRoomsAndLabs,
@@ -7,15 +7,17 @@ import {
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 
-export default function TrainerHub() {
+export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const { courses, currentUser: authUser } = useCourseStore();
-  const [activeTab, setActiveTab] = useState('CLASSES'); // CLASSES, FEEDBACK, LABS
+  // CLASSES | ATTENDANCE | FEEDBACK | LABS — chọn qua điều hướng sidebar
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED
 
   // Active Trainer profile selection (default to active trainer user or first in directory)
   const [selectedTrainerId, setSelectedTrainerId] = useState(
-    authUser?.userId === 'USR-TR-002' ? 'tr-03' :
-    authUser?.userId === 'USR-TR-003' ? 'tr-04' : 'tr-01'
+    authUser?.userId === 'USR-9005' ? 'tr-03' :
+    authUser?.userId === 'USR-9006' ? 'tr-04' : 'tr-01'
   );
 
   const trainerProfile = trainersDirectory.find((t) => t.id === selectedTrainerId) || trainersDirectory[0];
@@ -64,6 +66,42 @@ export default function TrainerHub() {
     if (statusFilter === 'COMPLETED') return cls.status === 'COMPLETED';
     return true;
   });
+
+  // Bảng điểm danh tổng hợp mọi lớp mà giảng viên phụ trách.
+  const attendanceRows = myTeachingClasses.flatMap((cls) =>
+    (cls.enrolledStudents || []).map((st) => ({
+      key: `${cls.id}::${st.id}`,
+      classId: cls.id,
+      classTitle: cls.title,
+      classDate: cls.date,
+      venue: cls.venue,
+      student: st,
+    }))
+  );
+  const totalRosterCount = attendanceRows.length;
+
+  // Ghi đè trạng thái điểm danh do giảng viên thao tác trong phiên.
+  const [attendanceOverrides, setAttendanceOverrides] = useState({});
+  const [attendanceClassFilter, setAttendanceClassFilter] = useState('ALL');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
+
+  function attendanceStateOf(row) {
+    return attendanceOverrides[row.key] || row.student.attendance || 'PENDING';
+  }
+
+  function setAttendanceState(row, next) {
+    setAttendanceOverrides((prev) => ({ ...prev, [row.key]: next }));
+  }
+
+  const visibleAttendanceRows = attendanceRows.filter((row) => {
+    const matchClass = attendanceClassFilter === 'ALL' || row.classId === attendanceClassFilter;
+    const q = attendanceSearch.trim().toLowerCase();
+    const matchSearch = !q || row.student.name.toLowerCase().includes(q) || row.student.id.toLowerCase().includes(q);
+    return matchClass && matchSearch;
+  });
+
+  const checkedInCount = visibleAttendanceRows.filter((r) => attendanceStateOf(r) === 'CONFIRMED').length;
+  const absentCount = visibleAttendanceRows.filter((r) => attendanceStateOf(r) === 'ABSENT').length;
 
   // Modal States
   const [liveQrClass, setLiveQrClass] = useState(null);
@@ -143,6 +181,7 @@ export default function TrainerHub() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
           { id: 'CLASSES', label: 'Lớp Học Tôi Phụ Trách Giảng Dạy', icon: 'ti-chalkboard', count: myTeachingClasses.length },
+          { id: 'ATTENDANCE', label: 'Quản Lý Điểm Danh Học Viên', icon: 'ti-user-check', count: totalRosterCount },
           { id: 'FEEDBACK', label: 'Đánh Giá & Phản Hồi CSAT Từ Học Viên', icon: 'ti-star', count: '4.9★' },
           { id: 'LABS', label: 'Danh Mục Xưởng Thực Hành Siêu Thị', icon: 'ti-building', count: meetingRoomsAndLabs.length },
         ].map((tab) => (
@@ -281,7 +320,101 @@ export default function TrainerHub() {
         </>
       )}
 
-      {/* TAB 2: CSAT FEEDBACK & RATINGS */}
+      {/* TAB 2: QUẢN LÝ ĐIỂM DANH HỌC VIÊN */}
+      {activeTab === 'ATTENDANCE' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                className="field-select"
+                style={{ minWidth: 300 }}
+                value={attendanceClassFilter}
+                onChange={(e) => setAttendanceClassFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả lớp tôi phụ trách ({myTeachingClasses.length})</option>
+                {myTeachingClasses.map((cls) => (
+                  <option key={cls.id} value={cls.id}>{cls.title} — {cls.date}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                className="field-input"
+                style={{ width: 260 }}
+                placeholder="Tìm học viên theo tên hoặc mã NV..."
+                value={attendanceSearch}
+                onChange={(e) => setAttendanceSearch(e.target.value)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <Badge tone="sage" icon="ti-user-check">Đã điểm danh: {checkedInCount}</Badge>
+              <Badge tone="amber" icon="ti-clock">Chờ: {visibleAttendanceRows.length - checkedInCount - absentCount}</Badge>
+              <Badge tone="rust" icon="ti-user-x">Vắng: {absentCount}</Badge>
+            </div>
+          </div>
+
+          <div className="card card-pad" style={{ background: '#EFF6FF', borderColor: 'var(--blue)', fontSize: 12.5, color: '#1E3A8A' }}>
+            <i className="ti ti-qrcode" style={{ marginRight: 6 }} />
+            Học viên quét mã <strong>Live QR</strong> chiếu trên máy chiếu sẽ tự chuyển sang trạng thái "Đã điểm danh".
+            Giảng viên có thể điểm danh thủ công tại đây cho trường hợp học viên không quét được mã.
+          </div>
+
+          <div className="card" style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Học Viên</th>
+                  <th>Chức Danh &amp; Chi Nhánh</th>
+                  <th>Lớp Thực Hành</th>
+                  <th>Ngày Học</th>
+                  <th>Trạng Thái Điểm Danh</th>
+                  <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleAttendanceRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--ink-soft)' }}>
+                      Không có học viên nào khớp bộ lọc.
+                    </td>
+                  </tr>
+                ) : visibleAttendanceRows.map((row) => {
+                  const state = attendanceStateOf(row);
+                  return (
+                    <tr key={row.key}>
+                      <td>
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>{row.student.name}</div>
+                        <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--ink-faint)' }}>{row.student.id}</div>
+                      </td>
+                      <td style={{ fontSize: 12 }}>
+                        <div>{row.student.position}</div>
+                        <div style={{ color: 'var(--ink-faint)', fontSize: 11 }}>{row.student.store}</div>
+                      </td>
+                      <td style={{ fontSize: 12.5, fontWeight: 600 }}>{row.classTitle}</td>
+                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{row.classDate}</td>
+                      <td>
+                        {state === 'CONFIRMED' ? <Badge tone="sage" icon="ti-user-check">Đã điểm danh</Badge>
+                          : state === 'ABSENT' ? <Badge tone="rust" icon="ti-user-x">Vắng mặt</Badge>
+                            : <Badge tone="amber" icon="ti-clock">Chờ quét QR</Badge>}
+                      </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <Button size="sm" variant={state === 'CONFIRMED' ? 'outline' : 'primary'} icon="ti-check"
+                          onClick={() => setAttendanceState(row, state === 'CONFIRMED' ? 'PENDING' : 'CONFIRMED')}>
+                          {state === 'CONFIRMED' ? 'Hủy điểm danh' : 'Điểm danh'}
+                        </Button>{' '}
+                        <Button size="sm" variant="ghost" icon="ti-user-x" onClick={() => setAttendanceState(row, 'ABSENT')}>
+                          Vắng
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: CSAT FEEDBACK & RATINGS */}
       {activeTab === 'FEEDBACK' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', borderColor: 'var(--amber)' }}>

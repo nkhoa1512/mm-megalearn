@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { courseHasParticipants } from '../../data/mockData';
 import { Badge, Button, CourseTypeBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
+import { hasCapability, normalizeRole } from '../../data/roles';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
@@ -25,7 +26,7 @@ const CATEGORIES = [
 export default function AdminCourses() {
   const navigate = useNavigate();
   const { courses, updateCourse, removeCourse, currentUser } = useCourseStore();
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = hasCapability(normalizeRole(currentUser?.role), 'canAuthorCourses');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');

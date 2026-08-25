@@ -15,6 +15,13 @@ import {
   storeDepartments,
   storeSections,
 } from './orgHierarchy';
+import {
+  checkCourseAccessRule,
+  levelGap,
+  levelShortLabel,
+  levelTitle,
+  levelValue,
+} from './levelSystem';
 
 // ---------------------------------------------------------------------------
 // 1. GENERATE 100 REALISTIC ENTERPRISE USERS (WITH FULL TALENT PROFILES)
@@ -61,8 +68,12 @@ const POSITIONS_BY_DEPT = {
   TU: ['Trade Union Committee Member', 'Employee Welfare Coordinator'],
 };
 
+// Mã nhân viên của 6 persona neo; dãy sinh tự động phải tránh trùng các mã này.
+const ANCHOR_EMP_NUMS = new Set([1, 245, 312, 1042, 1250, 2041]);
+
 export const generated100Users = Array.from({ length: 100 }, (_, i) => {
-  const empNum = 1001 + i;
+  const rawEmpNum = 1001 + i;
+  const empNum = ANCHOR_EMP_NUMS.has(rawEmpNum) ? rawEmpNum + 1000 : rawEmpNum;
   const userId = `USR-${empNum}`;
   const employeeCode = `MMVN-${empNum}`;
 
@@ -73,10 +84,10 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       employeeCode: 'MMVN-0001',
       fullName: 'Sarah Nguyen',
       email: 'sarah.nguyen@mmvietnam.com',
-      role: 'admin',
-      position: 'Head of Division - HR Director / BOM',
-      level: '1',
-      levelTitle: 'Head of Division - Director / BOM',
+      role: 'trainer',
+      position: 'Head of Division - HR Director & L&D Faculty Lead',
+      level: '2',
+      levelTitle: levelTitle('2'),
       branch: 'SUPPORTING',
       branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -114,7 +125,7 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       role: 'manager',
       position: 'Department Manager - Fresh Food & Bakery',
       level: '4',
-      levelTitle: 'Line Manager / Functional Expert',
+      levelTitle: levelTitle('4'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -155,7 +166,7 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       role: 'manager',
       position: 'Store Operations Supervisor & Frontline Lead',
       level: '5',
-      levelTitle: 'Leader / Supervisor / Specialist',
+      levelTitle: levelTitle('5'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -193,9 +204,9 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       fullName: 'Minh Tran',
       email: 'minh.tran@mmvietnam.com',
       role: 'learner',
-      position: 'Bakery Section Specialist',
-      level: '1',
-      levelTitle: 'Level 1 - Frontline Specialist',
+      position: 'Junior Bakery Associate (Nhân viên tuyến đầu quầy bánh)',
+      level: '7',
+      levelTitle: levelTitle('7'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -235,7 +246,7 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       role: 'learner',
       position: 'Logistics & Inbound DC Specialist',
       level: '6',
-      levelTitle: 'Executive / Specialist',
+      levelTitle: levelTitle('6'),
       branch: 'SUPPORTING',
       branchName: 'Khối Chức năng Hỗ trợ (Supply Chain DC)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -272,7 +283,7 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
       role: 'learner',
       position: 'Store Fresh Food Associate (New Joiner)',
       level: '7',
-      levelTitle: 'Junior Associate / New Joiner',
+      levelTitle: levelTitle('7'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -322,26 +333,34 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
   const fullName = `${lastName} ${firstName}`;
   const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@mmvietnam.com`;
 
-  // Determine Level & Role
+  // Determine Job Level (7 = thấp nhất, 1 = cao nhất) & System Role
   let level = '6';
   let role = 'learner';
-  let levelTitle = 'Executive';
   let managerId = 'USR-0245';
 
   if (i >= 6 && i <= 14) {
+    // Trưởng bộ phận & giám sát ca -> role Manager
     level = (i % 2 === 0) ? '4' : '5';
     role = 'manager';
-    levelTitle = (level === '4') ? 'Manager / Functional Expert' : 'Leader / Supervisor / Specialist';
+    managerId = 'USR-0001';
+  } else if (i >= 15 && i <= 18) {
+    // Trưởng ngành hàng kiêm Master Trainer -> role Trainer / L&D
+    level = '3';
+    role = 'trainer';
     managerId = 'USR-0001';
   } else if (i >= 85) {
-    level = (i % 2 === 0) ? 'CL' : 'IN';
-    levelTitle = (level === 'CL') ? 'Casual Labor' : 'Internship';
+    // Casual Labor & Internship của thang cũ đều quy về cấp thấp nhất (Level 7)
+    level = '7';
     managerId = 'USR-0312';
   } else if (i % 5 === 0) {
     level = '7';
-    levelTitle = 'Officer / Staff';
+    managerId = 'USR-0245';
+  } else if (i % 7 === 0) {
+    level = '5';
     managerId = 'USR-0245';
   }
+
+  const userLevelTitle = levelTitle(level);
 
   const deptPositions = POSITIONS_BY_DEPT[dept.code] || [
     `${dept.name} Specialist`,
@@ -364,7 +383,7 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
     role,
     position,
     level,
-    levelTitle,
+    levelTitle: userLevelTitle,
     branch,
     branchName,
     businessUnitId: 'bu-mmvn',
@@ -386,16 +405,16 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
     yearsOfService,
     joinDate: `202${Math.max(0, 6 - Math.floor(yearsOfService))}-0${(i % 9) + 1}-15`,
     avatar: initials,
-    badgeTone: role === 'admin' ? 'ai' : role === 'manager' ? 'amber' : 'rail',
-    description: `${position} in ${div.code}/${dept.code} - ${storeName} (Level ${level})`,
+    badgeTone: role === 'trainer' ? 'sage' : role === 'manager' ? 'amber' : 'rail',
+    description: `${position} in ${div.code}/${dept.code} - ${storeName} (${levelShortLabel(level)})`,
     pastPositions: yearsOfService > 1.5 ? [
       { role: `Associate - ${dept.name}`, period: '2023 - 2024', org: storeName }
     ] : [],
     projects: [`MMVN Annual Operational Audit ${2024 + (i % 2)}`],
     talentProfile: {
-      potential: level === '4' || level === '5' ? 'HIGH_POTENTIAL' : 'CORE_PERFORMER',
-      successorFor: level === '6' ? `${position} Team Leader` : `${dept.name} Manager`,
-      readiness: level === '6' ? 'READY_IN_1_YEAR' : 'READY_IN_6_MONTHS',
+      potential: level === '3' || level === '4' ? 'HIGH_POTENTIAL' : 'CORE_PERFORMER',
+      successorFor: level === '7' ? `${position} (Level 6 Specialist)` : `${dept.name} Manager`,
+      readiness: level === '7' ? 'READY_IN_1_YEAR' : 'READY_IN_6_MONTHS',
       mentor: 'David Tran',
       skills: ['Operational SOPs', 'Customer Centricity', 'Safety Standards'],
     },
@@ -556,6 +575,41 @@ const COURSE_CATALOG_TEMPLATES = [
   ]},
 ];
 
+// ---------------------------------------------------------------------------
+// Gán cấp bậc mục tiêu cho khóa học trên thang ĐẢO NGƯỢC (7 thấp nhất -> 1 cao nhất).
+//
+//   Level 7 - Nhập môn văn hóa, vệ sinh cơ bản, PCCC cơ bản, thao tác quầy.
+//   Level 6 - HACCP chuyên sâu, bảo quản tươi sống, vận hành lò nướng bánh mì.
+//   Level 5 - Giám sát ca, kiểm kê thất thoát, an toàn xe nâng.
+//   Level 4 - Quản lý nhân sự phòng ban, phân ca, kèm cặp 1-on-1.
+//   Level 3 - Quản trị chi phí ngành hàng, đàm phán nhà cung cấp.
+//   Level 2 - Quản trị P&L siêu thị, ngân sách, quy hoạch nhân tài kế nhiệm.
+//   Level 1 - Chiến lược bán lẻ tập đoàn, quản trị rủi ro & khủng hoảng toàn quốc.
+//
+// Mỗi ngưỡng là chỉ số bài đầu tiên thuộc cấp kế tiếp trong danh mục của domain đó.
+// ---------------------------------------------------------------------------
+const COURSE_LEVEL_LADDER = {
+  FSH:   [['7', 3], ['6', 8], ['5', Infinity]],
+  ISA:   [['7', 4], ['6', Infinity]],
+  HSE:   [['7', 4], ['6', 8], ['5', Infinity]],
+  COLD:  [['6', 5], ['5', Infinity]],
+  STOPS: [['7', 4], ['6', 8], ['5', 11], ['4', Infinity]],
+  LEAD:  [['4', 3], ['3', 6], ['2', 9], ['1', Infinity]],
+  SCM:   [['6', 4], ['5', 7], ['4', Infinity]],
+  MERCH: [['5', 4], ['4', 7], ['3', Infinity]],
+  ECOM:  [['6', 3], ['5', Infinity]],
+  ETHIC: [['6', 3], ['5', Infinity]],
+  CSERV: [['7', 3], ['6', Infinity]],
+  CULT:  [['7', 5], ['6', Infinity]],
+};
+
+function resolveCourseTargetLevel(codePrefix, idx) {
+  const ladder = COURSE_LEVEL_LADDER[codePrefix];
+  if (!ladder) return '7';
+  const step = ladder.find(([, ceiling]) => idx < ceiling);
+  return step ? step[0] : '7';
+}
+
 let generatedCourseList = [];
 let courseCounter = 1;
 
@@ -579,25 +633,8 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
     const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
 
-    let targetLevel = '1';
-    let targetLevelTitle = 'Level 1: Tuyến Đầu (Associate)';
-
-    if (tpl.domain === 'Leadership' || tpl.codePrefix === 'LEAD') {
-      targetLevel = (idx >= 6) ? '5' : '4';
-      targetLevelTitle = (targetLevel === '5') ? 'Level 5: Giám Đốc Siêu Thị (SGM)' : 'Level 4: Trưởng Bộ Phận / Quản Lý (Manager)';
-    } else if (tpl.codePrefix === 'MERCH' && idx >= 4) {
-      targetLevel = '4';
-      targetLevelTitle = 'Level 4: Trưởng Bộ Phận / Quản Lý (Manager)';
-    } else if (tpl.codePrefix === 'STOPS' && idx >= 6) {
-      targetLevel = '3';
-      targetLevelTitle = 'Level 3: Trưởng Quầy / Ngành Hàng (Section Lead)';
-    } else if (tpl.codePrefix === 'SCM' && idx >= 4) {
-      targetLevel = '3';
-      targetLevelTitle = 'Level 3: Trưởng Quầy / Ngành Hàng (Section Lead)';
-    } else if (idx >= 5) {
-      targetLevel = '2';
-      targetLevelTitle = 'Level 2: Trưởng Nhóm / Giám Sát Ca (Supervisor)';
-    }
+    const targetLevel = resolveCourseTargetLevel(tpl.codePrefix, idx);
+    const targetLevelTitle = `Level ${targetLevel}: ${levelTitle(targetLevel)}`;
 
     generatedCourseList.push({
       id: courseId,
@@ -642,7 +679,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
         assignmentType: tpl.targetType,
         targetBusinessUnitId: tpl.targetType === 'BUSINESS_UNIT' ? tpl.targetId : null,
         targetDivisionId: tpl.targetType === 'DIVISION' ? tpl.targetId : null,
-        targetLevel: tpl.targetType === 'LEVEL' ? tpl.targetId : null,
+        targetLevel,
         assignedDate: '2026-08-01',
         dueDate: '2026-09-30',
         assignedBy: 'Sarah Nguyen (L&OD Admin)',
@@ -683,44 +720,20 @@ export const generated100Courses = generatedCourseList;
 // 3. ENTERPRISE ACCESS CONTROL & TARGETING RULES
 // ---------------------------------------------------------------------------
 
-export function getCourseAccessControl(course, user) {
-  if (!user || !course) return { isLocked: false, requiredLevel: 1, reason: null };
-  const userLevel = Number(user.level) || 1;
-  const isManagerOrAdmin = user.role === 'manager' || user.role === 'admin' || user.role === 'hrbp';
-
-  // Leadership & Management courses require Level 4+ (Line Manager / SGM)
-  const isLeadershipCourse =
-    course.domain === 'Leadership' ||
-    course.category === 'Leadership & Management' ||
-    course.code?.startsWith('LEAD') ||
-    course.title?.toLowerCase().includes('leadership') ||
-    course.title?.toLowerCase().includes('manager') ||
-    course.title?.toLowerCase().includes('p&l') ||
-    course.assignment?.targetLevel === '4' ||
-    course.assignment?.targetRole === 'MANAGER';
-
-  if (isLeadershipCourse) {
-    if (userLevel < 4 && !isManagerOrAdmin) {
-      return {
-        isLocked: true,
-        requiredLevel: 4,
-        reason: 'Khóa học này dành riêng cho Cấp Quản Lý (Level 4+ / Manager). Học viên cấp dưới cần gửi yêu cầu phê duyệt để mở khóa.',
-      };
-    }
-  }
-
-  // Certain Strategic Commercial / Budget courses require Level 4+
-  if (course.code?.startsWith('MERCH-002') || course.code?.startsWith('MERCH-004') || course.code?.startsWith('GOV-001')) {
-    if (userLevel < 4 && !isManagerOrAdmin) {
-      return {
-        isLocked: true,
-        requiredLevel: 4,
-        reason: 'Khóa học Hoạch định Chiến lược & Ngân sách cần phê duyệt của Trưởng Bộ Phận.',
-      };
-    }
-  }
-
-  return { isLocked: false, requiredLevel: 1, reason: null };
+/**
+ * Kiểm soát truy cập khóa học theo thang cấp bậc đảo ngược.
+ *
+ * Toàn bộ logic cấp bậc nằm trong `checkCourseAccessRule` (./levelSystem.js);
+ * hàm này chỉ bọc lại và giữ thêm các trường tương thích ngược (`isLocked`,
+ * `requiredLevel`) cho những màn hình cũ.
+ */
+export function getCourseAccessControl(course, user, ctx = {}) {
+  const access = checkCourseAccessRule(course, user, ctx);
+  return {
+    ...access,
+    isLocked: access.isLevelLocked,
+    requiredLevel: access.courseLevel,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -730,21 +743,26 @@ export function getCourseAccessControl(course, user) {
 export const generated100EnrollmentMatrix = {};
 export const generated100EnrollmentList = [];
 
-// Specific hand-crafted realistic enrollment list for Minh Tran (Bakery Specialist - USR-1042)
+// Danh sách ghi danh thủ công cho Minh Tran (USR-1042 - Level 7, tuyến đầu quầy bánh).
+// Tất cả đều là khóa Level 7: anh phải hoàn tất chương trình cấp mình trước khi
+// gửi đơn xin học vượt lên Level 6 (xem luồng Sequential Level Gate).
 const MINH_TRAN_ENROLLMENTS = {
-  'course-fsh-1': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'course-fsh-2': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30' },
-  'course-fsh-3': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30' },
-  'course-fsh-4': { status: 'IN_PROGRESS', progressPercent: 65, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'course-isa-1': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30' },
-  'course-isa-2': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15' },
-  'course-hse-1': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15' },
-  'course-hse-4': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10' },
-  'course-stops-1': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'course-cold-1': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'course-ecom-1': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
-  'course-merch-1': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
+  'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30' },
+  'CRS-FSH-003': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30' },
+  'CRS-ISA-011': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30' },
+  'CRS-ISA-012': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15' },
+  'CRS-HSE-019': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15' },
+  'CRS-HSE-020': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10' },
+  'CRS-STOPS-037': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'CRS-STOPS-038': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
+  'CRS-CSERV-087': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
+  'CRS-CULT-093': { status: 'COMPLETED', progressPercent: 100, score: 88, attemptsCount: 1, completedAt: '2026-07-28', dueDate: '2026-08-15' },
+  'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
 };
+
+// Ba khóa tuân thủ bắt buộc toàn công ty (Level 7) - ai cũng được gán.
+const UNIVERSAL_COMPLIANCE_COURSE_IDS = ['CRS-ISA-011', 'CRS-HSE-019', 'CRS-STOPS-037'];
 
 generated100Users.forEach((user, uIdx) => {
   const userEnrollmentMap = {};
@@ -765,7 +783,7 @@ generated100Users.forEach((user, uIdx) => {
     });
   } else {
     // For other users, select 8-12 tailored courses based on role and department
-    const isManager = user.role === 'manager' || Number(user.level) >= 4;
+    const isManager = user.role === 'manager' || levelValue(user.level) <= 4;
     const isFood = user.divisionCode === 'OMD' || user.departmentCode === 'PPF';
     const isSCM = user.divisionCode === 'SCM';
     const isFrontEnd = user.departmentCode === 'FE' || user.position?.includes('Cashier');
@@ -773,8 +791,11 @@ generated100Users.forEach((user, uIdx) => {
     generatedCourseList.forEach((c, cIdx) => {
       let isTargeted = false;
 
+      // Không bao giờ tự ghi danh khóa vượt cấp: học viên phải xin phê duyệt.
+      if (levelGap(user.level, c.targetLevel) > 0) return;
+
       // Universal compliance for all employees
-      if (c.id === 'course-isa-1' || c.id === 'course-hse-1' || c.id === 'course-stops-1') {
+      if (UNIVERSAL_COMPLIANCE_COURSE_IDS.includes(c.id)) {
         isTargeted = true;
       }
       // Manager leadership courses

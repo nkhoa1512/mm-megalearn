@@ -26,6 +26,41 @@ import {
   generated100EnrollmentMatrix,
   getCourseAccessControl,
 } from './generated100Data';
+import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from './levelSystem';
+import { normalizeRole, managedRolesOf, canManage, roleDefinition } from './roles';
+
+// Thang 7 cấp bậc & mô hình 6 role được tái xuất khẩu ở đây để các màn hình chỉ
+// cần import từ một nơi duy nhất.
+export {
+  LEVEL_DEFINITIONS,
+  LEVEL_ORDER,
+  ACCESS_STATE,
+  ENTRY_LEVEL,
+  normalizeLevel,
+  levelDefinition,
+  levelTitle,
+  levelShortLabel,
+  levelValue,
+  levelGap,
+  nextLevelUp,
+  levelRoadmap,
+  checkCourseAccessRule,
+} from './levelSystem';
+
+export {
+  ROLE_DEFINITIONS,
+  ROLE_ORDER,
+  ROLE_HOME,
+  normalizeRole,
+  roleDefinition,
+  roleLabel,
+  roleRank,
+  managedRolesOf,
+  managedScopeLabel,
+  canManage,
+  capabilitiesOf,
+  hasCapability,
+} from './roles';
 
 
 // ---------------------------------------------------------------------------
@@ -34,20 +69,29 @@ import {
 
 export const demoUsers = generated100Users;
 
-// Dedicated demo personas for all Enterprise Roles in MMVN Matrix
-export const adminUser = demoUsers[0]; // Sarah Nguyen (HR Director / L&D Admin)
-export const managerUser = demoUsers[1]; // David Tran (Department Manager)
-export const currentUser = demoUsers[3]; // Minh Tran (Store Associate / Learner)
+// ---------------------------------------------------------------------------
+// 6 Demo Persona chuẩn cho 6 Role phân cấp (thấp -> cao)
+//   1. learner   Minh Tran          USR-1042  Level 7
+//   2. manager   David Tran         USR-0245  Level 4
+//   3. trainer   Nguyen Van Hung    USR-9003  Level 3
+//   4. hrbp      Le Thi Mai         USR-9004  Level 2
+//   5. useradmin Pham Thanh Thao    USR-9002  Level 2
+//   6. sysadmin  Tran Quoc Bao      USR-9001  Level 1
+// Cả 6 đều là Learner: role nào cũng có cổng học tập cá nhân.
+// ---------------------------------------------------------------------------
+
+export const managerUser = demoUsers[1]; // David Tran (Store Department Manager - Level 4)
+export const currentUser = demoUsers[3]; // Minh Tran (Junior Bakery Associate - Level 7)
 
 export const sysAdminUser = {
-  userId: 'USR-SYS-001',
+  userId: 'USR-9001',
   employeeCode: 'MMVN-9001',
   fullName: 'Tran Quoc Bao (IT)',
   email: 'bao.tran@mmvietnam.com',
   role: 'sysadmin',
-  position: 'Lead Cybersecurity & IT Infrastructure Specialist',
-  level: '4',
-  levelTitle: 'Lead IT Systems Administrator',
+  position: 'Lead IT Systems Administrator & Cybersecurity Lead',
+  level: '1',
+  levelTitle: levelTitle('1'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -55,21 +99,23 @@ export const sysAdminUser = {
   departmentId: 'dept-mis', departmentCode: 'MIS', departmentName: 'IT & Security Infrastructure',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-  managerId: 'USR-0001',
+  managerId: null,
   status: 'ACTIVE',
+  yearsOfService: 6.4,
   avatar: 'TB',
   badgeTone: 'rust',
+  description: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
 };
 
 export const userAdminUser = {
-  userId: 'USR-HR-002',
+  userId: 'USR-9002',
   employeeCode: 'MMVN-9002',
-  fullName: 'Le Thi Mai (HR Ops)',
-  email: 'mai.le@mmvietnam.com',
+  fullName: 'Pham Thanh Thao (User Admin)',
+  email: 'thao.pham@mmvietnam.com',
   role: 'useradmin',
-  position: 'HR Operations & Employee Master Records Lead',
-  level: '4',
-  levelTitle: 'User Administrator / HR Master Data',
+  position: 'User Administration Lead & HR Master Data Owner',
+  level: '2',
+  levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -77,21 +123,23 @@ export const userAdminUser = {
   departmentId: 'dept-cb', departmentCode: 'C&B', departmentName: 'Compensation, Benefits & HR Ops',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-  managerId: 'USR-0001',
+  managerId: 'USR-9001',
   status: 'ACTIVE',
-  avatar: 'LM',
+  yearsOfService: 5.1,
+  avatar: 'PT',
   badgeTone: 'blue',
+  description: 'Quản trị hồ sơ 100+ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp tại các chi nhánh.',
 };
 
 export const trainerHungUser = {
-  userId: 'USR-TR-001',
+  userId: 'USR-9003',
   employeeCode: 'MMVN-9003',
   fullName: 'Nguyen Van Hung (Master Trainer)',
   email: 'hung.nguyen@mmvietnam.com',
   role: 'trainer',
-  position: 'Master Trainer & Faculty Lead (L&OD)',
-  level: '4',
-  levelTitle: 'Senior L&D Instructor',
+  position: 'Master Trainer & L&D Specialist (Faculty Lead)',
+  level: '3',
+  levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -99,21 +147,23 @@ export const trainerHungUser = {
   departmentId: 'dept-lod', departmentCode: 'L&OD', departmentName: 'Learning & Org Development',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-  managerId: 'USR-0001',
+  managerId: 'USR-9004',
   status: 'ACTIVE',
+  yearsOfService: 8.2,
   avatar: 'NH',
   badgeTone: 'sage',
+  description: 'Tạo khóa học thực hành, đứng lớp tại xưởng siêu thị và chiếu Live QR cho học viên điểm danh.',
 };
 
 export const trainerThanhUser = {
-  userId: 'USR-TR-002',
+  userId: 'USR-9005',
   employeeCode: 'MMVN-9005',
   fullName: 'Vu Duc Thanh (HSE Trainer)',
   email: 'thanh.vu@mmvietnam.com',
   role: 'trainer',
-  position: 'Giảng Viên An Toàn & HSE Director',
-  level: '4',
-  levelTitle: 'Senior HSE Faculty',
+  position: 'Giảng Viên An Toàn & HSE Section Manager',
+  level: '3',
+  levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -121,46 +171,50 @@ export const trainerThanhUser = {
   departmentId: 'dept-hse', departmentCode: 'HSE', departmentName: 'Health, Safety & Environment',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-  managerId: 'USR-0001',
+  managerId: 'USR-9004',
   status: 'ACTIVE',
+  yearsOfService: 9.0,
   avatar: 'VT',
   badgeTone: 'sage',
+  description: 'Đứng lớp diễn tập PCCC, sơ cấp cứu và an toàn xe nâng tại các sân thực hành chi nhánh.',
 };
 
 export const trainerQuangUser = {
-  userId: 'USR-TR-003',
+  userId: 'USR-9006',
   employeeCode: 'MMVN-9006',
   fullName: 'Tran Minh Quang (SGM Mentor)',
   email: 'quang.tran@mmvietnam.com',
   role: 'trainer',
-  position: 'Giảng Viên Quản Trị & Store General Manager',
-  level: '5',
-  levelTitle: 'Leadership & SGM Faculty Mentor',
+  position: 'Store General Manager kiêm Giảng Viên Quản Trị',
+  level: '2',
+  levelTitle: levelTitle('2'),
   branch: 'OPERATIONS',
   branchName: 'Khối Vận hành Siêu thị (Operations)',
-  businessUnitId: 'bu-ops', businessUnitCode: 'OPS',
-  divisionId: 'div-ops-south', divisionCode: 'OPS-S', divisionName: 'Operations South Region',
-  departmentId: 'dept-store-ap', departmentCode: 'STR-AP', departmentName: 'MM Mega Market An Phú',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
+  divisionId: 'div-opt', divisionCode: 'OPS-S', divisionName: 'Operations South Region',
+  departmentId: 'dept-ops-s', departmentCode: 'STR-AP', departmentName: 'MM Mega Market An Phú',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
-  managerId: 'USR-0001',
+  managerId: 'USR-9001',
   status: 'ACTIVE',
+  yearsOfService: 11.5,
   avatar: 'TQ',
   badgeTone: 'sage',
+  description: 'Mentor lộ trình kế nhiệm SGM và giảng dạy Quản trị P&L siêu thị (khóa Level 2).',
 };
 
 export const trainerUser = trainerHungUser;
 export const allTrainers = [trainerHungUser, trainerThanhUser, trainerQuangUser];
 
 export const hrbpUser = {
-  userId: 'USR-HRBP-001',
+  userId: 'USR-9004',
   employeeCode: 'MMVN-9004',
-  fullName: 'Dang Thanh Mai (HRBP)',
-  email: 'mai.dang@mmvietnam.com',
+  fullName: 'Le Thi Mai (HRBP)',
+  email: 'mai.le@mmvietnam.com',
   role: 'hrbp',
-  position: 'Regional Senior HR Business Partner',
-  level: '4',
-  levelTitle: 'HRBP Lead',
+  position: 'HR Business Partner - Head of People Partnering',
+  level: '2',
+  levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
@@ -168,25 +222,70 @@ export const hrbpUser = {
   departmentId: 'dept-hrbp', departmentCode: 'HRBP', departmentName: 'HR Business Partnering',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-  managerId: 'USR-0001',
+  managerId: 'USR-9002',
   status: 'ACTIVE',
-  avatar: 'DM',
+  yearsOfService: 7.3,
+  avatar: 'LM',
   badgeTone: 'blue',
+  description: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ đào tạo theo vùng.',
 };
 
+// Sarah Nguyen (USR-0001) là L&D Director trong thang mới: role `trainer`, Level 2.
+// Giữ tên export `adminUser` để các màn hình cũ tiếp tục biên dịch được.
+export const lndDirectorUser = demoUsers[0];
+export const adminUser = lndDirectorUser;
+
+// 6 persona chính, xếp theo rank role từ thấp đến cao.
+export const rolePersonas = [
+  { role: 'learner', user: currentUser },
+  { role: 'manager', user: managerUser },
+  { role: 'trainer', user: trainerHungUser },
+  { role: 'hrbp', user: hrbpUser },
+  { role: 'useradmin', user: userAdminUser },
+  { role: 'sysadmin', user: sysAdminUser },
+];
+
+export function personaForRole(role) {
+  const normalized = normalizeRole(role);
+  const match = rolePersonas.find((p) => p.role === normalized);
+  return match ? match.user : currentUser;
+}
+
 export function allUsers() {
-  return [
-    adminUser,
-    userAdminUser,
+  const extras = [
     sysAdminUser,
+    userAdminUser,
     hrbpUser,
     trainerHungUser,
     trainerThanhUser,
     trainerQuangUser,
-    managerUser,
-    currentUser,
-    ...demoUsers.slice(4),
   ];
+  const seen = new Set(demoUsers.map((u) => u.userId));
+  return [...demoUsers, ...extras.filter((u) => !seen.has(u.userId))];
+}
+
+// Danh sách nhân sự mà `actor` được phép quản lý theo ma trận xếp tầng
+// (Cascading Hierarchy): mọi role có rank thấp hơn role của actor.
+// Manager chỉ thấy người trong phòng ban / tuyến báo cáo của mình; các role
+// từ Trainer trở lên nhìn xuyên toàn tổ chức.
+export function getManagedUsers(actor) {
+  if (!actor) return [];
+  const actorRole = normalizeRole(actor.role);
+  const allowedRoles = managedRolesOf(actorRole);
+  if (allowedRoles.length === 0) return [];
+
+  const pool = allUsers().filter(
+    (u) => u.userId !== actor.userId && allowedRoles.includes(normalizeRole(u.role))
+  );
+
+  if (actorRole === 'manager') {
+    const direct = pool.filter(
+      (u) => u.managerId === actor.userId || u.departmentCode === actor.departmentCode
+    );
+    return direct.length > 0 ? direct : pool.filter((u) => u.divisionCode === actor.divisionCode);
+  }
+
+  return pool;
 }
 
 // Direct reports of Line Manager (Fresh Food & Operations) with authentic diverse cases
@@ -434,17 +533,25 @@ export const userEnrollmentsMap = generated100EnrollmentMatrix;
 
 export { getCourseAccessControl };
 
+// Ghi danh của một học viên = dữ liệu HRIS tĩnh + phần ghi danh phát sinh trong
+// phiên làm việc (overlay do CourseStore giữ, ví dụ khóa vừa được duyệt học vượt).
+export function enrollmentsForUser(user, overlay = null) {
+  if (!user) return {};
+  const base = userEnrollmentsMap[user.userId] || {};
+  const extra = (overlay && overlay[user.userId]) || {};
+  return { ...base, ...extra };
+}
+
 // Returns true when `course` is enrolled for `user`
-export function isCourseAssignedToUser(course, user) {
+export function isCourseAssignedToUser(course, user, overlay = null) {
   if (!user || !course) return false;
-  const userMap = userEnrollmentsMap[user.userId] || userEnrollmentsMap['USR-1042'] || {};
-  return Boolean(userMap[course.id]);
+  return Boolean(enrollmentsForUser(user, overlay)[course.id]);
 }
 
 // "My Learning" list for a given user: dynamically merges user-specific enrollments
-export function myLearningCourses(courseList, user) {
+export function myLearningCourses(courseList, user, overlay = null) {
   if (!user) return [];
-  const enrollments = userEnrollmentsMap[user.userId] || userEnrollmentsMap['USR-1042'] || {};
+  const enrollments = enrollmentsForUser(user, overlay);
   return (courseList || [])
     .filter((c) => Boolean(enrollments[c.id]))
     .map((c) => {
@@ -475,8 +582,8 @@ export function courseHasParticipants(course) {
 // Learning hours actually invested: each course's estimatedHours (e.g. "3h",
 // "1.5h remaining") weighted by the learner's real progress on it, summed
 // across every course in their "My Learning" list.
-export function totalLearningHours(courseList, user) {
-  return myLearningCourses(courseList, user).reduce((sum, c) => {
+export function totalLearningHours(courseList, user, overlay = null) {
+  return myLearningCourses(courseList, user, overlay).reduce((sum, c) => {
     const hours = parseFloat(c.estimatedHours) || 0;
     const progress = (c.enrollment.progressPercent || 0) / 100;
     return sum + hours * progress;
@@ -503,6 +610,10 @@ export function createBlankCourse() {
     title: 'Untitled course',
     description: '',
     category: 'Store Operations',
+    // Mặc định khóa mới nhắm tới cấp thấp nhất (Level 7) để mở tối đa cho học viên;
+    // người biên soạn nâng cấp bậc mục tiêu trong Course Builder nếu cần.
+    targetLevel: '7',
+    targetLevelTitle: `Level 7: ${levelTitle('7')}`,
     deliveryType: 'ONLINE_ELEARNING', // 'ONLINE_ELEARNING' | 'IN_PERSON_CLASSROOM'
     courseType: 'OPTIONAL',
     status: 'DRAFT',
@@ -626,6 +737,10 @@ function recomputeEnrollment(course) {
 // enrollment recomputed — pass the result straight to CourseStore.updateCourse.
 export function applyLessonProgress(course, lessonId, fields) {
   const next = cloneCourse(course);
+  // Khóa học sinh tự động không mang sẵn enrollment; ghi danh được nạp từ
+  // ma trận HRIS hoặc overlay của CourseStore nên cần default an toàn ở đây.
+  if (!next.enrollment) next.enrollment = { status: 'IN_PROGRESS', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null };
+  if (!next.assessmentAttempts) next.assessmentAttempts = [];
   for (const m of next.modules) {
     const lesson = m.lessons.find((l) => l.id === lessonId);
     if (lesson) {
@@ -642,6 +757,8 @@ export function applyLessonProgress(course, lessonId, fields) {
 // recomputed (pass/fail/exhausted-attempts) per BR-019/BR-020.
 export function applyAssessmentAttempt(course, { score, passed, answered }) {
   const next = cloneCourse(course);
+  if (!next.enrollment) next.enrollment = { status: 'IN_PROGRESS', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null };
+  if (!next.assessmentAttempts) next.assessmentAttempts = [];
   next.assessmentAttempts = [
     ...next.assessmentAttempts,
     { n: next.assessmentAttempts.length + 1, score, passed, answered, submittedAt: new Date().toISOString() },
@@ -1884,30 +2001,45 @@ export const gamificationData = {
 // Manager Course Approval Requests
 // ---------------------------------------------------------------------------
 
+// Đơn xin học vượt cấp (Sequential Level Gate). Mỗi đơn xin đúng MỘT khóa học
+// nằm cao hơn học viên đúng 1 cấp liền kề; Manager duyệt từng khóa một chứ
+// không mở nguyên cấp bậc.
 export const pendingApprovalRequests = [
   {
     id: 'req-001',
-    employeeId: 'EMP-1103',
-    employeeName: 'John Doe',
-    position: 'Bakery Associate',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-2041',
+    userId: 'USR-2041',
+    employeeName: 'Quoc Bao',
+    position: 'Store Fresh Food Associate (New Joiner)',
     department: 'PPF - Processed Fresh Food',
-    courseId: 'CRS-LEAD-043',
-    courseName: 'Leadership Essentials for Managers (MMVN & LinkedIn)',
+    currentLevel: '7',
+    courseLevel: '6',
+    courseId: 'CRS-FSH-004',
+    courseName: 'Bakery & Confectionery Sanitation Protocols',
+    approverRole: 'manager',
+    approverId: 'USR-0245',
     requestDate: '2026-08-19',
-    justification: 'Đăng ký chương trình Thánh Gióng để phát triển kỹ năng kèm cặp và chuẩn bị thi tuyển Trưởng ca Bánh tươi.',
+    justification: 'Em đã hoàn thành các khóa vệ sinh cơ bản Level 7 và muốn học sớm quy trình HACCP chuyên sâu của Level 6 để chuẩn bị lên Chuyên viên vận hành quầy bánh.',
     courseCost: 'Free (Internal Talent Program)',
     status: 'PENDING', // PENDING, APPROVED, REJECTED
   },
   {
     id: 'req-002',
-    employeeId: 'EMP-1099',
-    employeeName: 'Mike Chen',
-    position: 'Line Cook Specialist',
-    department: 'PPF - Processed Fresh Food',
-    courseId: 'ilt-002',
-    courseName: 'Diễn tập Thực tế PCCC, Thoát hiểm & Sơ cấp cứu Cửa hàng',
+    requestType: 'LEVEL_ADVANCE',
+    employeeId: 'MMVN-1021',
+    userId: 'USR-1021',
+    employeeName: 'Vo Ngoc',
+    position: 'Dry Food Supply Chain Specialist',
+    department: 'DSP - Dry Food Supply Chain',
+    currentLevel: '7',
+    courseLevel: '6',
+    courseId: 'CRS-HSE-023',
+    courseName: 'Hazardous Chemical Handling & Safety Data Sheets (SDS)',
+    approverRole: 'manager',
+    approverId: 'USR-0245',
     requestDate: '2026-08-20',
-    justification: 'Tham gia đội phản ứng nhanh PCCC của Siêu thị MM An Phú theo hạn ngạch tuân thủ an toàn.',
+    justification: 'Em tham gia đội phản ứng nhanh PCCC của MM An Phú và cần chứng chỉ vận hành thiết bị chuyên dụng ở cấp Chuyên viên.',
     courseCost: 'Free (Internal HSE Program)',
     status: 'PENDING',
   },
