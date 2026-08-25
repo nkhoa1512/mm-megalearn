@@ -573,6 +573,56 @@ const COURSE_CATALOG_TEMPLATES = [
     'Mental Health & Employee Wellbeing in Shift Work',
     'Trade Union Benefits & Social Insurance Policies',
   ]},
+
+  // 13. Train-The-Trainer & Coaching Standards (3 courses) — Level 4 gap-fill
+  { domain: 'Train-The-Trainer & Coaching Standards', codePrefix: 'TTT', count: 3, cat: 'Leadership & Management', isMandatory: true, targetType: 'LEVEL', targetId: '4', passScore: 80, time: '3h', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', titles: [
+    'Train-The-Trainer Certification & Coaching Standards (TTT)',
+    'Department On-the-Job Coaching & Skill Transfer Framework',
+    'Structured Feedback & Performance Coaching for Line Managers',
+  ]},
+
+  // 14. Master Trainer & Section Governance (3 courses) — Level 3 gap-fill
+  { domain: 'Master Trainer & Section Governance', codePrefix: 'MGT3', count: 3, cat: 'Leadership & Management', isMandatory: true, targetType: 'LEVEL', targetId: '3', passScore: 82, time: '4h', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', titles: [
+    'Section Governance & Category P&L Ownership',
+    'Master Trainer Curriculum Design & Facilitation Standards',
+    'Cross-Functional Vendor & Supply Chain Negotiation Governance',
+  ]},
+
+  // 15. Succession & Store P&L Governance (4 courses) — Level 2 gap-fill
+  { domain: 'Succession & Store P&L Governance', codePrefix: 'SUCC', count: 4, cat: 'Leadership & Management', isMandatory: true, targetType: 'LEVEL', targetId: '2', passScore: 82, time: '4h', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', titles: [
+    'Store General Manager P&L Governance & Budget Ownership',
+    'Succession Planning & Talent Pipeline Committee Standards',
+    'Multi-Store Crisis Management & Legal Escalation',
+    'SGM Store Portfolio Strategic Planning',
+  ]},
+
+  // 16. Corporate Governance & ESG (4 courses) — Level 1 gap-fill
+  { domain: 'Corporate Governance & ESG', codePrefix: 'GOV', count: 4, cat: 'Compliance & Ethics', isMandatory: true, targetType: 'LEVEL', targetId: '1', passScore: 85, time: '4h', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', titles: [
+    'Corporate Governance & Board Reporting Standards',
+    'ESG Strategy & Sustainable Retail Compliance',
+    'Enterprise Risk Management & Crisis Governance',
+    'Regulatory Affairs & National Retail Market Policy',
+  ]},
+
+  // 17. Executive Strategy Electives (2 courses) — Level 1 elective gap-fill
+  { domain: 'Executive Strategy Electives', codePrefix: 'EXEC', count: 2, cat: 'Leadership & Management', isMandatory: false, targetType: 'LEVEL', targetId: '1', passScore: 75, time: '5h', modality: 'EXTERNAL_PLATFORM', platformSource: 'Coursera / Udemy Executive Education', format: 'Coursera Embed', titles: [
+    'Executive Retail Strategy (Coursera Executive Education)',
+    'M&A and International Market Expansion Fundamentals',
+  ]},
+
+  // 18. Talent & Store Portfolio Electives (2 courses) — Level 2 elective gap-fill
+  { domain: 'Talent & Store Portfolio Electives', codePrefix: 'TALENT', count: 2, cat: 'Leadership & Management', isMandatory: false, targetType: 'LEVEL', targetId: '2', passScore: 75, time: '4h', modality: 'EXTERNAL_PLATFORM', platformSource: 'LinkedIn Learning / Coursera', format: 'LinkedIn Learning Embed', titles: [
+    'Omnichannel Retail Leadership (LinkedIn Learning)',
+    'Advanced Talent Analytics & Workforce Planning',
+  ]},
+
+  // 19. OJT Capstone & Promotion Defense (4 courses) — Tier 3 gap-fill, Levels 4/3/2/1
+  { domain: 'OJT Capstone & Promotion Defense', codePrefix: 'CAPSTONE', count: 4, cat: 'Leadership & Management', isMandatory: true, targetType: 'LEVEL', targetId: '1', passScore: 85, time: '4h', modality: 'CLASSROOM_LAB', format: 'Capstone Defense & Committee Review', titles: [
+    'Line Manager Practical Coaching Capstone Defense',
+    'Master Trainer / Thánh Gióng Fast-Track Capstone Defense',
+    'Store General Manager (SGM) Portfolio Capstone Defense',
+    'Board Capstone Review & Executive Case Defense',
+  ]},
 ];
 
 // ---------------------------------------------------------------------------
@@ -601,6 +651,13 @@ const COURSE_LEVEL_LADDER = {
   ETHIC: [['6', 3], ['5', Infinity]],
   CSERV: [['7', 3], ['6', Infinity]],
   CULT:  [['7', 5], ['6', Infinity]],
+  TTT:      [['4', Infinity]],
+  MGT3:     [['3', Infinity]],
+  SUCC:     [['2', Infinity]],
+  GOV:      [['1', Infinity]],
+  EXEC:     [['1', Infinity]],
+  TALENT:   [['2', Infinity]],
+  CAPSTONE: [['4', 1], ['3', 2], ['2', 3], ['1', Infinity]],
 };
 
 function resolveCourseTargetLevel(codePrefix, idx) {

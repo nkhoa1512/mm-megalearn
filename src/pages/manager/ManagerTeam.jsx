@@ -4,6 +4,7 @@ import { useCourseStore } from '../../state/CourseStore';
 import { canManage } from '../../data/roles';
 import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../components/ui';
 import UserTranscriptModal from '../../components/UserTranscriptModal';
+import RoadmapProgressSummary from '../../components/RoadmapProgressSummary';
 
 const STATUS_META = {
   NOT_STARTED: { tone: 'slate', label: 'Not Started' },
@@ -16,7 +17,7 @@ const STATUS_META = {
 const FILTERS = ['All', 'Not Started', 'In Progress', 'Completed', 'Failed', 'Overdue'];
 
 export default function ManagerTeam() {
-  const { currentUser: authUser, openSurveyModal, actionPlans, updateActionPlan, users } = useCourseStore();
+  const { currentUser: authUser, openSurveyModal, actionPlans, updateActionPlan, users, getUserRoadmapTabs } = useCourseStore();
   const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
   const teamMembers = getTeamMembersForManager(activeManager);
 
@@ -25,6 +26,7 @@ export default function ManagerTeam() {
   const [search, setSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
   const [transcriptUser, setTranscriptUser] = useState(null);
+  const [roadmapUser, setRoadmapUser] = useState(null);
   const [reminderSent, setReminderSent] = useState(false);
 
   const filtered = teamMembers.filter((m) => {
@@ -195,19 +197,32 @@ export default function ManagerTeam() {
                         {/* Manager chỉ xem, không được gán khóa học — việc gán thuộc quyền
                             User Admin / System Admin. */}
                         <td style={{ textAlign: 'right' }}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            icon="ti-eye"
-                            onClick={() => {
-                              const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
-                              const fullUser = list.find(u => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
-                              setTranscriptUser(fullUser);
-                            }}
-                            title="Xem toàn bộ khóa học nhân sự này đang học"
-                          >
-                            Chi Tiết
-                          </Button>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              icon="ti-eye"
+                              onClick={() => {
+                                const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                                const fullUser = list.find(u => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
+                                setTranscriptUser(fullUser);
+                              }}
+                              title="Xem toàn bộ khóa học nhân sự này đang học"
+                            >
+                              Chi Tiết
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="ti-map-2"
+                              onClick={() => {
+                                const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                                const fullUser = list.find(u => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
+                                setRoadmapUser(fullUser);
+                              }}
+                              title="Xem Lộ Trình Cấp Bậc (Tab 1 & Tab 2) của nhân sự này"
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -402,6 +417,17 @@ export default function ManagerTeam() {
         isOpen={Boolean(transcriptUser)}
         onClose={() => setTranscriptUser(null)}
       />
+
+      {/* ROADMAP DRILL-DOWN MODAL (Tab 1 & Tab 2 progress) */}
+      <Modal
+        isOpen={Boolean(roadmapUser)}
+        onClose={() => setRoadmapUser(null)}
+        title="Lộ Trình Cấp Bậc Của Nhân Sự"
+        subtitle={roadmapUser ? `${roadmapUser.fullName} · Level ${roadmapUser.level}` : ''}
+        size="md"
+      >
+        {roadmapUser && <RoadmapProgressSummary roadmap={getUserRoadmapTabs(roadmapUser)} />}
+      </Modal>
     </>
   );
 }

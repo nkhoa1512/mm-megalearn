@@ -53,6 +53,7 @@ export default function ManagerApprovals() {
 
   function renderRequestCard(req) {
     const isLevelSkip = req.requestType === 'LEVEL_ADVANCE';
+    const isRoadmapPromotion = req.requestType === 'ROADMAP_PROMOTION';
     const readiness = isLevelSkip ? readinessOf(req) : null;
     const jumpIsLegal = !isLevelSkip
       || String(nextLevelUp(req.currentLevel)) === String(normalizeLevel(req.courseLevel));
@@ -61,7 +62,7 @@ export default function ManagerApprovals() {
       <div
         key={req.id}
         className="card card-pad"
-        style={{ borderColor: isLevelSkip ? 'var(--blue)' : 'var(--amber)', borderWidth: 1.5 }}
+        style={{ borderColor: isLevelSkip ? 'var(--blue)' : isRoadmapPromotion ? 'var(--sage)' : 'var(--amber)', borderWidth: 1.5 }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -75,11 +76,12 @@ export default function ManagerApprovals() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {isLevelSkip && <Badge tone="blue" icon="ti-stairs-up">Học vượt cấp</Badge>}
+            {isRoadmapPromotion && <Badge tone="sage" icon="ti-trophy">Đề xuất Thăng cấp Lộ trình</Badge>}
             <Badge tone="amber" icon="ti-clock">Gửi ngày: {req.requestDate}</Badge>
           </div>
         </div>
 
-        {/* Cấp hiện tại -> cấp khóa học */}
+        {/* Cấp hiện tại -> cấp khóa học (LEVEL_ADVANCE) hoặc cấp mục tiêu (ROADMAP_PROMOTION) */}
         {isLevelSkip && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#EFF6FF', borderRadius: 8 }}>
             <span style={{ fontSize: 12, color: '#1E3A8A' }}>Cấp bậc hiện tại:</span>
@@ -94,18 +96,35 @@ export default function ManagerApprovals() {
             )}
           </div>
         )}
+        {isRoadmapPromotion && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#F0FDF4', borderRadius: 8 }}>
+            <span style={{ fontSize: 12, color: '#166534' }}>Cấp bậc hiện tại:</span>
+            <JobLevelBadge level={req.currentLevel} />
+            <i className="ti ti-arrow-right" style={{ color: '#166534' }} />
+            <span style={{ fontSize: 12, color: '#166534' }}>Đề xuất thăng lên:</span>
+            <JobLevelBadge level={req.targetLevel} />
+            <Badge tone="sage" icon="ti-check">Đã hoàn thành Tab 1 &amp; Tab 2 (Lộ trình hiện tại + kế cận)</Badge>
+          </div>
+        )}
 
-        <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--rail)', marginBottom: 4 }}>
-            Khóa học xin duyệt: {req.courseName}
+        {!isRoadmapPromotion && (
+          <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--rail)', marginBottom: 4 }}>
+              Khóa học xin duyệt: {req.courseName}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>
+              Chi phí / Đơn vị tổ chức: <strong>{req.courseCost}</strong>
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
+              <strong>Lý do của học viên:</strong> "{req.justification}"
+            </div>
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>
-            Chi phí / Đơn vị tổ chức: <strong>{req.courseCost}</strong>
+        )}
+        {isRoadmapPromotion && (
+          <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 14, fontSize: 12.5, color: 'var(--ink)' }}>
+            <strong>Căn cứ đề xuất:</strong> "{req.justification}"
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
-            <strong>Lý do của học viên:</strong> "{req.justification}"
-          </div>
-        </div>
+        )}
 
         {/* Checklist điều kiện: khóa bắt buộc còn thiếu ở cấp hiện tại */}
         {isLevelSkip && readiness && (
@@ -139,7 +158,9 @@ export default function ManagerApprovals() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <span style={{ fontSize: 12, color: 'var(--ink-faint)', maxWidth: 460 }}>
             <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-            Phê duyệt sẽ mở khóa <strong>riêng khóa học này</strong> cho học viên và ghi danh ngay — không mở toàn bộ cấp bậc.
+            {isRoadmapPromotion
+              ? 'Phê duyệt sẽ thăng cấp bậc thật cho nhân sự này ngay lập tức.'
+              : 'Phê duyệt sẽ mở khóa riêng khóa học này cho học viên và ghi danh ngay — không mở toàn bộ cấp bậc.'}
           </span>
           <div style={{ display: 'flex', gap: 10 }}>
             <Button variant="ghost" icon="ti-x" onClick={() => rejectRequest(req.id)}>Từ Chối</Button>
@@ -150,7 +171,7 @@ export default function ManagerApprovals() {
               title={jumpIsLegal ? undefined : 'Không thể duyệt đơn nhảy cóc từ 2 cấp trở lên.'}
               onClick={() => approveRequest(req.id)}
             >
-              Phê Duyệt Đơn Học Vượt Cấp
+              {isRoadmapPromotion ? 'Phê Duyệt Thăng Cấp Bậc' : 'Phê Duyệt Đơn Học Vượt Cấp'}
             </Button>
           </div>
         </div>
@@ -229,14 +250,16 @@ export default function ManagerApprovals() {
                       <div style={{ fontWeight: 600 }}>{req.employeeName}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{req.employeeId} &middot; {req.position}</div>
                     </td>
-                    <td style={{ fontWeight: 500 }}>{req.courseName}</td>
+                    <td style={{ fontWeight: 500 }}>
+                      {req.requestType === 'ROADMAP_PROMOTION' ? 'Đề xuất Thăng cấp Lộ trình' : req.courseName}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         {req.currentLevel && <JobLevelBadge level={req.currentLevel} compact />}
-                        {req.courseLevel && (
+                        {(req.courseLevel || req.targetLevel) && (
                           <>
                             <i className="ti ti-arrow-right" style={{ fontSize: 11, color: 'var(--ink-faint)' }} />
-                            <JobLevelBadge level={req.courseLevel} compact />
+                            <JobLevelBadge level={req.courseLevel || req.targetLevel} compact />
                           </>
                         )}
                       </div>

@@ -13,6 +13,12 @@ import {
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
+import {
+  CURRENT_ROADMAPS,
+  computeUserRoadmapTabs,
+  addCourseToCurrentRoadmap,
+  removeCourseFromCurrentRoadmap,
+} from '../data/levelRoadmapMatrix';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -24,6 +30,7 @@ const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 const USERS_KEY = 'mm-megalearn-users-v6';
+const ROADMAP_KEY = 'mm-megalearn-roadmaps-v6';
 
 const CourseStoreContext = createContext(null);
 
@@ -64,6 +71,10 @@ export function CourseStoreProvider({ children }) {
   // Chồng lên ma trận ghi danh tĩnh của HRIS.
   const [enrollments, setEnrollments] = useState(() => loadItem(ENROLLMENT_KEY, {}));
 
+  // Cấu hình Lộ trình Cấp bậc (Tab 1 "Hiện tại" / Tab 2 "Kế cận" tra cứu chéo
+  // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
+  const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, CURRENT_ROADMAPS));
+
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeAiTab, setActiveAiTab] = useState('tutor');
@@ -85,10 +96,11 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(gamification));
       localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
       localStorage.setItem(ENROLLMENT_KEY, JSON.stringify(enrollments));
+      localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig]);
 
   // Auth actions
   const login = useCallback((userObj) => {
@@ -290,13 +302,23 @@ export function CourseStoreProvider({ children }) {
   const approveRequest = useCallback(
     (reqId) => {
       const target = approvals.find((r) => r.id === reqId);
-      const course = target ? courses.find((c) => c.id === target.courseId) : null;
-      const learnerId = target?.userId;
 
       setApprovals((prev) =>
         prev.map((r) => (r.id === reqId ? { ...r, status: 'APPROVED', decidedAt: todayIso() } : r))
       );
 
+      if (!target) return;
+
+      // Đơn Đề xuất Đánh giá Thăng cấp (Tab 2 Lộ trình kế cận) không gắn với
+      // 1 khóa học cụ thể như LEVEL_ADVANCE — duyệt xong là thăng cấp thật
+      // cho học viên luôn, tái dùng promoteUserLevel đã có sẵn.
+      if (target.requestType === 'ROADMAP_PROMOTION') {
+        if (target.targetLevel) promoteUserLevel(target.userId, target.targetLevel, target.justification);
+        return;
+      }
+
+      const course = courses.find((c) => c.id === target.courseId);
+      const learnerId = target.userId;
       if (!learnerId || !course) return;
       setEnrollments((prev) => {
         const forUser = prev[learnerId] || {};
@@ -323,7 +345,57 @@ export function CourseStoreProvider({ children }) {
         };
       });
     },
-    [approvals, courses]
+    [approvals, courses, promoteUserLevel]
+  );
+
+  const getUserRoadmapTabs = useCallback(
+    (user = currentUser) => computeUserRoadmapTabs(user, roadmapsConfig, enrollments, courses),
+    [roadmapsConfig, enrollments, courses, currentUser]
+  );
+
+  const addCourseToRoadmapAction = useCallback(
+    (level, branch, courseId) => setRoadmapsConfig((prev) => addCourseToCurrentRoadmap(prev, level, branch, courseId)),
+    []
+  );
+
+  const removeCourseFromRoadmapAction = useCallback(
+    (level, branch, courseId) => setRoadmapsConfig((prev) => removeCourseFromCurrentRoadmap(prev, level, branch, courseId)),
+    []
+  );
+
+  /**
+   * Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp: học viên đã hoàn thành 100% Tab 1
+   * (Lộ trình hiện tại) VÀ 100% Tab 2 (Lộ trình kế cận) — gửi 1 đơn
+   * ROADMAP_PROMOTION vào cùng hàng đợi approvals với LEVEL_ADVANCE, chỉ
+   * User Admin/System Admin thấy & duyệt (canApproveLevelSkip).
+   */
+  const requestRoadmapPromotion = useCallback(
+    (user = currentUser) => {
+      const roadmap = computeUserRoadmapTabs(user, roadmapsConfig, enrollments, courses);
+      if (!roadmap.readyForPromotion) {
+        return { ok: false, reason: 'Chưa hoàn thành 100% Lộ trình hiện tại và Lộ trình kế cận.' };
+      }
+      const request = {
+        id: `req-roadmap-${Date.now()}`,
+        requestType: 'ROADMAP_PROMOTION',
+        userId: user.userId,
+        employeeId: user.employeeCode,
+        employeeName: user.fullName,
+        position: user.position,
+        department: `${user.departmentCode || ''} - ${user.departmentName || ''}`.replace(/^ - /, ''),
+        currentLevel: roadmap.level,
+        targetLevel: roadmap.nextLevel,
+        requestDate: todayIso(),
+        justification: 'Đã hoàn thành 100% Lộ trình hiện tại và Lộ trình kế cận (Tab 1 & Tab 2).',
+        status: 'PENDING',
+      };
+      setApprovals((prev) => [
+        request,
+        ...prev.filter((a) => !(a.requestType === 'ROADMAP_PROMOTION' && a.userId === user.userId)),
+      ]);
+      return { ok: true, request };
+    },
+    [roadmapsConfig, enrollments, courses, currentUser]
   );
 
   const rejectRequest = useCallback((reqId, note = '') => {
@@ -342,7 +414,7 @@ export function CourseStoreProvider({ children }) {
     (approver = currentUser) => {
       const approverRole = normalizeRole(approver?.role);
       if (!approver || !hasCapability(approverRole, 'canApproveLevelSkip')) return [];
-      return approvals.filter((a) => a.requestType === 'LEVEL_ADVANCE');
+      return approvals.filter((a) => a.requestType === 'LEVEL_ADVANCE' || a.requestType === 'ROADMAP_PROMOTION');
     },
     [approvals, currentUser]
   );
@@ -493,6 +565,11 @@ export function CourseStoreProvider({ children }) {
         rejectRequest,
         levelAdvanceRequestsFor,
         requestLevelAdvanceApproval,
+        roadmapsConfig,
+        getUserRoadmapTabs,
+        addCourseToRoadmap: addCourseToRoadmapAction,
+        removeCourseFromRoadmap: removeCourseFromRoadmapAction,
+        requestRoadmapPromotion,
         accessFor,
         enrollCourse,
         enrollments,

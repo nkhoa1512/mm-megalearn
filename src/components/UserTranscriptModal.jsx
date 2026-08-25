@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Badge, Button, ProgressBar, Modal, JobLevelBadge } from './ui';
 import { useCourseStore } from '../state/CourseStore';
 import { levelTitle, LEVEL_DEFINITIONS } from '../data/levelSystem';
+import RoadmapProgressSummary from './RoadmapProgressSummary';
 
 const statusMap = {
   COMPLETED: { tone: 'sage', label: 'Đã Hoàn Thành' },
@@ -22,8 +23,9 @@ function formatDate(iso) {
 }
 
 export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdit }) {
-  const { courses, currentUser, promoteUserLevel, myCourses } = useCourseStore();
+  const { courses, currentUser, promoteUserLevel, myCourses, getUserRoadmapTabs } = useCourseStore();
 
+  const [activeTab, setActiveTab] = useState('transcript'); // transcript | roadmap
   const [promoteModalOpen, setPromoteModalOpen] = useState(false);
   const [selectedNewLevel, setSelectedNewLevel] = useState('6');
   const [promotionReason, setPromotionReason] = useState(
@@ -172,6 +174,26 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
             )}
           </div>
 
+          {/* TAB SWITCHER */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+            <button
+              onClick={() => setActiveTab('transcript')}
+              className={`btn btn-sm ${activeTab === 'transcript' ? 'btn-primary' : 'btn-outline'}`}
+            >
+              <i className="ti ti-table" /> Bảng Điểm Khóa Học
+            </button>
+            <button
+              onClick={() => setActiveTab('roadmap')}
+              className={`btn btn-sm ${activeTab === 'roadmap' ? 'btn-primary' : 'btn-outline'}`}
+            >
+              <i className="ti ti-map-2" /> Lộ Trình Cấp Bậc
+            </button>
+          </div>
+
+          {activeTab === 'roadmap' ? (
+            <RoadmapProgressSummary roadmap={getUserRoadmapTabs(targetUser)} />
+          ) : (
+          <>
           {/* KPI SUMMARY CARDS */}
           <div className="grid grid-4" style={{ gap: 12, marginBottom: 20 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', textAlign: 'center' }}>
@@ -311,6 +333,8 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
               </tbody>
             </table>
           </div>
+          </>
+          )}
         </div>
       </Modal>
 

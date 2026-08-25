@@ -92,6 +92,8 @@ export const ROLE_DEFINITIONS = [
       'canAssignTrainers', 'canConfigureOrg', 'canViewCsat',
       // Toàn quyền tạo cả khóa Online lẫn Offline, và có thể tự đứng lớp.
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
+      // Chỉ User Admin & SysAdmin cấu hình Lộ trình Cấp bậc (Tab 1/Tab 2).
+      'canManageLevelRoadmaps',
     ],
   },
   {
@@ -111,6 +113,7 @@ export const ROLE_DEFINITIONS = [
       'canAssignTrainers', 'canConfigureOrg', 'canConfigureSystem', 'canViewAuditLogs',
       'canManageAllRoles', 'canDevelopPlatform', 'canViewCsat',
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
+      'canManageLevelRoadmaps',
     ],
   },
 ];
