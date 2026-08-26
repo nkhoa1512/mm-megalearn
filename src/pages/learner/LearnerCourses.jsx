@@ -12,7 +12,11 @@ import {
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
-import { divisions } from '../../data/orgHierarchy';
+import {
+  courseFormatBadge, courseGroupOf, buildCourseGroups, courseMatchesCategory,
+  computeLifecycleStatus, isCourseVisibleWhenClosed,
+} from '../../utils/courseCatalog';
+import CurriculumTree from '../../components/catalog/CurriculumTree';
 
 // Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
 // 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
@@ -26,79 +30,11 @@ const GROUP_BY_OPTIONS = [
   { id: 'DOMAIN', label: 'Chuyên Ngành', icon: 'ti-category' },
 ];
 
-const STATUS_GROUP_META = {
-  COMPLETED: { label: 'Đã Hoàn Thành', icon: 'ti-circle-check' },
-  IN_PROGRESS: { label: 'Đang Học', icon: 'ti-player-play' },
-  NOT_STARTED: { label: 'Chưa Bắt Đầu', icon: 'ti-circle-dashed' },
-  OVERDUE: { label: 'Quá Hạn', icon: 'ti-alert-triangle' },
-  FAILED: { label: 'Cần Thi Lại', icon: 'ti-reload' },
-  NOT_ENROLLED: { label: 'Chưa Ghi Danh', icon: 'ti-bookmark-off' },
-};
-
-/** Khóa nhóm + nhãn hiển thị cho 1 khóa học theo tiêu chí `groupBy`. */
-function courseGroupOf(c, groupBy) {
-  switch (groupBy) {
-    case 'ORG_UNIT': {
-      const a = c.assignment;
-      if (!a) return { key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' };
-      if (a.assignmentType === 'BUSINESS_UNIT') return { key: 'BU', label: 'Bắt Buộc Toàn Công Ty (MMVN)', icon: 'ti-building-skyscraper' };
-      if (a.assignmentType === 'DIVISION') {
-        const div = divisions.find((d) => d.id === a.targetDivisionId);
-        return { key: `DIV-${a.targetDivisionId}`, label: div ? `Khối ${div.name}` : 'Khối Chuyên Trách', icon: 'ti-building' };
-      }
-      return { key: `LVLREQ-${a.targetLevel}`, label: `Bắt Buộc Level ${a.targetLevel}`, icon: 'ti-stairs-up' };
-    }
-    case 'LEVEL':
-      return { key: String(c.targetLevel), label: `Level ${c.targetLevel} — ${levelShortLabel(c.targetLevel)}`, icon: 'ti-stairs-up' };
-    case 'STATUS': {
-      const s = c.enrollment?.status || 'NOT_ENROLLED';
-      const meta = STATUS_GROUP_META[s] || STATUS_GROUP_META.NOT_ENROLLED;
-      return { key: s, label: meta.label, icon: meta.icon };
-    }
-    case 'MODALITY': {
-      const b = courseFormatBadge(c);
-      return { key: b.label, label: b.label, icon: 'ti-device-desktop' };
-    }
-    case 'DOMAIN':
-      return { key: c.domain || c.category || 'Khác', label: c.domain || c.category || 'Khác', icon: 'ti-category' };
-    default:
-      return { key: 'ALL', label: '', icon: '' };
-  }
-}
-
-/** Gom danh sách khóa học thành các nhóm hiển thị theo tiêu chí `groupBy`, kèm % tiến độ của từng nhóm. */
-function buildCourseGroups(items, groupBy) {
-  if (groupBy === 'NONE') return null;
-  const map = new Map();
-  items.forEach((c) => {
-    const g = courseGroupOf(c, groupBy);
-    if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
-    map.get(g.key).items.push(c);
-  });
-  const groups = Array.from(map.values()).map((g) => {
-    const completed = g.items.filter((c) => c.enrollment?.status === 'COMPLETED').length;
-    const percent = g.items.length ? Math.round((completed / g.items.length) * 100) : 0;
-    return { ...g, percent, completed };
-  });
-  if (groupBy === 'LEVEL') {
-    groups.sort((a, b) => Number(b.key) - Number(a.key));
-  } else {
-    groups.sort((a, b) => b.items.length - a.items.length);
-  }
-  return groups;
-}
-
 // Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
 export { JobLevelBadge };
 
-// Huy hiệu phân biệt 3 hình thức học: 🌐 E-Learning tự học, 💻 Lớp Trực Tuyến
-// Trực Tiếp (Virtual Class), 🏢 Đào Tạo Trực Tiếp (In-Person/ILT).
-function courseFormatBadge(c) {
-  const isInPerson = c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB';
-  if (isInPerson) return { icon: '🏢', label: 'Trực Tiếp (ILT)', tone: 'blue' };
-  if (c.onlineClassType === 'VIRTUAL_CLASS') return { icon: '💻', label: 'Lớp Trực Tuyến Live', tone: 'amber' };
-  return { icon: '🌐', label: 'E-Learning', tone: 'sage' };
-}
+// courseFormatBadge / courseGroupOf / buildCourseGroups giờ dùng chung từ
+// src/utils/courseCatalog.js (trước đây lặp lại y hệt ở AdminCourses.jsx).
 
 const statusMap = {
   IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
@@ -119,7 +55,10 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     myCourses,
     language,
     t,
+    curricula,
+    companyCategories,
   } = useCourseStore();
+  const [viewingCurriculum, setViewingCurriculum] = useState(null);
 
   const user = propUser || authUser || currentUser;
   const userLevel = normalizeLevel(user.level);
@@ -181,9 +120,17 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   // khóa nhảy cóc từ 2 cấp trở lên bị ẩn hoàn toàn khỏi danh mục, không hiện
   // dạng khóa bị chặn nữa (khác với "Khóa Học Của Tôi": khóa đã gán thì luôn
   // hiện đủ, không lọc theo cấp bậc).
+  // Khóa Đã Đóng (CLOSED): học viên chưa từng tham gia thì ẩn hẳn khỏi Toàn Bộ
+  // Thư Viện (không mở đăng ký mới); đã hoàn thành/đang học dở thì vẫn thấy để
+  // ôn tập/học tiếp. `allCourses` là danh sách thô (không merge enrollment cá
+  // nhân), nên tra theo id trong `enrolledCourses` (đã merge sẵn) thay vì đọc
+  // trực tiếp c.enrollment — xem isCourseVisibleWhenClosed() trong courseCatalog.js.
+  const enrolledCourseIdSet = new Set(enrolledCourses.map((c) => c.id));
   const activeCourseList = scopeTab === 'MY_COURSES'
     ? enrolledCourses
-    : allCourses.filter((c) => isCourseVisibleInCatalog(userLevel, c.targetLevel));
+    : allCourses
+      .filter((c) => isCourseVisibleInCatalog(userLevel, c.targetLevel))
+      .filter((c) => computeLifecycleStatus(c) !== 'CLOSED' || enrolledCourseIdSet.has(c.id) || isCourseVisibleWhenClosed(c));
 
   // Bảng tra cứu trạng thái truy cập theo cấp bậc cho danh sách đang hiển thị.
   const accessById = {};
@@ -201,7 +148,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
       s === statusFilter;
 
-    const matchCategory = categoryFilter === 'ALL' || c.category === categoryFilter;
+    const matchCategory = courseMatchesCategory(c, categoryFilter);
     const matchOrgUnit = orgUnitFilter === 'ALL' || courseGroupOf(c, 'ORG_UNIT').key === orgUnitFilter;
     const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter
       || (formatFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS');
@@ -215,7 +162,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     return matchStatus && matchCategory && matchOrgUnit && matchFormat && matchSearch;
   });
 
-  const categoryOptions = [...new Set(allCourses.map((c) => c.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const categoryOptions = [...new Set(allCourses.flatMap((c) => (c.categories && c.categories.length ? c.categories : [c.category])).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const orgUnitOptionsMap = new Map();
   allCourses.forEach((c) => {
     const g = courseGroupOf(c, 'ORG_UNIT');
@@ -467,6 +414,28 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 <Button size="sm" variant="outline" icon="ti-player-play" onClick={() => handleStart(rec, accessFor(rec, user))}>
                   Vào Học Ngay
                 </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CURRICULUM (GIÁO TRÌNH HỌC) — chỉ hiện ở Toàn Bộ Thư Viện, chỉ liệt
+          kê giáo trình đã Published; mỗi giáo trình gộp nhiều khóa E-Learning
+          tự học thành 1 lộ trình Curriculum -> Courses -> Modules -> Lessons. */}
+      {scopeTab === 'FULL_CATALOG' && curricula.filter((cur) => cur.status === 'PUBLISHED').length > 0 && (
+        <div className="card card-pad" style={{ marginBottom: 20 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <i className="ti ti-books" style={{ color: 'var(--rail)' }} />
+            📚 Giáo Trình Học (Curriculum)
+          </div>
+          <div className="grid grid-3" style={{ gap: 12 }}>
+            {curricula.filter((cur) => cur.status === 'PUBLISHED').map((cur) => (
+              <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cur.title}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 30 }}>{cur.description}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 8 }}>{(cur.courseIds || []).length} khóa E-Learning</div>
+                <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>Xem Chi Tiết</Button>
               </div>
             ))}
           </div>
@@ -850,6 +819,12 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           </div>
         )}
       </Modal>
+
+      {viewingCurriculum && (
+        <Modal isOpen title={viewingCurriculum.title} subtitle={viewingCurriculum.description} onClose={() => setViewingCurriculum(null)} size="lg">
+          <CurriculumTree curriculum={viewingCurriculum} courses={allCourses} />
+        </Modal>
+      )}
     </>
   );
 }

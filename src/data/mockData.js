@@ -30,6 +30,7 @@ import {
 import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from './levelSystem';
 import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
+import { canonicalizeCategory } from '../utils/courseCatalog';
 
 export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 
@@ -713,6 +714,113 @@ courses.forEach((c) => {
 });
 
 // ---------------------------------------------------------------------------
+// Category chuẩn hóa + Lifecycle Status theo ngày (Draft/Upcoming/Open/Closed):
+// mọi khóa học được gán categories[] (đa lĩnh vực, category giữ nguyên làm
+// categories[0] để tương thích ngược) và startDate/endDate, rải đều xác định
+// (không dùng Math.random, để ổn định qua các lần tải lại) trên cả 4 trạng
+// thái vòng đời — bao gồm ép 2 khóa CLOSED có ghi danh thật (1 đã hoàn thành,
+// 1 đang học dở) để kiểm thử quy tắc hiển thị của học viên với khóa đã đóng.
+// Xem computeLifecycleStatus() trong src/utils/courseCatalog.js.
+const LIFECYCLE_TODAY = new Date('2026-08-26');
+const FORCE_CLOSED_COURSE_IDS = new Set(['CRS-FSH-002', 'CRS-HSE-019']);
+function isoPlusDays(base, days) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+const LIFECYCLE_BUCKET_CYCLE = [
+  'DRAFT', 'UPCOMING', 'UPCOMING', 'CLOSED', 'CLOSED', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN',
+  'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN',
+];
+courses.forEach((c, i) => {
+  c.category = canonicalizeCategory(c.category);
+  c.categories = [c.category];
+
+  const bucket = FORCE_CLOSED_COURSE_IDS.has(c.id) ? 'CLOSED' : LIFECYCLE_BUCKET_CYCLE[i % LIFECYCLE_BUCKET_CYCLE.length];
+  if (bucket === 'DRAFT') {
+    c.status = 'DRAFT';
+    c.startDate = isoPlusDays(LIFECYCLE_TODAY, 20 + (i % 10));
+    c.endDate = isoPlusDays(LIFECYCLE_TODAY, 110 + (i % 10));
+  } else {
+    c.status = 'PUBLISHED';
+    if (bucket === 'UPCOMING') {
+      c.startDate = isoPlusDays(LIFECYCLE_TODAY, 10 + (i % 15));
+      c.endDate = isoPlusDays(LIFECYCLE_TODAY, 100 + (i % 15));
+    } else if (bucket === 'CLOSED') {
+      c.startDate = isoPlusDays(LIFECYCLE_TODAY, -120 - (i % 20));
+      c.endDate = isoPlusDays(LIFECYCLE_TODAY, -10 - (i % 20));
+    } else {
+      c.startDate = isoPlusDays(LIFECYCLE_TODAY, -60 - (i % 20));
+      c.endDate = isoPlusDays(LIFECYCLE_TODAY, 60 + (i % 20));
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Curriculum (Giáo Trình Học): tập hợp nhiều khóa E-Learning tự học thành một
+// lộ trình có cấu trúc Curriculum -> Courses -> Modules -> Lessons. Chỉ tham
+// chiếu courseIds thật (không sao chép lại modules/lessons) — chỉ những khóa
+// deliveryType ONLINE_ELEARNING & onlineClassType không phải VIRTUAL_CLASS.
+// ---------------------------------------------------------------------------
+export const curricula = [
+  {
+    id: 'CUR-FSH-FOUNDATIONS',
+    title: 'Chương Trình Nền Tảng An Toàn Thực Phẩm',
+    description: 'Giáo trình E-Learning tổng hợp các khóa an toàn & vệ sinh thực phẩm bắt buộc cho toàn bộ nhân sự khối Tươi Sống.',
+    category: 'Food Safety & Hygiene',
+    courseIds: ['CRS-FSH-001', 'CRS-FSH-003', 'CRS-FSH-004', 'CRS-FSH-005'],
+    status: 'PUBLISHED',
+    createdBy: adminUser.userId,
+    createdAt: '2026-07-01',
+    updatedAt: '2026-07-01',
+  },
+  {
+    id: 'CUR-LEAD-TRACK',
+    title: 'Lộ Trình Phát Triển Năng Lực Lãnh Đạo',
+    description: 'Giáo trình E-Learning dành cho quản lý cấp trung: kỹ năng huấn luyện, phản hồi, tư duy chiến lược và quản trị thay đổi.',
+    category: 'Leadership & Management',
+    courseIds: ['CRS-LEAD-049', 'CRS-LEAD-050', 'CRS-LEAD-051', 'CRS-LEAD-052'],
+    status: 'PUBLISHED',
+    createdBy: adminUser.userId,
+    createdAt: '2026-07-05',
+    updatedAt: '2026-07-05',
+  },
+  {
+    id: 'CUR-ISA-SECURITY',
+    title: 'Giáo Trình An Ninh Thông Tin Doanh Nghiệp',
+    description: 'Giáo trình E-Learning bắt buộc toàn công ty về nhận thức an ninh mạng và bảo vệ dữ liệu khách hàng.',
+    category: 'Information Security',
+    courseIds: ['CRS-ISA-011', 'CRS-ISA-012', 'CRS-ISA-013'],
+    status: 'PUBLISHED',
+    createdBy: adminUser.userId,
+    createdAt: '2026-07-10',
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'CUR-SCM-OPS',
+    title: 'Giáo Trình Vận Hành Chuỗi Cung Ứng & Kho Vận',
+    description: 'Giáo trình E-Learning cho nhân sự Khối Chuỗi Cung Ứng: an toàn xe nâng, kho vận, quản lý đội xe.',
+    category: 'Supply Chain & Logistics',
+    courseIds: ['CRS-SCM-059', 'CRS-SCM-060', 'CRS-SCM-061'],
+    status: 'DRAFT',
+    createdBy: adminUser.userId,
+    createdAt: '2026-08-01',
+    updatedAt: '2026-08-01',
+  },
+  {
+    id: 'CUR-ETHIC-COMPLIANCE',
+    title: 'Giáo Trình Tuân Thủ & Đạo Đức Doanh Nghiệp',
+    description: 'Giáo trình E-Learning bắt buộc: quy tắc ứng xử, chống tham nhũng, và các quy định pháp lý cạnh tranh công bằng.',
+    category: 'Compliance & Ethics',
+    courseIds: ['CRS-ETHIC-081', 'CRS-ETHIC-082', 'CRS-ETHIC-083'],
+    status: 'PUBLISHED',
+    createdBy: adminUser.userId,
+    createdAt: '2026-08-05',
+    updatedAt: '2026-08-05',
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Chuẩn hóa Định Dạng Bài Giảng (Format Standardization): quy hoạch mọi bài
 // giảng về đúng 5 định dạng chuẩn — SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
 // (Udemy/LinkedIn Learning/Coursera/YouTube/Khác) — thay cho các lessonType cũ
@@ -848,6 +956,9 @@ export function createBlankCourse() {
     title: 'Untitled course',
     description: '',
     category: 'Store Operations',
+    categories: ['Store Operations'],
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     thumbnail: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
     imageUrl: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
     milestoneImage: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',

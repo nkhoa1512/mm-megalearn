@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
   meetingRoomsAndLabs, teachingEligibleUsers, nextMajorVersion,
@@ -10,6 +10,7 @@ import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelS
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../state/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
+import { generateCourseCode } from '../../utils/courseCatalog';
 
 // 5 định dạng bài giảng chuẩn hóa (thay cho DOCUMENT/SCRIPT/IMAGE/TEXT cũ và
 // việc course.modality từng ghi đè loại bài giảng ở Lesson Player):
@@ -42,6 +43,22 @@ function cloneCourse(course) {
 // header always have something real to show instead of "undefined".
 function withVersionDefaults(course) {
   return { ...course, version: course.version || 'v1.0', versionHistory: course.versionHistory || [] };
+}
+
+// Khóa được biên soạn trước khi có categories[] đa lựa chọn — suy ra từ
+// category đơn cũ để ô tick chọn Category luôn có sẵn dữ liệu ban đầu.
+function withCategoryDefaults(course) {
+  if (course.categories && course.categories.length) return course;
+  return { ...course, categories: course.category ? [course.category] : [] };
+}
+
+// deliveryType + onlineClassType đã quyết định đầy đủ hình thức đào tạo (3
+// nhánh: E-Learning tự học / Lớp trực tuyến Live / Đào tạo trực tiếp) — suy ra
+// modality/format từ đây thay vì để Admin chọn tay qua dropdown đã bỏ.
+function deriveModalityFormat(deliveryType, onlineClassType) {
+  if (deliveryType === 'IN_PERSON_CLASSROOM') return { modality: 'CLASSROOM_LAB', format: 'Store Practical Lab / ILT' };
+  if (onlineClassType === 'VIRTUAL_CLASS') return { modality: 'VIRTUAL_LIVE_CLASS', format: 'Live Online Class' };
+  return { modality: 'SCORM_PACKAGE', format: 'SCORM 2004' };
 }
 
 function defaultRuleFor(lessonType) {
@@ -144,7 +161,8 @@ function blankQuestion() {
 export default function AdminCourseBuilder() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, addCourse, updateCourse, publishNewCourseVersion, currentUser: authUser } = useCourseStore();
+  const [searchParams] = useSearchParams();
+  const { courses, addCourse, updateCourse, publishNewCourseVersion, companyCategories, currentUser: authUser } = useCourseStore();
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
@@ -170,6 +188,18 @@ export default function AdminCourseBuilder() {
     // createBlankCourse()) để trang danh mục biết khóa này thuộc quyền quản
     // lý của ai: Trainer/L&D chỉ sửa/xóa được khóa do chính họ tạo.
     const base = { ...course, createdBy: authUser?.userId };
+    // Bấm "Create New Course" từ 1 trong 3 tab Learning Objects/Online Class/
+    // Classroom trên Catalog thì tự chọn sẵn đúng hình thức đào tạo tương ứng.
+    const qDeliveryType = searchParams.get('deliveryType');
+    const qOnlineClassType = searchParams.get('onlineClassType');
+    if (!isTrainerOnly && qDeliveryType) {
+      return {
+        ...base,
+        deliveryType: qDeliveryType,
+        onlineClassType: qOnlineClassType || base.onlineClassType,
+        ...deriveModalityFormat(qDeliveryType, qOnlineClassType || base.onlineClassType),
+      };
+    }
     if (!isTrainerOnly) return base;
     return {
       ...base,
@@ -181,7 +211,7 @@ export default function AdminCourseBuilder() {
     };
   }
 
-  const [draft, setDraft] = useState(() => withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))));
+  const [draft, setDraft] = useState(() => withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())))));
   const [activeModuleId, setActiveModuleId] = useState(draft.modules[0]?.id);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -189,7 +219,7 @@ export default function AdminCourseBuilder() {
   const [importMessage, setImportMessage] = useState('');
 
   useEffect(() => {
-    const fresh = withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())));
+    const fresh = withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))));
     setDraft(fresh);
     setActiveModuleId(fresh.modules[0]?.id);
     setSaved(false);
@@ -392,10 +422,13 @@ export default function AdminCourseBuilder() {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  function handleSave() {
-    if (!draft.title.trim()) { setError('Course title is required.'); return; }
-    if (draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) { setError('Mandatory courses need a due date for their target audience.'); return; }
-    if (draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS') {
+  // nextStatus: 'DRAFT' (nút Lưu Nháp) hoặc 'PUBLISHED' (nút Tạo Khóa Học /
+  // Lưu Thay Đổi) — thay cho dropdown Status thủ công đã bỏ.
+  function handleSave(nextStatus) {
+    if (!draft.title.trim()) { setError('Course name is required.'); return; }
+    if (nextStatus === 'PUBLISHED' && draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) { setError('Mandatory courses need a due date for their target audience.'); return; }
+    if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) { setError('End date must be after start date.'); return; }
+    if (nextStatus === 'PUBLISHED' && draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS') {
       const vm = draft.virtualMeeting || {};
       if (!vm.meetingUrl?.trim()) { setError('Virtual Class cần đường dẫn phòng họp (Meeting URL).'); return; }
       if (!vm.scheduleDate) { setError('Virtual Class cần Ngày tổ chức buổi học.'); return; }
@@ -403,14 +436,10 @@ export default function AdminCourseBuilder() {
       if (!vm.instructorId) { setError('Virtual Class cần chọn Giảng viên/Người chủ trì.'); return; }
     }
     setError('');
+    const { modality, format } = deriveModalityFormat(draft.deliveryType, draft.onlineClassType);
+    const toSave = { ...draft, status: nextStatus, modality, format };
     if (isNew) {
-      addCourse(draft);
-      // Tạo xong quay về danh sách khóa học — không ở lại trang Builder, vì
-      // Admin bấm "Create New Course" từ trang danh sách sang đây, làm xong
-      // thì nên thấy ngay khóa mới trong danh sách chứ không phải bị giữ lại
-      // trên form (muốn sửa tiếp thì bấm Edit lại từ danh sách).
-      navigate('/admin/courses');
-      return;
+      addCourse(toSave);
     } else {
       // Sửa nội dung thông thường (typo, cập nhật nhỏ...) ghi thẳng vào phiên
       // bản đang sống — KHÔNG tăng currentVersion (chỉ nút "Phát Hành Phiên
@@ -422,12 +451,12 @@ export default function AdminCourseBuilder() {
         updatedAt: new Date().toISOString().slice(0, 10),
         note: 'Content updated via Course Builder.',
       };
-      const withVersion = { ...draft, versionHistory: [entry, ...(draft.versionHistory || [])] };
-      setDraft(withVersion);
+      const withVersion = { ...toSave, versionHistory: [entry, ...(draft.versionHistory || [])] };
       updateCourse(draft.id, withVersion);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    // Lưu xong quay về danh sách khóa học (Create lẫn Save Changes) — Admin
+    // muốn sửa tiếp thì bấm Edit lại từ danh sách, không giữ lại trên form.
+    navigate('/admin/courses');
   }
 
   return (
@@ -439,14 +468,10 @@ export default function AdminCourseBuilder() {
         <div>
           <h1>{draft.title || 'Untitled course'}</h1>
           <p style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {draft.code || 'No code yet'} &middot; {draft.category || 'No category'} &middot; {draft.version} <CourseTypeBadge courseType={draft.courseType} />
+            {draft.code || 'No code yet'} &middot; {(draft.categories && draft.categories.join(', ')) || draft.category || 'No category'} &middot; {draft.version} <CourseTypeBadge courseType={draft.courseType} />
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {error && <span style={{ fontSize: 12.5, color: 'var(--rust)' }}>{error}</span>}
-          {saved && <Badge tone="sage" icon="ti-check">Saved</Badge>}
-          <Button variant="primary" icon="ti-device-floppy" onClick={handleSave}>{isNew ? 'Create course' : 'Save changes'}</Button>
-        </div>
+        {saved && <Badge tone="sage" icon="ti-check">Saved</Badge>}
       </div>
 
       {/* VERSION MANAGEMENT BAR — chỉ hiện với khóa đã tồn tại. Publish New
@@ -608,7 +633,7 @@ export default function AdminCourseBuilder() {
           <div className="grid" style={{ gridTemplateColumns: canCreateVirtualClass ? '1fr 1fr' : '1fr', gap: 12 }}>
             <button
               type="button"
-              onClick={() => patch({ onlineClassType: 'E_LEARNING' })}
+              onClick={() => patch({ onlineClassType: 'E_LEARNING', ...deriveModalityFormat(draft.deliveryType, 'E_LEARNING') })}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
                 border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail)' : '1px solid var(--line)',
@@ -628,7 +653,7 @@ export default function AdminCourseBuilder() {
             {canCreateVirtualClass && (
               <button
                 type="button"
-                onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS' })}
+                onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat(draft.deliveryType, 'VIRTUAL_CLASS') })}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
                   border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber)' : '1px solid var(--line)',
@@ -961,16 +986,76 @@ export default function AdminCourseBuilder() {
         <div className="section-label" style={{ margin: '0 0 14px' }}>Basic information</div>
         <div className="grid grid-3" style={{ marginBottom: 14 }}>
           <div>
-            <label className="field-label">Course title</label>
-            <input className="field-input" value={draft.title} onChange={(e) => patch({ title: e.target.value })} />
+            <label className="field-label">Course name</label>
+            <input
+              className="field-input"
+              value={draft.title}
+              onChange={(e) => {
+                const title = e.target.value;
+                setDraft((d) => {
+                  const next = { ...d, title };
+                  if (!d.code || !d.code.trim()) {
+                    next.code = generateCourseCode(title, courses.map((c) => c.code));
+                  }
+                  return next;
+                });
+              }}
+            />
           </div>
           <div>
             <label className="field-label">Course code</label>
-            <input className="field-input" value={draft.code} onChange={(e) => patch({ code: e.target.value })} />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input className="field-input" value={draft.code} onChange={(e) => patch({ code: e.target.value })} style={{ flex: 1 }} />
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="Refresh course code"
+                title="Sinh mã ngẫu nhiên mới"
+                onClick={() => patch({ code: generateCourseCode(draft.title, courses.map((c) => c.code)) })}
+              >
+                <i className="ti ti-refresh" aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div>
-            <label className="field-label">Category</label>
-            <input className="field-input" value={draft.category} onChange={(e) => patch({ category: e.target.value })} />
+            <label className="field-label">Start date</label>
+            <input type="date" className="field-input" value={draft.startDate || ''} onChange={(e) => patch({ startDate: e.target.value })} />
+          </div>
+        </div>
+        <div className="grid grid-3" style={{ marginBottom: 14 }}>
+          <div style={{ gridColumn: 'span 2' }}>
+            <label className="field-label">Category (Lĩnh vực)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {companyCategories.map((cat) => {
+                const active = (draft.categories || []).includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setDraft((d) => {
+                        const cur = d.categories && d.categories.length ? d.categories : (d.category ? [d.category] : []);
+                        const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
+                        return { ...d, categories: next, category: next[0] || '' };
+                      });
+                    }}
+                    style={{
+                      padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      border: active ? '1.5px solid var(--rail)' : '1px solid var(--line-strong)',
+                      background: active ? 'var(--rail)' : 'var(--paper-raised)',
+                      color: active ? '#fff' : 'var(--ink)',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="field-hint">Chọn một hoặc nhiều lĩnh vực — quản trị danh mục tại System Configuration &gt; Course Categories.</div>
+          </div>
+          <div>
+            <label className="field-label">End date</label>
+            <input type="date" className="field-input" value={draft.endDate || ''} onChange={(e) => patch({ endDate: e.target.value })} />
           </div>
         </div>
         <div className="grid grid-2" style={{ marginBottom: 14 }}>
@@ -1019,52 +1104,7 @@ export default function AdminCourseBuilder() {
             </select>
             <div className="field-hint">Only Admin can create, configure, publish and assign Mandatory courses.</div>
           </div>
-          <div>
-            <label className="field-label">Modality &amp; Format</label>
-            <select
-              className="field-select"
-              value={draft.modality || (draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'CLASSROOM_LAB' : 'SCORM_PACKAGE')}
-              onChange={(e) => {
-                const modality = e.target.value;
-                const format = modality === 'SCORM_PACKAGE' ? 'SCORM 2004'
-                  : modality === 'PPT_PRESENTATION' ? 'Interactive PPT Slides'
-                  : modality === 'EXTERNAL_PLATFORM' ? 'LinkedIn Learning / Coursera Embed'
-                  : modality === 'YOUTUBE_LINK' ? 'YouTube Video (External Link)'
-                  : modality === 'CLASSROOM_LAB' ? 'Store Practical Lab / ILT'
-                  : 'Interactive Video';
-                patch({ modality, format });
-              }}
-            >
-              <option value="SCORM_PACKAGE">SCORM 2004 Package</option>
-              <option value="INTERACTIVE_VIDEO">Interactive Video Stream</option>
-              <option value="PPT_PRESENTATION">PowerPoint Slide Deck</option>
-              <option value="EXTERNAL_PLATFORM">External Platform (LinkedIn / Coursera / Udemy)</option>
-              <option value="YOUTUBE_LINK">YouTube Video (Link)</option>
-              <option value="CLASSROOM_LAB">Store Practical Lab (ILT Workshop)</option>
-            </select>
-          </div>
-          <div>
-            <label className="field-label">Status</label>
-            <select className="field-select" value={draft.status} onChange={(e) => patch({ status: e.target.value })}>
-              <option value="DRAFT">Draft</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="ARCHIVED">Archived</option>
-            </select>
-          </div>
         </div>
-
-        {draft.modality === 'YOUTUBE_LINK' && (
-          <div style={{ marginBottom: 14 }}>
-            <label className="field-label">YouTube Video URL</label>
-            <input
-              className="field-input"
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={draft.content?.youtubeUrl || ''}
-              onChange={(e) => patch({ content: { ...draft.content, youtubeUrl: e.target.value } })}
-            />
-            <div className="field-hint">Paste a full YouTube watch/share/embed URL — learners will see it played inline on the lesson screen.</div>
-          </div>
-        )}
 
         {/* Course Thumbnail & Roadmap Milestone Visual Image */}
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 10, padding: '16px', marginTop: 14, border: '1px solid var(--line)' }}>
@@ -1470,6 +1510,18 @@ export default function AdminCourseBuilder() {
             <input type="checkbox" checked={cfg.certificateEnabled} onChange={(e) => patchConfig({ certificateEnabled: e.target.checked })} /> Issue certificate on completion
           </label>
         </div>
+      </div>
+
+      {/* BOTTOM ACTION BAR — Save/Create được dời xuống cuối trang; lưu xong
+          quay về danh sách khóa học (xem handleSave). */}
+      <div
+        className="card card-pad"
+        style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, flexWrap: 'wrap', position: 'sticky', bottom: 0, background: 'var(--paper-raised)', zIndex: 5 }}
+      >
+        {error && <span style={{ fontSize: 12.5, color: 'var(--rust)', marginRight: 'auto' }}>{error}</span>}
+        <Button variant="ghost" icon="ti-x" onClick={() => navigate('/admin/courses')}>Cancel</Button>
+        <Button variant="outline" icon="ti-file-pencil" onClick={() => handleSave('DRAFT')}>Save as Draft</Button>
+        <Button variant="primary" icon="ti-device-floppy" onClick={() => handleSave('PUBLISHED')}>{isNew ? 'Create Course' : 'Save Changes'}</Button>
       </div>
     </>
   );

@@ -17,6 +17,8 @@ import { normalizeRole, hasCapability } from '../data/roles';
 import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadmapMatrix';
 import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
+import { curricula as initialCurricula } from '../data/mockData';
+import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -32,6 +34,11 @@ const USERS_KEY = 'mm-megalearn-users-v6';
 // đa tầng (BU -> Division -> Department -> Sub-Department x Level). Bump key
 // để không nạp nhầm shape cũ từ localStorage.
 const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
+// Curriculum (Curriculum -> Courses -> Modules -> Lessons) và danh mục lĩnh
+// vực công ty (Category) do System Admin quản lý — hai domain mới, chưa từng
+// tồn tại trước bản Catalog 5-Phân-Hệ này.
+const CURRICULUM_KEY = 'mm-megalearn-curriculum-v1';
+const CATEGORY_KEY = 'mm-megalearn-categories-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -78,6 +85,15 @@ export function CourseStoreProvider({ children }) {
   // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
   const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, SCOPE_ROADMAP_MATRIX));
 
+  // Giáo trình (Curriculum): tập hợp nhiều khóa E-Learning tự học theo cấu
+  // trúc Curriculum -> Courses -> Modules -> Lessons (chỉ tham chiếu courseIds,
+  // không sao chép lại module/lesson).
+  const [curricula, setCurricula] = useState(() => loadItem(CURRICULUM_KEY, initialCurricula));
+
+  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn, System Admin có thể
+  // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
+  const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
+
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeAiTab, setActiveAiTab] = useState('tutor');
@@ -113,6 +129,8 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
       localStorage.setItem(ENROLLMENT_KEY, JSON.stringify(enrollments));
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
+      localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
+      localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
       localStorage.setItem(THEME_KEY, JSON.stringify(theme));
       localStorage.setItem(LANG_KEY, JSON.stringify(language));
       if (typeof document !== 'undefined') {
@@ -121,7 +139,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -200,6 +218,24 @@ export function CourseStoreProvider({ children }) {
 
   const removeCourse = useCallback((courseId) => {
     setCourses((prev) => prev.filter((c) => c.id !== courseId));
+  }, []);
+
+  const addCurriculum = useCallback((curriculum) => {
+    setCurricula((prev) => [...prev, curriculum]);
+  }, []);
+
+  const updateCurriculum = useCallback((curriculumId, nextCurriculum) => {
+    setCurricula((prev) => prev.map((c) => (c.id === curriculumId ? nextCurriculum : c)));
+  }, []);
+
+  const deleteCurriculum = useCallback((curriculumId) => {
+    setCurricula((prev) => prev.filter((c) => c.id !== curriculumId));
+  }, []);
+
+  const addCompanyCategory = useCallback((name) => {
+    const clean = (name || '').trim();
+    if (!clean) return;
+    setCompanyCategories((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
   }, []);
 
   // -------------------------------------------------------------------------
@@ -686,6 +722,12 @@ export function CourseStoreProvider({ children }) {
         getUserRoadmapTabs,
         publishRoadmapScope: publishRoadmapScopeAction,
         requestRoadmapPromotion,
+        curricula,
+        addCurriculum,
+        updateCurriculum,
+        deleteCurriculum,
+        companyCategories,
+        addCompanyCategory,
         accessFor,
         enrollCourse,
         enrollments,
