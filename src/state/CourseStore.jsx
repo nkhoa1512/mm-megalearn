@@ -19,6 +19,7 @@ import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
 import { curricula as initialCurricula } from '../data/mockData';
 import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
+import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -230,6 +231,41 @@ export function CourseStoreProvider({ children }) {
 
   const deleteCurriculum = useCallback((curriculumId) => {
     setCurricula((prev) => prev.filter((c) => c.id !== curriculumId));
+  }, []);
+
+  const assignCurriculum = useCallback((curriculumId, assignment) => {
+    const newAsg = {
+      id: `asg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      assignedBy: currentUser?.userId || 'USR-1000',
+      assignedAt: new Date().toISOString().slice(0, 10),
+      ...assignment,
+    };
+    setCurricula((prev) =>
+      prev.map((c) =>
+        c.id === curriculumId
+          ? {
+              ...c,
+              assignments: [...(c.assignments || []), newAsg],
+              updatedAt: new Date().toISOString().slice(0, 10),
+            }
+          : c
+      )
+    );
+    return newAsg;
+  }, [currentUser]);
+
+  const removeCurriculumAssignment = useCallback((curriculumId, assignmentId) => {
+    setCurricula((prev) =>
+      prev.map((c) =>
+        c.id === curriculumId
+          ? {
+              ...c,
+              assignments: (c.assignments || []).filter((a) => a.id !== assignmentId),
+              updatedAt: new Date().toISOString().slice(0, 10),
+            }
+          : c
+      )
+    );
   }, []);
 
   const addCompanyCategory = useCallback((name) => {
@@ -571,10 +607,74 @@ export function CourseStoreProvider({ children }) {
     [approvals, currentUser]
   );
 
-  /** "Khóa học của tôi" đã gộp cả ghi danh phát sinh trong phiên. */
+  /** "Khóa học của tôi" đã gộp cả ghi danh phát sinh trong phiên & các khóa thuộc Giáo Trình được gán. */
   const myCourses = useCallback(
-    (courseList = courses, user = currentUser) => myLearningCourses(courseList, user, enrollments),
-    [courses, currentUser, enrollments]
+    (courseList = courses, user = currentUser) => {
+      const base = myLearningCourses(courseList, user, enrollments);
+      const baseIds = new Set(base.map((c) => c.id));
+      const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
+
+      const curriculumMap = {};
+      assignedCurricula.forEach((cur) => {
+        (cur.courseIds || []).forEach((cId) => {
+          curriculumMap[cId] = {
+            curriculumId: cur.id,
+            curriculumTitle: cur.title,
+            curriculumDueDate: cur.assignedVia?.dueDate,
+          };
+        });
+      });
+
+      // Bổ sung thông tin Giáo trình cho các khóa đã có trong danh sách
+      const enrichedBase = base.map((c) => {
+        if (curriculumMap[c.id]) {
+          return {
+            ...c,
+            courseType: 'MANDATORY',
+            isCurriculum: true,
+            curriculumId: curriculumMap[c.id].curriculumId,
+            curriculumTitle: curriculumMap[c.id].curriculumTitle,
+            curriculumDueDate: curriculumMap[c.id].curriculumDueDate,
+            enrollment: {
+              ...(c.enrollment || {}),
+              isMandatory: true,
+              dueDate: curriculumMap[c.id].curriculumDueDate || c.enrollment?.dueDate,
+            },
+          };
+        }
+        return c;
+      });
+
+      // Tự động gán thêm các khóa học thuộc Giáo trình nếu học viên chưa có ghi danh
+      const extraCourses = [];
+      Object.entries(curriculumMap).forEach(([cId, meta]) => {
+        if (!baseIds.has(cId)) {
+          const raw = courseList.find((c) => c.id === cId);
+          if (raw) {
+            extraCourses.push({
+              ...raw,
+              courseType: 'MANDATORY',
+              isCurriculum: true,
+              curriculumId: meta.curriculumId,
+              curriculumTitle: meta.curriculumTitle,
+              curriculumDueDate: meta.curriculumDueDate,
+              enrollment: {
+                status: 'NOT_STARTED',
+                progressPercent: 0,
+                score: null,
+                isMandatory: true,
+                dueDate: meta.curriculumDueDate,
+                enrolledAt: new Date().toISOString().slice(0, 10),
+                enrolledVersion: raw.currentVersion || 'v1.0',
+              },
+            });
+          }
+        }
+      });
+
+      return [...enrichedBase, ...extraCourses];
+    },
+    [courses, currentUser, enrollments, curricula]
   );
 
   const myEnrollments = useMemo(() => enrollmentsForUser(currentUser, enrollments), [currentUser, enrollments]);
@@ -726,6 +826,8 @@ export function CourseStoreProvider({ children }) {
         addCurriculum,
         updateCurriculum,
         deleteCurriculum,
+        assignCurriculum,
+        removeCurriculumAssignment,
         companyCategories,
         addCompanyCategory,
         accessFor,

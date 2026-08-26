@@ -17,6 +17,7 @@ import {
   computeLifecycleStatus, isCourseVisibleWhenClosed,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../components/catalog/CurriculumTree';
+import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
 
 // Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
 // 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
@@ -53,6 +54,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     accessFor,
     requestLevelAdvanceApproval,
     myCourses,
+    myEnrollments,
     language,
     t,
     curricula,
@@ -66,6 +68,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const oneLevelUp = nextLevelUp(userLevel);
 
   const enrolledCourses = myCourses(allCourses, user);
+  const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
 
   // Scope Tab: MY_COURSES (khóa đã gán) vs FULL_CATALOG (100 khóa toàn doanh nghiệp)
   const [scopeTab, setScopeTab] = useState('MY_COURSES');
@@ -142,6 +145,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     const matchStatus =
       statusFilter === 'ALL' ||
       (statusFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
+      (statusFilter === 'CURRICULUM' && (c.isCurriculum || Boolean(c.curriculumTitle))) ||
       (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
       (statusFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS') ||
       (statusFilter === 'LEVEL_UP' && access.state === ACCESS_STATE.REQUESTABLE) ||
@@ -420,6 +424,66 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
       )}
 
+      {/* GIÁO TRÌNH BẮT BUỘC ĐƯỢC GÁN CHO BẠN (MY ASSIGNED CURRICULA) */}
+      {scopeTab === 'MY_COURSES' && assignedCurricula.length > 0 && (
+        <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--paper-raised) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid var(--rail-soft, #c7d2fe)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontWeight: 800, fontSize: 14.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
+              <i className="ti ti-books" style={{ color: 'var(--rail)', fontSize: 18 }} />
+              <span>📚 Giáo Trình Bắt Buộc Của Bạn ({assignedCurricula.length})</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Các lộ trình học tập E-Learning được phân bổ theo đơn vị hoặc cấp bậc của bạn
+            </div>
+          </div>
+          <div className="grid grid-2" style={{ gap: 12 }}>
+            {assignedCurricula.map((cur) => {
+              const prog = getCurriculumProgress(cur, user, myEnrollments, allCourses);
+              return (
+                <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{cur.title}</div>
+                      <Badge tone={prog.status === 'COMPLETED' ? 'sage' : prog.status === 'IN_PROGRESS' ? 'amber' : 'rail'} size="sm">
+                        {prog.status === 'COMPLETED' ? 'Đã Hoàn Thành' : prog.status === 'IN_PROGRESS' ? 'Đang Học' : 'Chưa Bắt Đầu'}
+                      </Badge>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.4 }}>
+                      {cur.description}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Badge tone="slate" size="sm">{cur.category || 'Giáo trình'}</Badge>
+                      <span>&middot;</span>
+                      <span>{prog.totalCourses} khóa học E-Learning</span>
+                      {cur.assignedVia?.dueDate && (
+                        <>
+                          <span>&middot;</span>
+                          <span style={{ color: 'var(--rust)', fontWeight: 600 }}>
+                            <i className="ti ti-clock" /> Hạn chót: {cur.assignedVia.dueDate}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                        <span>Tiến độ giáo trình:</span>
+                        <strong>{prog.completedCourses}/{prog.totalCourses} khóa ({prog.progressPercent}%)</strong>
+                      </div>
+                      <ProgressBar value={prog.progressPercent} tone={prog.status === 'COMPLETED' ? 'sage' : 'rail'} size="sm" />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button size="sm" variant="outline" icon="ti-sitemap" onClick={() => setViewingCurriculum(cur)}>
+                      Xem Lộ Trình Giáo Trình
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* CURRICULUM (GIÁO TRÌNH HỌC) — chỉ hiện ở Toàn Bộ Thư Viện, chỉ liệt
           kê giáo trình đã Published; mỗi giáo trình gộp nhiều khóa E-Learning
           tự học thành 1 lộ trình Curriculum -> Courses -> Modules -> Lessons. */}
@@ -453,6 +517,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: completedCount },
                 { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
                 { id: 'MANDATORY', label: 'Bắt Buộc Tuân Thủ', count: mandatoryCount },
+                { id: 'CURRICULUM', label: '📚 Theo Giáo Trình', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
                 { id: 'IN_PERSON', label: '🏢 Đào Tạo Trực Tiếp (In-Person)', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
                 { id: 'VIRTUAL_CLASS', label: '💻 Lớp Trực Tuyến (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
               ].map((tab) => (
@@ -599,6 +664,11 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                               <span>{c.category || c.domain}</span>
                               <span>&middot;</span>
                               <span>{c.estimatedHours || '3h'}</span>
+                              {(c.isCurriculum || c.curriculumTitle) && (
+                                <Badge tone="ai" size="sm">
+                                  <i className="ti ti-books" /> {c.curriculumTitle ? `Giáo trình: ${c.curriculumTitle}` : 'Theo Giáo Trình'}
+                                </Badge>
+                              )}
                             </div>
                             {access.isLevelLocked && (
                               <div style={{ fontSize: 11, color: isBlocked ? 'var(--rust)' : 'var(--blue)', marginTop: 4, maxWidth: 320, lineHeight: 1.4 }}>
@@ -701,6 +771,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 <div style={{ padding: '14px 16px 8px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{c.title}</div>
+                    {(c.isCurriculum || c.curriculumTitle) && (
+                      <div style={{ marginBottom: 6 }}>
+                        <Badge tone="ai" size="sm">
+                          <i className="ti ti-books" /> {c.curriculumTitle ? `Giáo trình: ${c.curriculumTitle}` : 'Theo Giáo Trình'}
+                        </Badge>
+                      </div>
+                    )}
                     <div style={{ marginBottom: 8 }}><LevelAccessBadge access={access} /></div>
                     <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, marginBottom: 12 }}>
                       {access.isLevelLocked ? access.reason : (c.description || 'Chương trình đào tạo chuyên môn theo tiêu chuẩn MM Mega Market.')}
@@ -822,7 +899,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
       {viewingCurriculum && (
         <Modal isOpen title={viewingCurriculum.title} subtitle={viewingCurriculum.description} onClose={() => setViewingCurriculum(null)} size="lg">
-          <CurriculumTree curriculum={viewingCurriculum} courses={allCourses} />
+          <CurriculumTree curriculum={viewingCurriculum} courses={allCourses} enrollmentsMap={myEnrollments} />
         </Modal>
       )}
     </>

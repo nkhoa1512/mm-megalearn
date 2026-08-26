@@ -5,6 +5,7 @@ import { useCourseStore } from '../../state/CourseStore';
 import { currentUser, resolveCourseView } from '../../data/mockData';
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 import { getCourseImage } from '../../data/courseImages';
+import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
 
 function statusLabel(status) {
   switch (status) {
@@ -29,12 +30,18 @@ function formatDate(iso) {
 export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, currentUser: authUser, enrollCourse, accessFor, requestLevelAdvanceApproval, myEnrollments } = useCourseStore();
+  const { courses, currentUser: authUser, enrollCourse, accessFor, requestLevelAdvanceApproval, myEnrollments, curricula } = useCourseStore();
   const user = authUser || currentUser;
   const rawCourse = courses.find((c) => c.id === courseId);
   const [requestOpen, setRequestOpen] = useState(false);
   const [justification, setJustification] = useState('');
   const [notice, setNotice] = useState(null);
+
+  const assignedCurricula = useMemo(() => getAssignedCurriculaForUser(curricula, user), [curricula, user]);
+  const parentCurriculum = useMemo(() => {
+    if (!courseId) return null;
+    return assignedCurricula.find((cur) => (cur.courseIds || []).includes(courseId));
+  }, [assignedCurricula, courseId]);
 
   // Gộp ghi danh phát sinh trong phiên (ví dụ vừa được duyệt học vượt cấp).
   const rawEnrollment = rawCourse ? (myEnrollments[rawCourse.id] || rawCourse.enrollment) : null;
@@ -124,6 +131,28 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
           </div>
         </div>
       </div>
+
+      {parentCurriculum && (
+        <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--rail, #6366f1)', background: 'rgba(99,102,241,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+              <i className="ti ti-books" />
+            </div>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>
+                Khóa học thuộc Giáo Trình Bắt Buộc: <strong>{parentCurriculum.title}</strong>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Khóa học này nằm trong lộ trình giáo trình được gán bắt buộc cho bạn.
+                {parentCurriculum.assignedVia?.dueDate ? ` Hạn hoàn thành: ${parentCurriculum.assignedVia.dueDate}.` : ''}
+              </div>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" icon="ti-arrow-left" onClick={() => navigate(basePath)}>
+            Xem Danh Sách Giáo Trình
+          </Button>
+        </div>
+      )}
 
       {notice && (
         <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--sage)', background: '#F0FDF4', fontSize: 13, color: '#166534', fontWeight: 600 }}>

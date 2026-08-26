@@ -773,6 +773,26 @@ export const curricula = [
     createdBy: adminUser.userId,
     createdAt: '2026-07-01',
     updatedAt: '2026-07-01',
+    assignments: [
+      {
+        id: 'asg-fsh-1',
+        assignmentType: 'SUBDEPARTMENT',
+        targetId: 'sdept-fresh',
+        targetLabel: 'Fresh Food Operations (Khối Tươi Sống)',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-07-01',
+        dueDate: '2026-09-30',
+      },
+      {
+        id: 'asg-fsh-2',
+        assignmentType: 'USER',
+        targetId: 'USR-1042',
+        targetLabel: 'Minh Tran (MMVN-1042 · Lvl 7 · Bakery Section)',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-07-01',
+        dueDate: '2026-09-30',
+      },
+    ],
   },
   {
     id: 'CUR-LEAD-TRACK',
@@ -784,6 +804,26 @@ export const curricula = [
     createdBy: adminUser.userId,
     createdAt: '2026-07-05',
     updatedAt: '2026-07-05',
+    assignments: [
+      {
+        id: 'asg-lead-1',
+        assignmentType: 'ROLE',
+        targetId: 'manager',
+        targetLabel: 'Line Manager (Quản lý cấp trung Level 4-5)',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-07-05',
+        dueDate: '2026-10-15',
+      },
+      {
+        id: 'asg-lead-2',
+        assignmentType: 'LEVEL',
+        targetId: '4',
+        targetLabel: 'Level 4 - Senior Supervisor / Section Manager',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-07-05',
+        dueDate: '2026-10-15',
+      },
+    ],
   },
   {
     id: 'CUR-ISA-SECURITY',
@@ -795,6 +835,17 @@ export const curricula = [
     createdBy: adminUser.userId,
     createdAt: '2026-07-10',
     updatedAt: '2026-07-10',
+    assignments: [
+      {
+        id: 'asg-isa-1',
+        assignmentType: 'BUSINESS_UNIT',
+        targetId: 'bu-mmvn',
+        targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-07-10',
+        dueDate: '2026-09-15',
+      },
+    ],
   },
   {
     id: 'CUR-SCM-OPS',
@@ -806,6 +857,17 @@ export const curricula = [
     createdBy: adminUser.userId,
     createdAt: '2026-08-01',
     updatedAt: '2026-08-01',
+    assignments: [
+      {
+        id: 'asg-scm-1',
+        assignmentType: 'DIVISION',
+        targetId: 'div-scm',
+        targetLabel: 'SCM - Supply Chain Management',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-08-01',
+        dueDate: '2026-11-30',
+      },
+    ],
   },
   {
     id: 'CUR-ETHIC-COMPLIANCE',
@@ -817,6 +879,17 @@ export const curricula = [
     createdBy: adminUser.userId,
     createdAt: '2026-08-05',
     updatedAt: '2026-08-05',
+    assignments: [
+      {
+        id: 'asg-ethic-1',
+        assignmentType: 'BUSINESS_UNIT',
+        targetId: 'bu-mmvn',
+        targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
+        assignedBy: adminUser.userId,
+        assignedAt: '2026-08-05',
+        dueDate: '2026-09-25',
+      },
+    ],
   },
 ];
 

@@ -42,7 +42,15 @@ export function targetOptionsFor(assignmentType) {
     ];
     case 'USER': return (demoUsers || allUsers())
       .filter((u) => u.role !== 'admin')
-      .map((u) => ({ id: u.userId, label: `${u.fullName} (${u.employeeCode} · Lvl ${u.level} · ${u.divisionCode}-${u.departmentCode})` }));
+      .map((u) => ({
+        id: u.userId,
+        label: `${u.fullName} (${u.employeeCode} · Lvl ${u.level} · ${u.divisionCode || ''}-${u.departmentCode || ''})`,
+        level: String(u.level || ''),
+        fullName: u.fullName,
+        employeeCode: u.employeeCode,
+        departmentCode: u.departmentCode,
+        divisionCode: u.divisionCode,
+      }));
     default: return [];
   }
 }
