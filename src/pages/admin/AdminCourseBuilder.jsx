@@ -405,7 +405,12 @@ export default function AdminCourseBuilder() {
     setError('');
     if (isNew) {
       addCourse(draft);
-      navigate(`/admin/courses/${draft.id}`, { replace: true });
+      // Tạo xong quay về danh sách khóa học — không ở lại trang Builder, vì
+      // Admin bấm "Create New Course" từ trang danh sách sang đây, làm xong
+      // thì nên thấy ngay khóa mới trong danh sách chứ không phải bị giữ lại
+      // trên form (muốn sửa tiếp thì bấm Edit lại từ danh sách).
+      navigate('/admin/courses');
+      return;
     } else {
       // Sửa nội dung thông thường (typo, cập nhật nhỏ...) ghi thẳng vào phiên
       // bản đang sống — KHÔNG tăng currentVersion (chỉ nút "Phát Hành Phiên
