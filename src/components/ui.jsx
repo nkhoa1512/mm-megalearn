@@ -311,12 +311,15 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
   );
 }
 
+// 5 định dạng bài giảng chuẩn hóa: SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
+// (Udemy/LinkedIn Learning/Coursera/YouTube/Khác) — ASSESSMENT là cổng thẩm
+// định năng lực riêng, tách biệt khỏi 5 định dạng nội dung bài giảng.
 const LESSON_ICON = {
+  SCORM: 'ti-package',
   VIDEO: 'ti-video',
-  DOCUMENT: 'ti-file-text',
-  IMAGE: 'ti-photo',
-  TEXT: 'ti-align-left',
-  SCRIPT: 'ti-article',
+  PDF: 'ti-file-text',
+  PPT: 'ti-presentation',
+  EXTERNAL_LINK: 'ti-external-link',
   ASSESSMENT: 'ti-writing',
 };
 
@@ -378,7 +381,7 @@ export function LessonRow({ lesson, disabled }) {
 }
 
 function lessonTypeLabel(type) {
-  return { VIDEO: 'Video', DOCUMENT: 'Document', IMAGE: 'Image', TEXT: 'Text', SCRIPT: 'Script', ASSESSMENT: 'Assessment' }[type] || type;
+  return { SCORM: 'SCORM', VIDEO: 'Video', PDF: 'PDF', PPT: 'PPT', EXTERNAL_LINK: 'External Link', ASSESSMENT: 'Assessment' }[type] || type;
 }
 
 const TONE_COLOR = {

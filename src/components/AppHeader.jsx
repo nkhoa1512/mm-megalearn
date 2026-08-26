@@ -45,12 +45,14 @@ const ROLE_WORK_NAV = {
   useradmin: [
     { to: '/user-admin', label: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelVi: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelEn: 'User & Org Administration', icon: 'ti-users-group', end: true },
     { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
+    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
     { to: '/admin/roadmaps', label: 'Quản Lý Lộ Trình Cấp Bậc', labelVi: 'Quản Lý Lộ Trình Cấp Bậc', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
     { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', labelVi: 'Duyệt Đơn Học Vượt Cấp', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
   ],
   sysadmin: [
     { to: '/sysadmin', label: 'Quản Trị Hệ Thống & Bảo Mật', labelVi: 'Quản Trị Hệ Thống & Bảo Mật', labelEn: 'System Admin & Security', icon: 'ti-server-cog', end: true },
     { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
+    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
     { to: '/admin/roadmaps', label: 'Quản Lý Lộ Trình Cấp Bậc', labelVi: 'Quản Lý Lộ Trình Cấp Bậc', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
     { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', labelVi: 'Duyệt Đơn Học Vượt Cấp', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
   ],

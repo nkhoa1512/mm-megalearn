@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
-  meetingRoomsAndLabs, teachingEligibleUsers,
+  meetingRoomsAndLabs, teachingEligibleUsers, nextMajorVersion,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../components/ui';
@@ -11,10 +11,22 @@ import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../state/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 
+// 5 định dạng bài giảng chuẩn hóa (thay cho DOCUMENT/SCRIPT/IMAGE/TEXT cũ và
+// việc course.modality từng ghi đè loại bài giảng ở Lesson Player):
+// SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK (Udemy/LinkedIn Learning/Coursera/
+// YouTube/Khác). ASSESSMENT là cổng thẩm định năng lực riêng, không tính vào
+// 5 định dạng truyền tải nội dung này.
 const LESSON_ICON = {
-  VIDEO: 'ti-video', DOCUMENT: 'ti-file-text', IMAGE: 'ti-photo',
-  TEXT: 'ti-align-left', SCRIPT: 'ti-article', ASSESSMENT: 'ti-writing',
+  SCORM: 'ti-package', VIDEO: 'ti-video', PDF: 'ti-file-text',
+  PPT: 'ti-presentation', EXTERNAL_LINK: 'ti-external-link', ASSESSMENT: 'ti-writing',
 };
+const EXTERNAL_LINK_PLATFORMS = [
+  { value: 'UDEMY', label: 'Udemy' },
+  { value: 'LINKEDIN', label: 'LinkedIn Learning' },
+  { value: 'COURSERA', label: 'Coursera' },
+  { value: 'YOUTUBE', label: 'YouTube' },
+  { value: 'CUSTOM', label: 'Khác (Custom LMS Link)' },
+];
 
 
 function genId(prefix) {
@@ -34,15 +46,14 @@ function withVersionDefaults(course) {
 
 function defaultRuleFor(lessonType) {
   if (lessonType === 'VIDEO') return { requiredWatchPercent: 90 };
-  if (lessonType === 'IMAGE') return { requireAllViewed: true, imageCount: 1 };
+  if (lessonType === 'PPT' || lessonType === 'SCORM') return { requireAllViewed: true };
   if (lessonType === 'ASSESSMENT') return {};
   return { requiredReadPercent: 90 };
 }
 
 function defaultContentFor(lessonType) {
-  if (lessonType === 'IMAGE') return { files: [] };
-  if (lessonType === 'TEXT') return { text: '' };
-  if (lessonType === 'ASSESSMENT') return {};
+  if (lessonType === 'PPT' || lessonType === 'SCORM' || lessonType === 'ASSESSMENT') return {};
+  if (lessonType === 'EXTERNAL_LINK') return { platform: 'UDEMY', url: '' };
   return { url: '', fileName: null, fileType: null };
 }
 
@@ -133,7 +144,7 @@ function blankQuestion() {
 export default function AdminCourseBuilder() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, addCourse, updateCourse, currentUser: authUser } = useCourseStore();
+  const { courses, addCourse, updateCourse, publishNewCourseVersion, currentUser: authUser } = useCourseStore();
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
@@ -144,6 +155,9 @@ export default function AdminCourseBuilder() {
   const canAuthorOnline = hasCapability(authRole, 'canAuthorOnlineCourses');
   const canAuthorOffline = hasCapability(authRole, 'canAuthorOfflineCourses');
   const isTrainerOnly = canAuthorOffline && !canAuthorOnline;
+  // User Admin & SysAdmin đều được tạo/chỉ định Giảng viên cho Lớp Học Trực
+  // Tuyến Zoom/Teams (Virtual Class) — Trainer/L&D & HRBP thì không.
+  const canCreateVirtualClass = hasCapability(authRole, 'canCreateVirtualClass');
   // Danh sách Giảng viên đủ chuẩn: L&D, HRBP, User Admin, SysAdmin (mọi role
   // có canBeAssignedToClass) — thay cho trainersDirectory cũ chỉ 4 hồ sơ tĩnh.
   const eligibleTrainers = teachingEligibleUsers();
@@ -224,6 +238,22 @@ export default function AdminCourseBuilder() {
   function patchConfig(fields) {
     setDraft((d) => ({ ...d, configuration: { ...d.configuration, ...fields } }));
   }
+  function patchVirtualMeeting(fields) {
+    setDraft((d) => ({ ...d, virtualMeeting: { ...(d.virtualMeeting || {}), ...fields } }));
+  }
+  function addVirtualMaterial(name) {
+    if (!name || !name.trim()) return;
+    setDraft((d) => ({
+      ...d,
+      virtualMeeting: { ...(d.virtualMeeting || {}), materials: [...((d.virtualMeeting || {}).materials || []), { name: name.trim(), url: '#' }] },
+    }));
+  }
+  function removeVirtualMaterial(index) {
+    setDraft((d) => ({
+      ...d,
+      virtualMeeting: { ...(d.virtualMeeting || {}), materials: ((d.virtualMeeting || {}).materials || []).filter((_, i) => i !== index) },
+    }));
+  }
 
   function setCourseType(courseType) {
     setDraft((d) => {
@@ -283,8 +313,8 @@ export default function AdminCourseBuilder() {
   }
   function addLesson(moduleId) {
     const l = {
-      id: genId('les'), title: 'New lesson', lessonType: 'DOCUMENT', isRequired: true, status: 'NOT_STARTED', progressPercent: 0,
-      rule: defaultRuleFor('DOCUMENT'), content: defaultContentFor('DOCUMENT'),
+      id: genId('les'), title: 'New lesson', lessonType: 'PDF', isRequired: true, status: 'NOT_STARTED', progressPercent: 0,
+      rule: defaultRuleFor('PDF'), content: defaultContentFor('PDF'),
     };
     setDraft((d) => ({ ...d, modules: d.modules.map((m) => (m.id === moduleId ? { ...m, lessons: [...m.lessons, l] } : m)) }));
   }
@@ -335,30 +365,59 @@ export default function AdminCourseBuilder() {
     }));
   }
 
-  function bumpVersion(version) {
-    const m = /^v(\d+)\.(\d+)$/.exec(version || 'v1.0');
-    return m ? `v${m[1]}.${Number(m[2]) + 1}` : 'v1.1';
+  const [publishNoteOpen, setPublishNoteOpen] = useState(false);
+  const [publishNote, setPublishNote] = useState('');
+
+  // Đa phiên bản: đóng băng nội dung hiện tại thành snapshot bất biến rồi
+  // tăng currentVersion lên 1 bậc (v1.0 -> v2.0 -> ...). Học viên đã ghi danh
+  // dưới phiên bản cũ (hoàn thành hay đang học dở) không bị ảnh hưởng bởi các
+  // chỉnh sửa Admin thực hiện sau lệnh Publish này (xem CourseStore.publishNewCourseVersion).
+  // Cập nhật state cục bộ optimistic (không đọc lại `courses` từ store vì
+  // setCourses là bất đồng bộ, đọc ngay sau khi gọi sẽ ra dữ liệu cũ).
+  function handlePublishNewVersion() {
+    const oldVersion = draft.currentVersion || draft.version || 'v1.0';
+    const newVersion = nextMajorVersion(oldVersion);
+    const note = publishNote.trim();
+    publishNewCourseVersion(draft.id, note);
+    setPublishNoteOpen(false);
+    setPublishNote('');
+    setDraft((d) => ({
+      ...d,
+      currentVersion: newVersion,
+      version: newVersion,
+      versions: { ...d.versions, [oldVersion]: { version: oldVersion, publishedAt: d.publishedAt, archivedAt: new Date().toISOString().slice(0, 10), updatedBy: authUser?.fullName, changeLog: note, modules: d.modules, configuration: d.configuration, modality: d.modality, format: d.format } },
+      versionHistory: [{ version: newVersion, updatedBy: authUser?.fullName || 'L&D Admin', updatedAt: new Date().toISOString().slice(0, 10), note: note || `Phát hành phiên bản ${newVersion}.` }, ...(d.versionHistory || [])],
+    }));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
 
   function handleSave() {
     if (!draft.title.trim()) { setError('Course title is required.'); return; }
     if (draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) { setError('Mandatory courses need a due date for their target audience.'); return; }
+    if (draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS') {
+      const vm = draft.virtualMeeting || {};
+      if (!vm.meetingUrl?.trim()) { setError('Virtual Class cần đường dẫn phòng họp (Meeting URL).'); return; }
+      if (!vm.scheduleDate) { setError('Virtual Class cần Ngày tổ chức buổi học.'); return; }
+      if (!vm.scheduleTime?.trim()) { setError('Virtual Class cần Khung giờ buổi học.'); return; }
+      if (!vm.instructorId) { setError('Virtual Class cần chọn Giảng viên/Người chủ trì.'); return; }
+    }
     setError('');
     if (isNew) {
       addCourse(draft);
       navigate(`/admin/courses/${draft.id}`, { replace: true });
     } else {
-      // Content version tracking: every save on an existing course bumps the
-      // version and appends who/when to versionHistory (newest first), so the
-      // Course Builder always shows which revision is current.
-      const nextVersion = bumpVersion(draft.version);
+      // Sửa nội dung thông thường (typo, cập nhật nhỏ...) ghi thẳng vào phiên
+      // bản đang sống — KHÔNG tăng currentVersion (chỉ nút "Phát Hành Phiên
+      // Bản Mới" mới tăng). Vẫn log 1 dòng vào versionHistory để có audit trail,
+      // nhưng giữ nguyên số phiên bản hiện tại.
       const entry = {
-        version: nextVersion,
+        version: draft.currentVersion || draft.version,
         updatedBy: authUser?.fullName || 'L&D Admin',
         updatedAt: new Date().toISOString().slice(0, 10),
         note: 'Content updated via Course Builder.',
       };
-      const withVersion = { ...draft, version: nextVersion, versionHistory: [entry, ...(draft.versionHistory || [])] };
+      const withVersion = { ...draft, versionHistory: [entry, ...(draft.versionHistory || [])] };
       setDraft(withVersion);
       updateCourse(draft.id, withVersion);
     }
@@ -385,6 +444,68 @@ export default function AdminCourseBuilder() {
         </div>
       </div>
 
+      {/* VERSION MANAGEMENT BAR — chỉ hiện với khóa đã tồn tại. Publish New
+          Version đóng băng nội dung hiện tại thành snapshot bất biến (bảo
+          toàn kết quả/tiến độ của học viên đã ghi danh phiên bản cũ) rồi tăng
+          currentVersion lên 1 bậc; không giới hạn số lần (v1.0 -> v2.0 ->
+          v3.0 -> ...). Sửa nhỏ qua "Save changes" không tăng phiên bản. */}
+      {!isNew && (
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--sage)', background: 'var(--sage-soft)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <i className="ti ti-git-branch" style={{ color: 'var(--sage-soft-text)', fontSize: 18 }} />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 13 }}>
+                  Phiên bản đang sống: <Badge tone="sage">{draft.currentVersion || draft.version}</Badge>
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  Học viên đã hoàn thành/đang học dở các phiên bản cũ vẫn được giữ nguyên kết quả &amp; nội dung — xem lịch sử bên dưới.
+                </div>
+              </div>
+            </div>
+            <Button variant="outline" icon="ti-versions" onClick={() => setPublishNoteOpen(true)}>
+              Phát Hành Phiên Bản Mới ({nextMajorVersion(draft.currentVersion || draft.version)})
+            </Button>
+          </div>
+
+          {publishNoteOpen && (
+            <div style={{ marginTop: 12, background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+              <label className="field-label">Ghi chú thay đổi (Change Log) cho {nextMajorVersion(draft.currentVersion || draft.version)}</label>
+              <textarea
+                className="field-input"
+                rows={2}
+                style={{ resize: 'vertical', marginBottom: 10 }}
+                placeholder="VD: Cập nhật video mới, chuẩn hóa gói SCORM và slide PPT 2026."
+                value={publishNote}
+                onChange={(e) => setPublishNote(e.target.value)}
+              />
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10 }}>
+                <i className="ti ti-alert-triangle" style={{ marginRight: 4, color: 'var(--amber)' }} />
+                Hành động này đóng băng vĩnh viễn phiên bản <strong>{draft.currentVersion || draft.version}</strong> hiện tại (bảo toàn 100% cho học viên đã ghi danh), rồi mở phiên bản <strong>{nextMajorVersion(draft.currentVersion || draft.version)}</strong> — mọi chỉnh sửa Module/Bài học sau đây (kể cả đang có trên form) sẽ thuộc về phiên bản mới.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <Button variant="ghost" onClick={() => { setPublishNoteOpen(false); setPublishNote(''); }}>Hủy</Button>
+                <Button variant="primary" icon="ti-rocket" onClick={handlePublishNewVersion}>Xác Nhận Phát Hành</Button>
+              </div>
+            </div>
+          )}
+
+          {Object.keys(draft.versions || {}).length > 0 && (
+            <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>Các phiên bản đã đóng băng (chỉ đọc):</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {Object.values(draft.versions).sort((a, b) => (a.version < b.version ? 1 : -1)).map((v) => (
+                  <div key={v.version} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, background: '#fff', borderRadius: 6, padding: '6px 10px' }}>
+                    <span><strong>{v.version}</strong> &mdash; {v.changeLog || 'Không có ghi chú.'}</span>
+                    <span style={{ color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{v.updatedBy} &middot; đóng băng {v.archivedAt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* DELIVERY MODE SWITCHER */}
       <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -407,7 +528,7 @@ export default function AdminCourseBuilder() {
           {canAuthorOnline && (
             <button
               type="button"
-              onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004' })}
+              onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', onlineClassType: draft.onlineClassType || 'E_LEARNING' })}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -466,6 +587,214 @@ export default function AdminCourseBuilder() {
           </button>
         </div>
       </div>
+
+      {/* CLASS TYPE SELECTOR — chỉ hiện khi thực sự có 2 lựa chọn để chọn: tự
+          học (E_LEARNING qua PDF/PPT/SCORM/Video) hoặc lớp trực tuyến trực
+          tiếp qua Zoom/Teams có Giảng viên chủ trì (VIRTUAL_CLASS, chỉ User
+          Admin mới có quyền này). Với người không có canCreateVirtualClass,
+          khóa Online chỉ có thể là E_LEARNING (đã mặc định sẵn) nên ẩn hẳn
+          card này đi — tránh trùng lặp với thẻ "Khóa Học Trực Tuyến" phía trên. */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)' }}>
+          <div className="section-label" style={{ margin: '0 0 10px' }}>
+            <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Loại Khóa Trực Tuyến / Class Type
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: canCreateVirtualClass ? '1fr 1fr' : '1fr', gap: 12 }}>
+            <button
+              type="button"
+              onClick={() => patch({ onlineClassType: 'E_LEARNING' })}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
+                border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail)' : '1px solid var(--line)',
+                background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft)' : '#fff',
+                cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                <i className="ti ti-player-play" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>E-Learning (Tự học)</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học Module/Bài học theo tiến độ riêng, có thể kèm bài thi trắc nghiệm</div>
+              </div>
+            </button>
+
+            {canCreateVirtualClass && (
+              <button
+                type="button"
+                onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS' })}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
+                  border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber)' : '1px solid var(--line)',
+                  background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft)' : '#fff',
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--amber)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                  <i className="ti ti-video" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Lớp Học Trực Tuyến Trực Tiếp (Virtual Classroom)</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Lớp live qua Zoom/Teams/Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh</div>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Người không có canCreateVirtualClass (Trainer/L&D, HRBP...) lỡ mở 1
+          khóa Virtual Class có sẵn qua URL trực tiếp — không thấy Class Type
+          Selector ở trên (đã ẩn), nhưng vẫn cần biết vì sao panel bên dưới bị khóa. */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && !canCreateVirtualClass && draft.onlineClassType === 'VIRTUAL_CLASS' && (
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', fontSize: 11.5, color: 'var(--ink-soft)' }}>
+          <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
+          Đây là Lớp Học Trực Tuyến Zoom/Teams — chỉ <strong>User Admin/SysAdmin</strong> được tạo và chỉnh sửa mục này. Bạn chỉ có thể xem.
+        </div>
+      )}
+
+      {/* VIRTUAL CLASSROOM LOGISTICS CARD — thay thế hoàn toàn Module/Bài học/Assessment
+          khi chọn VIRTUAL_CLASS: cấu hình nền tảng, link phòng họp, Giảng viên chủ trì,
+          lịch học cố định, sức chứa, Meeting ID/Passcode, hướng dẫn chuẩn bị & tài liệu.
+          Không có Quiz kết thúc khóa — hoàn thành = đã tham gia buổi học (điểm danh do
+          Giảng viên đánh dấu qua trang Điểm Danh hiện có ở Cổng Giảng Dạy). Bọc trong
+          <fieldset disabled> để chỉ User Admin/SysAdmin chỉnh sửa được — người
+          khác (nếu lỡ mở 1 khóa Virtual Class có sẵn) chỉ xem, không sửa. */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS' && (
+        <fieldset disabled={!canCreateVirtualClass} style={{ border: 'none', padding: 0, margin: 0 }}>
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--amber)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--amber-soft) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div className="section-label" style={{ margin: 0, color: 'var(--amber-soft-text)' }}>
+              <i className="ti ti-device-tv" style={{ marginRight: 6 }} />
+              Virtual Classroom Logistics
+            </div>
+            <Badge tone="amber" icon="ti-checklist">Điểm danh qua Cổng Giảng Dạy hiện có</Badge>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Nền tảng (Platform)</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.platform || 'TEAMS'}
+                onChange={(e) => patchVirtualMeeting({ platform: e.target.value })}
+              >
+                <option value="TEAMS">Microsoft Teams</option>
+                <option value="ZOOM">Zoom</option>
+                <option value="MEET">Google Meet</option>
+                <option value="WEBEX">Cisco Webex</option>
+                <option value="CUSTOM">Khác (Custom)</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Đường dẫn phòng họp (Meeting URL) *</label>
+              <input
+                className="field-input"
+                placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                value={draft.virtualMeeting?.meetingUrl || ''}
+                onChange={(e) => patchVirtualMeeting({ meetingUrl: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Giảng viên / Người chủ trì (Host Instructor) *</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.instructorId || ''}
+                onChange={(e) => {
+                  const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
+                  patchVirtualMeeting({ instructorId: tr?.userId || '', instructorName: tr?.fullName || '', instructorTitle: tr?.position || '' });
+                }}
+              >
+                <option value="">— Chọn Giảng viên —</option>
+                {eligibleTrainers.map((t) => (
+                  <option key={t.userId} value={t.userId}>
+                    {t.fullName} — {roleDefinition(t.role).labelVi}
+                    {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong "Lớp Học Phụ Trách" tại Cổng Giảng Dạy, kèm nút Chủ Trì Lớp Học (Host Meeting) và trang Điểm Danh đúng cơ chế đang dùng cho lớp Trực tiếp.</div>
+            </div>
+            <div>
+              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <input
+                type="number"
+                className="field-input"
+                value={draft.virtualMeeting?.maxCapacity || 50}
+                onChange={(e) => patchVirtualMeeting({ maxCapacity: Number(e.target.value) || 50 })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Ngày tổ chức (Schedule Date) *</label>
+              <input
+                type="date"
+                className="field-input"
+                value={draft.virtualMeeting?.scheduleDate || ''}
+                onChange={(e) => patchVirtualMeeting({ scheduleDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Khung giờ (Time Window) *</label>
+              <input
+                className="field-input"
+                placeholder="14:00 - 16:00 (2.0 giờ)"
+                value={draft.virtualMeeting?.scheduleTime || ''}
+                onChange={(e) => patchVirtualMeeting({ scheduleTime: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Trạng thái buổi học</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.status || 'UPCOMING'}
+                onChange={(e) => patchVirtualMeeting({ status: e.target.value })}
+              >
+                <option value="UPCOMING">Sắp diễn ra</option>
+                <option value="COMPLETED">Đã kết thúc</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Meeting ID</label>
+              <input className="field-input" value={draft.virtualMeeting?.meetingId || ''} onChange={(e) => patchVirtualMeeting({ meetingId: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label">Passcode</label>
+              <input className="field-input" value={draft.virtualMeeting?.passcode || ''} onChange={(e) => patchVirtualMeeting({ passcode: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label className="field-label">Hướng dẫn chuẩn bị (Prep Instructions)</label>
+            <textarea
+              className="field-input"
+              rows={2}
+              style={{ resize: 'vertical' }}
+              value={draft.virtualMeeting?.instructions || ''}
+              onChange={(e) => patchVirtualMeeting({ instructions: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="field-label">Tài liệu đính kèm (Materials)</label>
+            <VirtualMaterialsEditor
+              materials={draft.virtualMeeting?.materials || []}
+              onAdd={addVirtualMaterial}
+              onRemove={removeVirtualMaterial}
+            />
+          </div>
+        </div>
+        </fieldset>
+      )}
 
       {/* DEDICATED IN-PERSON CLASSROOM LOGISTICS CARD */}
       {draft.deliveryType === 'IN_PERSON_CLASSROOM' && (
@@ -934,6 +1263,13 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
+      {/* Module/Lesson editor & Assessment CHỈ áp dụng cho khóa Online E-Learning
+          tự học — không áp dụng cho Virtual Class (lớp live qua Zoom/Teams,
+          hoàn thành = đã tham gia buổi học) và cũng không áp dụng cho khóa
+          Trực Tiếp/ILT (chỉ là buổi học viên đến tham dự tại phòng/xưởng thực
+          hành do User Admin/SysAdmin đặt lịch — không có nội dung tự học nào cả). */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType !== 'VIRTUAL_CLASS' && (
+      <>
       <div className="grid" style={{ gridTemplateColumns: '260px 1fr', alignItems: 'start', gap: 20, marginBottom: 16 }}>
         <div className="card card-pad">
           <div className="section-label" style={{ margin: '0 0 12px' }}>Modules</div>
@@ -1105,6 +1441,8 @@ export default function AdminCourseBuilder() {
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>This course has no assessment; completion depends only on required lessons.</p>
         )}
       </div>
+      </>
+      )}
 
       <div className="card card-pad">
         <div className="section-label" style={{ margin: '0 0 14px' }}>Completion, prerequisites &amp; certificate</div>
@@ -1132,6 +1470,40 @@ export default function AdminCourseBuilder() {
   );
 }
 
+function VirtualMaterialsEditor({ materials, onAdd, onRemove }) {
+  const [name, setName] = useState('');
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <input
+          className="field-input"
+          placeholder="VD: Slide bài giảng.pdf"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); onAdd(name); setName(''); }
+          }}
+        />
+        <Button size="sm" icon="ti-plus" onClick={() => { onAdd(name); setName(''); }}>Thêm</Button>
+      </div>
+      {materials.length === 0 ? (
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Chưa có tài liệu đính kèm.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {materials.map((m, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#fff', border: '1px solid var(--line)', borderRadius: 6 }}>
+              <span style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}><i className="ti ti-paperclip" style={{ color: 'var(--ink-soft)' }} />{m.name}</span>
+              <button type="button" className="icon-btn" aria-label="Remove material" onClick={() => onRemove(i)}>
+                <i className="ti ti-x" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LessonEditor({ lesson, onChange, onRemove }) {
   return (
     <div className="activity-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -1147,7 +1519,7 @@ function LessonEditor({ lesson, onChange, onRemove }) {
             value={lesson.lessonType}
             onChange={(e) => onChange({ lessonType: e.target.value, rule: defaultRuleFor(e.target.value), content: defaultContentFor(e.target.value) })}
           >
-            {['VIDEO', 'DOCUMENT', 'IMAGE', 'TEXT', 'SCRIPT', 'ASSESSMENT'].map((t) => <option key={t} value={t}>{t}</option>)}
+            {['SCORM', 'VIDEO', 'PDF', 'PPT', 'EXTERNAL_LINK', 'ASSESSMENT'].map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={lesson.isRequired} onChange={(e) => onChange({ isRequired: e.target.checked })} /> Required
@@ -1163,65 +1535,90 @@ function LessonEditor({ lesson, onChange, onRemove }) {
   );
 }
 
-const ACCEPT_BY_TYPE = { VIDEO: 'video/*', DOCUMENT: '.pdf,.doc,.docx', SCRIPT: '.pdf,.doc,.docx,.txt', IMAGE: 'image/*' };
+const ACCEPT_BY_TYPE = { VIDEO: 'video/*', PDF: '.pdf', SCORM: '.zip' };
 
-// Content upload (sections 10-12): a local file previews for this browser
-// session only (no media server in this mockup — see CourseStore), or Admin can
-// paste a hosted URL instead, which persists across reloads like everything else.
+// Content upload (5 định dạng chuẩn hóa): file cục bộ chỉ xem trước trong
+// phiên trình duyệt này (không có media server trong bản mô phỏng — xem
+// CourseStore), hoặc Admin có thể dán URL đã host sẵn để giữ nguyên sau khi tải lại.
 function LessonContentFields({ lesson, onChange }) {
   const content = lesson.content || {};
 
-  if (lesson.lessonType === 'TEXT') {
-    return (
-      <div style={{ width: '100%' }}>
-        <textarea
-          className="field-input"
-          rows={3}
-          placeholder="Write the lesson text here…"
-          value={content.text || ''}
-          onChange={(e) => onChange({ content: { text: e.target.value } })}
-          style={{ resize: 'vertical' }}
-        />
-      </div>
-    );
-  }
-
   if (lesson.lessonType === 'ASSESSMENT') return null;
 
-  if (lesson.lessonType === 'IMAGE') {
-    const files = content.files || [];
-    function onPick(e) {
-      const picked = [...e.target.files].map((f) => ({ url: URL.createObjectURL(f), fileName: f.name, fileType: f.type }));
-      onChange({ content: { files: [...files, ...picked] } });
-      e.target.value = '';
-    }
-    function removeFile(i) {
-      onChange({ content: { files: files.filter((_, idx) => idx !== i) } });
-    }
+  if (lesson.lessonType === 'SCORM') {
     return (
-      <div style={{ width: '100%' }}>
-        <label className="btn btn-sm" style={{ cursor: 'pointer' }}>
-          <i className="ti ti-upload" aria-hidden="true" /> Choose images
-          <input type="file" accept={ACCEPT_BY_TYPE.IMAGE} multiple onChange={onPick} style={{ display: 'none' }} />
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label className="btn btn-sm" style={{ cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <i className="ti ti-upload" aria-hidden="true" /> Upload SCORM Package (.zip)
+          <input
+            type="file"
+            accept={ACCEPT_BY_TYPE.SCORM}
+            onChange={(e) => {
+              const f = e.target.files[0];
+              if (f) onChange({ content: { fileName: f.name } });
+              e.target.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
         </label>
-        {files.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            {files.map((f, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <img src={f.url} alt={f.fileName} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
-                <button type="button" className="icon-btn" onClick={() => removeFile(i)} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--paper-raised)' }} aria-label="Remove image">
-                  <i className="ti ti-x" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="field-hint">Uploaded images preview for this browser session only.</div>
+        {content.fileName && <Badge tone="sage" icon="ti-package">{content.fileName}</Badge>}
+        <div className="field-hint">Gói tương tác chuẩn SCORM 1.2 / SCORM 2004, giao tiếp qua CMI Data Model — học viên sẽ thấy trình mô phỏng SCORM tương tác.</div>
       </div>
     );
   }
 
-  // VIDEO / DOCUMENT / SCRIPT: a persisted URL, or a local file for a session preview.
+  if (lesson.lessonType === 'PPT') {
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label className="btn btn-sm" style={{ cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <i className="ti ti-upload" aria-hidden="true" /> Upload PPT / Slide Deck
+          <input
+            type="file"
+            accept=".ppt,.pptx,.pdf"
+            onChange={(e) => {
+              const f = e.target.files[0];
+              if (f) onChange({ content: { fileName: f.name } });
+              e.target.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
+        </label>
+        {content.fileName && <Badge tone="amber" icon="ti-presentation">{content.fileName}</Badge>}
+        <div className="field-hint">Slide bài giảng dạng Interactive Slide Deck, học viên lật từng trang.</div>
+      </div>
+    );
+  }
+
+  if (lesson.lessonType === 'EXTERNAL_LINK') {
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select
+            className="field-select"
+            style={{ width: 200 }}
+            value={content.platform || 'UDEMY'}
+            onChange={(e) => onChange({ content: { ...content, platform: e.target.value } })}
+          >
+            {EXTERNAL_LINK_PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+          <input
+            className="field-input"
+            style={{ flex: 1, minWidth: 240 }}
+            placeholder={content.platform === 'YOUTUBE' ? 'https://www.youtube.com/watch?v=...' : 'https://...'}
+            value={content.url || ''}
+            onChange={(e) => onChange({ content: { ...content, url: e.target.value } })}
+          />
+        </div>
+        <div className="field-hint">
+          {content.platform === 'YOUTUBE'
+            ? 'Video YouTube phát trực tiếp trong app qua Embed Player.'
+            : 'Học viên bấm mở tab học tại nền tảng đối tác (SSO doanh nghiệp MMVN) rồi xác nhận hoàn thành để đồng bộ Transcript.'}
+        </div>
+      </div>
+    );
+  }
+
+  // VIDEO / PDF: URL đã host, hoặc chọn file cục bộ để xem trước trong phiên này.
   function onPick(e) {
     const f = e.target.files[0];
     if (!f) return;
@@ -1271,19 +1668,15 @@ function LessonRuleFields({ lesson, onChange }) {
       </label>
     );
   }
-  if (lesson.lessonType === 'IMAGE') {
+  if (lesson.lessonType === 'PPT' || lesson.lessonType === 'SCORM') {
     return (
-      <>
-        <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-          Image count
-          <input className="field-input" style={{ width: 60 }} type="number" value={rule.imageCount ?? 1}
-            onChange={(e) => onChange({ rule: { ...rule, imageCount: Number(e.target.value) } })} />
-        </label>
-        <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <input type="checkbox" checked={rule.requireAllViewed ?? true} onChange={(e) => onChange({ rule: { ...rule, requireAllViewed: e.target.checked } })} /> Require all viewed
-        </label>
-      </>
+      <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input type="checkbox" checked={rule.requireAllViewed ?? true} onChange={(e) => onChange({ rule: { ...rule, requireAllViewed: e.target.checked } })} /> Require all slides/interactions viewed
+      </label>
     );
+  }
+  if (lesson.lessonType === 'EXTERNAL_LINK') {
+    return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Hoàn thành = học viên bấm xác nhận đã học xong tại nền tảng đối tác.</span>;
   }
   if (lesson.lessonType === 'ASSESSMENT') {
     return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Uses the course assessment configuration below.</span>;

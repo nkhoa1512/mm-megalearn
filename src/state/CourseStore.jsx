@@ -10,6 +10,7 @@ import {
   currentUser as defaultUser,
   myLearningCourses,
   enrollmentsForUser,
+  nextMajorVersion,
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
@@ -254,6 +255,11 @@ export function CourseStoreProvider({ children }) {
               courseId,
               userId: user.userId,
               courseType: course.courseType,
+              // Khóa chặt với phiên bản nội dung tại thời điểm ghi danh — nếu
+              // Admin "Phát Hành Phiên Bản Mới" sau đó, học viên này vẫn tiếp
+              // tục học/được tính điểm theo đúng cấu trúc bài giảng lúc ghi
+              // danh (xem resolveCourseView trong mockData.js).
+              enrolledVersion: course.currentVersion || course.version || 'v1.0',
               status: 'NOT_STARTED',
               progressPercent: 0,
               score: null,
@@ -275,21 +281,84 @@ export function CourseStoreProvider({ children }) {
   /**
    * Lưu tiến độ học: cập nhật cả object khóa học (trạng thái từng bài) lẫn
    * overlay ghi danh của học viên, để mọi màn hình đọc ra cùng một con số.
+   *
+   * `enrolledVersion` (đa phiên bản): nếu học viên đang ở đúng phiên bản đang
+   * sống của khóa học (hoặc không truyền), ghi thẳng vào course.modules như
+   * trước giờ. Nếu học viên đang học dở một phiên bản CŨ đã bị "Phát Hành
+   * Phiên Bản Mới" thay thế, CHỈ cập nhật snapshot đóng băng tương ứng trong
+   * course.versions[enrolledVersion] — tuyệt đối không đụng vào course.modules
+   * (đang thuộc phiên bản mới), tránh làm hỏng nội dung Admin đang biên soạn.
    */
   const saveCourseProgress = useCallback(
-    (courseId, nextCourse, user = currentUser) => {
-      setCourses((prev) => prev.map((c) => (c.id === courseId ? nextCourse : c)));
+    (courseId, nextCourse, user = currentUser, enrolledVersion) => {
+      setCourses((prev) => prev.map((c) => {
+        if (c.id !== courseId) return c;
+        const current = c.currentVersion || c.version || 'v1.0';
+        // Ghi danh không có enrolledVersion (dữ liệu mẫu HRIS gốc, tạo trước
+        // khi có tính năng đa phiên bản) mặc định là v1.0 — khớp với quy tắc
+        // fallback trong resolveCourseView() ở mockData.js.
+        const resolvedEnrolledVersion = enrolledVersion || 'v1.0';
+        if (resolvedEnrolledVersion === current) {
+          return nextCourse;
+        }
+        const snap = c.versions?.[resolvedEnrolledVersion] || {};
+        return {
+          ...c,
+          versions: {
+            ...c.versions,
+            [resolvedEnrolledVersion]: { ...snap, modules: nextCourse.modules, configuration: nextCourse.configuration },
+          },
+        };
+      }));
       if (!user || !nextCourse.enrollment) return;
       setEnrollments((prev) => ({
         ...prev,
         [user.userId]: {
           ...(prev[user.userId] || {}),
-          [courseId]: { ...(prev[user.userId] || {})[courseId], ...nextCourse.enrollment, courseId, userId: user.userId },
+          [courseId]: { ...(prev[user.userId] || {})[courseId], ...nextCourse.enrollment, courseId, userId: user.userId, enrolledVersion: enrolledVersion || (prev[user.userId] || {})[courseId]?.enrolledVersion },
         },
       }));
     },
     [currentUser]
   );
+
+  /**
+   * Đóng băng phiên bản hiện tại thành một snapshot bất biến trong
+   * course.versions[oldVersion] rồi tăng currentVersion lên 1 bậc (v1.0 ->
+   * v2.0 -> v3.0 -> ... không giới hạn số lần). course.modules/configuration
+   * giữ nguyên nội dung (Admin đã biên soạn xong) và từ giờ thuộc về phiên
+   * bản MỚI — học viên đã ghi danh dưới oldVersion (dù đã hoàn thành hay đang
+   * học dở) tiếp tục được phục vụ đúng snapshot đã đóng băng, không bị ảnh
+   * hưởng bởi các chỉnh sửa tiếp theo trên phiên bản mới.
+   */
+  const publishNewCourseVersion = useCallback((courseId, changeLog = '') => {
+    setCourses((prev) => prev.map((c) => {
+      if (c.id !== courseId) return c;
+      const oldVersion = c.currentVersion || c.version || 'v1.0';
+      const newVersion = nextMajorVersion(oldVersion);
+      const snapshot = {
+        version: oldVersion,
+        publishedAt: c.publishedAt || todayIso(),
+        archivedAt: todayIso(),
+        updatedBy: currentUser?.fullName || 'L&D Administrator',
+        changeLog: changeLog || `Phiên bản ${oldVersion} được đóng băng khi phát hành ${newVersion}.`,
+        modules: JSON.parse(JSON.stringify(c.modules)),
+        configuration: JSON.parse(JSON.stringify(c.configuration)),
+        modality: c.modality,
+        format: c.format,
+      };
+      return {
+        ...c,
+        currentVersion: newVersion,
+        version: newVersion,
+        versions: { ...c.versions, [oldVersion]: snapshot },
+        versionHistory: [
+          { version: newVersion, updatedBy: currentUser?.fullName || 'L&D Administrator', updatedAt: todayIso(), note: changeLog || `Phát hành phiên bản ${newVersion}.` },
+          ...(c.versionHistory || []),
+        ],
+      };
+    }));
+  }, [currentUser]);
 
   /** Học viên gửi đơn xin học vượt đúng 1 cấp liền kề. */
   const requestLevelAdvanceApproval = useCallback(
@@ -372,6 +441,7 @@ export function CourseStoreProvider({ children }) {
               courseId: course.id,
               userId: learnerId,
               courseType: course.courseType,
+              enrolledVersion: course.currentVersion || course.version || 'v1.0',
               status: 'NOT_STARTED',
               progressPercent: 0,
               score: null,
@@ -596,6 +666,7 @@ export function CourseStoreProvider({ children }) {
         updateCourse,
         removeCourse,
         saveCourseProgress,
+        publishNewCourseVersion,
         assignTrainerToCourse,
         classrooms,
         checkInClassroom,

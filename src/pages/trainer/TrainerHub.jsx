@@ -40,14 +40,38 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   // Filter in-person courses taught specifically by selected trainer
   const inPersonCourses = courses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB');
 
+  // Lớp Học Trực Tuyến Trực Tiếp (Virtual Class) do trainer này chủ trì — tái
+  // dùng nguyên cơ chế "Lớp Học Phụ Trách"/Điểm Danh bên dưới, chỉ khác nút
+  // hành động (Host Meeting thay vì QR) vì không có mã QR vật lý từ xa.
+  const virtualClassCourses = courses
+    .filter((c) => c.deliveryType === 'ONLINE_ELEARNING' && c.onlineClassType === 'VIRTUAL_CLASS')
+    .filter((c) => c.virtualMeeting?.instructorId === trainerProfile.userId || c.trainerName === trainerProfile.fullName)
+    .map((c) => {
+      const platformLabel = { TEAMS: 'Microsoft Teams', ZOOM: 'Zoom', MEET: 'Google Meet', WEBEX: 'Cisco Webex', CUSTOM: 'Nền tảng trực tuyến' }[c.virtualMeeting?.platform] || 'Microsoft Teams';
+      return {
+        ...c,
+        isVirtual: true,
+        meetingUrl: c.virtualMeeting?.meetingUrl,
+        date: c.virtualMeeting?.scheduleDate,
+        time: c.virtualMeeting?.scheduleTime,
+        venue: `${platformLabel} (Live Virtual Class)`,
+        maxCapacity: c.virtualMeeting?.maxCapacity || c.maxCapacity,
+        status: c.virtualMeeting?.status || 'UPCOMING',
+        materials: (c.virtualMeeting?.materials || []).map((m) => ({ name: m.name, type: 'LINK' })),
+      };
+    });
+
   const myTeachingClasses = [
     ...classroomSessions.filter((s) => s.trainerId === trainerProfile.userId || s.trainerName === trainerProfile.fullName),
     ...inPersonCourses.filter((c) => (c.trainerId === trainerProfile.userId || c.trainerName === trainerProfile.fullName) && !classroomSessions.some((s) => s.title === c.title)),
+    ...virtualClassCourses,
   ].map((c) => ({
     id: c.id,
     code: c.code,
     title: c.title,
     category: c.category,
+    isVirtual: c.isVirtual || false,
+    meetingUrl: c.meetingUrl || null,
     trainerName: c.trainerName || trainerProfile.fullName,
     trainerTitle: c.trainerTitle || roleDefinition(trainerProfile.role).labelVi,
     date: c.date || c.scheduleDate || '2026-08-28',
@@ -63,7 +87,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
       { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
     ],
-    materials: [
+    materials: (c.materials && c.materials.length > 0) ? c.materials : [
       { name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF' },
       { name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT' },
     ],
@@ -302,7 +326,11 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <Badge tone="blue" icon="ti-building-store">Đào tạo Thực hành (In-Person ILT)</Badge>
+                        {cls.isVirtual ? (
+                          <Badge tone="amber" icon="ti-video">💻 Lớp Trực Tuyến (Zoom/Teams)</Badge>
+                        ) : (
+                          <Badge tone="blue" icon="ti-building-store">Đào tạo Thực hành (In-Person ILT)</Badge>
+                        )}
                         <Badge tone={isUpcoming ? 'amber' : 'sage'}>
                           {isUpcoming ? 'Sắp Diễn Ra' : 'Đã Hoàn Thành'}
                         </Badge>
@@ -318,13 +346,33 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
 
                     {/* Action buttons for Trainer */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <Button
-                        variant="primary"
-                        icon="ti-qrcode"
-                        onClick={() => openLiveQrModal(cls)}
-                      >
-                        Mở QR Điểm danh Trực tiếp
-                      </Button>
+                      {cls.isVirtual ? (
+                        <Button
+                          variant="primary"
+                          icon="ti-video"
+                          onClick={() => window.open(cls.meetingUrl, '_blank', 'noopener,noreferrer')}
+                          disabled={!cls.meetingUrl}
+                        >
+                          Chủ Trì Lớp Học (Host Meeting)
+                        </Button>
+                      ) : null}
+                      {cls.isVirtual ? (
+                        <Button
+                          variant="outline"
+                          icon="ti-qrcode"
+                          onClick={() => openLiveQrModal(cls)}
+                        >
+                          Trình Chiếu Live QR Điểm Danh
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          icon="ti-qrcode"
+                          onClick={() => openLiveQrModal(cls)}
+                        >
+                          Mở QR Điểm danh Trực tiếp
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         icon="ti-users"

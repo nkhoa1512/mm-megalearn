@@ -94,6 +94,10 @@ export const ROLE_DEFINITIONS = [
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
       // Chỉ User Admin & SysAdmin cấu hình Lộ trình Cấp bậc (Tab 1/Tab 2).
       'canManageLevelRoadmaps',
+      // User Admin & SysAdmin đều toàn quyền tạo cả 3 hình thức khóa học
+      // (E-Learning, Virtual Class Zoom/Teams, In-Person ILT) và chỉ định
+      // Giảng viên chủ trì — Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy).
+      'canCreateVirtualClass',
     ],
   },
   {
@@ -114,6 +118,9 @@ export const ROLE_DEFINITIONS = [
       'canManageAllRoles', 'canDevelopPlatform', 'canViewCsat',
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
       'canManageLevelRoadmaps',
+      // Toàn quyền tạo cả 3 hình thức khóa học (E-Learning, Virtual Class
+      // Zoom/Teams, In-Person ILT) và chỉ định Giảng viên chủ trì — như User Admin.
+      'canCreateVirtualClass',
     ],
   },
 ];

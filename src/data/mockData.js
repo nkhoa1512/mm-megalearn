@@ -563,6 +563,204 @@ export function getTeamMembersForManager(manager) {
 export const courses = generated100Courses;
 
 // ---------------------------------------------------------------------------
+// Virtual Classroom (Online E-Learning con sub-type): lớp học trực tuyến trực
+// tiếp qua Zoom/Teams, khác với E-Learning tự học (Module/Bài học/Quiz). Chỉ
+// User Admin/System Admin được tạo loại này (canAuthorOnlineCourses); Trainer
+// vẫn chỉ đứng lớp Offline ILT như hiện tại. Điểm danh tái dùng nguyên cơ chế
+// Attendance đã có ở TrainerHub — không có Quiz kết thúc khóa (hoàn thành =
+// đã tham gia buổi học, theo yêu cầu người dùng).
+const virtualClassCourseImage = 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=600&q=80';
+
+courses.push(
+  {
+    id: 'CRS-VC-001',
+    code: 'VC-LEAD-001',
+    title: 'Webinar Trực Tuyến: Kỹ Năng Điều Hành Cuộc Họp & Quản Trị Thay Đổi Số Hóa Cửa Hàng',
+    category: 'Leadership & Management',
+    domain: 'Virtual Live Classroom',
+    thumbnail: virtualClassCourseImage,
+    imageUrl: virtualClassCourseImage,
+    milestoneImage: virtualClassCourseImage,
+    deliveryType: 'ONLINE_ELEARNING',
+    onlineClassType: 'VIRTUAL_CLASS',
+    targetLevel: '4',
+    targetLevelTitle: `Level 4: ${levelTitle('4')}`,
+    modality: 'VIRTUAL_LIVE_CLASS',
+    format: 'Microsoft Teams Live Class',
+    platformSource: null,
+    courseType: 'OPTIONAL',
+    estimatedHours: '2.0h',
+    passingScore: null,
+    published: true,
+    trainerId: trainerHungUser.userId,
+    trainerName: trainerHungUser.fullName,
+    venue: null, venueId: null, scheduleDate: null, scheduleTime: null,
+    maxCapacity: 60,
+    description: 'Lớp học trực tuyến trực tiếp (live) qua Microsoft Teams: kỹ năng điều hành cuộc họp hiệu quả và dẫn dắt đội ngũ cửa hàng qua giai đoạn chuyển đổi số. Hoàn thành = tham gia đầy đủ buổi học, không có bài kiểm tra cuối khóa.',
+    prerequisites: [],
+    configuration: {
+      assessmentEnabled: false, maxAttempts: 0, passingScorePercent: 0, certificateEnabled: true,
+      questionBankSize: 0, questionsPerAttempt: 0, version: 'v1.0',
+      lastReviewedBy: 'Nguyễn Văn Hùng (Master Trainer)', lastReviewedDate: '2026-08-10',
+      changelog: [{ version: 'v1.0', date: '2026-08-10', reviewer: 'Nguyễn Văn Hùng (Master Trainer)', note: 'Khởi tạo lớp học trực tuyến Virtual Class đầu tiên.' }],
+    },
+    assignment: null,
+    modules: [],
+    questionBank: [],
+    virtualMeeting: {
+      platform: 'TEAMS',
+      meetingUrl: 'https://teams.microsoft.com/l/meetup-join/mmvn-virtual-class-vc001',
+      meetingId: '312 486 771 05',
+      passcode: 'MMVN-Lead1',
+      instructorId: trainerHungUser.userId,
+      instructorName: trainerHungUser.fullName,
+      instructorTitle: trainerHungUser.position,
+      scheduleDate: '2026-09-03',
+      scheduleTime: '14:00 - 16:00 (2.0 giờ)',
+      maxCapacity: 60,
+      instructions: 'Chuẩn bị laptop/tai nghe, đăng nhập trước giờ học 10 phút để kiểm tra đường truyền. Bật camera trong suốt buổi học để Giảng viên xác nhận tham gia.',
+      status: 'UPCOMING',
+      recordingUrl: '',
+      materials: [
+        { name: 'Slide bài giảng: Điều Hành Cuộc Họp Hiệu Quả.pdf', url: '#' },
+        { name: 'Checklist Chuẩn Bị Trước Buổi Học.pdf', url: '#' },
+      ],
+    },
+  },
+  {
+    id: 'CRS-VC-002',
+    code: 'VC-HSE-002',
+    title: 'Hội Thảo Trực Tuyến: Cập Nhật Quy Định An Toàn Thực Phẩm HACCP 2026',
+    category: 'Compliance & Ethics',
+    domain: 'Virtual Live Classroom',
+    thumbnail: virtualClassCourseImage,
+    imageUrl: virtualClassCourseImage,
+    milestoneImage: virtualClassCourseImage,
+    deliveryType: 'ONLINE_ELEARNING',
+    onlineClassType: 'VIRTUAL_CLASS',
+    targetLevel: '6',
+    targetLevelTitle: `Level 6: ${levelTitle('6')}`,
+    modality: 'VIRTUAL_LIVE_CLASS',
+    format: 'Zoom Live Class',
+    platformSource: null,
+    courseType: 'MANDATORY',
+    estimatedHours: '1.5h',
+    passingScore: null,
+    published: true,
+    trainerId: trainerThanhUser.userId,
+    trainerName: trainerThanhUser.fullName,
+    venue: null, venueId: null, scheduleDate: null, scheduleTime: null,
+    maxCapacity: 100,
+    description: 'Hội thảo trực tuyến qua Zoom cập nhật quy định HACCP 2026 mới nhất cho toàn bộ nhân sự khối Tươi sống. Hoàn thành = tham gia đầy đủ buổi học, không có bài kiểm tra cuối khóa.',
+    prerequisites: [],
+    configuration: {
+      assessmentEnabled: false, maxAttempts: 0, passingScorePercent: 0, certificateEnabled: true,
+      questionBankSize: 0, questionsPerAttempt: 0, version: 'v1.0',
+      lastReviewedBy: 'Vu Duc Thanh (HSE Trainer)', lastReviewedDate: '2026-08-12',
+      changelog: [{ version: 'v1.0', date: '2026-08-12', reviewer: 'Vu Duc Thanh (HSE Trainer)', note: 'Khởi tạo hội thảo trực tuyến HACCP 2026.' }],
+    },
+    assignment: {
+      assignmentType: 'LEVEL', targetBusinessUnitId: null, targetDivisionId: null, targetLevel: '6',
+      assignedDate: '2026-08-12', dueDate: '2026-09-20', assignedBy: 'Sarah Nguyen (L&OD Admin)',
+    },
+    modules: [],
+    questionBank: [],
+    virtualMeeting: {
+      platform: 'ZOOM',
+      meetingUrl: 'https://zoom.us/j/8842150079?pwd=mmvn-vc002',
+      meetingId: '884 215 0079',
+      passcode: 'HACCP26',
+      instructorId: trainerThanhUser.userId,
+      instructorName: trainerThanhUser.fullName,
+      instructorTitle: trainerThanhUser.position,
+      scheduleDate: '2026-09-10',
+      scheduleTime: '09:00 - 10:30 (1.5 giờ)',
+      maxCapacity: 100,
+      instructions: 'Tải sẵn tài liệu quy định HACCP 2026 đính kèm trước buổi học. Chuẩn bị câu hỏi thực tế phát sinh tại quầy để trao đổi trực tiếp cùng Giảng viên.',
+      status: 'UPCOMING',
+      recordingUrl: '',
+      materials: [
+        { name: 'Quy Định HACCP 2026 (Bản Cập Nhật).pdf', url: '#' },
+      ],
+    },
+  },
+);
+
+// Ghi danh mẫu cho 2 lớp Virtual Class ở trên, để có dữ liệu thật minh họa
+// trải nghiệm học viên. Phải chọn đúng học viên cùng cấp bậc mục tiêu của
+// từng khóa (Level 4 / Level 6) — không dùng currentUser (Minh Tran, Level 7)
+// vì sẽ vi phạm quy tắc "không tự ghi danh vượt cấp" (verify script chặn).
+const leadershipLevel4Learner = demoUsers.find((u) => u.level === '4' && normalizeRole(u.role) === 'learner');
+if (leadershipLevel4Learner && generated100EnrollmentMatrix[leadershipLevel4Learner.userId]) {
+  generated100EnrollmentMatrix[leadershipLevel4Learner.userId]['CRS-VC-001'] = {
+    status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: null,
+  };
+}
+const hseLevel6Learner = demoUsers.find((u) => u.level === '6' && normalizeRole(u.role) === 'learner');
+if (hseLevel6Learner && generated100EnrollmentMatrix[hseLevel6Learner.userId]) {
+  generated100EnrollmentMatrix[hseLevel6Learner.userId]['CRS-VC-002'] = {
+    status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-20',
+  };
+}
+
+// Đa phiên bản khóa học (xem resolveCourseView/publishNewCourseVersion bên
+// dưới): mọi khóa học (100 khóa gốc + 22 gap-fill + 2 Virtual Class) cần có
+// sẵn currentVersion/versions{} — chưa khóa nào từng được "Phát Hành Phiên
+// Bản Mới" nên versions{} rỗng (không có phiên bản cũ nào bị đóng băng cả).
+courses.forEach((c) => {
+  if (!c.currentVersion) c.currentVersion = c.version || 'v1.0';
+  if (!c.versions) c.versions = {};
+});
+
+// ---------------------------------------------------------------------------
+// Chuẩn hóa Định Dạng Bài Giảng (Format Standardization): quy hoạch mọi bài
+// giảng về đúng 5 định dạng chuẩn — SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
+// (Udemy/LinkedIn Learning/Coursera/YouTube/Khác) — thay cho các lessonType cũ
+// phân tán (DOCUMENT, SCRIPT, IMAGE, TEXT) VÀ thay cho việc course.modality
+// (SCORM_PACKAGE/PPT_PRESENTATION/EXTERNAL_PLATFORM/YOUTUBE_LINK) từng ghi đè
+// lessonType ở tầng Lesson Player. Từ nay lesson.lessonType là NGUỒN DUY NHẤT
+// quyết định Player nào hiển thị — không còn đọc course.modality ở LessonPlayer.
+// ASSESSMENT không nằm trong 5 định dạng này (là cổng thẩm định năng lực độc
+// lập cấp khóa học/phiên bản, xem course.questionBank) nên giữ nguyên riêng.
+const LEGACY_LESSON_TYPE_MAP = { DOCUMENT: 'PDF', SCRIPT: 'PDF', IMAGE: 'PPT', TEXT: 'PPT' };
+const COURSE_MODALITY_LESSON_OVERRIDE = {
+  SCORM_PACKAGE: 'SCORM',
+  PPT_PRESENTATION: 'PPT',
+  EXTERNAL_PLATFORM: 'EXTERNAL_LINK',
+  YOUTUBE_LINK: 'EXTERNAL_LINK',
+};
+function derivedExternalPlatform(course) {
+  if (course.modality === 'YOUTUBE_LINK') return 'YOUTUBE';
+  const src = (course.platformSource || '').toLowerCase();
+  if (src.includes('linkedin')) return 'LINKEDIN';
+  if (src.includes('coursera')) return 'COURSERA';
+  if (src.includes('udemy')) return 'UDEMY';
+  return 'CUSTOM';
+}
+courses.forEach((course) => {
+  const override = COURSE_MODALITY_LESSON_OVERRIDE[course.modality];
+  (course.modules || []).forEach((m) => {
+    (m.lessons || []).forEach((lesson) => {
+      if (lesson.lessonType === 'ASSESSMENT') return;
+      const mapped = override || LEGACY_LESSON_TYPE_MAP[lesson.lessonType] || lesson.lessonType;
+      if (mapped === lesson.lessonType && !override) return;
+      lesson.lessonType = mapped;
+      if (mapped === 'EXTERNAL_LINK') {
+        lesson.content = {
+          platform: derivedExternalPlatform(course),
+          url: lesson.content?.url || course.content?.youtubeUrl || '',
+        };
+      } else if (mapped === 'PDF' && !lesson.content?.url && !lesson.content?.fileName) {
+        lesson.content = { url: '', fileName: null, fileType: null };
+      } else if ((mapped === 'PPT' || mapped === 'SCORM') && lesson.content?.text) {
+        // PPT/SCORM dùng bộ trình chiếu minh họa tĩnh, không cần nội dung text cũ.
+        lesson.content = {};
+      }
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Multi-Persona Synchronized User Enrollments Matrix
 // Guarantees all 100 roles have fully coherent, unified data (Completed, In Progress, Not Started, Overdue, Failed)
 // ---------------------------------------------------------------------------
@@ -658,6 +856,17 @@ export function createBlankCourse() {
     targetLevel: '7',
     targetLevelTitle: `Level 7: ${levelTitle('7')}`,
     deliveryType: 'ONLINE_ELEARNING', // 'ONLINE_ELEARNING' | 'IN_PERSON_CLASSROOM'
+    // Chỉ có ý nghĩa khi deliveryType là ONLINE_ELEARNING: 'E_LEARNING' (tự học
+    // qua Module/Bài học/Quiz, cơ chế hiện tại) hoặc 'VIRTUAL_CLASS' (lớp học
+    // trực tuyến trực tiếp qua Zoom/Teams/Meet với Giảng viên chủ trì).
+    onlineClassType: 'E_LEARNING',
+    // Đa phiên bản khóa học: currentVersion trỏ tới phiên bản đang sống (đọc/ghi
+    // trực tiếp qua modules/configuration bên dưới); versions{} lưu snapshot các
+    // phiên bản CŨ đã bị thay thế (đóng băng vĩnh viễn tại thời điểm Publish kế
+    // tiếp) để học viên đã hoàn thành/đang học dở phiên bản đó không bị ảnh
+    // hưởng bởi các chỉnh sửa sau này. Xem resolveCourseView()/publishNewCourseVersion().
+    currentVersion: 'v1.0',
+    versions: {},
     courseType: 'OPTIONAL',
     status: 'DRAFT',
     modality: 'SCORM_PACKAGE',
@@ -698,6 +907,23 @@ export function createBlankCourse() {
     enrollment: null,
     assessmentAttempts: [],
     questionBank: [],
+    // Chỉ được điền/dùng khi onlineClassType === 'VIRTUAL_CLASS'.
+    virtualMeeting: {
+      platform: 'TEAMS', // 'TEAMS' | 'ZOOM' | 'MEET' | 'WEBEX' | 'CUSTOM'
+      meetingUrl: '',
+      meetingId: '',
+      passcode: '',
+      instructorId: '',
+      instructorName: '',
+      instructorTitle: '',
+      scheduleDate: '',
+      scheduleTime: '',
+      maxCapacity: 50,
+      instructions: '',
+      status: 'UPCOMING', // 'UPCOMING' | 'COMPLETED'
+      recordingUrl: '',
+      materials: [],
+    },
   };
 }
 
@@ -776,6 +1002,46 @@ function recomputeEnrollment(course) {
     course.enrollment.startedAt = new Date().toISOString().slice(0, 10);
   }
   return course;
+}
+
+// Tính tag phiên bản kế tiếp: v1.0 -> v2.0 -> v3.0 -> ... (không giới hạn số
+// lượng phiên bản, mỗi lần Publish tăng đúng 1 bậc số nguyên).
+export function nextMajorVersion(v) {
+  const m = /^v(\d+)/.exec(v || 'v1.0');
+  const n = m ? Number(m[1]) : 1;
+  return `v${n + 1}.0`;
+}
+
+// Trả về "góc nhìn" nội dung khóa học (modules/configuration/modality/format)
+// đúng với phiên bản mà học viên đã ghi danh (enrolledVersion), KHÔNG PHẢI
+// luôn luôn là phiên bản mới nhất:
+//   - Nếu enrolledVersion trùng currentVersion (hoặc không có) -> trả về
+//     course như hiện tại (đọc trực tiếp course.modules — phiên bản đang sống).
+//   - Nếu enrolledVersion là một phiên bản CŨ đã bị Publish thay thế -> trả về
+//     bản snapshot đóng băng trong course.versions[enrolledVersion], để người
+//     đã hoàn thành/đang học dở phiên bản đó không bị ảnh hưởng bởi các chỉnh
+//     sửa Admin thực hiện sau này trên phiên bản mới.
+export function resolveCourseView(course, enrolledVersion) {
+  if (!course) return course;
+  const current = course.currentVersion || course.version || 'v1.0';
+  // Ghi danh có sẵn từ ma trận HRIS gốc (100 học viên mẫu) được tạo trước khi
+  // tính năng đa phiên bản tồn tại nên không có enrolledVersion — theo định
+  // nghĩa, những ghi danh đó chỉ có thể phát sinh khi khóa học còn ở v1.0
+  // (chưa từng Publish phiên bản nào), nên mặc định về 'v1.0' thay vì coi là
+  // "trùng phiên bản hiện tại" (tránh vô tình lộ nội dung mới cho họ).
+  const resolvedEnrolledVersion = enrolledVersion || 'v1.0';
+  if (resolvedEnrolledVersion === current) return course;
+  const snap = course.versions && course.versions[resolvedEnrolledVersion];
+  if (!snap) return course;
+  return {
+    ...course,
+    modules: snap.modules,
+    configuration: { ...course.configuration, ...snap.configuration },
+    modality: snap.modality || course.modality,
+    format: snap.format || course.format,
+    version: snap.version || resolvedEnrolledVersion,
+    isArchivedVersionView: true,
+  };
 }
 
 // Marks one lesson's progress and returns a new, immutable course object with

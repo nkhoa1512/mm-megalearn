@@ -87,7 +87,7 @@ const mock = await import('../src/data/mockData');
 
 
 // --- Courses -------------------------------------------------------------
-check('122 courses generated (100 base + 22 Level 1-4 roadmap gap-fill)', generated100Courses.length === 122, String(generated100Courses.length));
+check('124 courses generated (100 base + 22 Level 1-4 roadmap gap-fill + 2 Virtual Class)', generated100Courses.length === 124, String(generated100Courses.length));
 const newRoadmapDomains = [
   'Train-The-Trainer & Coaching Standards', 'Master Trainer & Section Governance',
   'Succession & Store P&L Governance', 'Corporate Governance & ESG',

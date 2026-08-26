@@ -8,6 +8,15 @@ import { getCourseImage } from '../../data/courseImages';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
+// Huy hiệu phân biệt 3 hình thức: 🌐 E-Learning tự học, 💻 Lớp Trực Tuyến Live
+// (Virtual Class), 🏢 Đào Tạo Trực Tiếp (In-Person/ILT).
+function courseFormatBadge(c) {
+  const isInPerson = c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB';
+  if (isInPerson) return { icon: '🏢', label: 'Trực Tiếp (ILT)', tone: 'blue' };
+  if (c.onlineClassType === 'VIRTUAL_CLASS') return { icon: '💻', label: 'Lớp Trực Tuyến Live', tone: 'amber' };
+  return { icon: '🌐', label: 'E-Learning', tone: 'sage' };
+}
+
 const CATEGORIES = [
   'ALL',
   'Food Safety & Hygiene',
@@ -164,9 +173,15 @@ export default function AdminCourses() {
                         style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
                       />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
+                          <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
+                        </div>
                         <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
                           <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {c.category} &middot; Version {c.version}
+                          {c.onlineClassType === 'VIRTUAL_CLASS' && c.virtualMeeting?.instructorName && (
+                            <> &middot; GV: {c.virtualMeeting.instructorName}</>
+                          )}
                         </div>
                       </div>
                     </div>

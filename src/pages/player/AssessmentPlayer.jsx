@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyAssessmentAttempt, drawAssessmentQuestions, currentUser } from '../../data/mockData';
+import { applyAssessmentAttempt, drawAssessmentQuestions, currentUser, resolveCourseView } from '../../data/mockData';
 import { Badge, Button, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -28,8 +28,17 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const { courses, saveCourseProgress, currentUser: authUser, accessFor, myEnrollments } = useCourseStore();
   const user = authUser || currentUser;
   const rawCourse = courses.find((c) => c.id === courseId);
+  const rawEnrollment = rawCourse ? (myEnrollments[rawCourse.id] || rawCourse.enrollment) : null;
+  // Assessment (câu hỏi/cấu hình thi) KHÔNG bị đóng băng theo phiên bản (dùng
+  // chung cho mọi phiên bản, xem ghi chú thiết kế ở mockData.js) — nhưng danh
+  // sách bài học bắt buộc để MỞ bài thi vẫn phải theo đúng cấu trúc phiên bản
+  // học viên đã ghi danh, nếu không người học phiên bản cũ sẽ không bao giờ
+  // đủ điều kiện mở bài thi (đếm nhầm theo module của phiên bản mới).
+  const lessonView = rawCourse
+    ? (rawEnrollment ? resolveCourseView(rawCourse, rawEnrollment.enrolledVersion) : rawCourse)
+    : null;
   const course = rawCourse
-    ? { ...rawCourse, enrollment: myEnrollments[rawCourse.id] || rawCourse.enrollment }
+    ? { ...rawCourse, modules: lessonView.modules, enrollment: rawEnrollment }
     : null;
 
   const [phase, setPhase] = useState('start');

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyLessonProgress, currentUser } from '../../data/mockData';
+import { applyLessonProgress, currentUser, resolveCourseView } from '../../data/mockData';
 import { Badge, Button, ProgressBar, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -22,17 +22,14 @@ function youtubeVideoId(url) {
   return null;
 }
 
+// 5 định dạng bài giảng chuẩn hóa — xem ghi chú ở mockData.js migration.
 function lessonTypeLabel(t) {
   switch (t) {
-    case 'VIDEO': return 'Video Lecture';
     case 'SCORM': return 'SCORM 2004 Interactive Package';
+    case 'VIDEO': return 'Video Lecture';
+    case 'PDF': return 'Standard Operating Procedure (SOP PDF)';
     case 'PPT': return 'PowerPoint Presentation Deck';
-    case 'EXTERNAL': return 'External Platform (LinkedIn / Coursera)';
-    case 'YOUTUBE': return 'YouTube Video (External Link)';
-    case 'DOCUMENT': return 'Standard Operating Procedure (SOP PDF)';
-    case 'SCRIPT': return 'Operational Scenario Script';
-    case 'IMAGE': return 'Visual Process Gallery';
-    case 'TEXT': return 'Reference Reading';
+    case 'EXTERNAL_LINK': return 'External Platform (Udemy / LinkedIn / Coursera / YouTube)';
     default: return 'Lesson';
   }
 }
@@ -44,9 +41,15 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const user = authUser || currentUser;
   const rawCourse = courses.find((c) => c.id === courseId);
   // Ghi danh nằm ở ma trận HRIS + overlay của store, không nằm trong object khóa học.
-  const course = rawCourse
-    ? { ...rawCourse, enrollment: myEnrollments[rawCourse.id] || rawCourse.enrollment }
+  const enrollment = rawCourse ? (myEnrollments[rawCourse.id] || rawCourse.enrollment) : null;
+  // Đa phiên bản: CHỈ phục vụ snapshot đóng băng cho người ĐÃ GHI DANH dưới một
+  // phiên bản CŨ đã bị Admin "Phát Hành Phiên Bản Mới" thay thế — người chưa
+  // ghi danh (không nên xảy ra ở trang Lesson Player, nhưng để an toàn) luôn
+  // thấy nội dung mới nhất.
+  const versionedCourse = rawCourse
+    ? (enrollment ? resolveCourseView(rawCourse, enrollment.enrolledVersion) : rawCourse)
     : null;
+  const course = versionedCourse ? { ...versionedCourse, enrollment } : null;
   const lesson = course?.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
 
   const flat = useMemo(() => (course ? flattenLessons(course) : []), [course]);
@@ -84,14 +87,10 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
 
   function complete(extra) {
     const updated = applyLessonProgress(course, lesson.id, { status: 'COMPLETED', progressPercent: 100, ...extra });
-    saveCourseProgress(course.id, updated, user);
+    saveCourseProgress(course.id, updated, user, enrollment?.enrolledVersion);
   }
 
   const isComplete = lesson.status === 'COMPLETED';
-  const isScorm = course.modality === 'SCORM_PACKAGE' || lesson.lessonType === 'SCORM';
-  const isPpt = course.modality === 'PPT_PRESENTATION' || lesson.lessonType === 'PPT';
-  const isExternal = course.modality === 'EXTERNAL_PLATFORM' || lesson.lessonType === 'EXTERNAL';
-  const isYoutube = course.modality === 'YOUTUBE_LINK' || lesson.lessonType === 'YOUTUBE';
 
   return (
     <>
@@ -111,7 +110,10 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
             </Badge>
           </div>
           <p>
-            {lessonTypeLabel(isScorm ? 'SCORM' : isPpt ? 'PPT' : isExternal ? 'EXTERNAL' : isYoutube ? 'YOUTUBE' : lesson.lessonType)} &middot; {lesson.isRequired ? 'Mandatory' : 'Optional'} &middot; Version: <strong>{course.configuration?.version || 'v2.1'}</strong>
+            {lessonTypeLabel(lesson.lessonType)} &middot; {lesson.isRequired ? 'Mandatory' : 'Optional'} &middot; Version: <strong>{course.version || course.currentVersion || 'v1.0'}</strong>
+            {course.isArchivedVersionView && (
+              <> &middot; <span style={{ color: 'var(--amber)' }}>Bạn đang học theo cấu trúc bài giảng phiên bản này (đã ghi danh trước khi có bản cập nhật mới)</span></>
+            )}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -129,24 +131,19 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
         </div>
       </div>
 
-      {/* DYNAMIC PLAYER CANVAS */}
+      {/* DYNAMIC PLAYER CANVAS — 5 định dạng chuẩn hóa, chọn player duy nhất
+          theo lesson.lessonType (không còn đọc course.modality nữa). */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
-        {isScorm ? (
+        {lesson.lessonType === 'SCORM' ? (
           <ScormPlayerSimulator course={course} lesson={lesson} onComplete={complete} />
-        ) : isPpt ? (
+        ) : lesson.lessonType === 'PPT' ? (
           <PptSlidePlayer course={course} lesson={lesson} onComplete={complete} />
-        ) : isYoutube ? (
-          <YoutubeLesson course={course} onComplete={complete} />
-        ) : isExternal ? (
+        ) : lesson.lessonType === 'EXTERNAL_LINK' ? (
           <ExternalPlatformPlayer course={course} lesson={lesson} onComplete={complete} />
-        ) : lesson.lessonType === 'VIDEO' ? (
-          <VideoLesson lesson={lesson} onComplete={complete} />
-        ) : lesson.lessonType === 'DOCUMENT' || lesson.lessonType === 'SCRIPT' ? (
-          <DocumentLesson lesson={lesson} onComplete={complete} />
-        ) : lesson.lessonType === 'IMAGE' ? (
-          <ImageLesson lesson={lesson} onComplete={complete} />
+        ) : lesson.lessonType === 'PDF' ? (
+          <PdfViewerLesson lesson={lesson} onComplete={complete} />
         ) : (
-          <TextLesson lesson={lesson} onComplete={complete} />
+          <VideoLesson lesson={lesson} onComplete={complete} />
         )}
       </div>
 
@@ -383,78 +380,37 @@ function PptSlidePlayer({ course, lesson, onComplete }) {
 }
 
 // ---------------------------------------------------------------------------
-// 2.5 YouTube Video Lesson Player (External Direct URL)
+// 3. External Platform Embed Player (Udemy / LinkedIn Learning / Coursera /
+//    YouTube / Custom LMS Link) — 1 trong 5 định dạng chuẩn hóa, chi tiết
+//    (platform + url) đọc từ lesson.content thay vì course.modality/platformSource.
 // ---------------------------------------------------------------------------
-function YoutubeLesson({ course, onComplete }) {
-  const videoId = youtubeVideoId(course.content?.youtubeUrl) || 'dQw4w9WgXcQ';
+const EXTERNAL_PLATFORM_BRANDING = {
+  UDEMY: { label: 'Udemy for Business', color: '#A435F0', icon: 'ti-a-b' },
+  LINKEDIN: { label: 'LinkedIn Learning Enterprise Embed', color: '#0A66C2', icon: 'ti-brand-linkedin' },
+  COURSERA: { label: 'Coursera for Business Integration', color: '#0056D2', icon: 'ti-school' },
+  YOUTUBE: { label: 'YouTube Training Stream', color: '#E31B23', icon: 'ti-brand-youtube' },
+  CUSTOM: { label: 'External Training Link', color: '#334155', icon: 'ti-external-link' },
+};
+
+function ExternalPlatformPlayer({ lesson, onComplete }) {
+  const content = lesson.content || {};
+  const platform = content.platform || 'CUSTOM';
+  const branding = EXTERNAL_PLATFORM_BRANDING[platform] || EXTERNAL_PLATFORM_BRANDING.CUSTOM;
+  const isYoutube = platform === 'YOUTUBE';
+  const videoId = isYoutube ? (youtubeVideoId(content.url) || 'dQw4w9WgXcQ') : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div
         style={{
-          background: '#E31B23', color: '#fff', padding: '14px 20px', borderRadius: 8,
+          background: branding.color, color: '#fff', padding: '14px 20px', borderRadius: 8,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <i className="ti ti-brand-youtube" style={{ fontSize: 24 }} />
+          <i className={`ti ${branding.icon}`} style={{ fontSize: 24 }} />
           <div>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>YouTube Training Video</div>
-            <div style={{ fontSize: 11.5, opacity: 0.9 }}>External Link &middot; MMVN L&amp;D Hub</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ background: '#000', borderRadius: 8, overflow: 'hidden', height: 380 }}>
-        <iframe
-          width="100%"
-          height="100%"
-          src={`https://www.youtube.com/embed/${videoId}`}
-          title="YouTube Training Video"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-          Watch the video, then confirm completion to record it on your transcript.
-        </span>
-        <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
-          Confirm Video Watched
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 3. External Platform Embed Player (Coursera / LinkedIn Learning / YouTube)
-// ---------------------------------------------------------------------------
-function ExternalPlatformPlayer({ course, lesson, onComplete }) {
-  const isLinkedIn = course.platformSource?.includes('LinkedIn');
-  const isCoursera = course.platformSource?.includes('Coursera');
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div
-        style={{
-          background: isLinkedIn ? '#0A66C2' : isCoursera ? '#0056D2' : '#E31B23',
-          color: '#fff',
-          padding: '14px 20px',
-          borderRadius: 8,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <i className={`ti ${isLinkedIn ? 'ti-brand-linkedin' : isCoursera ? 'ti-school' : 'ti-brand-youtube'}`} style={{ fontSize: 24 }} />
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 14 }}>
-              {isLinkedIn ? 'LinkedIn Learning Enterprise Embed' : isCoursera ? 'Coursera for Business Integration' : 'YouTube Training Stream'}
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>{branding.label}</div>
             <div style={{ fontSize: 11.5, opacity: 0.9 }}>Authorized Enterprise Partnership &middot; MMVN L&amp;D Hub</div>
           </div>
         </div>
@@ -463,17 +419,34 @@ function ExternalPlatformPlayer({ course, lesson, onComplete }) {
         </Badge>
       </div>
 
-      <div style={{ background: '#000', borderRadius: 8, overflow: 'hidden', height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <iframe
-          width="100%"
-          height="100%"
-          src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
-          title="External Training Media"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
+      {isYoutube ? (
+        <div style={{ background: '#000', borderRadius: 8, overflow: 'hidden', height: 380 }}>
+          <iframe
+            width="100%"
+            height="100%"
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title="YouTube Training Video"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: 40, textAlign: 'center' }}>
+          <i className={`ti ${branding.icon}`} style={{ fontSize: 40, color: branding.color, marginBottom: 12 }} />
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
+            Bài học được host bên ngoài trên {branding.label}. Đăng nhập bằng tài khoản doanh nghiệp MMVN Enterprise License, hoàn thành bài học, rồi quay lại đây xác nhận để đồng bộ Transcript.
+          </p>
+          <Button
+            variant="outline"
+            icon="ti-external-link"
+            onClick={() => content.url && window.open(content.url, '_blank', 'noopener,noreferrer')}
+            disabled={!content.url}
+          >
+            Mở Bài Học Tại {branding.label}
+          </Button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14 }}>
         <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
@@ -528,52 +501,33 @@ function VideoLesson({ lesson, onComplete }) {
   );
 }
 
-function DocumentLesson({ lesson, onComplete }) {
+// PDF — 1 trong 5 định dạng chuẩn hóa: SOP/ISO/tài liệu công việc dạng PDF
+// Viewer, có nút xác nhận đã đọc (thay cho DOCUMENT/SCRIPT cũ).
+function PdfViewerLesson({ lesson, onComplete }) {
+  const content = lesson.content || {};
   return (
     <>
       <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: 20, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <i className="ti ti-file-text" style={{ fontSize: 24, color: 'var(--rail)' }} />
-          <span style={{ fontWeight: 700, fontSize: 14 }}>Standard Operating Procedure: {lesson.title}</span>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>Standard Operating Procedure (PDF): {lesson.title}</span>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-          Please review the operational checklist and safety guidelines thoroughly. This document is authenticated under MMVN compliance governance.
-        </p>
+        {content.url ? (
+          <a href={content.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'var(--rail)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <i className="ti ti-external-link" /> {content.fileName || 'Mở tài liệu PDF'}
+          </a>
+        ) : (
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5, margin: 0 }}>
+            Please review the operational checklist and safety guidelines thoroughly. This document is authenticated under MMVN compliance governance.
+          </p>
+        )}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>Required read: 90%</span>
+        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>Required read: {lesson.rule?.requiredReadPercent ?? 90}%</span>
         <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
           Confirm Document Understood
         </Button>
       </div>
     </>
-  );
-}
-
-function ImageLesson({ lesson, onComplete }) {
-  return (
-    <div>
-      <div style={{ background: 'var(--paper-sunken)', padding: 20, borderRadius: 8, textAlign: 'center', marginBottom: 14 }}>
-        <i className="ti ti-photo" style={{ fontSize: 36, color: 'var(--rail)', marginBottom: 8 }} />
-        <div style={{ fontWeight: 700, fontSize: 14 }}>Visual Store Display Gallery</div>
-        <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>Review all visual process examples before confirming completion.</p>
-      </div>
-      <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
-        Mark All Images Viewed
-      </Button>
-    </div>
-  );
-}
-
-function TextLesson({ lesson, onComplete }) {
-  return (
-    <div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--ink)', marginBottom: 16 }}>
-        {lesson.content?.text || 'Operational instructions on cold chain temperature compliance, inventory management, and customer service standards.'}
-      </div>
-      <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
-        Mark Lesson Completed
-      </Button>
-    </div>
   );
 }

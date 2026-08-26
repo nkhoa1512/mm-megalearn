@@ -17,6 +17,15 @@ import { getCourseImage } from '../../data/courseImages';
 // Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
 export { JobLevelBadge };
 
+// Huy hiệu phân biệt 3 hình thức học: 🌐 E-Learning tự học, 💻 Lớp Trực Tuyến
+// Trực Tiếp (Virtual Class), 🏢 Đào Tạo Trực Tiếp (In-Person/ILT).
+function courseFormatBadge(c) {
+  const isInPerson = c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB';
+  if (isInPerson) return { icon: '🏢', label: 'Trực Tiếp (ILT)', tone: 'blue' };
+  if (c.onlineClassType === 'VIRTUAL_CLASS') return { icon: '💻', label: 'Lớp Trực Tuyến Live', tone: 'amber' };
+  return { icon: '🌐', label: 'E-Learning', tone: 'sage' };
+}
+
 const statusMap = {
   IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
   NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu' },
@@ -103,13 +112,15 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       statusFilter === 'ALL' ||
       (statusFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
       (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
+      (statusFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS') ||
       (statusFilter === 'LEVEL_UP' && access.state === ACCESS_STATE.REQUESTABLE) ||
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
       s === statusFilter;
 
     const matchLevel = levelFilter === 'ALL' || normalizeLevel(c.targetLevel) === String(levelFilter);
     const matchDomain = domainFilter === 'ALL' || c.domain === domainFilter || c.category === domainFilter;
-    const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter;
+    const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter
+      || (formatFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS');
     const matchSearch =
       !search ||
       c.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -380,6 +391,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
                 { id: 'MANDATORY', label: 'Bắt Buộc Tuân Thủ', count: mandatoryCount },
                 { id: 'IN_PERSON', label: '🏢 Đào Tạo Trực Tiếp (In-Person)', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
+                { id: 'VIRTUAL_CLASS', label: '💻 Lớp Trực Tuyến (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -471,6 +483,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <option value="PPT">Interactive PPT</option>
             <option value="CLASSROOM_LAB">{language === 'en' ? 'Classroom Lab (ILT)' : 'Thực Hành Xưởng (ILT)'}</option>
             <option value="EXTERNAL_PLATFORM">LinkedIn / Coursera</option>
+            <option value="VIRTUAL_CLASS">💻 {language === 'en' ? 'Virtual Live Class (Webinar)' : 'Lớp Trực Tuyến (Webinar/Live Class)'}</option>
           </select>
         </div>
       </div>
@@ -540,14 +553,11 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                       <td><LevelAccessBadge access={access} /></td>
 
                       <td>
-                        <div style={{ fontSize: 12, fontWeight: 600 }}>
-                          {isInPerson ? (
-                            <span style={{ color: 'var(--blue)' }}><i className="ti ti-building-store" style={{ marginRight: 4 }} /> Xưởng ILT</span>
-                          ) : (
-                            <span>{c.format || 'E-learning Online'}</span>
-                          )}
+                        <div style={{ marginBottom: 3 }}>
+                          <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
                         </div>
-                        {isInPerson && c.trainerName && (
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{c.format || 'E-learning Online'}</div>
+                        {(isInPerson || c.onlineClassType === 'VIRTUAL_CLASS') && c.trainerName && (
                           <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>GV: {c.trainerName}</div>
                         )}
                       </td>
@@ -614,6 +624,9 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                   />
                   <div style={{ position: 'absolute', top: 8, right: 8 }}>
                     <JobLevelBadge level={c.targetLevel} compact />
+                  </div>
+                  <div style={{ position: 'absolute', top: 8, left: 8 }}>
+                    <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
                   </div>
                   <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>
                     {c.code}
