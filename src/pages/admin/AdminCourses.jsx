@@ -42,10 +42,12 @@ export default function AdminCourses() {
   const {
     courses, updateCourse, removeCourse, currentUser, language, t,
     companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
-    assignCurriculum, removeCurriculumAssignment,
+    assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
+    approvals,
   } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
+  const isCurriculumAdmin = role === 'useradmin' || role === 'sysadmin';
   // User Admin & SysAdmin quản lý TOÀN BỘ khóa học (canAuthorOnlineCourses là
   // tín hiệu phân biệt họ với Trainer/L&D — chỉ 2 role này có). Trainer/L&D
   // chỉ được sửa/xóa đúng khóa do chính họ tạo; 100 khóa danh mục gốc chưa có
@@ -88,7 +90,7 @@ export default function AdminCourses() {
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
 
   function publish(course) {
-    updateCourse(course.id, { ...course, status: 'PUBLISHED', publishedAt: new Date().toISOString().slice(0, 10) });
+    publishNewCourseVersion(course.id, null, 'Phát hành phiên bản mới.');
   }
 
   function remove(course) {
@@ -265,7 +267,7 @@ export default function AdminCourses() {
             Create New Course
           </Button>
         )}
-        {isAdmin && isCurriculum && (
+        {isCurriculumAdmin && isCurriculum && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingCurriculum(emptyCurriculumDraft())}>
             Create Curriculum
           </Button>
@@ -290,7 +292,7 @@ export default function AdminCourses() {
               <i className="ti ti-info-circle" style={{ color: 'var(--rail)', marginRight: 6 }} />
               Giáo trình (Curriculum) tập hợp nhiều khóa <strong>E-Learning tự học</strong> thành một lộ trình có cấu trúc. Bạn có thể phân bổ giáo trình cho <strong>BU, Division, Department, Sub-Department, Store hoặc User cụ thể</strong>.
             </div>
-            {isAdmin && (
+            {isCurriculumAdmin && (
               <Button variant="primary" icon="ti-plus" size="sm" onClick={() => setEditingCurriculum(emptyCurriculumDraft(companyCategories[0]))}>
                 Tạo Giáo Trình Mới
               </Button>
@@ -322,8 +324,8 @@ export default function AdminCourses() {
                     <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
                       Chi Tiết &amp; Phân Bổ
                     </Button>
-                    {isAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
-                    {isAdmin && (
+                    {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
+                    {isCurriculumAdmin && (
                       <Button
                         size="sm"
                         variant="danger"
@@ -490,12 +492,15 @@ export default function AdminCourses() {
           curricula={curricula}
           onClose={() => setViewingCurriculum(null)}
           onAssign={assignCurriculum}
+          onPropose={proposeCurriculumAssignment}
           onRemoveAssignment={removeCurriculumAssignment}
           onEdit={(cur) => {
             setViewingCurriculum(null);
             setEditingCurriculum(cur);
           }}
-          isAdmin={isAdmin}
+          isAdmin={isCurriculumAdmin}
+          currentUser={currentUser}
+          approvals={approvals}
         />
       )}
 
@@ -512,20 +517,63 @@ export default function AdminCourses() {
   );
 }
 
-function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricula, onClose, onAssign, onRemoveAssignment, onEdit, isAdmin }) {
+function CurriculumDetailModal({
+  curriculum: initialCurriculum,
+  courses,
+  curricula: propCurricula,
+  onClose,
+  onAssign,
+  onPropose,
+  onRemoveAssignment,
+  onEdit,
+  isAdmin: propIsAdmin,
+  currentUser: propCurrentUser,
+  approvals: propApprovals,
+}) {
+  const {
+    currentUser: storeCurrentUser,
+    curricula: storeCurricula,
+    assignCurriculum: storeAssign,
+    proposeCurriculumAssignment: storePropose,
+    removeCurriculumAssignment: storeRemove,
+    approvals: storeApprovals,
+  } = useCourseStore();
+
+  const currentUser = propCurrentUser || storeCurrentUser;
+  const curricula = propCurricula || storeCurricula || [];
+  const approvals = propApprovals || storeApprovals || [];
+  const handleAssign = onAssign || storeAssign;
+  const handlePropose = onPropose || storePropose;
+  const handleRemove = onRemoveAssignment || storeRemove;
+
+  const role = normalizeRole(currentUser?.role);
+  const isSysOrUserAdmin = role === 'useradmin' || role === 'sysadmin';
+  const isCurriculumAdmin = isSysOrUserAdmin;
+  const isHrbp = role === 'hrbp';
+
+  const canDirectAssign = isCurriculumAdmin;
+  const canPropose = isHrbp;
+
   const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'assignments'
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [assignType, setAssignType] = useState('SUBDEPARTMENT');
   const [targetId, setTargetId] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [justification, setJustification] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('ALL');
   const [userSubDeptFilter, setUserSubDeptFilter] = useState('ALL');
   const [userSearch, setUserSearch] = useState('');
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
 
   // Always read live state from store
   const liveCurriculum = curricula.find((c) => c.id === initialCurriculum.id) || initialCurriculum;
   const assignments = liveCurriculum.assignments || [];
   const targetOptions = targetOptionsFor(assignType) || [];
+
+  // Filter pending proposals for this curriculum
+  const pendingProposals = (approvals || []).filter(
+    (a) => a.curriculumId === liveCurriculum.id && a.status === 'PENDING'
+  );
 
   // Filter options for USER based on userLevelFilter, userSubDeptFilter, and userSearch
   const visibleUserOptions = useMemo(() => {
@@ -562,6 +610,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
     setUserLevelFilter('ALL');
     setUserSubDeptFilter('ALL');
     setUserSearch('');
+    setJustification('');
     setShowAssignForm(true);
   }
 
@@ -569,21 +618,41 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
     e.preventDefault();
     if (!targetId) return;
     const selectedOpt = targetOptions.find((o) => o.id === targetId);
-    onAssign(liveCurriculum.id, {
-      assignmentType: assignType,
-      targetId,
-      targetLabel: selectedOpt ? selectedOpt.label : targetId,
-      dueDate: dueDate || '',
-    });
+    const targetLabel = selectedOpt ? selectedOpt.label : targetId;
+
+    if (canDirectAssign) {
+      handleAssign(liveCurriculum.id, {
+        assignmentType: assignType,
+        targetId,
+        targetLabel,
+        dueDate: dueDate || '',
+      });
+      setFeedbackMsg('✅ Đã phân bổ giáo trình thành công!');
+    } else if (isHrbp && handlePropose) {
+      handlePropose(
+        liveCurriculum.id,
+        {
+          assignmentType: assignType,
+          targetId,
+          targetLabel,
+          dueDate: dueDate || '',
+        },
+        justification
+      );
+      setFeedbackMsg('📋 Đã gửi đơn đề xuất phân bổ giáo trình tới User Admin để phê duyệt!');
+    }
+
     setShowAssignForm(false);
     setDueDate('');
+    setJustification('');
+    setTimeout(() => setFeedbackMsg(null), 5000);
   }
 
   return (
     <Modal
       isOpen
       title={liveCurriculum.title}
-      subtitle={`${liveCurriculum.category || 'General'} · ${(liveCurriculum.courseIds || []).length} khóa học · ${assignments.length} đối tượng được gán`}
+      subtitle={`${liveCurriculum.category || 'General'} · ${(liveCurriculum.courseIds || []).length} khóa học · ${assignments.length} đối tượng chính thức · ${pendingProposals.length} đơn chờ duyệt`}
       onClose={onClose}
       size="lg"
       footer={(
@@ -594,7 +663,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
             </Badge>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {isAdmin && (
+            {isCurriculumAdmin && (
               <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(liveCurriculum)}>
                 Chỉnh Sửa Giáo Trình
               </Button>
@@ -624,6 +693,9 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
+            {pendingProposals.length > 0 && (
+              <Badge tone="amber" size="sm">{pendingProposals.length} Chờ Duyệt</Badge>
+            )}
           </button>
         </div>
       </div>
@@ -632,21 +704,30 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
         <CurriculumTree curriculum={liveCurriculum} courses={courses} />
       ) : (
         <div>
+          {feedbackMsg && (
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: 12.5, fontWeight: 600, marginBottom: 14 }}>
+              {feedbackMsg}
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
             <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-              Phân bổ giáo trình cho đơn vị hoặc cá nhân học viên bắt buộc tuân thủ:
+              {isHrbp
+                ? 'HRBP có thể gửi đơn đề xuất phân bổ giáo trình cho nhân sự/bộ phận lên User Admin duyệt:'
+                : 'Phân bổ giáo trình cho đơn vị hoặc cá nhân học viên bắt buộc tuân thủ:'}
             </div>
-            {isAdmin && !showAssignForm && (
-              <Button size="sm" variant="primary" icon="ti-plus" onClick={handleOpenAssignForm}>
-                Gán Đối Tượng Mới
+            {(canDirectAssign || canPropose) && !showAssignForm && (
+              <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-plus'} onClick={handleOpenAssignForm}>
+                {isHrbp ? 'Đề Xuất Gán Giáo Trình (Gửi Duyệt)' : 'Gán Đối Tượng Mới'}
               </Button>
             )}
           </div>
 
           {showAssignForm && (
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', marginBottom: 16, border: '1px solid var(--line-strong)' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-user-plus" style={{ color: 'var(--rail)' }} /> Gán Giáo Trình Cho Đối Tượng Mới
+              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: isHrbp ? '#0369A1' : 'var(--rail)' }}>
+                <i className={isHrbp ? 'ti ti-send' : 'ti-user-plus'} />
+                {isHrbp ? 'Đề Xuất Phân Bổ Giáo Trình (Gửi Lên User Admin Phê Duyệt)' : 'Gán Giáo Trình Cho Đối Tượng Mới'}
               </div>
               <form onSubmit={handleSaveAssignment}>
                 {assignType === 'USER' ? (
@@ -797,22 +878,61 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                       onChange={(e) => setDueDate(e.target.value)}
                     />
                   </div>
+                  {isHrbp && (
+                    <div>
+                      <label className="field-label" style={{ fontSize: 11.5 }}>Lý do / Căn cứ đề xuất cho User Admin</label>
+                      <input
+                        type="text"
+                        className="field-input"
+                        style={{ fontSize: 12, height: 34, width: '100%' }}
+                        placeholder="VD: Đề xuất bổ sung năng lực cho đội ngũ kế nhiệm SGM..."
+                        value={justification}
+                        onChange={(e) => setJustification(e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                   <Button size="sm" variant="ghost" onClick={() => setShowAssignForm(false)}>Hủy</Button>
-                  <Button size="sm" variant="primary" icon="ti-check" type="submit" disabled={!targetId}>
-                    Xác Nhận Phân Bổ
+                  <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-check'} type="submit" disabled={!targetId}>
+                    {isHrbp ? 'Gửi Đơn Phê Duyệt Cho User Admin' : 'Xác Nhận Phân Bổ'}
                   </Button>
                 </div>
               </form>
             </div>
           )}
 
+          {/* DANH SÁCH ĐỀ XUẤT ĐANG CHỜ USER ADMIN PHÊ DUYỆT */}
+          {pendingProposals.length > 0 && (
+            <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-clock" /> Đề Xuất Đang Chờ User Admin Phê Duyệt ({pendingProposals.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {pendingProposals.map((p) => (
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #FEF3C7', fontSize: 12, flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{p.targetLabel}</span>
+                      <span style={{ color: 'var(--ink-soft)', marginLeft: 8 }}>
+                        · Đề xuất bởi: <strong>{p.requesterName}</strong> ({p.requestDate})
+                        {p.dueDate && ` · Hạn: ${p.dueDate}`}
+                      </span>
+                    </div>
+                    <Badge tone="amber" icon="ti-clock">Chờ User Admin Duyệt</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {assignments.length === 0 ? (
             <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
               <i className="ti ti-target-arrow" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
-              Chưa có đối tượng nào được gán giáo trình này. Bấm <strong>"Gán Đối Tượng Mới"</strong> để phân bổ cho BU, Division, Department, Sub-Dept hoặc User.
+              Chưa có đối tượng nào được gán chính thức giáo trình này.
+              {isHrbp
+                ? ' Bấm "Đề Xuất Gán Giáo Trình (Gửi Duyệt)" để gửi đơn lên User Admin.'
+                : ' Bấm "Gán Đối Tượng Mới" để phân bổ cho BU, Division, Department, Sub-Dept hoặc User.'}
             </div>
           ) : (
             <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
@@ -848,7 +968,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                       <td style={{ color: 'var(--ink-faint)', fontSize: 11.5 }}>
                         {asg.assignedAt || '—'}
                       </td>
-                      {isAdmin && (
+                      {isCurriculumAdmin && (
                         <td style={{ textAlign: 'right' }}>
                           <Button
                             size="sm"
@@ -856,7 +976,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                             icon="ti-trash"
                             onClick={() => {
                               if (window.confirm(`Hủy phân bổ giáo trình này cho "${asg.targetLabel || asg.targetId}"?`)) {
-                                onRemoveAssignment(liveCurriculum.id, asg.id);
+                                handleRemove(liveCurriculum.id, asg.id);
                               }
                             }}
                           >

@@ -11,10 +11,8 @@ export default function ManagerApprovals() {
   const role = normalizeRole(currentUser?.role);
   const roleDef = roleDefinition(role);
   const canApprove = hasCapability(role, 'canApproveLevelSkip');
+  const isHrbp = role === 'hrbp';
 
-  // Chỉ đơn do đúng role liền dưới mình gửi lên (Manager<-Learner,
-  // Trainer/L&D<-Manager, HRBP<-Trainer, UserAdmin<-HRBP, SysAdmin<-UserAdmin) —
-  // không phải mọi đơn trong hệ thống.
   const myScopeRequests = levelAdvanceRequestsFor(currentUser);
   const pendingList = myScopeRequests.filter((a) => a.status === 'PENDING');
   const processedList = myScopeRequests.filter((a) => a.status !== 'PENDING');
@@ -54,6 +52,7 @@ export default function ManagerApprovals() {
   function renderRequestCard(req) {
     const isLevelSkip = req.requestType === 'LEVEL_ADVANCE';
     const isRoadmapPromotion = req.requestType === 'ROADMAP_PROMOTION';
+    const isCurriculumAssignment = req.requestType === 'CURRICULUM_ASSIGNMENT';
     const readiness = isLevelSkip ? readinessOf(req) : null;
     const jumpIsLegal = !isLevelSkip
       || String(nextLevelUp(req.currentLevel)) === String(normalizeLevel(req.courseLevel));
@@ -62,21 +61,29 @@ export default function ManagerApprovals() {
       <div
         key={req.id}
         className="card card-pad"
-        style={{ borderColor: isLevelSkip ? 'var(--blue)' : isRoadmapPromotion ? 'var(--sage)' : 'var(--amber)', borderWidth: 1.5 }}
+        style={{
+          borderColor: isLevelSkip ? 'var(--blue)' : isRoadmapPromotion ? 'var(--sage)' : isCurriculumAssignment ? '#0284C7' : 'var(--amber)',
+          borderWidth: 1.5,
+        }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div className="avatar" style={{ background: 'var(--rail)', color: '#fff', fontWeight: 700, width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {req.employeeName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+            <div className="avatar" style={{ background: isCurriculumAssignment ? '#0284C7' : 'var(--rail)', color: '#fff', fontWeight: 700, width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {isCurriculumAssignment ? '📚' : (req.employeeName || 'NV').split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14.5 }}>{req.employeeName} ({req.employeeId})</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{req.position} &middot; {req.department}</div>
+              <div style={{ fontWeight: 700, fontSize: 14.5 }}>
+                {isCurriculumAssignment ? `Đề Xuất Phân Bổ Giáo Trình: ${req.curriculumTitle}` : `${req.employeeName} (${req.employeeId})`}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                {isCurriculumAssignment ? `Người đề xuất: ${req.requesterName} (${req.requesterRole?.toUpperCase() || 'HRBP'})` : `${req.position} · ${req.department}`}
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {isLevelSkip && <Badge tone="blue" icon="ti-stairs-up">Học vượt cấp</Badge>}
             {isRoadmapPromotion && <Badge tone="sage" icon="ti-trophy">Đề xuất Thăng cấp Lộ trình</Badge>}
+            {isCurriculumAssignment && <Badge tone="teal" icon="ti-books">Đề xuất Gán Giáo Trình</Badge>}
             <Badge tone="amber" icon="ti-clock">Gửi ngày: {req.requestDate}</Badge>
           </div>
         </div>
@@ -106,8 +113,17 @@ export default function ManagerApprovals() {
             <Badge tone="sage" icon="ti-check">Đã hoàn thành Tab 1 &amp; Tab 2 (Lộ trình hiện tại + kế cận)</Badge>
           </div>
         )}
+        {isCurriculumAssignment && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#F0F9FF', borderRadius: 8, border: '1px solid #BAE6FD' }}>
+            <span style={{ fontSize: 12.5, color: '#0369A1', fontWeight: 600 }}>🎯 Đối tượng được gán:</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#0C4A6E' }}>{req.targetLabel}</span>
+            {req.dueDate && (
+              <Badge tone="amber" icon="ti-calendar">Hạn hoàn thành: {req.dueDate}</Badge>
+            )}
+          </div>
+        )}
 
-        {!isRoadmapPromotion && (
+        {isLevelSkip && (
           <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 14 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--rail)', marginBottom: 4 }}>
               Khóa học xin duyệt: {req.courseName}
@@ -120,9 +136,9 @@ export default function ManagerApprovals() {
             </div>
           </div>
         )}
-        {isRoadmapPromotion && (
+        {(isRoadmapPromotion || isCurriculumAssignment) && (
           <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 14, fontSize: 12.5, color: 'var(--ink)' }}>
-            <strong>Căn cứ đề xuất:</strong> "{req.justification}"
+            <strong>Căn cứ / Lý do đề xuất:</strong> "{req.justification}"
           </div>
         )}
 
@@ -158,22 +174,28 @@ export default function ManagerApprovals() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <span style={{ fontSize: 12, color: 'var(--ink-faint)', maxWidth: 460 }}>
             <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-            {isRoadmapPromotion
+            {isCurriculumAssignment
+              ? 'Phê duyệt sẽ chính thức phân bổ Giáo trình này cho học viên / bộ phận được chỉ định và ghi nhận bắt buộc hoàn thành.'
+              : isRoadmapPromotion
               ? 'Phê duyệt sẽ thăng cấp bậc thật cho nhân sự này ngay lập tức.'
               : 'Phê duyệt sẽ mở khóa riêng khóa học này cho học viên và ghi danh ngay — không mở toàn bộ cấp bậc.'}
           </span>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="ghost" icon="ti-x" onClick={() => rejectRequest(req.id)}>Từ Chối</Button>
-            <Button
-              variant="primary"
-              icon="ti-check"
-              disabled={!jumpIsLegal}
-              title={jumpIsLegal ? undefined : 'Không thể duyệt đơn nhảy cóc từ 2 cấp trở lên.'}
-              onClick={() => approveRequest(req.id)}
-            >
-              {isRoadmapPromotion ? 'Phê Duyệt Thăng Cấp Bậc' : 'Phê Duyệt Đơn Học Vượt Cấp'}
-            </Button>
-          </div>
+          {canApprove ? (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button variant="ghost" icon="ti-x" onClick={() => rejectRequest(req.id)}>Từ Chối</Button>
+              <Button
+                variant="primary"
+                icon="ti-check"
+                disabled={isLevelSkip && !jumpIsLegal}
+                title={isLevelSkip && !jumpIsLegal ? 'Không thể duyệt đơn nhảy cóc từ 2 cấp trở lên.' : undefined}
+                onClick={() => approveRequest(req.id)}
+              >
+                {isCurriculumAssignment ? 'Phê Duyệt & Gán Giáo Trình' : isRoadmapPromotion ? 'Phê Duyệt Thăng Cấp Bậc' : 'Phê Duyệt Đơn Học Vượt Cấp'}
+              </Button>
+            </div>
+          ) : (
+            <Badge tone="amber" icon="ti-clock">Đang chờ User Admin phê duyệt</Badge>
+          )}
         </div>
       </div>
     );
@@ -188,7 +210,7 @@ export default function ManagerApprovals() {
             <Badge tone="amber" icon="ti-clipboard-check">{pendingList.length} đơn chờ xử lý</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Bạn đang duyệt với vai trò <strong>{roleDef.labelVi}</strong> &middot; Xử lý đơn học vượt cấp của{' '}
+            Bạn đang duyệt với vai trò <strong>{roleDef.labelVi}</strong> &middot; Xử lý đơn học vượt cấp và đề xuất phân bổ giáo trình của{' '}
             <strong>toàn bộ nhân sự trong hệ thống</strong> (Learner, Manager, Trainer/L&amp;D, HRBP đều gửi đơn về đây).
           </p>
         </div>
@@ -196,9 +218,11 @@ export default function ManagerApprovals() {
 
       {/* Nhắc lại quy tắc tuần tự */}
       <div className="card card-pad" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)', fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-        <strong style={{ color: 'var(--ink)' }}>Quy tắc Sequential Level Gate:</strong> thang cấp bậc đảo ngược (Level 7 thấp nhất → Level 1 cao nhất).
-        Nhân viên chỉ được xin học vượt <strong>đúng 1 cấp liền kề</strong>; đơn nhảy cóc từ 2 cấp trở lên hệ thống chặn cứng và không thể phê duyệt.
-        Mỗi lần duyệt chỉ mở <strong>một khóa học cụ thể</strong>.
+        <strong style={{ color: 'var(--ink)' }}>Cơ Chế Phê Duyệt Hệ Thống:</strong>
+        <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+          <li><strong>Đề xuất phân bổ Giáo trình (Curriculum):</strong> HRBP gửi đề xuất phân bổ cho nhân sự/bộ phận lên User Admin duyệt. Khi được duyệt, toàn bộ học viên tương ứng sẽ nhận giáo trình bắt buộc.</li>
+          <li><strong>Học vượt cấp (Sequential Level Gate):</strong> Nhân viên chỉ được xin học vượt <strong>đúng 1 cấp liền kề</strong>; đơn nhảy cóc ≥ 2 cấp hệ thống tự động chặn.</li>
+        </ul>
       </div>
 
       {/* Tabs */}
@@ -229,9 +253,9 @@ export default function ManagerApprovals() {
           <table className="table">
             <thead>
               <tr>
-                <th>Học Viên</th>
-                <th>Khóa Học</th>
-                <th>Cấp Bậc</th>
+                <th>Đối Tượng / Học Viên</th>
+                <th>Nội Dung Yêu Cầu</th>
+                <th>Thông Tin Chi Tiết</th>
                 <th>Ngày Gửi</th>
                 <th>Kết Quả</th>
               </tr>
@@ -247,22 +271,32 @@ export default function ManagerApprovals() {
                 processedList.map((req) => (
                   <tr key={req.id}>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{req.employeeName}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{req.employeeId} &middot; {req.position}</div>
+                      <div style={{ fontWeight: 600 }}>{req.targetLabel || req.employeeName}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+                        {req.requesterName ? `Đề xuất bởi: ${req.requesterName}` : `${req.employeeId} · ${req.position}`}
+                      </div>
                     </td>
                     <td style={{ fontWeight: 500 }}>
-                      {req.requestType === 'ROADMAP_PROMOTION' ? 'Đề xuất Thăng cấp Lộ trình' : req.courseName}
+                      {req.requestType === 'CURRICULUM_ASSIGNMENT'
+                        ? `Giáo Trình: ${req.curriculumTitle}`
+                        : req.requestType === 'ROADMAP_PROMOTION'
+                        ? 'Đề xuất Thăng cấp Lộ trình'
+                        : req.courseName}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {req.currentLevel && <JobLevelBadge level={req.currentLevel} compact />}
-                        {(req.courseLevel || req.targetLevel) && (
-                          <>
-                            <i className="ti ti-arrow-right" style={{ fontSize: 11, color: 'var(--ink-faint)' }} />
-                            <JobLevelBadge level={req.courseLevel || req.targetLevel} compact />
-                          </>
-                        )}
-                      </div>
+                      {req.requestType === 'CURRICULUM_ASSIGNMENT' ? (
+                        <Badge tone="teal" icon="ti-calendar">{req.dueDate ? `Hạn: ${req.dueDate}` : 'Không hạn chót'}</Badge>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                          {req.currentLevel && <JobLevelBadge level={req.currentLevel} compact />}
+                          {(req.courseLevel || req.targetLevel) && (
+                            <>
+                              <i className="ti ti-arrow-right" style={{ fontSize: 11, color: 'var(--ink-faint)' }} />
+                              <JobLevelBadge level={req.courseLevel || req.targetLevel} compact />
+                            </>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td style={{ color: 'var(--ink-soft)' }}>{req.requestDate}</td>
                     <td>

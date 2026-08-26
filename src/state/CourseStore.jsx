@@ -753,8 +753,43 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Manager duyệt đơn: mở khóa đúng khóa học đó cho học viên và ghi danh luôn
-   * để khóa xuất hiện ngay trong "Khóa học của tôi".
+   * HRBP (hoặc Line Manager) gửi đơn đề xuất phân bổ Giáo trình cho nhân viên/bộ phận lên User Admin duyệt.
+   */
+  const proposeCurriculumAssignment = useCallback(
+    (curriculumId, assignmentData, justification = '') => {
+      const cur = curricula.find((c) => c.id === curriculumId);
+      if (!cur) return { ok: false, reason: 'Không tìm thấy giáo trình.' };
+
+      const request = {
+        id: `req-curric-${Date.now()}`,
+        requestType: 'CURRICULUM_ASSIGNMENT',
+        curriculumId: cur.id,
+        curriculumTitle: cur.title,
+        assignmentType: assignmentData.assignmentType || 'USER',
+        targetId: assignmentData.targetId,
+        targetLabel: assignmentData.targetLabel || assignmentData.targetId,
+        dueDate: assignmentData.dueDate || '',
+        requesterId: currentUser?.userId,
+        requesterName: currentUser?.fullName || 'HRBP',
+        requesterRole: currentUser?.role || 'hrbp',
+        requestDate: todayIso(),
+        justification:
+          justification.trim() ||
+          `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} đề xuất phân bổ Giáo trình "${cur.title}" cho ${assignmentData.targetLabel || assignmentData.targetId} nhằm nâng cao năng lực định biên.`,
+        status: 'PENDING',
+      };
+
+      setApprovals((prev) => [request, ...prev]);
+      return { ok: true, request };
+    },
+    [curricula, currentUser]
+  );
+
+  /**
+   * User Admin / Manager duyệt đơn:
+   * - CURRICULUM_ASSIGNMENT: gán giáo trình chính thức cho học viên/đơn vị
+   * - ROADMAP_PROMOTION: thăng cấp lộ trình
+   * - LEVEL_ADVANCE: mở khóa và ghi danh khóa học vượt cấp
    */
   const approveRequest = useCallback(
     (reqId) => {
@@ -765,6 +800,17 @@ export function CourseStoreProvider({ children }) {
       );
 
       if (!target) return;
+
+      // Đề xuất gán giáo trình từ HRBP được User Admin phê duyệt:
+      if (target.requestType === 'CURRICULUM_ASSIGNMENT') {
+        assignCurriculum(target.curriculumId, {
+          assignmentType: target.assignmentType,
+          targetId: target.targetId,
+          targetLabel: target.targetLabel,
+          dueDate: target.dueDate,
+        });
+        return;
+      }
 
       // Đơn Đề xuất Đánh giá Thăng cấp (Tab 2 Lộ trình kế cận) không gắn với
       // 1 khóa học cụ thể như LEVEL_ADVANCE — duyệt xong là thăng cấp thật
@@ -869,16 +915,18 @@ export function CourseStoreProvider({ children }) {
   }, []);
 
   /**
-   * Đơn xin học vượt cấp mà `approver` có quyền xử lý. Chỉ User Admin và
-   * System Admin có capability `canApproveLevelSkip` (Manager/Trainer/HRBP đã
-   * bị bỏ quyền này), và cả hai thấy TOÀN BỘ hàng đợi — không chia theo cấp
-   * bậc/role người gửi nữa.
+   * Đơn xin học vượt cấp, thăng cấp lộ trình và đề xuất gán giáo trình mà `approver` có quyền xử lý.
+   * Chỉ User Admin và System Admin có capability `canApproveLevelSkip` và thấy TOÀN BỘ hàng đợi.
    */
   const levelAdvanceRequestsFor = useCallback(
     (approver = currentUser) => {
       const approverRole = normalizeRole(approver?.role);
       if (!approver || !hasCapability(approverRole, 'canApproveLevelSkip')) return [];
-      return approvals.filter((a) => a.requestType === 'LEVEL_ADVANCE' || a.requestType === 'ROADMAP_PROMOTION');
+      return approvals.filter((a) =>
+        a.requestType === 'LEVEL_ADVANCE' ||
+        a.requestType === 'ROADMAP_PROMOTION' ||
+        a.requestType === 'CURRICULUM_ASSIGNMENT'
+      );
     },
     [approvals, currentUser]
   );
@@ -1104,6 +1152,7 @@ export function CourseStoreProvider({ children }) {
         updateCurriculum,
         deleteCurriculum,
         assignCurriculum,
+        proposeCurriculumAssignment,
         removeCurriculumAssignment,
         companyCategories,
         addCompanyCategory,

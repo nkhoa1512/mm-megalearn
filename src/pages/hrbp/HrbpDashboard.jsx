@@ -21,6 +21,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     users,
     curricula,
     assignCurriculum,
+    proposeCurriculumAssignment,
     interventions,
     addInterventionRequest,
     cancelIntervention,
@@ -101,17 +102,22 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     showToast('✅ Đã tạo Ticket can thiệp L&D thành công!');
   }
 
-  // Handle Assign Curriculum to Candidate
+  // Handle Propose Curriculum Assignment to Candidate
   function handleAssignCurriculumToCandidate() {
     if (!assignCurriculumModal || !selectedCurriculumId) return;
     const targetUserId = assignCurriculumModal.userId || assignCurriculumModal.id;
-    assignCurriculum(selectedCurriculumId, {
-      targetType: 'USER',
-      targetId: targetUserId,
-      dueDate: curriculumDueDate,
-    });
+    proposeCurriculumAssignment(
+      selectedCurriculumId,
+      {
+        assignmentType: 'USER',
+        targetId: targetUserId,
+        targetLabel: `${assignCurriculumModal.name} (${assignCurriculumModal.employeeCode || targetUserId})`,
+        dueDate: curriculumDueDate,
+      },
+      `HRBP đề xuất bổ sung Giáo trình phát triển năng lực cho ứng viên kế nhiệm ${assignCurriculumModal.name}.`
+    );
     setAssignCurriculumModal(null);
-    showToast(`🎓 Đã gán thành công Giáo Trình cho ứng viên ${assignCurriculumModal.name}!`);
+    showToast(`📋 Đã gửi đơn đề xuất gán Giáo Trình cho ứng viên ${assignCurriculumModal.name} lên User Admin phê duyệt!`);
   }
 
   // Handle Save 1-on-1 Alignment
@@ -328,15 +334,6 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <Button
               size="sm"
               variant="outline"
-              icon="ti-users"
-              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
-              onClick={() => navigate('/manager/team')}
-            >
-              👥 Quản Lý Siêu Thị
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               icon="ti-books"
               style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
               onClick={() => navigate('/admin/courses?tab=curriculum')}
@@ -351,15 +348,6 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
               onClick={() => navigate('/trainer')}
             >
               🏫 Lớp Học &amp; Check-in QR
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              icon="ti-checkbox"
-              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
-              onClick={() => navigate('/approvals')}
-            >
-              📋 Duyệt Học Vượt Cấp
             </Button>
           </div>
         </div>
