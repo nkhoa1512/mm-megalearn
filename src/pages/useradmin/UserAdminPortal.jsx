@@ -128,9 +128,6 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
           >
             {language === 'en' ? '+ Create Course (Online & In-Person)' : '+ Tạo Khóa Học (Online & Trực Tiếp)'}
           </Button>
-          <Button variant="outline" icon="ti-stack-2" onClick={() => navigate('/admin/courses')}>
-            {language === 'en' ? 'Manage Course Catalog' : 'Quản Lý Danh Mục Khóa Học'}
-          </Button>
           <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
             {language === 'en' ? 'Personal Dashboard' : 'Xem Giao Diện Cá Nhân'}
           </Button>
