@@ -106,7 +106,7 @@ check('mandatory assignment.targetLevel synced',
   generated100Courses.filter((c) => c.assignment).every((c) => c.assignment.targetLevel === c.targetLevel));
 
 // --- Users ---------------------------------------------------------------
-check('100 users generated', generated100Users.length === 100);
+check('260 users generated (expanded, no longer capped at 100)', generated100Users.length === 260, String(generated100Users.length));
 const userLevels = {};
 for (const u of generated100Users) userLevels[u.level] = (userLevels[u.level] || 0) + 1;
 console.log('      user level distribution:', JSON.stringify(userLevels));

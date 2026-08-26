@@ -11,6 +11,7 @@
 
 import { LEVEL_ORDER, nextLevelUp, isCourseVisibleInCatalog } from './levelSystem';
 import { generated100Courses } from './generated100Data';
+import { getRoadmapForScope, migrateLevelBranchMatrix } from './roadmapScopeMatrix';
 
 export const ROADMAP_BRANCHES = { OPERATIONS: 'OPERATIONS', SUPPORTING: 'SUPPORTING' };
 
@@ -92,23 +93,20 @@ export function buildCurrentRoadmaps(courses) {
 
 export const CURRENT_ROADMAPS = buildCurrentRoadmaps(generated100Courses);
 
-/** Lộ trình kế cận của `level` = CURRENT_ROADMAPS của Level liền trên (N-1). */
-export function successionMilestonesFor(level, branch) {
+// Cấu hình lộ trình được PERSIST giờ là ma trận Scope Key đa tầng (BU ->
+// Division -> Department -> Sub-Department x Level), khởi tạo từ đúng nội
+// dung Level x Branch cũ để không mất dữ liệu khi nâng cấp.
+export const SCOPE_ROADMAP_MATRIX = migrateLevelBranchMatrix(CURRENT_ROADMAPS);
+
+/**
+ * Lộ trình kế cận của `user` ở `level` = lộ trình (đã tra cứu kế thừa theo
+ * Scope Key) của Level liền trên (N-1), cùng đúng nhánh tổ chức của user đó.
+ */
+export function successionMilestonesFor(user, roadmapsConfig, level, userEnrollments = {}) {
   const nextLevel = nextLevelUp(level);
   if (!nextLevel) return { level: null, courseIds: [] };
-  return { level: nextLevel, courseIds: CURRENT_ROADMAPS[nextLevel]?.[branch]?.courseIds || [] };
-}
-
-export function addCourseToCurrentRoadmap(roadmaps, level, branch, courseId) {
-  const set = roadmaps[level]?.[branch];
-  if (!set || set.courseIds.includes(courseId)) return roadmaps;
-  return { ...roadmaps, [level]: { ...roadmaps[level], [branch]: { courseIds: [...set.courseIds, courseId] } } };
-}
-
-export function removeCourseFromCurrentRoadmap(roadmaps, level, branch, courseId) {
-  const set = roadmaps[level]?.[branch];
-  if (!set) return roadmaps;
-  return { ...roadmaps, [level]: { ...roadmaps[level], [branch]: { courseIds: set.courseIds.filter((id) => id !== courseId) } } };
+  const resolved = getRoadmapForScope(roadmapsConfig, user, nextLevel, userEnrollments);
+  return { level: nextLevel, courseIds: resolved.courseIds };
 }
 
 // ---------------------------------------------------------------------------
@@ -170,14 +168,15 @@ export function computeUserRoadmapTabs(user, roadmapsConfig, enrollments, course
       .map((course) => ({ course, status: statusOf(course.id), completed: isCompleted(course.id) }));
   }
 
-  const currentIds = roadmapsConfig[level]?.[branch]?.courseIds || [];
+  const resolvedCurrent = getRoadmapForScope(roadmapsConfig, user, level, userEnrollments);
+  const currentIds = resolvedCurrent.courseIds;
   const currentMilestones = buildMilestones(currentIds);
   const currentDone = currentMilestones.length > 0 && currentMilestones.every((m) => m.completed);
   const currentPercent = currentMilestones.length === 0
     ? 100
     : Math.round((currentMilestones.filter((m) => m.completed).length / currentMilestones.length) * 100);
 
-  const succession = successionMilestonesFor(level, branch);
+  const succession = successionMilestonesFor(user, roadmapsConfig, level, userEnrollments);
   const successionMilestones = buildMilestones(succession.courseIds);
   const successionPercent = successionMilestones.length === 0
     ? 0
@@ -201,6 +200,10 @@ export function computeUserRoadmapTabs(user, roadmapsConfig, enrollments, course
   return {
     level,
     branch,
+    scopeKey: resolvedCurrent.scopeKey,
+    inheritedFrom: resolvedCurrent.inheritedFrom,
+    roadmapVersion: resolvedCurrent.version,
+    isArchivedRoadmapVersion: resolvedCurrent.isArchived,
     nextLevel: succession.level,
     current: { milestones: currentMilestones, percent: currentPercent, done: currentDone },
     succession: {

@@ -72,7 +72,20 @@ const POSITIONS_BY_DEPT = {
 // Mã nhân viên của 6 persona neo; dãy sinh tự động phải tránh trùng các mã này.
 const ANCHOR_EMP_NUMS = new Set([1, 245, 312, 1042, 1250, 2041]);
 
-export const generated100Users = Array.from({ length: 100 }, (_, i) => {
+// Không còn gò cứng ở 100 nhân sự — kho dữ liệu mở rộng để phủ đủ 2 Business
+// Unit x nhiều Division/Department/Sub-Department x 7 cấp bậc mà không bị
+// rối (thiếu người ở một số ô của Ma Trận Lộ Trình Đa Tầng). Tỉ lệ Manager /
+// Trainer / Level bậc thấp giữ đúng hình tháp tổ chức bán lẻ thực tế, tính
+// theo % tổng quân số thay vì mốc chỉ số cứng, nên tăng/giảm TOTAL_USER_COUNT
+// vẫn cho ra một đội hình cân đối.
+const TOTAL_USER_COUNT = 260;
+const GENERATED_BAND_SIZE = TOTAL_USER_COUNT - 6; // trừ 6 persona neo (anchor)
+const MANAGER_BAND_START = 6;
+const MANAGER_BAND_END = MANAGER_BAND_START + Math.max(8, Math.round(GENERATED_BAND_SIZE * 0.10));
+const TRAINER_BAND_END = MANAGER_BAND_END + Math.max(4, Math.round(GENERATED_BAND_SIZE * 0.04));
+const CASUAL_BAND_START = MANAGER_BAND_START + Math.round(GENERATED_BAND_SIZE * 0.85);
+
+export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i) => {
   const rawEmpNum = 1001 + i;
   const empNum = ANCHOR_EMP_NUMS.has(rawEmpNum) ? rawEmpNum + 1000 : rawEmpNum;
   const userId = `USR-${empNum}`;
@@ -339,17 +352,17 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
   let role = 'learner';
   let managerId = 'USR-0245';
 
-  if (i >= 6 && i <= 14) {
+  if (i >= MANAGER_BAND_START && i < MANAGER_BAND_END) {
     // Trưởng bộ phận & giám sát ca -> role Manager
     level = (i % 2 === 0) ? '4' : '5';
     role = 'manager';
     managerId = 'USR-0001';
-  } else if (i >= 15 && i <= 18) {
+  } else if (i >= MANAGER_BAND_END && i < TRAINER_BAND_END) {
     // Trưởng ngành hàng kiêm Master Trainer -> role Trainer / L&D
     level = '3';
     role = 'trainer';
     managerId = 'USR-0001';
-  } else if (i >= 85) {
+  } else if (i >= CASUAL_BAND_START) {
     // Casual Labor & Internship của thang cũ đều quy về cấp thấp nhất (Level 7)
     level = '7';
     managerId = 'USR-0312';
@@ -373,7 +386,10 @@ export const generated100Users = Array.from({ length: 100 }, (_, i) => {
   const initials = `${lastName.charAt(0)}${firstName.charAt(0)}`.toUpperCase();
 
   // Diverse realistic statuses
-  const status = (i === 15 || i === 28) ? 'TRANSFER' : (i === 22 || i === 45 || i === 70) ? 'NEW_JOINER' : (i === 99) ? 'INACTIVE' : 'ACTIVE';
+  const status = (i === 15 || i === 28 || i % 47 === 0) ? 'TRANSFER'
+    : (i === 22 || i === 45 || i === 70 || i % 53 === 0) ? 'NEW_JOINER'
+    : (i === TOTAL_USER_COUNT - 1 || i % 61 === 0) ? 'INACTIVE'
+    : 'ACTIVE';
   const yearsOfService = Number((0.3 + (i * 0.12) % 6.5).toFixed(1));
 
   return {

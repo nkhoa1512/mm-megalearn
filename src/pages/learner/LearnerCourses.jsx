@@ -4,7 +4,6 @@ import { currentUser } from '../../data/mockData';
 import { Badge, ProgressBar, Button, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
 import {
   ACCESS_STATE,
-  LEVEL_DEFINITIONS,
   levelDefinition,
   levelShortLabel,
   nextLevelUp,
@@ -13,6 +12,81 @@ import {
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
+import { divisions } from '../../data/orgHierarchy';
+
+// Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
+// 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
+// Thái Học Tập, Hình Thức Đào Tạo, Chuyên Ngành.
+const GROUP_BY_OPTIONS = [
+  { id: 'NONE', label: 'Không Gộp Nhóm', icon: 'ti-list' },
+  { id: 'ORG_UNIT', label: 'Phòng Ban & Khối', icon: 'ti-building' },
+  { id: 'LEVEL', label: 'Cấp Bậc & Lộ Trình', icon: 'ti-stairs-up' },
+  { id: 'STATUS', label: 'Trạng Thái Học Tập', icon: 'ti-progress-check' },
+  { id: 'MODALITY', label: 'Hình Thức Đào Tạo', icon: 'ti-device-desktop' },
+  { id: 'DOMAIN', label: 'Chuyên Ngành', icon: 'ti-category' },
+];
+
+const STATUS_GROUP_META = {
+  COMPLETED: { label: 'Đã Hoàn Thành', icon: 'ti-circle-check' },
+  IN_PROGRESS: { label: 'Đang Học', icon: 'ti-player-play' },
+  NOT_STARTED: { label: 'Chưa Bắt Đầu', icon: 'ti-circle-dashed' },
+  OVERDUE: { label: 'Quá Hạn', icon: 'ti-alert-triangle' },
+  FAILED: { label: 'Cần Thi Lại', icon: 'ti-reload' },
+  NOT_ENROLLED: { label: 'Chưa Ghi Danh', icon: 'ti-bookmark-off' },
+};
+
+/** Khóa nhóm + nhãn hiển thị cho 1 khóa học theo tiêu chí `groupBy`. */
+function courseGroupOf(c, groupBy) {
+  switch (groupBy) {
+    case 'ORG_UNIT': {
+      const a = c.assignment;
+      if (!a) return { key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' };
+      if (a.assignmentType === 'BUSINESS_UNIT') return { key: 'BU', label: 'Bắt Buộc Toàn Công Ty (MMVN)', icon: 'ti-building-skyscraper' };
+      if (a.assignmentType === 'DIVISION') {
+        const div = divisions.find((d) => d.id === a.targetDivisionId);
+        return { key: `DIV-${a.targetDivisionId}`, label: div ? `Khối ${div.name}` : 'Khối Chuyên Trách', icon: 'ti-building' };
+      }
+      return { key: `LVLREQ-${a.targetLevel}`, label: `Bắt Buộc Level ${a.targetLevel}`, icon: 'ti-stairs-up' };
+    }
+    case 'LEVEL':
+      return { key: String(c.targetLevel), label: `Level ${c.targetLevel} — ${levelShortLabel(c.targetLevel)}`, icon: 'ti-stairs-up' };
+    case 'STATUS': {
+      const s = c.enrollment?.status || 'NOT_ENROLLED';
+      const meta = STATUS_GROUP_META[s] || STATUS_GROUP_META.NOT_ENROLLED;
+      return { key: s, label: meta.label, icon: meta.icon };
+    }
+    case 'MODALITY': {
+      const b = courseFormatBadge(c);
+      return { key: b.label, label: b.label, icon: 'ti-device-desktop' };
+    }
+    case 'DOMAIN':
+      return { key: c.domain || c.category || 'Khác', label: c.domain || c.category || 'Khác', icon: 'ti-category' };
+    default:
+      return { key: 'ALL', label: '', icon: '' };
+  }
+}
+
+/** Gom danh sách khóa học thành các nhóm hiển thị theo tiêu chí `groupBy`, kèm % tiến độ của từng nhóm. */
+function buildCourseGroups(items, groupBy) {
+  if (groupBy === 'NONE') return null;
+  const map = new Map();
+  items.forEach((c) => {
+    const g = courseGroupOf(c, groupBy);
+    if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
+    map.get(g.key).items.push(c);
+  });
+  const groups = Array.from(map.values()).map((g) => {
+    const completed = g.items.filter((c) => c.enrollment?.status === 'COMPLETED').length;
+    const percent = g.items.length ? Math.round((completed / g.items.length) * 100) : 0;
+    return { ...g, percent, completed };
+  });
+  if (groupBy === 'LEVEL') {
+    groups.sort((a, b) => Number(b.key) - Number(a.key));
+  } else {
+    groups.sort((a, b) => b.items.length - a.items.length);
+  }
+  return groups;
+}
 
 // Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
 export { JobLevelBadge };
@@ -59,11 +133,21 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [levelFilter, setLevelFilter] = useState('ALL');
-  const [domainFilter, setDomainFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [orgUnitFilter, setOrgUnitFilter] = useState('ALL');
   const [formatFilter, setFormatFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState('TABLE');
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [groupBy, setGroupBy] = useState('NONE');
+  const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
+
+  function toggleGroupCollapsed(key) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   // Modal gửi đơn xin học vượt cấp
   const [requestModal, setRequestModal] = useState({ open: false, course: null, access: null });
@@ -117,8 +201,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
       s === statusFilter;
 
-    const matchLevel = levelFilter === 'ALL' || normalizeLevel(c.targetLevel) === String(levelFilter);
-    const matchDomain = domainFilter === 'ALL' || c.domain === domainFilter || c.category === domainFilter;
+    const matchCategory = categoryFilter === 'ALL' || c.category === categoryFilter;
+    const matchOrgUnit = orgUnitFilter === 'ALL' || courseGroupOf(c, 'ORG_UNIT').key === orgUnitFilter;
     const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter
       || (formatFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS');
     const matchSearch =
@@ -128,8 +212,18 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       c.category.toLowerCase().includes(search.toLowerCase()) ||
       (c.domain && c.domain.toLowerCase().includes(search.toLowerCase()));
 
-    return matchStatus && matchLevel && matchDomain && matchFormat && matchSearch;
+    return matchStatus && matchCategory && matchOrgUnit && matchFormat && matchSearch;
   });
+
+  const categoryOptions = [...new Set(allCourses.map((c) => c.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const orgUnitOptionsMap = new Map();
+  allCourses.forEach((c) => {
+    const g = courseGroupOf(c, 'ORG_UNIT');
+    if (!orgUnitOptionsMap.has(g.key)) orgUnitOptionsMap.set(g.key, g.label);
+  });
+  const orgUnitOptions = Array.from(orgUnitOptionsMap.entries());
+
+  const groups = buildCourseGroups(filtered, groupBy);
 
   const completedCount = enrolledCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length;
   const inProgressCount = enrolledCourses.filter((c) => c.enrollment?.status === 'IN_PROGRESS').length;
@@ -308,7 +402,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       {/* TOP SCOPE TABS */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap' }}>
         <button
-          onClick={() => { setScopeTab('MY_COURSES'); setStatusFilter('ALL'); setLevelFilter('ALL'); }}
+          onClick={() => { setScopeTab('MY_COURSES'); setStatusFilter('ALL'); }}
           className="btn btn-sm"
           style={{
             background: scopeTab === 'MY_COURSES' ? 'var(--blue)' : 'var(--paper-raised)',
@@ -324,7 +418,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </button>
 
         <button
-          onClick={() => { setScopeTab('FULL_CATALOG'); setStatusFilter('ALL'); setLevelFilter('ALL'); }}
+          onClick={() => { setScopeTab('FULL_CATALOG'); setStatusFilter('ALL'); }}
           className="btn btn-sm"
           style={{
             background: scopeTab === 'FULL_CATALOG' ? 'var(--blue)' : 'var(--paper-raised)',
@@ -448,35 +542,17 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             />
           </div>
 
-          {/* BỘ LỌC 7 CẤP BẬC (7 thấp nhất -> 1 cao nhất) */}
-          <select
-            className="field-select"
-            style={{ height: 34, fontSize: 12, minWidth: 230, fontWeight: 600, borderColor: 'var(--blue)' }}
-            value={levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value)}
-          >
-            <option value="ALL">{language === 'en' ? '🎯 All Job Levels (Level 7 → Level 1)' : '🎯 Tất cả Cấp Bậc (Level 7 → Level 1)'}</option>
-            {[...LEVEL_DEFINITIONS].reverse().map((def) => (
-              <option key={def.level} value={def.level}>
-                {def.emoji} Level {def.level}: {language === 'en' ? (def.shortEn || def.shortVi) : def.shortVi}
-              </option>
-            ))}
+          <select className="field-select" style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+            <option value="ALL">{language === 'en' ? `All Categories (${categoryOptions.length})` : `Tất cả Danh Mục (${categoryOptions.length})`}</option>
+            {categoryOptions.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
           </select>
 
-          <select className="field-select" style={{ height: 34, fontSize: 12, minWidth: 170 }} value={domainFilter} onChange={(e) => setDomainFilter(e.target.value)}>
-            <option value="ALL">{language === 'en' ? 'All Domains (12 Domains)' : 'Tất cả Chuyên ngành (12 Domains)'}</option>
-            <option value="Food Safety & Hygiene">Food Safety &amp; Hygiene</option>
-            <option value="Information Security">Information Security</option>
-            <option value="Health & Safety">Health &amp; Safety</option>
-            <option value="Cold Chain">Cold Chain</option>
-            <option value="Store Operations">Store Operations</option>
-            <option value="Leadership">Leadership &amp; Management</option>
-            <option value="Supply Chain">Supply Chain &amp; Logistics</option>
-            <option value="Merchandising">Merchandising</option>
-            <option value="E-Commerce">Digital &amp; E-Commerce</option>
+          <select className="field-select" style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }} value={orgUnitFilter} onChange={(e) => setOrgUnitFilter(e.target.value)}>
+            <option value="ALL">{language === 'en' ? 'All Org Units / Sources' : 'Tất cả Phòng Ban Giao'}</option>
+            {orgUnitOptions.map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
           </select>
 
-          <select className="field-select" style={{ height: 34, fontSize: 12, minWidth: 140 }} value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
+          <select className="field-select" style={{ height: 34, fontSize: 12, width: 150, flexShrink: 0 }} value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
             <option value="ALL">{language === 'en' ? 'All Formats' : 'Tất cả Định dạng'}</option>
             <option value="SCORM">SCORM Package</option>
             <option value="Video">Interactive Video</option>
@@ -485,34 +561,50 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <option value="EXTERNAL_PLATFORM">LinkedIn / Coursera</option>
             <option value="VIRTUAL_CLASS">💻 {language === 'en' ? 'Virtual Live Class (Webinar)' : 'Lớp Trực Tuyến (Webinar/Live Class)'}</option>
           </select>
+
+          <select
+            className="field-select"
+            style={{ height: 34, fontSize: 12, width: 200, flexShrink: 0, fontWeight: 600 }}
+            value={groupBy}
+            onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
+            title="Gộp Nhóm (Group By)"
+          >
+            {GROUP_BY_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.id === 'NONE' ? '📋 ' : '🗂️ '}Gộp nhóm: {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* TABLE VIEW */}
-      {viewMode === 'TABLE' ? (
-        <div className="card" style={{ overflowX: 'auto', marginBottom: 20 }}>
-          <table className="table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>{language === 'en' ? 'Course Program' : 'Khóa Học'}</th>
-                <th style={{ width: 96 }}>{language === 'en' ? 'Level' : 'Cấp Bậc'}</th>
-                <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Truy Cập'}</th>
-                <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Định Dạng'}</th>
-                <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Tiến Độ'}</th>
-                <th style={{ width: 104 }}>{language === 'en' ? 'Status' : 'Trạng Thái'}</th>
-                <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
-                    Không tìm thấy khóa học nào phù hợp với bộ lọc.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => {
-                  const enr = c.enrollment;
+      {(() => {
+        /** Bảng cho 1 tập khóa học (dùng lại cho cả chế độ gộp nhóm lẫn không gộp). */
+        function renderTable(items) {
+          return (
+            <div className="card" style={{ overflowX: 'auto', marginBottom: 20 }}>
+              <table className="table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>{language === 'en' ? 'Course Program' : 'Khóa Học'}</th>
+                    <th style={{ width: 96 }}>{language === 'en' ? 'Level' : 'Cấp Bậc'}</th>
+                    <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Truy Cập'}</th>
+                    <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Định Dạng'}</th>
+                    <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Tiến Độ'}</th>
+                    <th style={{ width: 104 }}>{language === 'en' ? 'Status' : 'Trạng Thái'}</th>
+                    <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
+                        Không tìm thấy khóa học nào phù hợp với bộ lọc.
+                      </td>
+                    </tr>
+                  ) : (
+                    items.map((c) => {
+                      const enr = c.enrollment;
                   const access = accessById[c.id];
                   const status = enr?.status || 'NOT_STARTED';
                   const stConfig = statusMap[status] || statusMap.NOT_STARTED;
@@ -589,14 +681,18 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     </tr>
                   );
                 })
-              )}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        /* GRID VIEW */
-        <div className="grid grid-3" style={{ gap: 16, marginBottom: 20 }}>
-          {filtered.map((c) => {
+                  )}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        /** Lưới thẻ cho 1 tập khóa học (dùng lại cho cả chế độ gộp nhóm lẫn không gộp). */
+        function renderGrid(items) {
+          return (
+            <div className="grid grid-3" style={{ gap: 16, marginBottom: 20 }}>
+              {items.map((c) => {
             const enr = c.enrollment;
             const access = accessById[c.id];
             const isCompleted = enr?.status === 'COMPLETED';
@@ -660,9 +756,57 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+              })}
+            </div>
+          );
+        }
+
+        const renderList = viewMode === 'TABLE' ? renderTable : renderGrid;
+
+        if (groupBy === 'NONE' || !groups) {
+          return renderList(filtered);
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 6 }}>
+            {groups.map((g) => {
+              const isCollapsed = collapsedGroups.has(g.key);
+              return (
+                <div key={g.key} className="card" style={{ overflow: 'hidden' }}>
+                  <button
+                    onClick={() => toggleGroupCollapsed(g.key)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '14px 18px', background: 'var(--paper-raised)', border: 'none',
+                      borderBottom: isCollapsed ? 'none' : '1px solid var(--line)', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} style={{ color: 'var(--ink-faint)' }} />
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <i className={`ti ${g.icon}`} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{g.label}</div>
+                    <Badge tone="slate">{g.items.length} khóa</Badge>
+                    {scopeTab === 'MY_COURSES' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 130 }}>
+                        <div style={{ width: 80 }}>
+                          <ProgressBar value={g.percent} tone={g.percent === 100 ? 'sage' : 'amber'} size="sm" />
+                        </div>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{g.percent}%</span>
+                      </div>
+                    )}
+                  </button>
+                  {!isCollapsed && (
+                    <div style={{ padding: viewMode === 'GRID' ? '16px 16px 0' : 0 }}>
+                      {renderList(g.items)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* MODAL: GỬI ĐƠN XIN HỌC VƯỢT CẤP */}
       <Modal

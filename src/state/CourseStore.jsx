@@ -14,12 +14,8 @@ import {
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
-import {
-  CURRENT_ROADMAPS,
-  computeUserRoadmapTabs,
-  addCourseToCurrentRoadmap,
-  removeCourseFromCurrentRoadmap,
-} from '../data/levelRoadmapMatrix';
+import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadmapMatrix';
+import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
@@ -32,7 +28,10 @@ const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 const USERS_KEY = 'mm-megalearn-users-v6';
-const ROADMAP_KEY = 'mm-megalearn-roadmaps-v6';
+// v7: cấu hình lộ trình chuyển từ ma trận Level x Branch phẳng sang Scope Key
+// đa tầng (BU -> Division -> Department -> Sub-Department x Level). Bump key
+// để không nạp nhầm shape cũ từ localStorage.
+const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -77,7 +76,7 @@ export function CourseStoreProvider({ children }) {
 
   // Cấu hình Lộ trình Cấp bậc (Tab 1 "Hiện tại" / Tab 2 "Kế cận" tra cứu chéo
   // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
-  const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, CURRENT_ROADMAPS));
+  const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, SCOPE_ROADMAP_MATRIX));
 
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
@@ -464,14 +463,20 @@ export function CourseStoreProvider({ children }) {
     [roadmapsConfig, enrollments, courses, currentUser]
   );
 
-  const addCourseToRoadmapAction = useCallback(
-    (level, branch, courseId) => setRoadmapsConfig((prev) => addCourseToCurrentRoadmap(prev, level, branch, courseId)),
-    []
-  );
-
-  const removeCourseFromRoadmapAction = useCallback(
-    (level, branch, courseId) => setRoadmapsConfig((prev) => removeCourseFromCurrentRoadmap(prev, level, branch, courseId)),
-    []
+  /**
+   * Lưu (Tạo mới / Chỉnh sửa) danh sách khóa học của đúng 1 Scope Key. Nếu
+   * scope đã tồn tại và danh sách thực sự đổi, phiên bản hiện tại được đóng
+   * băng và tăng lên phiên bản mới (v1.0 -> v2.0 -> ...) — học viên đã hoàn
+   * thành/đang học dở tiếp tục thấy đúng phiên bản họ đã bắt đầu (xem
+   * resolveUserRoadmapVersion trong roadmapScopeMatrix.js); chỉ học viên chưa
+   * từng động vào lộ trình này mới thấy phiên bản mới.
+   */
+  const publishRoadmapScopeAction = useCallback(
+    (scopeKey, courseIds, note = '') =>
+      setRoadmapsConfig((prev) =>
+        publishRoadmapScope(prev, scopeKey, courseIds, { updatedBy: currentUser?.fullName || 'Admin', updatedAt: todayIso(), note })
+      ),
+    [currentUser]
   );
 
   /**
@@ -679,8 +684,7 @@ export function CourseStoreProvider({ children }) {
         requestLevelAdvanceApproval,
         roadmapsConfig,
         getUserRoadmapTabs,
-        addCourseToRoadmap: addCourseToRoadmapAction,
-        removeCourseFromRoadmap: removeCourseFromRoadmapAction,
+        publishRoadmapScope: publishRoadmapScopeAction,
         requestRoadmapPromotion,
         accessFor,
         enrollCourse,
