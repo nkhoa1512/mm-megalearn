@@ -29,7 +29,13 @@ export function targetOptionsFor(assignmentType) {
     case 'BUSINESS_UNIT': return businessUnits.map((b) => ({ id: b.id, label: b.name }));
     case 'DIVISION': return divisions.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
     case 'DEPARTMENT': return departments.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
-    case 'SUBDEPARTMENT': return subDepartments.map((s) => ({ id: s.id, label: `${s.code} - ${s.name}` }));
+    case 'SUBDEPARTMENT': return subDepartments.map((s) => ({
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      departmentId: s.departmentId,
+      label: `🌿 [${s.code}] ${s.name}`,
+    }));
     case 'AREA': return operationsAreas.map((a) => ({ id: a.id, label: `${a.code} - ${a.name}` }));
     case 'STORE_TYPE': return storeTypes.map((t) => ({ id: t.id, label: `${t.code} - ${t.name}` }));
     case 'CLUSTER': return clusters.map((c) => ({ id: c.id, label: `${c.code} - ${c.name}` }));
@@ -40,17 +46,28 @@ export function targetOptionsFor(assignmentType) {
       { id: 'manager', label: 'Line Manager (Level 4-5)' },
       { id: 'learner', label: 'Learner (Level 6-7, CL, IN)' },
     ];
-    case 'USER': return (demoUsers || allUsers())
-      .filter((u) => u.role !== 'admin')
-      .map((u) => ({
-        id: u.userId,
-        label: `${u.fullName} (${u.employeeCode} · Lvl ${u.level} · ${u.divisionCode || ''}-${u.departmentCode || ''})`,
-        level: String(u.level || ''),
-        fullName: u.fullName,
-        employeeCode: u.employeeCode,
-        departmentCode: u.departmentCode,
-        divisionCode: u.divisionCode,
-      }));
+    case 'USER': {
+      const list = typeof allUsers === 'function' ? allUsers() : (demoUsers || []);
+      return list
+        .filter((u) => u.role !== 'admin')
+        .map((u) => {
+          const subInfo = u.subDepartmentName ? ` · 🌿 ${u.subDepartmentName}` : (u.subDepartmentCode ? ` · ${u.subDepartmentCode}` : '');
+          const deptInfo = u.departmentCode || u.departmentName || u.department || 'MMVN';
+          return {
+            id: u.userId,
+            label: `${u.fullName} (${u.employeeCode || u.userId} · Lvl ${u.level} · ${deptInfo}${subInfo})`,
+            level: String(u.level || ''),
+            fullName: u.fullName,
+            employeeCode: u.employeeCode,
+            departmentCode: u.departmentCode,
+            departmentName: u.departmentName,
+            subDepartmentId: u.subDepartmentId,
+            subDepartmentCode: u.subDepartmentCode,
+            subDepartmentName: u.subDepartmentName,
+            divisionCode: u.divisionCode,
+          };
+        });
+    }
     default: return [];
   }
 }

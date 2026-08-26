@@ -11,6 +11,7 @@ import {
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../components/catalog/CurriculumTree';
 import { ASSIGNMENT_TYPES, assignmentTypeLabel, targetOptionsFor } from '../../data/assignmentTargets';
+import { subDepartments } from '../../data/orgHierarchy';
 import { assignmentTargetSummary, resolveTargetLabel } from '../../utils/curriculumAssignment';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
@@ -518,6 +519,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
   const [targetId, setTargetId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('ALL');
+  const [userSubDeptFilter, setUserSubDeptFilter] = useState('ALL');
   const [userSearch, setUserSearch] = useState('');
 
   // Always read live state from store
@@ -525,18 +527,25 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
   const assignments = liveCurriculum.assignments || [];
   const targetOptions = targetOptionsFor(assignType) || [];
 
-  // Filter options for USER based on userLevelFilter and userSearch
+  // Filter options for USER based on userLevelFilter, userSubDeptFilter, and userSearch
   const visibleUserOptions = useMemo(() => {
     if (assignType !== 'USER') return targetOptions;
     return targetOptions.filter((u) => {
       const matchLvl = userLevelFilter === 'ALL' || String(u.level) === String(userLevelFilter);
+      const matchSubDept = userSubDeptFilter === 'ALL' ||
+        u.subDepartmentId === userSubDeptFilter ||
+        u.subDepartmentCode === userSubDeptFilter;
       const matchQuery = !userSearch ||
         (u.label && u.label.toLowerCase().includes(userSearch.toLowerCase())) ||
         (u.fullName && u.fullName.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.employeeCode && u.employeeCode.toLowerCase().includes(userSearch.toLowerCase()));
-      return matchLvl && matchQuery;
+        (u.employeeCode && u.employeeCode.toLowerCase().includes(userSearch.toLowerCase())) ||
+        (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(userSearch.toLowerCase())) ||
+        (u.subDepartmentCode && u.subDepartmentCode.toLowerCase().includes(userSearch.toLowerCase())) ||
+        (u.departmentName && u.departmentName.toLowerCase().includes(userSearch.toLowerCase())) ||
+        (u.departmentCode && u.departmentCode.toLowerCase().includes(userSearch.toLowerCase()));
+      return matchLvl && matchSubDept && matchQuery;
     });
-  }, [assignType, targetOptions, userLevelFilter, userSearch]);
+  }, [assignType, targetOptions, userLevelFilter, userSubDeptFilter, userSearch]);
 
   // Keep targetId in sync if filtered list changes
   useEffect(() => {
@@ -551,6 +560,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
     const opts = targetOptionsFor(assignType) || [];
     setTargetId(opts[0]?.id || '');
     setUserLevelFilter('ALL');
+    setUserSubDeptFilter('ALL');
     setUserSearch('');
     setShowAssignForm(true);
   }
@@ -641,7 +651,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
               <form onSubmit={handleSaveAssignment}>
                 {assignType === 'USER' ? (
                   <>
-                    <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
+                    <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
                       <div>
                         <label className="field-label" style={{ fontSize: 11.5 }}>Loại đối tượng (Target Type)</label>
                         <select
@@ -680,6 +690,24 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                           <option value="7">Level 7 - Junior Associate / Nhân Viên</option>
                         </select>
                       </div>
+                      <div>
+                        <label className="field-label" style={{ fontSize: 11.5, color: 'var(--rail)', fontWeight: 700 }}>
+                          <i className="ti ti-git-branch" /> Lọc theo Sub-Department
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{ fontSize: 12, height: 34, width: '100%', borderColor: 'var(--rail)' }}
+                          value={userSubDeptFilter}
+                          onChange={(e) => setUserSubDeptFilter(e.target.value)}
+                        >
+                          <option value="ALL">Tất Cả Sub-Departments</option>
+                          {subDepartments.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
@@ -691,7 +719,7 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                             type="text"
                             className="field-input"
                             style={{ fontSize: 12, height: 34, paddingLeft: 28, width: '100%' }}
-                            placeholder="Nhập tên, mã MMVN-xxxx, phòng ban..."
+                            placeholder="Nhập tên, mã NV, phòng ban, sub-department..."
                             value={userSearch}
                             onChange={(e) => setUserSearch(e.target.value)}
                           />
@@ -740,7 +768,9 @@ function CurriculumDetailModal({ curriculum: initialCurriculum, courses, curricu
                       </select>
                     </div>
                     <div>
-                      <label className="field-label" style={{ fontSize: 11.5 }}>Chọn đối tượng cụ thể</label>
+                      <label className="field-label" style={{ fontSize: 11.5 }}>
+                        {assignType === 'SUBDEPARTMENT' ? 'Chọn Bộ Phận Trực Thuộc (Sub-Department)' : 'Chọn mục tiêu phân bổ'}
+                      </label>
                       <select
                         className="field-select"
                         style={{ fontSize: 12, height: 34, width: '100%' }}

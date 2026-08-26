@@ -7,6 +7,7 @@
 import {
   divisions,
   departments,
+  subDepartments,
   jobLevels,
   retailStores,
   clusters,
@@ -107,6 +108,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
       departmentId: 'dept-lod', departmentCode: 'L&OD', departmentName: 'Learning & Org Dev',
+      subDepartmentId: 'sub-lod-lead', subDepartmentCode: 'SUB-LOD-LEAD', subDepartmentName: 'Đào Tạo Lãnh Đạo & Kỹ Năng Mềm (Leadership Development)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
       managerId: null,
@@ -145,6 +147,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
       departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
+      subDepartmentId: 'sub-ppf-lead', subDepartmentCode: 'SUB-PPF-MGT', subDepartmentName: 'Ban Quản Lý & Giám Sát Chế Biến Tươi (Fresh Operations Management)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
       clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
@@ -185,7 +188,8 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       branchName: 'Khối Vận hành (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-opt', divisionCode: 'OPT', divisionName: 'Operations',
-      departmentId: 'dept-opx', departmentCode: 'OPX', departmentName: 'Operations Excellence',
+      departmentId: 'dept-ops-s', departmentCode: 'OPS-S', departmentName: 'Store Operations South',
+      subDepartmentId: 'sub-ops-s-store', subDepartmentCode: 'SUB-OPS-S1', subDepartmentName: 'Vận Hành Siêu Thị Khu Vực TP.HCM (HCM Stores Ops)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
       clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
@@ -226,6 +230,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
       departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
+      subDepartmentId: 'sub-bakery', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Quầy Bánh Tươi & Bánh Mì (Bakery & Confectionery)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
       clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
@@ -265,7 +270,8 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       branchName: 'Khối Chức năng Hỗ trợ (Supply Chain DC)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-scm', divisionCode: 'SCM', divisionName: 'Supply Chain Management',
-      departmentId: 'dept-sc', departmentCode: 'SC', departmentName: 'Logistic & Warehouse',
+      departmentId: 'dept-ssp', departmentCode: 'SSP', departmentName: 'Supply Chain Strategy & Planning',
+      subDepartmentId: 'sub-scm-forklift', subDepartmentCode: 'SUB-SCM-FORK', subDepartmentName: 'Lái Xe Nâng & Xếp Dỡ Kho DC (Forklift & Stacking Ops)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeId: null, storeName: 'Regional Distribution Center (Bình Dương DC)',
       managerId: 'USR-0245',
@@ -303,6 +309,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
       divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
       departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
+      subDepartmentId: 'sub-meat', subDepartmentCode: 'SUB-MEAT', subDepartmentName: 'Sơ Chế Thịt & Gia Cầm (Meat & Poultry Processing)',
       areaId: 'area-south', areaName: 'Khu vực Miền Nam',
       storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
       clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
@@ -341,6 +348,9 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
   const div = divisions[divIndex];
   const divDepts = departments.filter((d) => d.divisionId === div.id);
   const dept = divDepts.length > 0 ? divDepts[i % divDepts.length] : departments[0];
+
+  const deptSubDepts = subDepartments.filter((s) => s.departmentId === dept.id);
+  const subDept = deptSubDepts.length > 0 ? deptSubDepts[i % deptSubDepts.length] : null;
 
   const firstName = FIRST_NAMES[i % FIRST_NAMES.length];
   const lastName = LAST_NAMES[(i * 3 + 7) % LAST_NAMES.length];
@@ -411,6 +421,9 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
     departmentId: dept.id,
     departmentCode: dept.code,
     departmentName: dept.name,
+    subDepartmentId: subDept?.id || null,
+    subDepartmentCode: subDept?.code || null,
+    subDepartmentName: subDept?.name || null,
     areaId,
     areaName,
     storeId: assignedStore?.id || null,

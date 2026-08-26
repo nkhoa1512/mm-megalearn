@@ -24,7 +24,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
-  const { courses, users, promoteUserLevel, assignTrainerToCourse, language, t } = useCourseStore();
+  const { courses, users, updateUser, promoteUserLevel, assignTrainerToCourse, language, t } = useCourseStore();
 
   // Nguồn Giảng viên đủ chuẩn: L&D, HRBP, User Admin, System Admin (mọi role
   // có canBeAssignedToClass) — không chỉ riêng role Trainer/L&D như trước.
@@ -57,16 +57,19 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   function handleOpenEdit(user) {
-    setSelectedUser(user);
+    setSelectedUser({ ...user });
     setEditModal(true);
   }
 
   function handleSaveUser() {
+    if (selectedUser && updateUser) {
+      updateUser(selectedUser.userId, selectedUser);
+    }
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
       setEditModal(false);
-    }, 1500);
+    }, 1200);
   }
 
   const userList = users && users.length > 0 ? users : rawUsers;
@@ -75,7 +78,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     const matchSearch = !search ||
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
       u.userId.toLowerCase().includes(search.toLowerCase()) ||
+      (u.employeeCode && u.employeeCode.toLowerCase().includes(search.toLowerCase())) ||
       (u.title && u.title.toLowerCase().includes(search.toLowerCase())) ||
+      (u.position && u.position.toLowerCase().includes(search.toLowerCase())) ||
       (u.department && u.department.toLowerCase().includes(search.toLowerCase())) ||
       (u.departmentName && u.departmentName.toLowerCase().includes(search.toLowerCase())) ||
       (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(search.toLowerCase()));
@@ -84,11 +89,18 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       (selectedBranch === 'HEAD_OFFICE' && (u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' || !u.store)) ||
       (selectedBranch === 'OPERATIONS' && (u.branch === 'OPERATIONS' || Boolean(u.store)));
 
-    const matchSubDept = selectedSubDept === 'ALL' || u.subDepartmentId === selectedSubDept || (u.subDepartmentCode && u.subDepartmentCode === selectedSubDept);
+    const matchDept = selectedDept === 'ALL' ||
+      u.departmentId === selectedDept ||
+      u.department === selectedDept ||
+      (u.departmentCode && u.departmentCode === selectedDept);
+
+    const matchSubDept = selectedSubDept === 'ALL' ||
+      u.subDepartmentId === selectedSubDept ||
+      (u.subDepartmentCode && u.subDepartmentCode === selectedSubDept);
 
     const matchLevel = selectedLevel === 'ALL' || String(u.level) === String(selectedLevel);
 
-    return matchSearch && matchBranch && matchSubDept && matchLevel;
+    return matchSearch && matchBranch && matchDept && matchSubDept && matchLevel;
   });
 
   const TABS = [
@@ -116,18 +128,6 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Button
-            variant="primary"
-            icon="ti-plus"
-            onClick={() => navigate('/admin/courses/new')}
-            style={{
-              background: 'linear-gradient(135deg, #007A38 0%, #005A28 100%)',
-              borderColor: '#007A38',
-              fontWeight: 800,
-            }}
-          >
-            {language === 'en' ? '+ Create Course (Online & In-Person)' : '+ Tạo Khóa Học (Online & Trực Tiếp)'}
-          </Button>
           <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
             {language === 'en' ? 'Personal Dashboard' : 'Xem Giao Diện Cá Nhân'}
           </Button>
@@ -234,8 +234,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               <select
                 className="field-select"
                 value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
-                style={{ width: 180 }}
+                onChange={(e) => {
+                  setSelectedDept(e.target.value);
+                  setSelectedSubDept('ALL');
+                }}
+                style={{ width: 170 }}
               >
                 <option value="ALL">{language === 'en' ? 'All Departments' : 'Tất cả Phòng ban'}</option>
                 {departments.map((d) => (
@@ -247,9 +250,23 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
               <select
                 className="field-select"
+                value={selectedSubDept}
+                onChange={(e) => setSelectedSubDept(e.target.value)}
+                style={{ width: 180 }}
+              >
+                <option value="ALL">{language === 'en' ? '🌿 All Sub-Depts' : '🌿 Tất cả Vị trí / Sub-Dept'}</option>
+                {(selectedDept === 'ALL' ? subDepartments : subDepartments.filter((s) => s.departmentId === selectedDept)).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="field-select"
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                style={{ width: 160 }}
+                style={{ width: 150 }}
               >
                 <option value="ALL">{language === 'en' ? 'All Levels (7 → 1)' : 'Tất cả Cấp bậc (7 → 1)'}</option>
                 {[...LEVEL_DEFINITIONS].reverse().map((def) => (
@@ -268,7 +285,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   <th>{language === 'en' ? 'Employee Code' : 'Mã Nhân Viên'}</th>
                   <th>{language === 'en' ? 'Full Name' : 'Họ và Tên'}</th>
                   <th>{language === 'en' ? 'Job Title & Position' : 'Chức Danh & Vị Trí'}</th>
-                  <th>{language === 'en' ? 'Org Unit & Dept' : 'Cơ Cấu & Bộ Phận'}</th>
+                  <th>{language === 'en' ? 'Org Unit & Dept' : 'Cơ Cấu & Bộ Phận Trực Thuộc'}</th>
                   <th>{language === 'en' ? 'Job Level' : 'Cấp Bậc (Level)'}</th>
                   <th>{language === 'en' ? 'System Role' : 'Vai Trò Hệ Thống'}</th>
                   <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
@@ -284,13 +301,34 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     </td>
                     <td>{u.position || u.title || 'Store Associate'}</td>
                     <td>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{u.storeName || u.departmentName || u.department || 'MM An Phú'}</div>
-                      {u.subDepartmentName && (
-                        <div style={{ fontSize: 11, color: 'var(--rail)', fontWeight: 600, marginTop: 2 }}>
-                          <i className="ti ti-git-branch" style={{ marginRight: 3 }} /> {u.subDepartmentName}
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+                        {u.storeName || u.departmentName || u.department || 'MM Mega Market VN'}
+                      </div>
+                      {u.subDepartmentName ? (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#1E40AF',
+                          background: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          marginTop: 4,
+                        }}>
+                          <i className="ti ti-git-branch" style={{ fontSize: 12 }} />
+                          <span>{u.subDepartmentName}</span>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 2 }}>
+                          Chưa gán sub-dept
                         </div>
                       )}
-                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)' }}>{u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
+                        {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}
+                      </div>
                     </td>
                     {/* Huy hiệu gọn + tên cấp bậc ở dòng dưới (được phép xuống dòng),
                         thay vì một nhãn nowrap dài kéo giãn cả bảng. */}
@@ -679,6 +717,61 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>
                   Quản lý được: {managedRolesOf(selectedUser.role).map((r) => roleDefinition(r).shortVi).join(', ') || 'không quản lý role nào'}
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-2" style={{ marginBottom: 16 }}>
+              <div>
+                <label className="field-label">Phòng Ban Trực Thuộc (Department)</label>
+                <select
+                  className="field-select"
+                  value={selectedUser.departmentId || selectedUser.department || ''}
+                  onChange={(e) => {
+                    const deptId = e.target.value;
+                    const d = departments.find((dept) => dept.id === deptId);
+                    const subList = subDepartments.filter((s) => s.departmentId === deptId);
+                    const defaultSub = subList[0] || null;
+                    setSelectedUser({
+                      ...selectedUser,
+                      departmentId: deptId,
+                      department: deptId,
+                      departmentName: d ? d.name : selectedUser.departmentName,
+                      departmentCode: d ? d.code : selectedUser.departmentCode,
+                      subDepartmentId: defaultSub ? defaultSub.id : null,
+                      subDepartmentCode: defaultSub ? defaultSub.code : null,
+                      subDepartmentName: defaultSub ? defaultSub.name : null,
+                    });
+                  }}
+                >
+                  <option value="">-- Chọn phòng ban --</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Vị Trí / Sub-Department Con</label>
+                <select
+                  className="field-select"
+                  value={selectedUser.subDepartmentId || ''}
+                  onChange={(e) => {
+                    const subId = e.target.value;
+                    const s = subDepartments.find((sub) => sub.id === subId);
+                    setSelectedUser({
+                      ...selectedUser,
+                      subDepartmentId: subId || null,
+                      subDepartmentCode: s ? s.code : null,
+                      subDepartmentName: s ? s.name : null,
+                    });
+                  }}
+                >
+                  <option value="">-- Chọn Sub-Department --</option>
+                  {subDepartments
+                    .filter((s) => !selectedUser.departmentId || s.departmentId === selectedUser.departmentId || s.departmentId === selectedUser.department)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
+                    ))}
+                </select>
               </div>
             </div>
 

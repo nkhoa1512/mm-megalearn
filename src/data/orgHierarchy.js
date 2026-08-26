@@ -192,43 +192,123 @@ export const departments = [
 export const subDepartments = [
   // 1. Processed Fresh Food (dept-ppf)
   { id: 'sub-bakery', departmentId: 'dept-ppf', code: 'SUB-BAKERY', name: 'Quầy Bánh Tươi & Bánh Mì (Bakery & Confectionery)' },
-  { id: 'sub-meat', departmentId: 'dept-ppf', code: 'SUB-MEAT', name: 'Sơ Chế Thịt & Gia Cầm (Meat Processing)' },
+  { id: 'sub-meat', departmentId: 'dept-ppf', code: 'SUB-MEAT', name: 'Sơ Chế Thịt & Gia Cầm (Meat & Poultry Processing)' },
   { id: 'sub-seafood', departmentId: 'dept-ppf', code: 'SUB-SEAFOOD', name: 'Sơ Chế Thủy Hải Sản (Seafood Processing)' },
   { id: 'sub-rte', departmentId: 'dept-ppf', code: 'SUB-RTE', name: 'Bếp Nấu Sẵn Ready-to-Eat (RTE Delicatessen)' },
+  { id: 'sub-ppf-lead', departmentId: 'dept-ppf', code: 'SUB-PPF-MGT', name: 'Ban Quản Lý & Giám Sát Chế Biến Tươi (Fresh Operations Management)' },
 
-  // 2. MIS / Information Technology (dept-mis)
-  { id: 'sub-it-hw', departmentId: 'dept-mis', code: 'SUB-IT-HW', name: 'Phần Cứng & Hạ Tầng Mạng (Hardware & Infra)' },
-  { id: 'sub-it-dev', departmentId: 'dept-mis', code: 'SUB-IT-DEV', name: 'Phát Triển Phần Mềm & Ứng Dụng (Software Dev)' },
-  { id: 'sub-it-qa', departmentId: 'dept-mis', code: 'SUB-IT-QA', name: 'Kiểm Thử Chất Lượng (QA / Tester)' },
-  { id: 'sub-it-ba', departmentId: 'dept-mis', code: 'SUB-IT-BA', name: 'Phân Tích Nghiệp Vụ & Dữ Liệu (Business Analyst)' },
+  // 2. Ultra Fresh Food (dept-uf)
+  { id: 'sub-uf-veg', departmentId: 'dept-uf', code: 'SUB-UF-VEG', name: 'Rau Củ Tươi & Nông Sản (Produce & Vegetables)' },
+  { id: 'sub-uf-fruit', departmentId: 'dept-uf', code: 'SUB-UF-FRUIT', name: 'Trái Cây Tươi & Trái Cây Nhập Khẩu (Fresh Fruits)' },
+  { id: 'sub-uf-gap', departmentId: 'dept-uf', code: 'SUB-UF-GAP', name: 'Nguồn Hàng VietGAP & Hữu Cơ (Organic & GAP Sourcing)' },
 
-  // 3. Front-End & Cashier (dept-fe)
-  { id: 'sub-fe-pos', departmentId: 'dept-fe', code: 'SUB-FE-POS', name: 'Thu Ngân & Quét Mã POS (Cashier Operations)' },
-  { id: 'sub-fe-cs', departmentId: 'dept-fe', code: 'SUB-FE-CS', name: 'Dịch Vụ Khách Hàng & M-Card (Customer Service)' },
-  { id: 'sub-fe-trolley', departmentId: 'dept-fe', code: 'SUB-FE-TRL', name: 'Logistics Bãi Xe & Quản Lý Xe Đẩy (Trolley & Parking)' },
+  // 3. Dry Food Grocery (dept-df)
+  { id: 'sub-df-pack', departmentId: 'dept-df', code: 'SUB-DF-PACK', name: 'Thực Phẩm Đóng Gói & Gia Vị (Packaged Goods & Condiments)' },
+  { id: 'sub-df-bev', departmentId: 'dept-df', code: 'SUB-DF-BEV', name: 'Đồ Uống, Bia Rượu & Bánh Kẹo (Beverages & Confectionery)' },
+  { id: 'sub-df-can', departmentId: 'dept-df', code: 'SUB-DF-CAN', name: 'Sữa, Bơ Sữa & Đồ Hộp (Dairy & Canned Foods)' },
 
-  // 4. Supply Chain & Logistics (dept-ssp / dept-fsp / dept-rdc)
-  { id: 'sub-scm-cold', departmentId: 'dept-fsp', code: 'SUB-SCM-COLD', name: 'Vận Hành Kho Lạnh (Cold Chain & Storage)' },
-  { id: 'sub-scm-forklift', departmentId: 'dept-ssp', code: 'SUB-SCM-FORK', name: 'Lái Xe Nâng Hàng & Bốc Dỡ (Forklift Operations)' },
-  { id: 'sub-scm-fleet', departmentId: 'dept-rdc', code: 'SUB-SCM-FLEET', name: 'Điều Phối Đội Xe Giao Hàng (Fleet Dispatch)' },
+  // 4. Non Food & Private Label (dept-nfpl)
+  { id: 'sub-nf-care', departmentId: 'dept-nfpl', code: 'SUB-NF-CARE', name: 'Hóa Mỹ Phẩm & Chăm Sóc Cá Nhân (Personal & Home Care)' },
+  { id: 'sub-nf-pl', departmentId: 'dept-nfpl', code: 'SUB-NF-PL', name: 'Phát Triển Nhãn Hàng Riêng (Private Label Development)' },
 
-  // 5. Learning & Organizational Development (dept-lod)
-  { id: 'sub-lod-store', departmentId: 'dept-lod', code: 'SUB-LOD-STORE', name: 'Đào Tạo Vận Hành Siêu Thị & Thực Hành Xưởng (Store Training)' },
-  { id: 'sub-lod-lead', departmentId: 'dept-lod', code: 'SUB-LOD-LEAD', name: 'Đào Tạo Lãnh Đạo & Kỹ Năng Mềm (Leadership & Soft Skills)' },
-  { id: 'sub-lod-lms', departmentId: 'dept-lod', code: 'SUB-LOD-LMS', name: 'Quản Trị Hệ Thống LMS & E-Learning (Digital Learning)' },
+  // 5. Non Food Hardlines (dept-nfh) & Softlines (dept-nfs)
+  { id: 'sub-nf-elec', departmentId: 'dept-nfh', code: 'SUB-NF-ELEC', name: 'Điện Máy & Gia Dụng Nhỏ (Electronics & Appliances)' },
+  { id: 'sub-nf-house', departmentId: 'dept-nfh', code: 'SUB-NF-HOUSE', name: 'Dụng Cụ Nhà Bếp & Đồ Nhựa (Kitchenware & Household)' },
+  { id: 'sub-nf-tex', departmentId: 'dept-nfs', code: 'SUB-NF-TEX', name: 'Thời Trang, Giày Dép & Hàng Vải (Textiles & Apparel)' },
 
-  // 6. HR Business Partnering (dept-hrbp)
+  // 6. Import & Export (dept-mie)
+  { id: 'sub-mie-imp', departmentId: 'dept-mie', code: 'SUB-MIE-IMP', name: 'Nhập Khẩu Trực Tiếp & Thu Mua Toàn Cầu (Global Import)' },
+  { id: 'sub-mie-cust', departmentId: 'dept-mie', code: 'SUB-MIE-CUST', name: 'Khai Báo Hải Quan & Kiểm Dịch (Customs Clearance)' },
+
+  // 7. Finance & Accounting (dept-acct, dept-cct, dept-oct, dept-tres, dept-tax, dept-itf)
+  { id: 'sub-acct-gl', departmentId: 'dept-acct', code: 'SUB-ACCT-GL', name: 'Kế Toán Tổng Hợp & Báo Cáo Tài Chính (General Ledger)' },
+  { id: 'sub-acct-ap', departmentId: 'dept-acct', code: 'SUB-ACCT-AP', name: 'Kế Toán Công Nợ Phải Trả Nhà Cung Cấp (Accounts Payable)' },
+  { id: 'sub-acct-audit', departmentId: 'dept-acct', code: 'SUB-ACCT-AUD', name: 'Kiểm Soát Thu Ngân Siêu Thị (Cashier Audit)' },
+  { id: 'sub-cct-mar', departmentId: 'dept-cct', code: 'SUB-CCT-MAR', name: 'Kiểm Soát Biên Lợi Nhuận & Chiết Khấu (Margin & Rebate Control)' },
+  { id: 'sub-oct-inv', departmentId: 'dept-oct', code: 'SUB-OCT-INV', name: 'Kiểm Soát Hao Hụt & Tồn Kho Siêu Thị (Inventory Control)' },
+  { id: 'sub-tres-cash', departmentId: 'dept-tres', code: 'SUB-TRES-CSH', name: 'Quản Trị Dòng Tiền & Giao Dịch Ngân Hàng (Cash Management)' },
+  { id: 'sub-tax-stat', departmentId: 'dept-tax', code: 'SUB-TAX-STAT', name: 'Kê Khai Thuế & Thanh Tra Thuế (Tax Compliance)' },
+  { id: 'sub-itf-hw', departmentId: 'dept-itf', code: 'SUB-ITF-HW', name: 'Hạ Tầng Mạng Siêu Thị & Data Center (Network Infra)' },
+  { id: 'sub-itf-pos', departmentId: 'dept-itf', code: 'SUB-ITF-POS', name: 'Hỗ Trợ Kỹ Thuật Máy POS & Bảo Mật (POS Support & Sec)' },
+  { id: 'sub-itf-erp', departmentId: 'dept-itf', code: 'SUB-ITF-ERP', name: 'Quản Trị Hệ Thống ERP & Cơ Sở Dữ Liệu (ERP & Database)' },
+
+  // 8. General Management & PMO (dept-gm, dept-pm)
+  { id: 'sub-gm-sec', departmentId: 'dept-gm', code: 'SUB-GM-SEC', name: 'Văn Phòng Ban Điều Hành (Executive Secretariat)' },
+  { id: 'sub-pm-trans', departmentId: 'dept-pm', code: 'SUB-PM-TRANS', name: 'Chuyển Đổi Số & Quản Lý Dự Án (Enterprise PMO)' },
+
+  // 9. Operations Executive (dept-ops-s, dept-ops-n, dept-ops-c, dept-gt, dept-dev, dept-fmt)
+  { id: 'sub-ops-s-store', departmentId: 'dept-ops-s', code: 'SUB-OPS-S1', name: 'Vận Hành Siêu Thị Khu Vực TP.HCM (HCM Stores Ops)' },
+  { id: 'sub-ops-s-prov', departmentId: 'dept-ops-s', code: 'SUB-OPS-S2', name: 'Vận Hành Siêu Thị Khu Vực Tỉnh Miền Nam (Mekong & East Ops)' },
+  { id: 'sub-ops-n-store', departmentId: 'dept-ops-n', code: 'SUB-OPS-N1', name: 'Vận Hành Siêu Thị Khu Vực Miền Bắc (Northern Stores Ops)' },
+  { id: 'sub-ops-c-store', departmentId: 'dept-ops-c', code: 'SUB-OPS-C1', name: 'Vận Hành Siêu Thị Khu Vực Miền Trung (Central Stores Ops)' },
+  { id: 'sub-ops-gt', departmentId: 'dept-gt', code: 'SUB-OPS-GT', name: 'Mô Hình Giá Tốt & Bán Buôn (Wholesale Gia Tot Ops)' },
+  { id: 'sub-ops-fmt', departmentId: 'dept-fmt', code: 'SUB-OPS-FMT', name: 'Tiêu Chuẩn Trưng Bày & Layout (Format Strategy)' },
+
+  // 10. Supply Chain & Logistics (dept-ssp, dept-fsp, dept-dsp, dept-nfp, dept-rdc, dept-cd)
+  { id: 'sub-scm-ssp', departmentId: 'dept-ssp', code: 'SUB-SCM-SSP', name: 'Quy Hoạch & Dự Báo Nhu Cầu Chuỗi Cung Ứng (Demand Planning)' },
+  { id: 'sub-scm-cold', departmentId: 'dept-fsp', code: 'SUB-SCM-COLD', name: 'Vận Hành Chuỗi Cung Ứng Lạnh (Cold Chain Logistics)' },
+  { id: 'sub-scm-forklift', departmentId: 'dept-rdc', code: 'SUB-SCM-FORK', name: 'Lái Xe Nâng & Xếp Dỡ Kho DC (Forklift & Stacking Ops)' },
+  { id: 'sub-scm-fleet', departmentId: 'dept-cd', code: 'SUB-SCM-FLEET', name: 'Điều Phối Đội Xe Vận Tải Trung Tâm (Fleet Dispatch)' },
+  { id: 'sub-scm-dry', departmentId: 'dept-dsp', code: 'SUB-SCM-DRY', name: 'Kho Trung Tâm Thực Phẩm Khô (Dry Goods DC)' },
+
+  // 11. Human Resources & L&OD (dept-lod, dept-hrbp, dept-cb, dept-ta, dept-hrs)
+  { id: 'sub-lod-store', departmentId: 'dept-lod', code: 'SUB-LOD-STORE', name: 'Học Viện Đào Tạo Siêu Thị & Thực Hành Tay Nghề (Store Academy)' },
+  { id: 'sub-lod-lead', departmentId: 'dept-lod', code: 'SUB-LOD-LEAD', name: 'Đào Tạo Lãnh Đạo, Kế Nhiệm & Kỹ Năng Mềm (Leadership Development)' },
+  { id: 'sub-lod-lms', departmentId: 'dept-lod', code: 'SUB-LOD-LMS', name: 'Quản Trị Hệ Thống LMS & Nội Dung E-Learning (Digital Learning Ops)' },
   { id: 'sub-hrbp-ops', departmentId: 'dept-hrbp', code: 'SUB-HRBP-OPS', name: 'HRBP Khối Vận Hành Siêu Thị (Operations HRBP)' },
   { id: 'sub-hrbp-ho', departmentId: 'dept-hrbp', code: 'SUB-HRBP-HO', name: 'HRBP Khối Văn Phòng & Hỗ Trợ (Corporate HRBP)' },
+  { id: 'sub-cb-sys', departmentId: 'dept-cb', code: 'SUB-CB-SYS', name: 'Quản Trị Dữ Liệu Nhân Sự & Phân Quyền (HR Master Data & User Admin)' },
+  { id: 'sub-cb-pay', departmentId: 'dept-cb', code: 'SUB-CB-PAY', name: 'Chính Sách, Tiền Lương & Phúc Lợi (Payroll & C&B)' },
+  { id: 'sub-ta-store', departmentId: 'dept-ta', code: 'SUB-TA-STORE', name: 'Tuyển Dụng Nhân Sự Tuyến Đầu & Khối Siêu Thị (Mass Hiring)' },
+  { id: 'sub-ta-ho', departmentId: 'dept-ta', code: 'SUB-TA-HO', name: 'Tuyển Dụng Cán Bộ Quản Lý & Khối Văn Phòng (HQ & Leadership Hiring)' },
+  { id: 'sub-hrs-rel', departmentId: 'dept-hrs', code: 'SUB-HRS-REL', name: 'Quan Hệ Lao Động & Hợp Đồng Nhân Sự (Employee Relations)' },
 
-  // 7. HR Services & Operations (dept-hrs)
-  { id: 'sub-hrs-admin', departmentId: 'dept-hrs', code: 'SUB-HRS-ADMIN', name: 'Quản Trị Hồ Sơ Nhân Sự & Hợp Đồng (Employee Master Records)' },
-  { id: 'sub-hrs-payroll', departmentId: 'dept-hrs', code: 'SUB-HRS-PAY', name: 'Chính Sách & Tiền Lương (Payroll & Benefits)' },
+  // 12. Marketing & CRM (dept-crm, dept-trad, dept-dig, dept-comm)
+  { id: 'sub-mkt-crm', departmentId: 'dept-crm', code: 'SUB-MKT-CRM', name: 'Quản Trị Hội Viên M-Card & Dữ Liệu Khách Hàng (Loyalty & CRM)' },
+  { id: 'sub-mkt-trad', departmentId: 'dept-trad', code: 'SUB-MKT-TRAD', name: 'Marketing Tại Điểm Bán & Ấn Phẩm Khuyến Mãi (Trade Activation)' },
+  { id: 'sub-mkt-dig', departmentId: 'dept-dig', code: 'SUB-MKT-DIG', name: 'Truyền Thông Số, Mạng Xã Hội & Performance (Digital Media)' },
+  { id: 'sub-mkt-pr', departmentId: 'dept-comm', code: 'SUB-MKT-PR', name: 'Quan Hệ Báo Chí & Truyền Thông Nội Bộ (PR & Internal Comms)' },
 
-  // 8. Loss Prevention & QA (dept-lp / dept-qa)
-  { id: 'sub-lp-sec', departmentId: 'dept-lp', code: 'SUB-LP-SEC', name: 'An Ninh & Chống Thất Thoát (Loss Prevention)' },
-  { id: 'sub-lp-qa', departmentId: 'dept-qa', code: 'SUB-LP-QA', name: 'Kiểm Soát Vệ Sinh & HACCP (Food Safety QA)' },
-  { id: 'sub-lp-hse', departmentId: 'dept-lp', code: 'SUB-LP-HSE', name: 'An Toàn Lao Động & PCCC (HSE Safety)' },
+  // 13. Legal & Compliance (dept-legal, dept-comp)
+  { id: 'dept-sub-legal', departmentId: 'dept-legal', code: 'SUB-LGD-LEG', name: 'Tư Vấn Pháp Lý Doanh Nghiệp & Hợp Đồng (Corporate Legal)' },
+  { id: 'dept-sub-comp', departmentId: 'dept-comp', code: 'SUB-LGD-CMP', name: 'Tuân Thủ Pháp Luật & Giấy Phép Kinh Doanh (Statutory Compliance)' },
+
+  // 14. Corporate Development & CSR (dept-cdd)
+  { id: 'sub-cdd-esg', departmentId: 'dept-cdd', code: 'SUB-CDD-ESG', name: 'Phát Triển Bền Vững & Dự Án Xã Hội ESG (CSR & Sustainability)' },
+
+  // 15. Pricing & B2B Commercial (dept-prc, dept-b2b)
+  { id: 'sub-prc-opt', departmentId: 'dept-prc', code: 'SUB-PRC-OPT', name: 'Chiến Lược Định Giá & Tình Báo Cạnh Tranh (Pricing Intelligence)' },
+  { id: 'sub-prc-b2b', departmentId: 'dept-b2b', code: 'SUB-PRC-B2B', name: 'Bán Hàng Khách Hàng Tổ Chức & HORECA (B2B Commercial Sales)' },
+
+  // 16. E-Commerce & Digital (dept-ecom, dept-ug, dept-nsd)
+  { id: 'sub-ecom-ops', departmentId: 'dept-ecom', code: 'SUB-ECOM-OPS', name: 'Vận Hành Đơn Hàng MM Online & App (MM Click & Delivery)' },
+  { id: 'sub-ecom-ug', departmentId: 'dept-ug', code: 'SUB-ECOM-UG', name: 'Phát Triển Người Dùng & Tăng Trưởng Số (Digital User Growth)' },
+  { id: 'sub-ecom-nsd', departmentId: 'dept-nsd', code: 'SUB-ECOM-NSD', name: 'Phát Triển Dịch Vụ Mới & O2O (New Service Dev)' },
+
+  // 17. Loss Prevention & Quality Assurance (dept-lp, dept-qa)
+  { id: 'sub-lp-sec', departmentId: 'dept-lp', code: 'SUB-LP-SEC', name: 'An Ninh Siêu Thị & Phòng Chống Thất Thoát (Loss Prevention & Security)' },
+  { id: 'sub-lp-hse', departmentId: 'dept-lp', code: 'SUB-LP-HSE', name: 'An Toàn Lao Động & Phòng Cháy Chữa Cháy (HSE & Safety)' },
+  { id: 'sub-qa-haccp', departmentId: 'dept-qa', code: 'SUB-QA-HACCP', name: 'Kiểm Soát Vệ Sinh An Toàn Thực Phẩm HACCP (Food Safety QA)' },
+
+  // 18. Internal Audit & Risk (dept-iar, dept-ianr, dept-bm, dept-sop, dept-rsk)
+  { id: 'sub-ia-store', departmentId: 'dept-iar', code: 'SUB-IA-STORE', name: 'Kiểm Toán Định Kỳ Khối Siêu Thị (Store Audit Team)' },
+  { id: 'sub-ia-nonretail', departmentId: 'dept-ianr', code: 'SUB-IA-NR', name: 'Kiểm Toán Kho DC & Trung Tâm Vận Hành (Non-Retail Audit)' },
+  { id: 'sub-ia-bm', departmentId: 'dept-bm', code: 'SUB-IA-BM', name: 'Giám Sát Tuân Thủ Kinh Doanh (Business Monitoring)' },
+  { id: 'sub-ia-sop', departmentId: 'dept-sop', code: 'SUB-IA-SOP', name: 'Soạn Thảo & Chuẩn Hóa Quy Trình Vận Hành (SOP Management)' },
+  { id: 'sub-ia-risk', departmentId: 'dept-rsk', code: 'SUB-IA-RISK', name: 'Quản Trị Rủi Ro Doanh Nghiệp (Enterprise Risk Management)' },
+
+  // 19. Cost Optimization & Procurement (dept-capgp, dept-capmkt, dept-capnso, dept-capprj)
+  { id: 'sub-cap-nso', departmentId: 'dept-capnso', code: 'SUB-CAP-NSO', name: 'Mua Sắm Thiết Bị Siêu Thị Mới & Cải Tạo (Store Equipment Procurement)' },
+  { id: 'sub-cap-gen', departmentId: 'dept-capgp', code: 'SUB-CAP-GEN', name: 'Mua Sắm Dịch Vụ & Hàng Gián Tiếp (Indirect Procurement)' },
+  { id: 'sub-cap-mkt', departmentId: 'dept-capmkt', code: 'SUB-CAP-MKT', name: 'Mua Sắm Dịch Vụ IT & Marketing (IT & Marketing Procurement)' },
+  { id: 'sub-cap-prj', departmentId: 'dept-capprj', code: 'SUB-CAP-PRJ', name: 'Mua Sắm Chiến Lược & Dự Án (Strategic Sourcing)' },
+
+  // 20. Property & Construction (dept-prop, dept-mrd)
+  { id: 'sub-prop-dev', departmentId: 'dept-prop', code: 'SUB-PROP-DEV', name: 'Phát Triển Bất Động Sản & Cho Thuê Mặt Bằng (Tenant Leasing)' },
+  { id: 'sub-prop-site', departmentId: 'dept-mrd', code: 'SUB-PROP-SITE', name: 'Nghiên Cứu Địa Điểm Siêu Thị Mới (Site Selection)' },
+
+  // 21. Trade Union (dept-tu)
+  { id: 'sub-tu-welfare', departmentId: 'dept-tu', code: 'SUB-TU-WEL', name: 'Chăm Lo Đời Sống & Phong Trào Đoàn Thể (Employee Welfare)' },
 ];
 
 // ---------------------------------------------------------------------------

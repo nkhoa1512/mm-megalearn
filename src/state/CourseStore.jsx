@@ -40,8 +40,152 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // tồn tại trước bản Catalog 5-Phân-Hệ này.
 const CURRICULUM_KEY = 'mm-megalearn-curriculum-v1';
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
+const INTERVENTION_KEY = 'mm-megalearn-interventions-v1';
+const SUCCESSION_KEY = 'mm-megalearn-succession-v1';
+const ALIGNMENT_KEY = 'mm-megalearn-alignment-v1';
+const COMPLIANCE_NUDGES_KEY = 'mm-megalearn-nudges-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
+
+export const DEFAULT_INTERVENTIONS = [
+  {
+    id: 'ITV-2026-001',
+    unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
+    departmentCode: 'PPF',
+    skill: 'HACCP & Cold-Chain Storage Protocols',
+    courseId: 'CRS-FSH-001',
+    courseTitle: 'Food Safety & Hygiene Standards (HACCP)',
+    urgency: 'HIGH',
+    impact: 'Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.',
+    requestedBy: 'Le Thi Mai (HRBP)',
+    requesterRole: 'hrbp',
+    requestedAt: '2026-08-20',
+    status: 'PENDING_REVIEW', // PENDING_REVIEW | SCHEDULED | COMPLETED | CANCELLED
+    scheduledDate: null,
+    trainerName: 'Nguyen Van Hung (Master Trainer)',
+  },
+  {
+    id: 'ITV-2026-002',
+    unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
+    departmentCode: 'FE',
+    skill: 'Cash Handling, POS Speed & Shrinkage Control',
+    courseId: 'CRS-CUST-031',
+    courseTitle: 'Service Mindset & Cashier POS Fast Operation',
+    urgency: 'MEDIUM',
+    impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
+    requestedBy: 'Le Thi Mai (HRBP)',
+    requesterRole: 'hrbp',
+    requestedAt: '2026-08-22',
+    status: 'SCHEDULED',
+    scheduledDate: '2026-09-05',
+    trainerName: 'Le Hoang Nam',
+  },
+];
+
+export const DEFAULT_SUCCESSION_TALENTS = [
+  {
+    id: 'MMVN-2041',
+    userId: 'USR-2041',
+    name: 'Trần Quốc Bảo',
+    currentRole: 'Trưởng Quầy Tươi Sống',
+    store: 'MM An Phú',
+    storeId: 'store-an-phu',
+    targetRole: 'Phó Giám Đốc Siêu Thị (Deputy SGM)',
+    readiness: 'READY_NOW',
+    readinessLabel: 'Sẵn Sàng Ngay',
+    progress702010: 88,
+    ojt70: 90,
+    mentoring20: 85,
+    formal10: 90,
+    mentor: 'Trần Minh Quang (SGM)',
+    curriculumId: 'CUR-LEAD-TRACK',
+  },
+  {
+    id: 'MMVN-1042',
+    userId: 'USR-1042',
+    name: 'Minh Tran',
+    currentRole: 'Chuyên viên Bánh Mì Tuyến Đầu',
+    store: 'MM An Phú',
+    storeId: 'store-an-phu',
+    targetRole: 'Trưởng Bộ Phận Bánh Mì & Thực Phẩm Chế Biến',
+    readiness: 'READY_IN_6_MONTHS',
+    readinessLabel: 'Sẵn Sàng trong 6 Tháng',
+    progress702010: 76,
+    ojt70: 80,
+    mentoring20: 75,
+    formal10: 70,
+    mentor: 'Nguyễn Văn Hùng (Master Trainer)',
+    curriculumId: 'CUR-FSH-FOUNDATIONS',
+  },
+  {
+    id: 'MMVN-1078',
+    userId: 'USR-1078',
+    name: 'Sarah Johnson',
+    currentRole: 'Pastry Chef Associate',
+    store: 'MM An Phú',
+    storeId: 'store-an-phu',
+    targetRole: 'Trưởng Nhóm Kỹ Thuật Bánh Tươi',
+    readiness: 'READY_1_YEAR',
+    readinessLabel: 'Sẵn Sàng trong 1 Năm',
+    progress702010: 72,
+    ojt70: 75,
+    mentoring20: 70,
+    formal10: 70,
+    mentor: 'Nguyễn Văn Hùng (Master Trainer)',
+    curriculumId: null,
+  },
+  {
+    id: 'MMVN-0312',
+    userId: 'USR-0312',
+    name: 'Lê Hoàng Nam',
+    currentRole: 'Trưởng Ca Dịch Vụ Thu Ngân',
+    store: 'MM Bình Phú',
+    storeId: 'store-binh-phu',
+    targetRole: 'Trưởng Phòng Dịch Vụ Khách Hàng',
+    readiness: 'READY_NOW',
+    readinessLabel: 'Sẵn Sàng Ngay',
+    progress702010: 92,
+    ojt70: 95,
+    mentoring20: 90,
+    formal10: 90,
+    mentor: 'Đặng Thanh Mai (HRBP)',
+    curriculumId: 'CUR-LEAD-TRACK',
+  },
+  {
+    id: 'MMVN-4055',
+    userId: 'USR-4055',
+    name: 'Phạm Thị Thảo',
+    currentRole: 'Giám Sát Kiểm Soát Hao Hụt (QA)',
+    store: 'MM Thăng Long',
+    storeId: 'store-thang-long',
+    targetRole: 'Trưởng Bộ Phận QA & An Toàn Thực Phẩm Miền Bắc',
+    readiness: 'READY_NOW',
+    readinessLabel: 'Sẵn Sàng Ngay',
+    progress702010: 85,
+    ojt70: 85,
+    mentoring20: 85,
+    formal10: 85,
+    mentor: 'Vũ Đức Thành (HSE Director)',
+    curriculumId: 'CUR-FSH-FOUNDATIONS',
+  },
+];
+
+export const DEFAULT_ALIGNMENTS = [
+  {
+    id: 'aln-001',
+    candidateId: 'MMVN-1042',
+    candidateName: 'Minh Tran',
+    targetRole: 'Trưởng Bộ Phận Bánh Mì & Thực Phẩm Chế Biến',
+    mentorName: 'Trần Minh Quang (SGM)',
+    managerName: 'David Tran',
+    ojt70Progress: 80,
+    mentoring20Progress: 75,
+    course10Progress: 70,
+    readiness: 'READY_IN_6_MONTHS',
+    notes: 'Ứng viên nắm vững kỹ thuật nướng bánh Artisan, đang kèm cặp 2 nhân viên mới. Cần thêm 10 giờ thực hành quản trị ca đêm.',
+    updatedAt: '2026-08-25',
+  },
+];
 
 const CourseStoreContext = createContext(null);
 
@@ -55,10 +199,21 @@ function loadItem(key, fallback) {
   return fallback;
 }
 
-// Hồ sơ đăng nhập lưu trong localStorage có thể còn role/level của bản cũ.
+// Hồ sơ đăng nhập lưu trong localStorage có thể còn role/level của bản cũ hoặc thiếu subDepartment.
 function hydrateUser(user) {
   if (!user) return null;
-  return { ...user, role: normalizeRole(user.role), level: normalizeLevel(user.level) };
+  const canonical = typeof allUsers === 'function' ? allUsers().find((u) => u.userId === user.userId || u.employeeCode === user.employeeCode) : null;
+  return {
+    ...canonical,
+    ...user,
+    role: normalizeRole(user.role || canonical?.role),
+    level: normalizeLevel(user.level || canonical?.level),
+    subDepartmentId: user.subDepartmentId || canonical?.subDepartmentId || null,
+    subDepartmentCode: user.subDepartmentCode || canonical?.subDepartmentCode || null,
+    subDepartmentName: user.subDepartmentName || canonical?.subDepartmentName || null,
+    departmentName: user.departmentName || canonical?.departmentName || null,
+    departmentId: user.departmentId || canonical?.departmentId || null,
+  };
 }
 
 function todayIso() {
@@ -71,7 +226,25 @@ export function CourseStoreProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(loadItem(AUTH_KEY, defaultUser)));
 
   // App data state
-  const [users, setUsers] = useState(() => loadItem(USERS_KEY, allUsers()));
+  const [users, setUsers] = useState(() => {
+    const loaded = loadItem(USERS_KEY, null);
+    const baseline = typeof allUsers === 'function' ? allUsers() : [];
+    if (!loaded || !Array.isArray(loaded)) return baseline;
+    return loaded.map((u) => {
+      const base = baseline.find((b) => b.userId === u.userId || b.employeeCode === u.employeeCode);
+      return {
+        ...base,
+        ...u,
+        role: normalizeRole(u.role || base?.role),
+        level: normalizeLevel(u.level || base?.level),
+        subDepartmentId: u.subDepartmentId || base?.subDepartmentId || null,
+        subDepartmentCode: u.subDepartmentCode || base?.subDepartmentCode || null,
+        subDepartmentName: u.subDepartmentName || base?.subDepartmentName || null,
+        departmentName: u.departmentName || base?.departmentName || null,
+        departmentId: u.departmentId || base?.departmentId || null,
+      };
+    });
+  });
   const [courses, setCourses] = useState(() => loadItem(STORAGE_KEY, initialCourses));
   const [classrooms, setClassrooms] = useState(() => loadItem(CLASSROOM_KEY, initialClassrooms));
   const [approvals, setApprovals] = useState(() => loadItem(APPROVAL_KEY, initialApprovals));
@@ -94,6 +267,12 @@ export function CourseStoreProvider({ children }) {
   // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn, System Admin có thể
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
   const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
+
+  // HRBP Strategic Operations states (Interventions, Succession, 1-on-1 Alignments, Compliance Nudges)
+  const [interventions, setInterventions] = useState(() => loadItem(INTERVENTION_KEY, DEFAULT_INTERVENTIONS));
+  const [successionTalents, setSuccessionTalents] = useState(() => loadItem(SUCCESSION_KEY, DEFAULT_SUCCESSION_TALENTS));
+  const [successionAlignments, setSuccessionAlignments] = useState(() => loadItem(ALIGNMENT_KEY, DEFAULT_ALIGNMENTS));
+  const [complianceNudges, setComplianceNudges] = useState(() => loadItem(COMPLIANCE_NUDGES_KEY, []));
 
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
@@ -132,6 +311,10 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
+      localStorage.setItem(INTERVENTION_KEY, JSON.stringify(interventions));
+      localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
+      localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
+      localStorage.setItem(COMPLIANCE_NUDGES_KEY, JSON.stringify(complianceNudges));
       localStorage.setItem(THEME_KEY, JSON.stringify(theme));
       localStorage.setItem(LANG_KEY, JSON.stringify(language));
       if (typeof document !== 'undefined') {
@@ -140,7 +323,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -209,6 +392,26 @@ export function CourseStoreProvider({ children }) {
     [currentUser]
   );
 
+  /** Cập nhật thông tin nhân sự (User Master Data: Tên, Email, Chức danh, Phòng ban, Sub-Department, Role...) */
+  const updateUser = useCallback(
+    (userId, patch) => {
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.userId === userId || u.employeeCode === userId) {
+            const updated = { ...u, ...patch };
+            if (currentUser && (currentUser.userId === u.userId || currentUser.employeeCode === u.employeeCode)) {
+              setCurrentUser(updated);
+            }
+            return updated;
+          }
+          return u;
+        })
+      );
+      return { ok: true };
+    },
+    [currentUser]
+  );
+
   const addCourse = useCallback((course) => {
     setCourses((prev) => [...prev, course]);
   }, []);
@@ -273,6 +476,79 @@ export function CourseStoreProvider({ children }) {
     if (!clean) return;
     setCompanyCategories((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
   }, []);
+
+  // -------------------------------------------------------------------------
+  // HRBP Strategic Operations: Interventions, Succession, Alignments, Nudges
+  // -------------------------------------------------------------------------
+
+  const addInterventionRequest = useCallback((req) => {
+    const newReq = {
+      id: `ITV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      requestedBy: currentUser?.fullName || 'Le Thi Mai (HRBP)',
+      requesterRole: currentUser?.role || 'hrbp',
+      requestedAt: new Date().toISOString().slice(0, 10),
+      status: 'PENDING_REVIEW',
+      ...req,
+    };
+    setInterventions((prev) => [newReq, ...prev]);
+    return newReq;
+  }, [currentUser]);
+
+  const updateInterventionStatus = useCallback((id, status, extra = {}) => {
+    setInterventions((prev) => prev.map((i) => (i.id === id ? { ...i, status, ...extra } : i)));
+  }, []);
+
+  const cancelIntervention = useCallback((id) => {
+    setInterventions((prev) => prev.map((i) => (i.id === id ? { ...i, status: 'CANCELLED' } : i)));
+  }, []);
+
+  const addSuccessionTalent = useCallback((talent) => {
+    setSuccessionTalents((prev) => [...prev, { ...talent, progress702010: talent.progress702010 || 70 }]);
+  }, []);
+
+  const updateSuccessionTalent = useCallback((id, patch) => {
+    setSuccessionTalents((prev) => prev.map((t) => (t.id === id || t.userId === id ? { ...t, ...patch } : t)));
+  }, []);
+
+  const saveSuccessionAlignment = useCallback((record) => {
+    const newAln = {
+      id: `aln-${Date.now()}`,
+      updatedAt: new Date().toISOString().slice(0, 10),
+      ...record,
+    };
+    setSuccessionAlignments((prev) => [newAln, ...prev]);
+    setSuccessionTalents((prev) => prev.map((t) => {
+      if (t.id === record.candidateId || t.userId === record.candidateId) {
+        const ojt = Number(record.ojt70 ?? t.ojt70 ?? 70);
+        const mentor = Number(record.mentoring20 ?? t.mentoring20 ?? 70);
+        const formal = Number(record.formal10 ?? t.formal10 ?? 70);
+        const avg = Math.round(ojt * 0.7 + mentor * 0.2 + formal * 0.1);
+        return {
+          ...t,
+          ojt70: ojt,
+          mentoring20: mentor,
+          formal10: formal,
+          progress702010: avg,
+          readiness: record.readiness || t.readiness,
+          readinessLabel: record.readinessLabel || t.readinessLabel,
+        };
+      }
+      return t;
+    }));
+    return newAln;
+  }, []);
+
+  const sendComplianceNudge = useCallback((storeId, nudgeData) => {
+    const newNudge = {
+      id: `ndg-${Date.now()}`,
+      storeId,
+      sentAt: new Date().toISOString().slice(0, 10),
+      sentBy: currentUser?.fullName || 'Le Thi Mai (HRBP)',
+      ...nudgeData,
+    };
+    setComplianceNudges((prev) => [newNudge, ...prev]);
+    return newNudge;
+  }, [currentUser]);
 
   // -------------------------------------------------------------------------
   // Sequential Level Gate: đơn xin học vượt cấp & trạng thái truy cập khóa học
@@ -801,6 +1077,7 @@ export function CourseStoreProvider({ children }) {
         demoUsers,
         users,
         setUsers,
+        updateUser,
         promoteUserLevel,
         courses,
         addCourse,
@@ -841,6 +1118,17 @@ export function CourseStoreProvider({ children }) {
         actionPlans,
         createActionPlan,
         updateActionPlan,
+        interventions,
+        addInterventionRequest,
+        updateInterventionStatus,
+        cancelIntervention,
+        successionTalents,
+        addSuccessionTalent,
+        updateSuccessionTalent,
+        successionAlignments,
+        saveSuccessionAlignment,
+        complianceNudges,
+        sendComplianceNudge,
         gamification,
         aiDrawerOpen,
         activeAiTab,

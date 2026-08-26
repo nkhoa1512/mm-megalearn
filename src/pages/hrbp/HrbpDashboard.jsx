@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   hrbpUser,
   retailStores,
-  competencyFramework,
   allUsers,
 } from '../../data/mockData';
 import { useCourseStore } from '../../state/CourseStore';
@@ -17,11 +16,24 @@ const TAB_PATH = {
 };
 
 export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
-  const { courses, users } = useCourseStore();
+  const {
+    courses,
+    users,
+    curricula,
+    assignCurriculum,
+    interventions,
+    addInterventionRequest,
+    cancelIntervention,
+    successionTalents,
+    addSuccessionTalent,
+    successionAlignments,
+    saveSuccessionAlignment,
+    complianceNudges,
+    sendComplianceNudge,
+    currentUser,
+  } = useCourseStore();
+
   const navigate = useNavigate();
-  // SKILL_GAP | SUCCESSION | COMPLIANCE — 1 trang, 3 tab. Bấm tab đổi luôn URL
-  // (thay vì chỉ đổi state) để tiêu đề trang và nút back của trình duyệt khớp
-  // với nội dung đang xem, dù sidebar giờ chỉ còn 1 mục trỏ vào trang này.
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
@@ -29,42 +41,260 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     setActiveTab(tabId);
     navigate(TAB_PATH[tabId] || '/hrbp');
   }
-  const [selectedStore, setSelectedStore] = useState('ALL');
+
   const [transcriptUser, setTranscriptUser] = useState(null);
 
-  // Modal States
+  // Tab 1: Intervention Modal States
   const [interventionModal, setInterventionModal] = useState(false);
-  const [interventionDept, setInterventionDept] = useState('Fresh Food & Bakery (MM An Phú)');
-  const [interventionSkill, setInterventionSkill] = useState('HACCP & Cold-Chain Storage Protocols');
-  const [interventionReason, setInterventionReason] = useState('Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.');
-  const [interventionSent, setInterventionSent] = useState(false);
+  const [formUnit, setFormUnit] = useState('Quầy Bánh & Tươi Sống (MM An Phú)');
+  const [formDeptCode, setFormDeptCode] = useState('PPF');
+  const [formSkill, setFormSkill] = useState('HACCP & Cold-Chain Storage Protocols');
+  const [formCourseId, setFormCourseId] = useState('CRS-FSH-001');
+  const [formCourseTitle, setFormCourseTitle] = useState('Food Safety & Hygiene Standards (HACCP)');
+  const [formUrgency, setFormUrgency] = useState('HIGH');
+  const [formImpact, setFormImpact] = useState('Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.');
+  const [formTrainer, setFormTrainer] = useState('Nguyen Van Hung (Master Trainer)');
+  const [toastMessage, setToastMessage] = useState(null);
 
-  const [nudgeSent, setNudgeSent] = useState(false);
+  // Tab 2: Succession Actions
+  const [assignCurriculumModal, setAssignCurriculumModal] = useState(null); // talent object
+  const [selectedCurriculumId, setSelectedCurriculumId] = useState('');
+  const [curriculumDueDate, setCurriculumDueDate] = useState('2026-12-31');
 
-  function handleSendIntervention() {
-    setInterventionSent(true);
-    setTimeout(() => {
-      setInterventionSent(false);
-      setInterventionModal(false);
-    }, 1800);
+  const [alignmentModal, setAlignmentModal] = useState(null); // talent object
+  const [alnOjt, setAlnOjt] = useState(80);
+  const [alnMentor, setAlnMentor] = useState(75);
+  const [alnFormal, setAlnFormal] = useState(70);
+  const [alnReadiness, setAlnReadiness] = useState('READY_IN_6_MONTHS');
+  const [alnNotes, setAlnNotes] = useState('');
+
+  const [nominateModal, setNominateModal] = useState(false);
+  const [nominateUserId, setNominateUserId] = useState('');
+  const [nominateTargetRole, setNominateTargetRole] = useState('');
+  const [nominateMentor, setNominateMentor] = useState('Trần Minh Quang (SGM)');
+
+  // Tab 3: Compliance Drilldown & Nudge
+  const [storeDrilldown, setStoreDrilldown] = useState(null); // store item
+  const [nudgeModal, setNudgeModal] = useState(null); // store item
+  const [nudgeDeadline, setNudgeDeadline] = useState('2026-09-15');
+  const [nudgeMessage, setNudgeMessage] = useState('');
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
   }
 
-  function handleSendRegionalNudge() {
-    setNudgeSent(true);
-    setTimeout(() => setNudgeSent(false), 2500);
+  // Handle submit intervention
+  function handleSubmitIntervention(e) {
+    e.preventDefault();
+    addInterventionRequest({
+      unit: formUnit,
+      departmentCode: formDeptCode,
+      skill: formSkill,
+      courseId: formCourseId,
+      courseTitle: formCourseTitle,
+      urgency: formUrgency,
+      impact: formImpact,
+      trainerName: formTrainer,
+    });
+    setInterventionModal(false);
+    showToast('✅ Đã tạo Ticket can thiệp L&D thành công!');
+  }
+
+  // Handle Assign Curriculum to Candidate
+  function handleAssignCurriculumToCandidate() {
+    if (!assignCurriculumModal || !selectedCurriculumId) return;
+    const targetUserId = assignCurriculumModal.userId || assignCurriculumModal.id;
+    assignCurriculum(selectedCurriculumId, {
+      targetType: 'USER',
+      targetId: targetUserId,
+      dueDate: curriculumDueDate,
+    });
+    setAssignCurriculumModal(null);
+    showToast(`🎓 Đã gán thành công Giáo Trình cho ứng viên ${assignCurriculumModal.name}!`);
+  }
+
+  // Handle Save 1-on-1 Alignment
+  function handleSaveAlignment(e) {
+    e.preventDefault();
+    if (!alignmentModal) return;
+    saveSuccessionAlignment({
+      candidateId: alignmentModal.id || alignmentModal.userId,
+      candidateName: alignmentModal.name,
+      targetRole: alignmentModal.targetRole,
+      mentorName: alignmentModal.mentor,
+      managerName: currentUser?.fullName || 'HRBP',
+      ojt70Progress: Number(alnOjt),
+      mentoring20Progress: Number(alnMentor),
+      course10Progress: Number(alnFormal),
+      readiness: alnReadiness,
+      readinessLabel: alnReadiness === 'READY_NOW' ? 'Sẵn Sàng Ngay' : alnReadiness === 'READY_IN_6_MONTHS' ? 'Sẵn Sàng trong 6 Tháng' : 'Sẵn Sàng trong 1 Năm',
+      notes: alnNotes,
+    });
+    setAlignmentModal(null);
+    showToast(`🤝 Đã ghi nhận Biên bản họp 1-on-1 Alignment cho ${alignmentModal.name}!`);
+  }
+
+  // Handle Nominate Talent
+  function handleNominateCandidate(e) {
+    e.preventDefault();
+    if (!nominateUserId || !nominateTargetRole.trim()) return;
+    const allUserList = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+    const foundUser = allUserList.find((u) => u.userId === nominateUserId || u.employeeCode === nominateUserId);
+    if (!foundUser) return;
+
+    addSuccessionTalent({
+      id: foundUser.employeeCode || foundUser.userId,
+      userId: foundUser.userId,
+      name: foundUser.fullName,
+      currentRole: foundUser.position || 'Specialist',
+      store: foundUser.storeName || 'MM Mega Market An Phú',
+      storeId: foundUser.storeId || 'store-an-phu',
+      targetRole: nominateTargetRole.trim(),
+      readiness: 'DEVELOPING',
+      readinessLabel: 'Đang Đào Tạo Phát Triển',
+      progress702010: 60,
+      ojt70: 60,
+      mentoring20: 60,
+      formal10: 60,
+      mentor: nominateMentor,
+      curriculumId: null,
+    });
+    setNominateModal(false);
+    setNominateUserId('');
+    setNominateTargetRole('');
+    showToast(`🌟 Đã đề cử thành công ${foundUser.fullName} vào Talent Pool!`);
+  }
+
+  // Handle Send SGM Nudge
+  function handleSendSgmNudge(e) {
+    e.preventDefault();
+    if (!nudgeModal) return;
+    sendComplianceNudge(nudgeModal.storeId || nudgeModal.code || nudgeModal.store, {
+      storeName: nudgeModal.store,
+      sgmName: 'Giám Đốc Siêu Thị (SGM)',
+      deadline: nudgeDeadline,
+      message: nudgeMessage || `Yêu cầu hoàn tất 100% chứng chỉ bắt buộc ATTP/HACCP và PCCC trước ngày ${nudgeDeadline}.`,
+    });
+    setNudgeModal(null);
+    showToast(`⚠️ Đã gửi cảnh báo chính thức tới Giám Đốc Siêu Thị ${nudgeModal.store}!`);
+  }
+
+  // Store compliance list
+  const storeComplianceList = useMemo(() => [
+    { id: 'store-an-phu', code: 'MM-AP', store: 'MM Mega Market An Phú (Flagship)', region: 'Miền Nam', totalStaff: 320, haccp: 98, pccc: 96, sec: 95, overall: 96.3, status: 'CHUẨN_XUẤT_SẮC', overdueCount: 2 },
+    { id: 'store-binh-phu', code: 'MM-BP', store: 'MM Mega Market Bình Phú', region: 'Miền Nam', totalStaff: 240, haccp: 92, pccc: 94, sec: 90, overall: 92.0, status: 'ĐẠT_CHUẨN', overdueCount: 6 },
+    { id: 'store-hiep-phu', code: 'MM-HP', store: 'MM Mega Market Hiệp Phú', region: 'Miền Nam', totalStaff: 210, haccp: 88, pccc: 91, sec: 89, overall: 89.3, status: 'ĐẠT_CHUẨN', overdueCount: 9 },
+    { id: 'store-rach-gia', code: 'MM-RG', store: 'MM Mega Market Rạch Giá', region: 'Miền Nam (Tỉnh)', totalStaff: 180, haccp: 82, pccc: 85, sec: 84, overall: 83.6, status: 'CẦN_CẢNH_BÁO', overdueCount: 16 },
+    { id: 'store-can-tho', code: 'MM-CT', store: 'MM Mega Market Cần Thơ', region: 'Miền Tây', totalStaff: 220, haccp: 95, pccc: 96, sec: 94, overall: 95.0, status: 'CHUẨN_XUẤT_SẮC', overdueCount: 3 },
+    { id: 'store-vung-tau', code: 'MM-VT', store: 'MM Mega Market Vũng Tàu', region: 'Đông Nam Bộ', totalStaff: 190, haccp: 94, pccc: 90, sec: 92, overall: 92.0, status: 'ĐẠT_CHUẨN', overdueCount: 7 },
+  ], []);
+
+  // Skill Gap Matrix static presets
+  const skillGapList = useMemo(() => [
+    {
+      unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
+      deptCode: 'PPF',
+      skill: 'HACCP & Cold-Chain Storage Protocols',
+      gap: -18,
+      current: 72,
+      required: 90,
+      impact: 'Ảnh hưởng trực tiếp đến tỷ lệ hao hụt hàng hóa và vệ sinh an toàn thực phẩm.',
+      recommendedCourseId: 'CRS-FSH-001',
+      recommendedCourse: 'Food Safety & Hygiene Standards (HACCP)',
+      trainer: 'Nguyen Van Hung (Master Trainer)',
+      status: 'CẦN CAN THIỆP GẤP',
+    },
+    {
+      unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
+      deptCode: 'FE',
+      skill: 'Cash Handling, POS Speed & Shrinkage Control',
+      gap: -14,
+      current: 76,
+      required: 90,
+      impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
+      recommendedCourseId: 'CRS-CUST-031',
+      recommendedCourse: 'Service Mindset & Cashier POS Fast Operation',
+      trainer: 'Le Hoang Nam',
+      status: 'ĐANG THEO DÕI',
+    },
+    {
+      unit: 'Đội Ngũ Quản Trị & Giám Sát Ca (MM Rạch Giá)',
+      deptCode: 'OPS-S',
+      skill: 'Team Coaching & Performance Management',
+      gap: -15,
+      current: 70,
+      required: 85,
+      impact: 'Tỷ lệ hoàn thành đánh giá Kirkpatrick Cấp 3 của nhân viên ca đạt dưới 70%.',
+      recommendedCourseId: 'CRS-LEAD-001',
+      recommendedCourse: 'Frontline Leadership & 1-on-1 Coaching',
+      trainer: 'Sarah Nguyen (L&D Director)',
+      status: 'CẦN CAN THIỆP GẤP',
+    },
+    {
+      unit: 'Kho Vận & Giao Nhận B2B (MM Hiệp Phú)',
+      deptCode: 'SSP',
+      skill: 'Data Analytics & Stock Optimization',
+      gap: -10,
+      current: 75,
+      required: 85,
+      impact: 'Sai lệch số liệu tồn kho thực tế vs hệ thống ERP trong kỳ kiểm kê Q2.',
+      recommendedCourseId: 'CRS-LOG-012',
+      recommendedCourse: 'Warehouse Forklift Safety & Cross-Docking SOP',
+      trainer: 'Vu Duc Thanh (HSE Trainer)',
+      status: 'KẾ HOẠCH Q3',
+    },
+  ], []);
+
+  // Export audit report JSON/CSV
+  function handleExportAuditReport() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storeComplianceList, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `MMVN_Compliance_Audit_Report_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast('📥 Đã xuất báo cáo kiểm tra tuân thủ thành công!');
   }
 
   return (
     <>
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            zIndex: 9999,
+            background: 'var(--ink)',
+            color: '#fff',
+            padding: '12px 20px',
+            borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            fontSize: 13.5,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            animation: 'fadeIn 0.3s ease',
+          }}
+        >
+          <i className="ti ti-check" style={{ color: 'var(--sage)' }} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* HRBP EXECUTIVE HEADER */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h1>HRBP Strategic Talent &amp; Workforce Analytics</h1>
-            <Badge tone="blue" icon="ti-users">HR Business Partner</Badge>
+            <Badge tone="blue" icon="ti-users">HR Business Partner (Level 2)</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Đối tác Nhân sự Chiến lược: <strong>{hrbpUser.fullName}</strong> &middot; {hrbpUser.department} &middot; Phụ trách: Khối Vận hành Siêu thị Khu vực Miền Nam
+            Đối tác Nhân sự Chiến lược: <strong>{hrbpUser.fullName}</strong> &middot; {hrbpUser.departmentName || 'HR Business Partnering'} &middot; Phụ trách: Khối Vận hành Siêu thị Khu vực Miền Nam
           </p>
         </div>
 
@@ -73,8 +303,70 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         </Button>
       </div>
 
+      {/* CROSS-ROLE ACTION HUB */}
+      <div
+        className="card card-pad"
+        style={{
+          background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+          borderColor: '#BFDBFE',
+          marginBottom: 20,
+          padding: '14px 18px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '6px 10px', borderRadius: 8, fontSize: 16 }}>
+              <i className="ti ti-arrows-shuffle" />
+            </span>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#1E293B' }}>Thanh Điều Hướng Nghiệp Vụ Đa Vai Trò (Cross-Role Action Hub)</div>
+              <div style={{ fontSize: 12, color: '#64748B' }}>Chuyển nhanh tới các phân hệ đối ứng để phối hợp giải quyết nhu cầu đào tạo &amp; nhân tài:</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              icon="ti-users"
+              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
+              onClick={() => navigate('/manager/team')}
+            >
+              👥 Quản Lý Siêu Thị
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              icon="ti-books"
+              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
+              onClick={() => navigate('/admin/courses?tab=curriculum')}
+            >
+              📚 Giáo Trình (Curricula)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              icon="ti-school"
+              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
+              onClick={() => navigate('/trainer')}
+            >
+              🏫 Lớp Học &amp; Check-in QR
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              icon="ti-checkbox"
+              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
+              onClick={() => navigate('/approvals')}
+            >
+              📋 Duyệt Học Vượt Cấp
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Quick KPI stats */}
-      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+      <div className="grid grid-4" style={{ marginBottom: 20 }}>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="stat-icon-badge" style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', width: 40, height: 40, fontSize: 20 }}>
             <i className="ti ti-shield-check" />
@@ -89,8 +381,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <i className="ti ti-chart-pie" />
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>78.5%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Sẵn sàng Kế nhiệm<br />(Talent Readiness)</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>
+              {successionTalents.length} Ứng viên
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Quy Hoạch Kế Nhiệm<br />(Talent Pool)</div>
           </div>
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -98,8 +392,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <i className="ti ti-alert-triangle" />
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>4</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Khoảng cách Kỹ năng<br />Cần L&amp;D can thiệp</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>{interventions.length}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Đề Xuất Can Thiệp<br />L&amp;D Đang Theo Dõi</div>
           </div>
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -116,8 +410,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-dots', count: '4 Điểm nghẽn' },
-          { id: 'SUCCESSION', label: 'Quy Hoạch Kế Nhiệm & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: '12 Kế nhiệm' },
+          { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-dots', count: `${interventions.length} Ticket` },
+          { id: 'SUCCESSION', label: 'Quy Hoạch Kế Nhiệm & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: `${successionTalents.length} Kế nhiệm` },
           { id: 'COMPLIANCE', label: 'Bản Đồ Tuân Thủ Bắt Buộc Theo Siêu Thị (Regional Heatmap)', icon: 'ti-shield-check', count: '94.2%' },
         ].map((tab) => (
           <button
@@ -151,7 +445,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
       {/* TAB 1: REGIONAL SKILL GAP MATRIX & L&D INTERVENTION */}
       {activeTab === 'SKILL_GAP' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', borderColor: 'var(--blue)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
               <div>
@@ -162,106 +456,185 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                   HRBP theo dõi khoảng cách giữa năng lực thực tế của nhân sự vs chuẩn định biên để chủ động yêu cầu L&amp;D mở lớp đào tạo thực hành bù đắp kỹ năng.
                 </p>
               </div>
-              <Button variant="primary" icon="ti-plus" onClick={() => setInterventionModal(true)}>
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => {
+                  setFormUnit('Quầy Bánh & Tươi Sống (MM An Phú)');
+                  setFormDeptCode('PPF');
+                  setFormSkill('HACCP & Cold-Chain Storage Protocols');
+                  setFormCourseId('CRS-FSH-001');
+                  setFormCourseTitle('Food Safety & Hygiene Standards (HACCP)');
+                  setFormUrgency('HIGH');
+                  setFormImpact('Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.');
+                  setInterventionModal(true);
+                }}
+              >
                 Đề Xuất L&amp;D Mở Lớp Can Thiệp
               </Button>
             </div>
           </div>
 
-          <div className="section-label">Ma Trận Thiếu Hụt Năng Lực Cần Can Thiệp Theo Khối / Bộ Phận:</div>
+          <div>
+            <div className="section-label" style={{ marginBottom: 12 }}>
+              Ma Trận Thiếu Hụt Năng Lực Cần Can Thiệp Theo Khối / Bộ Phận:
+            </div>
 
-          <div className="grid grid-2">
-            {[
-              {
-                unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
-                skill: 'HACCP & Cold-Chain Storage Protocols',
-                gap: -18,
-                current: 72,
-                required: 90,
-                impact: 'Ảnh hưởng trực tiếp đến tỷ lệ hao hụt hàng hóa và vệ sinh an toàn thực phẩm.',
-                recommendedCourse: 'Thực hành Lò nướng & Kiểm soát HACCP Quầy Tươi',
-                status: 'CẦN CAN THIỆP GẤP',
-              },
-              {
-                unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
-                skill: 'Cash Handling, POS Speed & Shrinkage Control',
-                gap: -14,
-                current: 76,
-                required: 90,
-                impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
-                recommendedCourse: 'Thao tác Máy POS Tốc độ cao & Xử lý Phàn nàn Khách hàng',
-                status: 'ĐANG THEO DÕI',
-              },
-              {
-                unit: 'Đội Ngũ Quản Trị & Giám Sát Ca (MM Rạch Giá)',
-                skill: 'Team Coaching & Performance Management',
-                gap: -15,
-                current: 70,
-                required: 85,
-                impact: 'Tỷ lệ hoàn thành đánh giá Kirkpatrick Cấp 3 của nhân viên ca đạt dưới 70%.',
-                recommendedCourse: 'Kỹ năng Kèm cặp 1-on-1 & Quản trị Mục tiêu Ca',
-                status: 'CẦN CAN THIỆP GẤP',
-              },
-              {
-                unit: 'Kho Vận & Giao Nhận B2B (MM Hiệp Phú)',
-                skill: 'Data Analytics & Stock Optimization',
-                gap: -10,
-                current: 75,
-                required: 85,
-                impact: 'Sai lệch số liệu tồn kho thực tế vs hệ thống ERP trong kỳ kiểm kê Q2.',
-                recommendedCourse: 'Tối ưu Hóa Tồn Kho & Kiểm Soát Mã Vạch Kho Vận',
-                status: 'KẾ HOẠCH Q3',
-              },
-            ].map((item, idx) => (
-              <div key={idx} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{item.unit}</div>
-                      <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, marginTop: 2 }}>{item.skill}</div>
+            <div className="grid grid-2" style={{ gap: 16 }}>
+              {skillGapList.map((item, idx) => (
+                <div key={idx} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{item.unit}</div>
+                        <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, marginTop: 2 }}>{item.skill}</div>
+                      </div>
+                      <Badge tone={item.gap <= -15 ? 'rust' : 'amber'}>Gap: {item.gap}%</Badge>
                     </div>
-                    <Badge tone={item.gap <= -15 ? 'rust' : 'amber'}>Gap: {item.gap}%</Badge>
+
+                    <div style={{ margin: '12px 0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                        <span>Năng lực thực tế: <strong>{item.current}%</strong></span>
+                        <span>Chuẩn yêu cầu: <strong>{item.required}%</strong></span>
+                      </div>
+                      <ProgressBar value={item.current} tone={item.current >= 80 ? 'sage' : item.current >= 70 ? 'amber' : 'rust'} size="sm" />
+                    </div>
+
+                    <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 10px', lineHeight: 1.45 }}>
+                      <strong>Tác động kinh doanh:</strong> {item.impact}
+                    </p>
+                    <div style={{ fontSize: 11.5, color: 'var(--rail)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Khóa học đề xuất: <strong>{item.recommendedCourse}</strong></span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Giảng viên: {item.trainer}</span>
+                    </div>
                   </div>
 
-                  <div style={{ margin: '12px 0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      <span>Năng lực thực tế: <strong>{item.current}%</strong></span>
-                      <span>Chuẩn yêu cầu: <strong>{item.required}%</strong></span>
-                    </div>
-                    <ProgressBar value={item.current} tone={item.current >= 80 ? 'sage' : item.current >= 70 ? 'amber' : 'rust'} size="sm" />
-                  </div>
-
-                  <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 10px', lineHeight: 1.45 }}>
-                    <strong>Tác động kinh doanh:</strong> {item.impact}
-                  </p>
-                  <div style={{ fontSize: 11.5, color: 'var(--rail)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontWeight: 600 }}>
-                    Khóa đào tạo đề xuất: {item.recommendedCourse}
+                  <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon="ti-eye"
+                      onClick={() => navigate(`/courses/${item.recommendedCourseId}`)}
+                    >
+                      Xem Khóa Học
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon="ti-send"
+                      onClick={() => {
+                        setFormUnit(item.unit);
+                        setFormDeptCode(item.deptCode);
+                        setFormSkill(item.skill);
+                        setFormCourseId(item.recommendedCourseId);
+                        setFormCourseTitle(item.recommendedCourse);
+                        setFormUrgency(item.gap <= -15 ? 'HIGH' : 'MEDIUM');
+                        setFormImpact(item.impact);
+                        setFormTrainer(item.trainer);
+                        setInterventionModal(true);
+                      }}
+                    >
+                      Gửi Yêu Cầu L&amp;D
+                    </Button>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    icon="ti-send"
-                    onClick={() => {
-                      setInterventionDept(item.unit);
-                      setInterventionSkill(item.skill);
-                      setInterventionModal(true);
-                    }}
-                  >
-                    Gửi Yêu Cầu Cho L&amp;D
-                  </Button>
+          {/* TABLE OF ACTIVE INTERVENTION TICKETS */}
+          <div className="card card-pad">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800 }}>
+                  Quản Lý Danh Sách Đề Xuất Can Thiệp Đã Gửi L&amp;D ({interventions.length} Yêu cầu)
                 </div>
+                <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+                  Theo dõi tình trạng tiếp nhận và tiến độ lên lịch đào tạo của phòng L&amp;D cho các khoảng cách kỹ năng đã báo cáo.
+                </p>
               </div>
-            ))}
+            </div>
+
+            {interventions.length === 0 ? (
+              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--ink-soft)', fontSize: 13 }}>
+                Chưa có đề xuất can thiệp nào được gửi. Bấm <strong>+ Đề Xuất L&amp;D Mở Lớp Can Thiệp</strong> ở trên để tạo ticket mới.
+              </div>
+            ) : (
+              <table className="table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>Mã Ticket</th>
+                    <th>Bộ Phận &amp; Khối</th>
+                    <th>Kỹ Năng &amp; Khóa Học Đề Xuất</th>
+                    <th>Độ Khẩn</th>
+                    <th>Ngày Gửi</th>
+                    <th>Trạng Thái Xử Lý</th>
+                    <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {interventions.map((itv) => (
+                    <tr key={itv.id}>
+                      <td>
+                        <strong style={{ fontFamily: 'monospace', color: 'var(--blue)' }}>{itv.id}</strong>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Bởi: {itv.requestedBy}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: 12.5 }}>{itv.unit}</div>
+                        <Badge tone="slate" size="sm">{itv.departmentCode}</Badge>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 12.5, fontWeight: 600 }}>{itv.skill}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--rail)' }}>
+                          Khóa: {itv.courseTitle}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge tone={itv.urgency === 'HIGH' ? 'rust' : itv.urgency === 'MEDIUM' ? 'amber' : 'blue'}>
+                          {itv.urgency === 'HIGH' ? '🔴 Khẩn Cấp' : itv.urgency === 'MEDIUM' ? '🟡 Trung Bình' : '🔵 Thường'}
+                        </Badge>
+                      </td>
+                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                        {itv.requestedAt}
+                      </td>
+                      <td>
+                        {itv.status === 'SCHEDULED' ? (
+                          <Badge tone="sage" icon="ti-calendar">Đã Lên Lịch: {itv.scheduledDate || '05/09/2026'}</Badge>
+                        ) : itv.status === 'COMPLETED' ? (
+                          <Badge tone="sage" icon="ti-check">Đã Hoàn Tất</Badge>
+                        ) : itv.status === 'CANCELLED' ? (
+                          <Badge tone="slate">Đã Hủy</Badge>
+                        ) : (
+                          <Badge tone="amber" icon="ti-clock">⏳ Chờ L&D Tiếp Nhận</Badge>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {itv.status !== 'CANCELLED' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            style={{ color: 'var(--rust)' }}
+                            onClick={() => {
+                              cancelIntervention(itv.id);
+                              showToast(`Đã hủy ticket ${itv.id}`);
+                            }}
+                          >
+                            Hủy
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
 
       {/* TAB 2: SUCCESSION PIPELINE & 70-20-10 */}
       {activeTab === 'SUCCESSION' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', borderColor: 'var(--sage)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
               <div>
@@ -272,136 +645,170 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                   Theo dõi tiến độ phát triển năng lực theo mô hình 70-20-10 của các ứng viên kế nhiệm vị trí Giám đốc Siêu thị (SGM) và Trưởng quầy ngành hàng.
                 </p>
               </div>
-              <Badge tone="sage">12 Nhân Sự Tiềm Năng Sẵn Sàng</Badge>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Badge tone="sage">{successionTalents.length} Nhân Sự Trong Talent Pool</Badge>
+                <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
+                  Đề Cử Ứng Viên Mới
+                </Button>
+              </div>
             </div>
           </div>
 
-          <table className="table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Nhân Sự Tiềm Năng</th>
-                <th>Chức Danh Hiện Tại &amp; Siêu Thị</th>
-                <th>Vị Trí Quy Hoạch Kế Nhiệm</th>
-                <th style={{ width: 140 }}>Mức Độ Sẵn Sàng</th>
-                <th style={{ minWidth: 160 }}>Tiến Độ 70-20-10</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác HRBP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                {
-                  name: 'Trần Quốc Bảo',
-                  id: 'MMVN-2041',
-                  currentRole: 'Trưởng Quầy Tươi Sống',
-                  store: 'MM An Phú',
-                  targetRole: 'Phó Giám Đốc Siêu Thị (Deputy SGM)',
-                  readiness: 'READY_NOW',
-                  readinessLabel: 'Sẵn Sàng Ngay',
-                  progress702010: 88,
-                  mentor: 'Trần Minh Quang (SGM)',
-                },
-                {
-                  name: 'Minh Tran',
-                  id: 'MMVN-1042',
-                  currentRole: 'Chuyên viên Bánh Mì Cao Cấp',
-                  store: 'MM An Phú',
-                  targetRole: 'Trưởng Bộ Phận Bánh Mì & Thực Phẩm Chế Biến',
-                  readiness: 'READY_1_YEAR',
-                  readinessLabel: 'Sẵn Sàng trong 1 Năm',
-                  progress702010: 76,
-                  mentor: 'Nguyễn Văn Hùng (Master Trainer)',
-                },
-                {
-                  name: 'Sarah Johnson',
-                  id: 'MMVN-1078',
-                  currentRole: 'Pastry Chef Associate',
-                  store: 'MM An Phú',
-                  targetRole: 'Trưởng Nhóm Kỹ Thuật Bánh Tươi',
-                  readiness: 'READY_1_YEAR',
-                  readinessLabel: 'Sẵn Sàng trong 1 Năm',
-                  progress702010: 72,
-                  mentor: 'Nguyễn Văn Hùng (Master Trainer)',
-                },
-                {
-                  name: 'Lê Hoàng Nam',
-                  id: 'MMVN-3012',
-                  currentRole: 'Trưởng Ca Dịch Vụ Thu Ngân',
-                  store: 'MM Bình Phú',
-                  targetRole: 'Trưởng Phòng Dịch Vụ Khách Hàng',
-                  readiness: 'READY_NOW',
-                  readinessLabel: 'Sẵn Sàng Ngay',
-                  progress702010: 92,
-                  mentor: 'Đặng Thanh Mai (HRBP)',
-                },
-                {
-                  name: 'Phạm Thị Thảo',
-                  id: 'MMVN-4055',
-                  currentRole: 'Giám Sát Kiểm Soát Hao Hụt (QA)',
-                  store: 'MM Thăng Long',
-                  targetRole: 'Trưởng Bộ Phận QA & An Toàn Thực Phẩm Miền Bắc',
-                  readiness: 'READY_NOW',
-                  readinessLabel: 'Sẵn Sàng Ngay',
-                  progress702010: 85,
-                  mentor: 'Vũ Đức Thành (HSE Director)',
-                },
-              ].map((talent, idx) => (
-                <tr key={idx}>
-                  <td>
-                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{talent.name}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{talent.id}</div>
-                  </td>
-                  <td>
-                    <div>{talent.currentRole}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{talent.store}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--blue)' }}>{talent.targetRole}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Mentor: {talent.mentor}</div>
-                  </td>
-                  <td>
-                    <Badge tone={talent.readiness === 'READY_NOW' ? 'sage' : 'amber'}>
-                      {talent.readinessLabel}
-                    </Badge>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <ProgressBar value={talent.progress702010} tone={talent.progress702010 >= 80 ? 'sage' : 'blue'} size="sm" />
-                      </div>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 32 }}>{talent.progress702010}%</span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon="ti-eye"
-                      onClick={() => {
-                        const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
-                        const found = list.find(u => u.userId === talent.id || u.employeeCode === talent.id || u.fullName === talent.name) || {
-                          userId: talent.id,
-                          employeeCode: talent.id,
-                          fullName: talent.name,
-                          position: talent.currentRole,
-                          storeName: talent.store,
-                          level: '6',
-                        };
-                        setTranscriptUser(found);
-                      }}
-                    >
-                      Chi Tiết Khóa Học
-                    </Button>
-                  </td>
+          <div className="card card-pad">
+            <table className="table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Nhân Sự Tiềm Năng</th>
+                  <th>Chức Danh Hiện Tại &amp; Siêu Thị</th>
+                  <th>Vị Trí Quy Hoạch Kế Nhiệm</th>
+                  <th style={{ width: 140 }}>Mức Độ Sẵn Sàng</th>
+                  <th style={{ minWidth: 160 }}>Tiến Độ 70-20-10</th>
+                  <th style={{ textAlign: 'right' }}>Thao Tác Tác Nghiệp HRBP</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {successionTalents.map((talent) => (
+                  <tr key={talent.id}>
+                    <td>
+                      <div style={{ fontWeight: 700, fontSize: 13.5 }}>{talent.name}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{talent.id}</div>
+                    </td>
+                    <td>
+                      <div>{talent.currentRole}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{talent.store}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--blue)' }}>{talent.targetRole}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Mentor: {talent.mentor}</div>
+                    </td>
+                    <td>
+                      <Badge tone={talent.readiness === 'READY_NOW' ? 'sage' : talent.readiness === 'READY_IN_6_MONTHS' ? 'amber' : 'blue'}>
+                        {talent.readinessLabel || talent.readiness}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <ProgressBar value={talent.progress702010} tone={talent.progress702010 >= 80 ? 'sage' : 'blue'} size="sm" />
+                        </div>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 32 }}>{talent.progress702010}%</span>
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
+                        70% OJT: {talent.ojt70 || 70}% &middot; 20% Mentor: {talent.mentoring20 || 70}% &middot; 10% Khóa: {talent.formal10 || 70}%
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          icon="ti-books"
+                          title="Gán Giáo Trình Bắt Buộc Cho Ứng Viên Kế Nhiệm"
+                          onClick={() => {
+                            setAssignCurriculumModal(talent);
+                            setSelectedCurriculumId(curricula[0]?.id || '');
+                          }}
+                        >
+                          Gán Giáo Trình
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          icon="ti-notes"
+                          title="Ghi Nhận Biên Bản Họp 1-on-1 Alignment Với Mentor & Quản Lý"
+                          onClick={() => {
+                            setAlignmentModal(talent);
+                            setAlnOjt(talent.ojt70 || 80);
+                            setAlnMentor(talent.mentoring20 || 75);
+                            setAlnFormal(talent.formal10 || 70);
+                            setAlnReadiness(talent.readiness || 'READY_IN_6_MONTHS');
+                            setAlnNotes('');
+                          }}
+                        >
+                          Họp 1-on-1
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="ti-eye"
+                          onClick={() => {
+                            const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
+                            const found = list.find(u => u.userId === talent.id || u.employeeCode === talent.id || u.fullName === talent.name) || {
+                              userId: talent.id,
+                              employeeCode: talent.id,
+                              fullName: talent.name,
+                              position: talent.currentRole,
+                              storeName: talent.store,
+                              level: '6',
+                            };
+                            setTranscriptUser(found);
+                          }}
+                        >
+                          Hồ Sơ
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* TABLE OF RECENT 1-ON-1 ALIGNMENT MINUTES */}
+          <div className="card card-pad">
+            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>
+              Biên Bản Họp 1-on-1 Alignment Định Kỳ Với SGM &amp; Mentor ({successionAlignments.length} Biên bản)
+            </div>
+            {successionAlignments.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', padding: '12px 0' }}>
+                Chưa có biên bản họp nào. Bấm nút <strong>Họp 1-on-1</strong> tại từng ứng viên ở bảng trên để ghi nhận đánh giá 70-20-10.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {successionAlignments.map((aln) => (
+                  <div
+                    key={aln.id}
+                    style={{
+                      padding: '10px 14px',
+                      background: 'var(--paper-sunken)',
+                      borderRadius: 8,
+                      border: '1px solid var(--line)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 16,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                        {aln.candidateName} &middot; <span style={{ color: 'var(--blue)' }}>{aln.targetRole}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '3px 0' }}>
+                        {aln.notes || 'Đã rà soát tiến độ dự án thực tế OJT và kỹ năng kèm cặp nhân viên mới.'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                        Mentor: <strong>{aln.mentorName}</strong> &middot; Người ghi nhận: <strong>{aln.managerName}</strong> &middot; Ngày: {aln.updatedAt}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', minWidth: 140 }}>
+                      <Badge tone={aln.readiness === 'READY_NOW' ? 'sage' : 'amber'} size="sm">
+                        {aln.readinessLabel || aln.readiness}
+                      </Badge>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
+                        OJT: {aln.ojt70Progress}% &middot; Mentor: {aln.mentoring20Progress}% &middot; Khóa: {aln.course10Progress}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 3: REGIONAL COMPLIANCE MAP & NUDGE */}
       {activeTab === 'COMPLIANCE' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
@@ -409,45 +816,44 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
               </div>
               <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
                 Giám sát % hoàn thành các chứng chỉ bắt buộc theo luật định (HACCP, PCCC, An toàn lao động, Bảo mật POS).
+                Bấm vào từng siêu thị để drill-down danh sách nhân viên quá hạn.
               </p>
             </div>
-            <Button
-              variant="primary"
-              icon={nudgeSent ? 'ti-check' : 'ti-bell'}
-              onClick={handleSendRegionalNudge}
-            >
-              {nudgeSent ? 'Đã Gửi Nhắc Nhở Tới Các Siêu Thị!' : 'Gửi Nhắc Nhở Cho Siêu Thị Dưới Chuẩn'}
-            </Button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button
+                variant="outline"
+                icon="ti-download"
+                onClick={handleExportAuditReport}
+              >
+                Xuất Báo Cáo Tuân Thủ (JSON/Audit)
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-3">
-            {[
-              { store: 'MM Mega Market An Phú (Flagship)', region: 'Miền Nam', totalStaff: 320, haccp: 98, pccc: 96, sec: 95, overall: 96.3, status: 'CHUẨN_XUẤT_SẮC' },
-              { store: 'MM Mega Market Bình Phú', region: 'Miền Nam', totalStaff: 240, haccp: 92, pccc: 94, sec: 90, overall: 92.0, status: 'ĐẠT_CHUẨN' },
-              { store: 'MM Mega Market Hiệp Phú', region: 'Miền Nam', totalStaff: 210, haccp: 88, pccc: 91, sec: 89, overall: 89.3, status: 'ĐẠT_CHUẨN' },
-              { store: 'MM Mega Market Rạch Giá', region: 'Miền Nam (Tỉnh)', totalStaff: 180, haccp: 82, pccc: 85, sec: 84, overall: 83.6, status: 'CẦN_CẢNH_BÁO' },
-              { store: 'MM Mega Market Cần Thơ', region: 'Miền Tây', totalStaff: 220, haccp: 95, pccc: 96, sec: 94, overall: 95.0, status: 'CHUẨN_XUẤT_SẮC' },
-              { store: 'MM Mega Market Vũng Tàu', region: 'Đông Nam Bộ', totalStaff: 190, haccp: 94, pccc: 90, sec: 92, overall: 92.0, status: 'ĐẠT_CHUẨN' },
-            ].map((st, idx) => (
+          <div className="grid grid-3" style={{ gap: 16 }}>
+            {storeComplianceList.map((st, idx) => (
               <div
                 key={idx}
                 className="card card-pad"
                 style={{
                   borderColor: st.overall < 85 ? 'var(--rust)' : st.overall >= 95 ? 'var(--sage)' : 'var(--line)',
-                  background: st.overall < 85 ? '#FEF2F2' : '#fff',
+                  background: st.overall < 85 ? '#FEF2F2' : 'var(--paper-raised)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                 }}
+                onClick={() => setStoreDrilldown(st)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{st.store}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{st.region} &middot; {st.totalStaff} Nhân viên</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{st.region} &middot; {st.totalStaff} Nhân sự</div>
                   </div>
                   <Badge tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'}>
                     {st.overall}%
                   </Badge>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, marginBottom: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--ink-soft)' }}>ATTP &amp; HACCP:</span>
                     <strong>{st.haccp}%</strong>
@@ -463,9 +869,40 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 </div>
 
                 <ProgressBar value={st.overall} tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'} size="sm" />
+
+                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px dashed var(--line)' }}>
+                  <span style={{ fontSize: 11.5, color: st.overdueCount > 10 ? 'var(--rust)' : 'var(--ink-soft)', fontWeight: 600 }}>
+                    <i className="ti ti-alert-circle" style={{ marginRight: 4 }} />
+                    {st.overdueCount} nhân sự quá hạn
+                  </span>
+                  <span style={{ fontSize: 11.5, color: 'var(--blue)', fontWeight: 600 }}>
+                    Chi tiết &rarr;
+                  </span>
+                </div>
               </div>
             ))}
           </div>
+
+          {/* NUDGES LOG TABLE */}
+          {complianceNudges.length > 0 && (
+            <div className="card card-pad">
+              <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>
+                Lịch Sử Cảnh Báo Tuân Thủ Đã Gửi Cho Giám Đốc Siêu Thị (SGM)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {complianceNudges.map((ndg) => (
+                  <div key={ndg.id} style={{ padding: '8px 12px', background: 'var(--paper-sunken)', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong>{ndg.storeName}</strong>: {ndg.message}
+                    </div>
+                    <div style={{ color: 'var(--ink-soft)', fontSize: 11 }}>
+                      Hạn chót: <strong>{ndg.deadline}</strong> &middot; Gửi ngày: {ndg.sentAt}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -476,42 +913,402 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           onClose={() => setInterventionModal(false)}
           size="md"
         >
-          <div>
-            <div style={{ marginBottom: 14 }}>
+          <form onSubmit={handleSubmitIntervention}>
+            <div style={{ marginBottom: 12 }}>
               <label className="field-label">Khối / Bộ Phận / Siêu Thị Cần Can Thiệp:</label>
               <input
                 className="field-input"
-                value={interventionDept}
-                onChange={(e) => setInterventionDept(e.target.value)}
+                value={formUnit}
+                onChange={(e) => setFormUnit(e.target.value)}
+                required
               />
             </div>
 
-            <div style={{ marginBottom: 14 }}>
+            <div className="grid grid-2" style={{ gap: 12, marginBottom: 12 }}>
+              <div>
+                <label className="field-label">Mã Phòng Ban (Dept Code):</label>
+                <input
+                  className="field-input"
+                  value={formDeptCode}
+                  onChange={(e) => setFormDeptCode(e.target.value.toUpperCase())}
+                  required
+                />
+              </div>
+              <div>
+                <label className="field-label">Mức Độ Khẩn:</label>
+                <select className="field-select" value={formUrgency} onChange={(e) => setFormUrgency(e.target.value)}>
+                  <option value="HIGH">🔴 Khẩn Cấp (Thiếu hụt nghiêm trọng)</option>
+                  <option value="MEDIUM">🟡 Trung Bình (Theo dõi sát)</option>
+                  <option value="LOW">🔵 Kế Hoạch Định Kỳ</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
               <label className="field-label">Kỹ Năng Thiếu Hụt (Skill Gap):</label>
               <input
                 className="field-input"
-                value={interventionSkill}
-                onChange={(e) => setInterventionSkill(e.target.value)}
+                value={formSkill}
+                onChange={(e) => setFormSkill(e.target.value)}
+                required
               />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Khóa Học Đề Xuất:</label>
+              <select
+                className="field-select"
+                value={formCourseId}
+                onChange={(e) => {
+                  setFormCourseId(e.target.value);
+                  const c = courses.find(item => item.id === e.target.value);
+                  if (c) setFormCourseTitle(c.title);
+                }}
+              >
+                {courses.slice(0, 20).map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
+                ))}
+              </select>
             </div>
 
             <div style={{ marginBottom: 16 }}>
               <label className="field-label">Lý Do Đề Xuất &amp; Tác Động Kinh Doanh:</label>
               <textarea
                 className="field-input"
-                rows={4}
-                value={interventionReason}
-                onChange={(e) => setInterventionReason(e.target.value)}
+                rows={3}
+                value={formImpact}
+                onChange={(e) => setFormImpact(e.target.value)}
+                required
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" onClick={() => setInterventionModal(false)}>Hủy</Button>
-              <Button variant="primary" icon="ti-send" onClick={handleSendIntervention}>
-                {interventionSent ? 'Đã Gửi Thành Công Cho L&D Admin!' : 'Xác Nhận Gửi Yêu Cầu Cho L&D'}
+              <Button variant="ghost" type="button" onClick={() => setInterventionModal(false)}>Hủy</Button>
+              <Button variant="primary" icon="ti-send" type="submit">
+                Xác Nhận Gửi Yêu Cầu Cho L&amp;D
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL: ASSIGN CURRICULUM TO SUCCESSION TALENT */}
+      {assignCurriculumModal && (
+        <Modal
+          title={`Gán Giáo Trình Kế Nhiệm Cho Ứng Viên: ${assignCurriculumModal.name}`}
+          onClose={() => setAssignCurriculumModal(null)}
+          size="md"
+        >
+          <div>
+            <div style={{ marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{assignCurriculumModal.name} ({assignCurriculumModal.id})</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Vị trí quy hoạch: <strong>{assignCurriculumModal.targetRole}</strong> &middot; Siêu thị: {assignCurriculumModal.store}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label className="field-label">Chọn Giáo Trình Kế Nhiệm:</label>
+              <select
+                className="field-select"
+                value={selectedCurriculumId}
+                onChange={(e) => setSelectedCurriculumId(e.target.value)}
+              >
+                {curricula.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} — {c.title} ({c.courseIds?.length || 0} khóa học)</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">Hạn Chót Hoàn Thành Toàn Bộ Giáo Trình:</label>
+              <input
+                type="date"
+                className="field-input"
+                value={curriculumDueDate}
+                onChange={(e) => setCurriculumDueDate(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <Button variant="ghost" onClick={() => setAssignCurriculumModal(null)}>Hủy</Button>
+              <Button variant="primary" icon="ti-check" onClick={handleAssignCurriculumToCandidate}>
+                Xác Nhận Gán Giáo Trình
               </Button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* MODAL: 1-ON-1 SUCCESSION ALIGNMENT SESSION */}
+      {alignmentModal && (
+        <Modal
+          title={`Biên Bản Họp 1-on-1 Alignment: ${alignmentModal.name}`}
+          onClose={() => setAlignmentModal(null)}
+          size="md"
+        >
+          <form onSubmit={handleSaveAlignment}>
+            <div style={{ marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{alignmentModal.name} &middot; {alignmentModal.currentRole}</div>
+              <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                Quy hoạch: {alignmentModal.targetRole} (Mentor: {alignmentModal.mentor})
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  <span>70% Dự Án &amp; Trải Nghiệm Thực Tế (OJT Project):</span>
+                  <span style={{ color: 'var(--blue)' }}>{alnOjt}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={alnOjt}
+                  onChange={(e) => setAlnOjt(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  <span>20% Kèm Cặp Cùng SGM Mentor &amp; Quản Lý:</span>
+                  <span style={{ color: 'var(--sage)' }}>{alnMentor}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={alnMentor}
+                  onChange={(e) => setAlnMentor(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  <span>10% Khóa Học &amp; Chứng Chỉ E-Learning / Lớp Học:</span>
+                  <span style={{ color: 'var(--rail)' }}>{alnFormal}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={alnFormal}
+                  onChange={(e) => setAlnFormal(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Mức Độ Sẵn Sàng Bổ Nhiệm (Readiness):</label>
+              <select className="field-select" value={alnReadiness} onChange={(e) => setAlnReadiness(e.target.value)}>
+                <option value="READY_NOW">🟢 Sẵn Sàng Bổ Nhiệm Ngay (Ready Now)</option>
+                <option value="READY_IN_6_MONTHS">🟡 Sẵn Sàng Trong 6 Tháng (Ready in 6 Months)</option>
+                <option value="READY_1_YEAR">🔵 Sẵn Sàng Trong 1 Năm (Ready in 1 Year)</option>
+                <option value="DEVELOPING">⚪ Đang Đào Tạo Nền Tảng (Developing)</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">Ghi Chú Cuộc Họp &amp; Kế Hoạch Hành Động Tiếp Theo:</label>
+              <textarea
+                className="field-input"
+                rows={3}
+                placeholder="Nhập nhận xét của Mentor và HRBP về điểm mạnh, điểm cần cải thiện..."
+                value={alnNotes}
+                onChange={(e) => setAlnNotes(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <Button variant="ghost" type="button" onClick={() => setAlignmentModal(null)}>Hủy</Button>
+              <Button variant="primary" icon="ti-device-floppy" type="submit">
+                Lưu Biên Bản Họp
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL: NOMINATE TALENT INTO TALENT POOL */}
+      {nominateModal && (
+        <Modal
+          title="Đề Cử Nhân Sự Vào Danh Sách Kế Nhiệm (Talent Pool)"
+          onClose={() => setNominateModal(false)}
+          size="md"
+        >
+          <form onSubmit={handleNominateCandidate}>
+            <div style={{ marginBottom: 14 }}>
+              <label className="field-label">Chọn Nhân Sự Đề Cử:</label>
+              <select
+                className="field-select"
+                value={nominateUserId}
+                onChange={(e) => setNominateUserId(e.target.value)}
+                required
+              >
+                <option value="">— Chọn nhân viên —</option>
+                {(users && users.length > 0 ? users : allUsers ? allUsers() : []).slice(0, 40).map((u) => (
+                  <option key={u.userId} value={u.userId}>
+                    {u.employeeCode || u.userId} — {u.fullName} ({u.position || u.role} - Level {u.level})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label className="field-label">Vị Trí Quy Hoạch Kế Nhiệm (Target Succession Role):</label>
+              <input
+                className="field-input"
+                placeholder="VD: Trưởng Bộ Phận Bánh Mì, Phó Giám Đốc Siêu Thị..."
+                value={nominateTargetRole}
+                onChange={(e) => setNominateTargetRole(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">Người Kèm Cặp (Mentor Chỉ Định):</label>
+              <input
+                className="field-input"
+                value={nominateMentor}
+                onChange={(e) => setNominateMentor(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <Button variant="ghost" type="button" onClick={() => setNominateModal(false)}>Hủy</Button>
+              <Button variant="primary" icon="ti-user-check" type="submit">
+                Xác Nhận Đưa Vào Talent Pool
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL: DRILLDOWN STORE COMPLIANCE ASSOCIATES */}
+      {storeDrilldown && (
+        <Modal
+          title={`Chi Tiết Tuân Thủ Đào Tạo: ${storeDrilldown.store}`}
+          onClose={() => setStoreDrilldown(null)}
+          size="lg"
+        >
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Tỷ lệ tuân thủ toàn siêu thị: {storeDrilldown.overall}%</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                  Tổng quân số: {storeDrilldown.totalStaff} &middot; Số nhân sự quá hạn chứng chỉ: <strong>{storeDrilldown.overdueCount} người</strong>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="primary"
+                icon="ti-bell"
+                onClick={() => {
+                  setNudgeModal(storeDrilldown);
+                  setNudgeMessage(`Yêu cầu Giám đốc Siêu thị ${storeDrilldown.store} khẩn trương chỉ đạo các quầy hoàn tất đào tạo PCCC và HACCP cho ${storeDrilldown.overdueCount} nhân viên quá hạn.`);
+                }}
+              >
+                Gửi Cảnh Báo Cho SGM
+              </Button>
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Danh Sách Nhân Sự Có Chứng Chỉ Chưa Hoàn Thành / Quá Hạn:
+            </div>
+
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>Mã NV &amp; Họ Tên</th>
+                    <th>Quầy / Bộ Phận</th>
+                    <th>Chứng Chỉ Chưa Đạt</th>
+                    <th>Hạn Chót Ban Đầu</th>
+                    <th>Tình Trạng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { code: 'MMVN-1042', name: 'Minh Tran', dept: 'Quầy Bánh Tươi (PPF)', cert: 'ATTP & HACCP Quầy Tươi', due: '15/07/2026', status: 'OVERDUE' },
+                    { code: 'MMVN-2041', name: 'Quoc Bao', dept: 'Sơ Chế Thịt (PPF)', cert: 'An Toàn PCCC & Cứu Hộ', due: '01/08/2026', status: 'OVERDUE' },
+                    { code: 'MMVN-1250', name: 'Thanh Pham', dept: 'Kho Lạnh (FSP)', cert: 'Quy Trình Chuỗi Cung Ứng Lạnh', due: '10/08/2026', status: 'IN_PROGRESS' },
+                    { code: 'MMVN-3108', name: 'Nguyen Thi Mai', dept: 'Thu Ngân POS (FE)', cert: 'Bảo Mật Thông Tin & Máy POS', due: '20/07/2026', status: 'OVERDUE' },
+                    { code: 'MMVN-4022', name: 'Hoang Van Duc', dept: 'Bảo Vệ & An Ninh (LP)', cert: 'Diễn Tập Thoát Hiểm Khẩn Cấp', due: '05/08/2026', status: 'OVERDUE' },
+                  ].map((emp, i) => (
+                    <tr key={i}>
+                      <td>
+                        <strong>{emp.name}</strong>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.code}</div>
+                      </td>
+                      <td style={{ fontSize: 12 }}>{emp.dept}</td>
+                      <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--rail)' }}>{emp.cert}</td>
+                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{emp.due}</td>
+                      <td>
+                        <Badge tone={emp.status === 'OVERDUE' ? 'rust' : 'amber'}>
+                          {emp.status === 'OVERDUE' ? 'Quá Hạn' : 'Đang Học'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
+              <Button variant="ghost" onClick={() => setStoreDrilldown(null)}>Đóng</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL: SEND SGM COMPLIANCE WARNING */}
+      {nudgeModal && (
+        <Modal
+          title={`Gửi Cảnh Báo Tuân Thủ Cho Giám Đốc Siêu Thị (SGM): ${nudgeModal.store}`}
+          onClose={() => setNudgeModal(null)}
+          size="md"
+        >
+          <form onSubmit={handleSendSgmNudge}>
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Chi Nhánh Siêu Thị:</label>
+              <input className="field-input" value={nudgeModal.store} disabled />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Hạn Chót Khắc Phục Tuân Thủ:</label>
+              <input
+                type="date"
+                className="field-input"
+                value={nudgeDeadline}
+                onChange={(e) => setNudgeDeadline(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">Nội Dung Chỉ Đạo &amp; Cảnh Báo:</label>
+              <textarea
+                className="field-input"
+                rows={3}
+                value={nudgeMessage}
+                onChange={(e) => setNudgeMessage(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <Button variant="ghost" type="button" onClick={() => setNudgeModal(null)}>Hủy</Button>
+              <Button variant="primary" icon="ti-send" type="submit">
+                Xác Nhận Gửi Cảnh Báo Tới SGM
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
 

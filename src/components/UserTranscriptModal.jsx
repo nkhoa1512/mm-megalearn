@@ -125,13 +125,24 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                   <strong>{targetUser.position}</strong> &middot; {targetUser.storeName || targetUser.branchName || 'MM Mega Market VN'}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>Phòng ban: <strong>{targetUser.departmentName || targetUser.departmentCode}</strong></span>
-                  {targetUser.subDepartmentName && (
+                  <span>Phòng ban: <strong>{targetUser.departmentName || targetUser.departmentCode || targetUser.department}</strong></span>
+                  {(targetUser.subDepartmentName || targetUser.subDepartmentCode) && (
                     <>
                       <span>&middot;</span>
-                      <span style={{ color: 'var(--rail)', fontWeight: 600 }}>
-                        <i className="ti ti-git-branch" style={{ marginRight: 3 }} />
-                        Bộ phận: {targetUser.subDepartmentName}
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: '#1E40AF',
+                        background: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        padding: '1px 8px',
+                        borderRadius: 4,
+                        fontWeight: 600,
+                        fontSize: 11,
+                      }}>
+                        <i className="ti ti-git-branch" />
+                        {targetUser.subDepartmentName || targetUser.subDepartmentCode}
                       </span>
                     </>
                   )}
