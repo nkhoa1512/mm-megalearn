@@ -46,7 +46,7 @@ export default function AdminCourses() {
     courses, updateCourse, removeCourse, currentUser, language, t,
     companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
     assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
-    approvals,
+    approvals, myEnrollments,
   } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
@@ -90,6 +90,39 @@ export default function AdminCourses() {
   const hideCreateForTrainerTab = isAdmin && !isFullAdmin
     && (activeTabDef.section === CATALOG_SECTIONS.LEARNING_OBJECTS || activeTabDef.section === CATALOG_SECTIONS.ONLINE_CLASS);
 
+  // User Learner, Manager & HRBP không có bất kỳ quyền tạo/sửa/xóa/phát hành
+  // hay xem chi tiết phân bổ nào cả — họ chỉ được duyệt danh mục (đủ 5+ cột dữ
+  // liệu như User Admin thấy) và bấm "View Course" để vào đúng trang học tập
+  // cá nhân (biết mình có được học khóa đó không, đăng ký/bắt đầu học tùy
+  // loại khóa). Việc thêm/đề xuất giáo trình của HRBP vẫn nằm ở Dashboard
+  // riêng của họ (/hrbp/curriculum), không phải trang catalog chung này.
+  // hideAllocationDetails gộp thêm điều kiện hideCreateForTrainerTab ở trên vì
+  // Trainer cũng không được xem "Chi Tiết & Phân Bổ" của khóa Learning
+  // Objects/Online Class — họ chỉ tạo/quản lý được khóa Lớp Trực Tiếp.
+  const isViewOnlyCatalogRole = role === 'learner' || role === 'manager' || role === 'hrbp';
+  const hideAllocationDetails = isViewOnlyCatalogRole || hideCreateForTrainerTab;
+
+  // Chỉ User Admin & SysAdmin (isFullAdmin, người thật sự tạo/quản trị danh
+  // mục) mới thấy TOÀN BỘ khóa — kể cả Nháp và Đã Đóng — để còn quản lý/audit.
+  // Learner, Manager, Trainer chỉ dùng trang này để duyệt & đăng ký nên:
+  //   - Nháp (DRAFT): luôn ẩn, chưa phải nội dung chính thức.
+  //   - Đã Đóng (CLOSED): luôn ẩn, hết hạn ghi danh thì không có lý do hiện ra
+  //     trong danh mục để "đăng ký" nữa (khóa đã tham gia trước đó vẫn xem lại
+  //     được qua "Khóa Học Của Tôi", không phải qua trang duyệt danh mục này).
+  //   - Chưa Mở (UPCOMING): khóa Lớp Trực Tiếp/Lớp Trực Tuyến vẫn hiện để đăng
+  //     ký giữ chỗ trước; riêng khóa Tự Học (Learning Objects/E-Learning) ẩn
+  //     tới khi thật sự mở vì không có "buổi học" nào để giữ chỗ trước cả.
+  const enrolledCourseIdSet = new Set(Object.keys(myEnrollments || {}));
+  const visibleCourses = isFullAdmin
+    ? courses
+    : courses.filter((c) => {
+      if (c.status === 'DRAFT') return false;
+      const lifecycle = computeLifecycleStatus(c);
+      if (lifecycle === 'CLOSED') return false;
+      if (lifecycle === 'UPCOMING' && catalogSectionOf(c) === CATALOG_SECTIONS.LEARNING_OBJECTS) return false;
+      return true;
+    });
+
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
@@ -113,7 +146,7 @@ export default function AdminCourses() {
     }
   }
 
-  const bySearchCategoryType = courses.filter((c) => {
+  const bySearchCategoryType = visibleCourses.filter((c) => {
     const matchCat = selectedCategory === 'ALL' || courseMatchesCategory(c, selectedCategory);
     const matchType = selectedType === 'ALL' || c.courseType === selectedType;
     const matchSearch = !search ||
@@ -151,15 +184,20 @@ export default function AdminCourses() {
     const canManage = canManageCourse(c);
     const badge = courseFormatBadge(c);
     const lifecycle = computeLifecycleStatus(c);
-    const lifecycleMeta = LIFECYCLE_STATUS_META[lifecycle];
+    // Khóa "Đang Mở" mà chính người xem đã ghi danh rồi thì hiện "Đã Tham
+    // Gia" thay vì "Đang Mở" — tránh gây hiểu lầm là mình chưa đăng ký.
+    const isMineAndOpen = lifecycle === 'OPEN' && enrolledCourseIdSet.has(c.id);
+    const lifecycleMeta = isMineAndOpen
+      ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
+      : LIFECYCLE_STATUS_META[lifecycle];
     const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
     return (
       <tr key={c.id}>
         <td>
           <div
             style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => setViewingCourse(c)}
-            title="Bấm để xem chi tiết & phân bổ khóa học"
+            onClick={() => (hideAllocationDetails ? navigate(`/learner/courses/${c.id}`) : setViewingCourse(c))}
+            title={hideAllocationDetails ? 'Bấm để xem chi tiết khóa học' : 'Bấm để xem chi tiết & phân bổ khóa học'}
           >
             <img
               src={getCourseImage(c)}
@@ -182,17 +220,19 @@ export default function AdminCourses() {
           </div>
         </td>
         <td><CourseTypeBadge courseType={c.courseType} /></td>
-        <td style={{ color: 'var(--ink-soft)', fontSize: 12 }}>
-          {c.courseType === 'MANDATORY' ? (
-            <span style={{ background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 4, display: 'inline-block' }}>
-              {asgCount > 0
-                ? `${asgCount} đối tượng được gán`
-                : (c.assignment?.targetLabel || 'Assigned Division')}
-            </span>
-          ) : (
-            <span style={{ color: 'var(--ink-faint)' }}>All MMVN Associates (Catalog)</span>
-          )}
-        </td>
+        {isFullAdmin && (
+          <td style={{ color: 'var(--ink-soft)', fontSize: 12 }}>
+            {c.courseType === 'MANDATORY' ? (
+              <span style={{ background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 4, display: 'inline-block' }}>
+                {asgCount > 0
+                  ? `${asgCount} đối tượng được gán`
+                  : (c.assignment?.targetLabel || 'Assigned Division')}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--ink-faint)' }}>All MMVN Associates (Catalog)</span>
+            )}
+          </td>
+        )}
         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.modules?.length || 2}</td>
         <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.estimatedDuration || c.estimatedHours || '2h'}</td>
         <td>
@@ -202,14 +242,16 @@ export default function AdminCourses() {
         </td>
         <td>
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            <Button
-              size="sm"
-              variant="outline"
-              icon="ti-list-details"
-              onClick={() => setViewingCourse(c)}
-            >
-              Chi Tiết &amp; Phân Bổ
-            </Button>
+            {!hideAllocationDetails && (
+              <Button
+                size="sm"
+                variant="outline"
+                icon="ti-list-details"
+                onClick={() => setViewingCourse(c)}
+              >
+                Chi Tiết &amp; Phân Bổ
+              </Button>
+            )}
             {canManage ? (
               <>
                 <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
@@ -243,7 +285,7 @@ export default function AdminCourses() {
             <tr>
               <th>Course Program</th>
               <th style={{ width: 140 }}>Type</th>
-              <th>Assigned Target Scope</th>
+              {isFullAdmin && <th>Assigned Target Scope</th>}
               <th style={{ width: 90 }}>Modules</th>
               <th style={{ width: 90 }}>Duration</th>
               <th style={{ width: 110 }}>Status</th>
@@ -273,7 +315,7 @@ export default function AdminCourses() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h1>{language === 'en' ? 'Course Catalog & Program Governance' : 'Danh Mục & Quản Trị Khóa Học'}</h1>
-            <Badge tone="sage">{courses.length} {language === 'en' ? 'Total Programs' : 'Khóa Học'}</Badge>
+            <Badge tone="sage">{visibleCourses.length} {language === 'en' ? 'Total Programs' : 'Khóa Học'}</Badge>
           </div>
           <p>
             {language === 'en'
@@ -313,7 +355,7 @@ export default function AdminCourses() {
           id: tb.id,
           label: tb.label,
           icon: tb.icon,
-          count: tb.id === 'curriculum' ? visibleCurricula.length : tb.id === 'library' ? courses.length : courses.filter((c) => catalogSectionOf(c) === tb.section).length,
+          count: tb.id === 'curriculum' ? visibleCurricula.length : tb.id === 'library' ? visibleCourses.length : visibleCourses.filter((c) => catalogSectionOf(c) === tb.section).length,
         }))}
         activeTab={activeTab}
         onChange={(id) => { setActiveTab(id); setPage(1); }}

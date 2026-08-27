@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
+import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge, CertificateModal } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
-import { currentUser, resolveCourseView } from '../../data/mockData';
+import { currentUser, resolveCourseView, deriveCertificates } from '../../data/mockData';
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 import { getCourseImage } from '../../data/courseImages';
 import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
@@ -15,6 +15,44 @@ function statusLabel(status) {
     case 'FAILED': return 'Cần Thi Lại';
     default: return 'Chưa Bắt Đầu';
   }
+}
+
+// `module.lessons[].status` trong dữ liệu khóa học gốc chỉ là placeholder
+// tĩnh ("Not started" cho mọi người) — không tự khớp với enrollment.status/
+// progressPercent thật của từng học viên. Không suy ra lại thì một khóa đã
+// Hoàn Thành 100% vẫn hiện toàn bộ bài học "Not started", còn bài thi cuối
+// khóa cũng bị coi là chưa đủ điều kiện mở dù đã có chứng chỉ.
+function deriveLessonStatuses(modules, enrollment) {
+  if (!modules) return modules;
+  const status = enrollment?.status;
+  if (!enrollment || status === 'NOT_STARTED') {
+    return modules.map((m) => ({
+      ...m,
+      lessons: m.lessons.map((l) => (l.lessonType === 'ASSESSMENT' ? l : { ...l, status: 'NOT_STARTED' })),
+    }));
+  }
+  if (status === 'COMPLETED') {
+    return modules.map((m) => ({
+      ...m,
+      lessons: m.lessons.map((l) => ({ ...l, status: 'COMPLETED' })),
+    }));
+  }
+  // IN_PROGRESS / OVERDUE / FAILED: đánh dấu hoàn thành đúng số bài tương ứng
+  // với progressPercent đã ghi nhận, bài kế tiếp đang học dở, phần còn lại
+  // chưa bắt đầu.
+  const flat = modules.flatMap((m) => m.lessons.filter((l) => l.lessonType !== 'ASSESSMENT'));
+  const completedCount = flat.length ? Math.round((flat.length * (enrollment.progressPercent || 0)) / 100) : 0;
+  let seen = 0;
+  return modules.map((m) => ({
+    ...m,
+    lessons: m.lessons.map((l) => {
+      if (l.lessonType === 'ASSESSMENT') return l;
+      seen += 1;
+      if (seen <= completedCount) return { ...l, status: 'COMPLETED' };
+      if (seen === completedCount + 1) return { ...l, status: 'IN_PROGRESS' };
+      return { ...l, status: 'NOT_STARTED' };
+    }),
+  }));
 }
 
 function formatDate(iso) {
@@ -51,12 +89,22 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const versionedCourse = rawCourse
     ? (rawEnrollment ? resolveCourseView(rawCourse, rawEnrollment.enrolledVersion) : rawCourse)
     : null;
-  const course = versionedCourse ? { ...versionedCourse, enrollment: rawEnrollment } : null;
+  const course = versionedCourse
+    ? { ...versionedCourse, enrollment: rawEnrollment, modules: deriveLessonStatuses(versionedCourse.modules, rawEnrollment) }
+    : null;
 
   const allRequiredLessons = useMemo(() => {
     if (!course || !course.modules) return [];
     return course.modules.flatMap((m) => m.lessons.filter((l) => l.isRequired && l.lessonType !== 'ASSESSMENT'));
   }, [course]);
+
+  // Chứng chỉ (nếu có) cho đúng khóa đang xem — chỉ tồn tại khi đã hoàn thành
+  // và khóa có bật certificateEnabled (xem deriveCertificates() trong mockData.js).
+  const certificate = useMemo(() => {
+    if (!course) return null;
+    return deriveCertificates(courses, user).find((cert) => cert.courseId === course.id) || null;
+  }, [courses, user, course]);
+  const [showCertificate, setShowCertificate] = useState(false);
 
   if (!course) {
     return (
@@ -274,6 +322,23 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
             </div>
             <span style={{ fontSize: 13, fontWeight: 800 }}>{course.enrollment.progressPercent}%</span>
           </div>
+
+          {course.enrollment.status === 'COMPLETED' && certificate && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div className="activity-icon" style={{ width: 40, height: 40, background: '#FEF3C7', color: '#B45309', borderRadius: 10 }}>
+                  <i className="ti ti-certificate" style={{ fontSize: 20 }} aria-hidden="true" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>Chứng chỉ đã cấp</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{certificate.id}</div>
+                </div>
+              </div>
+              <Button size="sm" variant="primary" icon="ti-eye" onClick={() => setShowCertificate(true)}>
+                Xem Chứng Chỉ
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -363,6 +428,12 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
           </div>
         </div>
       </Modal>
+
+      <CertificateModal
+        certificate={certificate}
+        isOpen={showCertificate}
+        onClose={() => setShowCertificate(false)}
+      />
     </>
   );
 }

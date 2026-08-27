@@ -53,6 +53,7 @@ const PAGE_META = {
   '/learner/leaderboard': { title: 'Honor Roll & Gamification XP', crumb: 'Learner (Store & HO)' },
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
+  '/learner/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Learner (Store & HO)' },
 
   '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
   '/my-learning-dashboard': { title: 'Bảng Điều Khiển Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
@@ -73,6 +74,7 @@ const PAGE_META = {
   '/hrbp/succession': { title: 'Lộ Trình Kế Nhiệm 70-20-10 & Thánh Gióng Pipeline', crumb: 'HRBP (Level 2)' },
   '/hrbp/compliance': { title: 'Báo Cáo Tuân Thủ Đào Tạo Theo Vùng & Siêu Thị', crumb: 'HRBP (Level 2)' },
   '/hrbp/curriculum': { title: 'Giáo Trình Phân Bổ & Đề Xuất Nhân Tài', crumb: 'HRBP (Level 2)' },
+  '/hrbp/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'HRBP (Level 2)' },
 
   '/user-admin': { title: 'Quản Trị Danh Mục 100+ Nhân Sự (Employee Master)', crumb: 'User Admin (Level 2)' },
   '/user-admin/hierarchy': { title: 'Cây Cơ Cấu Tổ Chức 2 Nhánh (Dual-Branch Org Tree)', crumb: 'User Admin (Level 2)' },
@@ -91,6 +93,7 @@ const PAGE_META = {
   '/manager/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Manager (Level 4)' },
   '/manager/courses': { title: 'Chương Trình Bắt Buộc Của Phòng Ban', crumb: 'Manager (Level 4)' },
   '/manager/reports': { title: 'Tiến Độ Học Viên & Báo Cáo Tuân Thủ', crumb: 'Manager (Level 4)' },
+  '/manager/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Manager (Level 4)' },
 
   '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
@@ -175,6 +178,7 @@ function Shell({ role, setRole }) {
               <Route path="/learner/ai-hub" element={<AiLearningHub />} />
               <Route path="/learner/certificates" element={<LearnerCertificates />} />
               <Route path="/learner/history" element={<LearnerHistory />} />
+              <Route path="/learner/catalog" element={<AdminCourses />} />
 
               {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
               <Route path="/my-learning" element={<MyLearning />} />
@@ -200,12 +204,14 @@ function Shell({ role, setRole }) {
               <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
               <Route path="/manager/learning/:courseId/assessment" element={<AssessmentPlayer basePath="/manager/learning" />} />
               <Route path="/manager/certificates" element={<ManagerCertificates />} />
+              <Route path="/manager/catalog" element={<AdminCourses />} />
 
               {/* HRBP Routes */}
               <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />
               <Route path="/hrbp/succession" element={<HrbpDashboard initialTab="SUCCESSION" />} />
               <Route path="/hrbp/compliance" element={<HrbpDashboard initialTab="COMPLIANCE" />} />
               <Route path="/hrbp/curriculum" element={<HrbpDashboard initialTab="CURRICULUM" />} />
+              <Route path="/hrbp/catalog" element={<AdminCourses />} />
 
               {/* User Admin Routes */}
               <Route path="/user-admin" element={<UserAdminPortal initialTab="DIRECTORY" />} />

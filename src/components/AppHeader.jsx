@@ -20,6 +20,7 @@ const ROLE_WORK_NAV = {
   learner: [
     { to: '/learner', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard', end: true },
     { to: '/learner/courses', label: 'Khóa Học Của Tôi', labelVi: 'Khóa Học Của Tôi', labelEn: 'My Courses', icon: 'ti-book-2' },
+    { to: '/learner/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-stack-2' },
     { to: '/learner/classrooms', label: 'Lớp Trực Tiếp & QR Check-in', labelVi: 'Lớp Trực Tiếp & QR Check-in', labelEn: 'Live Classrooms & QR', icon: 'ti-chalkboard' },
     { to: '/learner/paths', label: 'Lộ Trình Học Tập', labelVi: 'Lộ Trình Học Tập', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
     { to: '/learner/ai-hub', label: 'AI Learning Hub', labelVi: 'AI Learning Hub', labelEn: 'AI Learning Hub', icon: 'ti-sparkles', badge: 'AI' },
@@ -31,6 +32,7 @@ const ROLE_WORK_NAV = {
     { to: '/manager', label: 'Bảng Điều Khiển Đội Ngũ', labelVi: 'Bảng Điều Khiển Đội Ngũ', labelEn: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
     { to: '/manager/team', label: 'Nhân Viên & Khoảng Cách Năng Lực', labelVi: 'Nhân Viên & Khoảng Cách Năng Lực', labelEn: 'Team Skills & Competencies', icon: 'ti-users' },
     { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', labelVi: 'Khóa Học Của Phòng Ban', labelEn: 'Department Courses', icon: 'ti-stack-2' },
+    { to: '/manager/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
     { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', labelVi: 'Báo Cáo & Tuân Thủ', labelEn: 'Compliance & Reports', icon: 'ti-chart-bar' },
   ],
   trainer: [
@@ -40,6 +42,7 @@ const ROLE_WORK_NAV = {
   ],
   hrbp: [
     { to: '/hrbp', label: 'Phân Tích Nhân Tài & Tuân Thủ', labelVi: 'Phân Tích Nhân Tài & Tuân Thủ', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },
+    { to: '/hrbp/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
     { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
   ],
   useradmin: [
