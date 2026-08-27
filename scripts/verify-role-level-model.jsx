@@ -686,6 +686,11 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
     courses,
     classroomSessions,
     trainerUserIdFor,
+    learningPaths,
+    actionPlans,
+    teamSkillGapMatrix,
+    aiKnowledgeBase,
+    aiRecommendations,
   } = await import('../src/data/mockData');
   const {
     visibleCurriculaFor,
@@ -700,6 +705,23 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
     skillGapRows,
   } = await import('../src/utils/hrbpAnalytics');
   const HrbpCurriculumTab = (await import('../src/pages/hrbp/HrbpCurriculumTab')).default;
+
+  // Referential Integrity: 100% of referenced course IDs must exist in real courses catalog
+  const realCourseIds = new Set((courses || []).map((c) => c.id));
+  check('all learningPaths milestones reference valid course IDs',
+    (learningPaths || []).every((lp) => (lp.milestones || []).every((m) => !m.courseId || realCourseIds.has(m.courseId))));
+  check('all actionPlans reference valid course IDs',
+    (actionPlans || []).every((ap) => !ap.courseId || realCourseIds.has(ap.courseId)));
+  check('all teamSkillGapMatrix suggested courses reference valid course IDs',
+    (teamSkillGapMatrix || []).every((emp) => (emp.skills || []).every((sk) => !sk.suggestedCourseId || realCourseIds.has(sk.suggestedCourseId))));
+  check('all aiKnowledgeBase articles reference valid course IDs',
+    (aiKnowledgeBase || []).every((kb) => !kb.relatedCourseId || realCourseIds.has(kb.relatedCourseId)));
+  check('all aiRecommendations reference valid course IDs',
+    (aiRecommendations || []).every((ai) => !ai.courseId || realCourseIds.has(ai.courseId)));
+  check('all curricula courseIds reference valid course IDs',
+    (curricula || []).every((cur) => (cur.courseIds || []).every((cId) => realCourseIds.has(cId))));
+  check('all classroomSessions prerequisiteCourseIds reference valid course IDs',
+    (classroomSessions || []).every((cs) => !cs.prerequisiteCourseId || realCourseIds.has(cs.prerequisiteCourseId)));
 
   // Capabilities
   check('useradmin has canManageCurriculum', hasCapability('useradmin', 'canManageCurriculum') === true);

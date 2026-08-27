@@ -1772,7 +1772,7 @@ export const aiKnowledgeBase = [
     matchedExcerpt: '...Bakery associates must log temperature records in Form SOP-OMD-04B every 120 minutes. If deviation exceeds ±3°C, immediately report to the Shift Supervisor...',
     relevance: 98,
     tags: ['Bakery', 'SOP', 'Food Safety', 'Store Ops'],
-    relatedCourseId: 'course-food-safety',
+    relatedCourseId: 'CRS-FSH-001',
   },
   {
     id: 'kb-sec-02',
@@ -1785,7 +1785,7 @@ export const aiKnowledgeBase = [
     matchedExcerpt: '...All Store POS workstations and handheld scanners must strictly connect only to the authorized whitelist network and must never store unencrypted credit card data...',
     relevance: 95,
     tags: ['Security', 'Phishing', 'Data Privacy', 'POS'],
-    relatedCourseId: 'course-infosec',
+    relatedCourseId: 'CRS-ISA-011',
   },
   {
     id: 'kb-fire-03',
@@ -1798,7 +1798,7 @@ export const aiKnowledgeBase = [
     matchedExcerpt: '...Upon Level 2 alarm: Immediately cut main sector power breaker, guide customers along photoluminescent exit paths toward Assembly Point 1 in the main parking lot...',
     relevance: 91,
     tags: ['Fire Safety', 'Emergency', 'Store Ops', 'HSE'],
-    relatedCourseId: 'course-orientation',
+    relatedCourseId: 'CRS-HSE-019',
   },
   {
     id: 'kb-cust-04',
@@ -1811,13 +1811,13 @@ export const aiKnowledgeBase = [
     matchedExcerpt: '...Listen attentively without interruption, verify digital receipt in POS system, and complete replacement with equivalent fresh product within 10 minutes...',
     relevance: 87,
     tags: ['Customer Service', 'Horeca', 'Store Ops'],
-    relatedCourseId: 'course-orientation',
+    relatedCourseId: 'CRS-CSERV-087',
   },
 ];
 
 export const aiRecommendations = [
   {
-    courseId: 'course-food-safety',
+    courseId: 'CRS-FSH-001',
     title: 'Food Safety & Hygiene Standards (HACCP)',
     reason: 'Recommended by AI based on your Bakery Associate role and Fresh Food SOP completion history.',
     confidence: 96,
@@ -1826,7 +1826,7 @@ export const aiRecommendations = [
     badgeTone: 'sage',
   },
   {
-    courseId: 'course-infosec',
+    courseId: 'CRS-ISA-011',
     title: 'Information Security Awareness',
     reason: 'Mandatory Compliance Training — AI reminder to complete your remaining 35% before Sep 30 deadline.',
     confidence: 99,
@@ -1835,7 +1835,7 @@ export const aiRecommendations = [
     badgeTone: 'amber',
   },
   {
-    courseId: 'course-customer-exp',
+    courseId: 'CRS-CSERV-087',
     title: 'Excellence in Fresh Food Customer Service',
     reason: 'Supplementary course recommended by PPF Department Manager to enhance counter service delivery.',
     confidence: 89,
@@ -1962,7 +1962,7 @@ export const classroomSessions = [
     qrToken: 'MMVN-QR-ILT004-20260912',
     description: 'High-speed barcode scanning on physical POS units, digital voucher processing, and L.A.S.T customer complaint resolution.',
     prerequisiteCourse: 'Store Operations Excellence & Planogram Compliance',
-    prerequisiteCourseId: 'CRS-STOPS-033',
+    prerequisiteCourseId: 'CRS-STOPS-037',
     enrolledStudents: [],
   },
 ];
@@ -1995,7 +1995,7 @@ export const learningPaths = [
       {
         step: 1,
         title: 'Stage 1: MMVN Culture, Labor Regulations & Core Values',
-        courseId: 'CRS-CULT-095',
+        courseId: 'CRS-CULT-093',
         courseTitle: 'Corporate Orientation & MMVN Cultural Values',
         type: 'E_LEARNING',
         status: 'COMPLETED',
@@ -2013,7 +2013,7 @@ export const learningPaths = [
       {
         step: 3,
         title: 'Stage 3: Fire Safety, Emergency Evacuation & Workplace HSE',
-        courseId: 'CRS-HSE-017',
+        courseId: 'CRS-HSE-019',
         courseTitle: 'On-site Fire Safety & Emergency Evacuation (PCCC)',
         type: 'E_LEARNING_ASSESSMENT',
         status: 'COMPLETED',
@@ -2022,7 +2022,8 @@ export const learningPaths = [
       {
         step: 4,
         title: 'Stage 4: Store Practical Lab & On-the-Job Floor Checklist Audit',
-        courseId: 'ilt-001',
+        sessionId: 'ilt-001',
+        courseId: 'CRS-FSH-001',
         courseTitle: 'Store Practical Lab: Food Safety Standards & Bakery Operations',
         type: 'CLASSROOM_PRACTICE',
         status: 'IN_PROGRESS',
@@ -2053,7 +2054,7 @@ export const learningPaths = [
       {
         step: 1,
         title: 'Stage 1: MMVN Corporate Culture, Vision & Code of Conduct',
-        courseId: 'CRS-CULT-095',
+        courseId: 'CRS-CULT-093',
         courseTitle: 'Corporate Orientation & MMVN Cultural Values',
         type: 'E_LEARNING',
         status: 'COMPLETED',
@@ -2080,7 +2081,8 @@ export const learningPaths = [
       {
         step: 4,
         title: 'Stage 4: 1-on-1 Alignment Session with Line Manager & HRBP',
-        courseId: 'ilt-003',
+        sessionId: 'ilt-003',
+        courseId: 'CRS-ISA-011',
         courseTitle: 'Webinar: POS Terminal Information Security & Phishing Tactics',
         type: 'CLASSROOM_PRACTICE',
         status: 'NOT_STARTED',
@@ -2111,7 +2113,7 @@ export const learningPaths = [
       {
         step: 1,
         title: 'Stage 1: Ownership Mindset & Team Leadership Fundamentals',
-        courseId: 'CRS-LEAD-043',
+        courseId: 'CRS-LEAD-049',
         courseTitle: 'Leadership Essentials for Managers (MMVN & LinkedIn)',
         type: 'E_LEARNING',
         status: 'COMPLETED',
@@ -2120,7 +2122,7 @@ export const learningPaths = [
       {
         step: 2,
         title: 'Stage 2: Coaching Skills (Social 20%) & High-Impact Feedback',
-        courseId: 'CRS-LEAD-044',
+        courseId: 'CRS-LEAD-050',
         courseTitle: 'Coaching & Giving High-Impact Constructive Feedback',
         type: 'E_LEARNING',
         status: 'COMPLETED',
@@ -2129,7 +2131,7 @@ export const learningPaths = [
       {
         step: 3,
         title: 'Stage 3: Store Operations Management & Shrinkage Reduction',
-        courseId: 'CRS-STOPS-035',
+        courseId: 'CRS-STOPS-039',
         courseTitle: 'Shrinkage Reduction & Anti-Theft Surveillance',
         type: 'E_LEARNING_ASSESSMENT',
         status: 'IN_PROGRESS',
@@ -2138,7 +2140,7 @@ export const learningPaths = [
       {
         step: 4,
         title: 'Stage 4: Experiential 70% Project: Supply Chain & Floor Layout Optimization',
-        courseId: 'CRS-MERCH-067',
+        courseId: 'CRS-MERCH-069',
         courseTitle: 'Promotional Strategy & Space Range Merchandising',
         type: 'E_LEARNING',
         status: 'NOT_STARTED',
@@ -2147,8 +2149,9 @@ export const learningPaths = [
       {
         step: 5,
         title: 'Stage 5: Capstone Project Defense before Board of Management (BOM)',
-        courseId: 'ilt-001',
-        courseTitle: 'Store Practical Lab: Food Safety Standards & Bakery Operations',
+        sessionId: 'ilt-001',
+        courseId: 'CRS-LEAD-049',
+        courseTitle: 'Store Practical Lab & Leadership Capstone Defense',
         type: 'CAPSTONE_ASSESSMENT',
         status: 'NOT_STARTED',
         score: null,
@@ -2178,7 +2181,7 @@ export const learningPaths = [
       {
         step: 1,
         title: 'Stage 1: Store P&L Financial Literacy & Margin Optimization',
-        courseId: 'CRS-LEAD-047',
+        courseId: 'CRS-LEAD-053',
         courseTitle: 'Store P&L Financial Literacy for General Managers',
         type: 'E_LEARNING_ASSESSMENT',
         status: 'COMPLETED',
@@ -2187,7 +2190,7 @@ export const learningPaths = [
       {
         step: 2,
         title: 'Stage 2: Strategic Thinking & Annual Retail Business Planning',
-        courseId: 'CRS-LEAD-046',
+        courseId: 'CRS-LEAD-052',
         courseTitle: 'Strategic Thinking & Annual Retail Business Planning',
         type: 'E_LEARNING',
         status: 'IN_PROGRESS',
@@ -2196,7 +2199,7 @@ export const learningPaths = [
       {
         step: 3,
         title: 'Stage 3: Vendor Negotiation & Joint Business Planning (JBP)',
-        courseId: 'CRS-MERCH-066',
+        courseId: 'CRS-MERCH-068',
         courseTitle: 'Vendor Negotiation & Joint Business Planning (JBP)',
         type: 'E_LEARNING',
         status: 'NOT_STARTED',
@@ -2214,7 +2217,8 @@ export const learningPaths = [
       {
         step: 5,
         title: 'Stage 5: Acting SGM Operational Review & BOM Succession Sign-off',
-        courseId: 'ilt-001',
+        sessionId: 'ilt-001',
+        courseId: 'CRS-LEAD-052',
         courseTitle: 'Executive Assessment Panel & Board Sign-off',
         type: 'CAPSTONE_ASSESSMENT',
         status: 'NOT_STARTED',
@@ -2245,8 +2249,8 @@ export const learningPaths = [
       {
         step: 1,
         title: 'Stage 1: Corporate Orientation & MMVN Workplace Culture',
-        courseId: 'CRS-CULT-095',
-        courseTitle: 'Corporate Orientation',
+        courseId: 'CRS-CULT-093',
+        courseTitle: 'Corporate Orientation & MMVN Cultural Values',
         type: 'E_LEARNING',
         status: 'COMPLETED',
         score: null,
@@ -2272,7 +2276,8 @@ export const learningPaths = [
       {
         step: 4,
         title: 'Stage 4: Store Practical Lab: Commercial Oven Operations & Mixer Safety',
-        courseId: 'ilt-001',
+        sessionId: 'ilt-001',
+        courseId: 'CRS-FSH-004',
         courseTitle: 'Store Practical Lab: Food Safety Standards & Bakery Operations',
         type: 'CLASSROOM_PRACTICE',
         status: 'UPCOMING',
@@ -2319,7 +2324,7 @@ export const actionPlans = [
     learnerPosition: 'Logistics Specialist (Binh Duong DC)',
     managerId: 'USR-0245',
     managerName: 'David Tran',
-    courseId: 'CRS-COLD-025',
+    courseId: 'CRS-COLD-029',
     courseName: 'Cold Chain & Warehouse Perishables Quality Control',
     targetCommitment: 'Establish sub-15-minute perishable cross-docking process at Binh Duong DC to preserve -18°C temperature integrity.',
     kpiTarget: 'Zero refrigerated truck temperature deviation infractions',
@@ -2338,7 +2343,7 @@ export const actionPlans = [
     learnerPosition: 'Pastry Chef Associate (MM An Phu)',
     managerId: 'USR-0245',
     managerName: 'David Tran',
-    courseId: 'CRS-STOPS-033',
+    courseId: 'CRS-STOPS-037',
     courseName: 'Store Operations Excellence & Planogram Compliance',
     targetCommitment: 'Restructure fresh bakery planogram display to increase wholesale C&C customer conversion.',
     kpiTarget: '+12% pastry sales during peak 16:00-19:00 trading window',
@@ -2367,8 +2372,8 @@ export const teamSkillGapMatrix = [
     skills: [
       { name: 'HACCP & Hygiene Compliance', required: 90, actual: 95, gap: 0, status: 'EXCEEDED' },
       { name: 'Artisan Bakery Production', required: 85, actual: 90, gap: 0, status: 'EXCEEDED' },
-      { name: 'Shrinkage & Spoilage Control', required: 80, actual: 65, gap: -15, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-STOPS-035', suggestedCourse: 'Shrinkage Reduction & Anti-Theft Surveillance' },
-      { name: 'Team Coaching (Social 20%)', required: 75, actual: 60, gap: -15, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-LEAD-044', suggestedCourse: 'Coaching & Giving High-Impact Constructive Feedback' },
+      { name: 'Shrinkage & Spoilage Control', required: 80, actual: 65, gap: -15, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-STOPS-039', suggestedCourse: 'Shrinkage Reduction & Anti-Theft Surveillance' },
+      { name: 'Team Coaching (Social 20%)', required: 75, actual: 60, gap: -15, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-LEAD-050', suggestedCourse: 'Coaching & Giving High-Impact Constructive Feedback' },
     ],
   },
   {
@@ -2380,7 +2385,7 @@ export const teamSkillGapMatrix = [
     overallGap: -12,
     skills: [
       { name: 'HACCP & Hygiene Compliance', required: 85, actual: 80, gap: -5, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-FSH-001', suggestedCourse: 'Food Safety & Hygiene Standards (HACCP)' },
-      { name: 'Planogram Space Merchandising', required: 80, actual: 60, gap: -20, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-STOPS-033', suggestedCourse: 'Store Operations Excellence & Planogram Compliance' },
+      { name: 'Planogram Space Merchandising', required: 80, actual: 60, gap: -20, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-STOPS-037', suggestedCourse: 'Store Operations Excellence & Planogram Compliance' },
       { name: 'Customer Advisory & Fresh Service', required: 75, actual: 85, gap: 0, status: 'EXCEEDED' },
     ],
   },
@@ -2392,8 +2397,8 @@ export const teamSkillGapMatrix = [
     readiness: 'NEEDS_COACHING',
     overallGap: -25,
     skills: [
-      { name: 'Cold Chain Perishables Preservation', required: 90, actual: 55, gap: -35, status: 'CRITICAL_GAP', suggestedCourseId: 'CRS-COLD-025', suggestedCourse: 'Cold Chain & Warehouse Perishables Quality Control' },
-      { name: 'Workplace Fire Safety & HSE', required: 80, actual: 70, gap: -10, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-HSE-017', suggestedCourse: 'On-site Fire Safety & Emergency Evacuation (PCCC)' },
+      { name: 'Cold Chain Perishables Preservation', required: 90, actual: 55, gap: -35, status: 'CRITICAL_GAP', suggestedCourseId: 'CRS-COLD-029', suggestedCourse: 'Cold Chain & Warehouse Perishables Quality Control' },
+      { name: 'Workplace Fire Safety & HSE', required: 80, actual: 70, gap: -10, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-HSE-019', suggestedCourse: 'On-site Fire Safety & Emergency Evacuation (PCCC)' },
       { name: 'Horeca Client Communication', required: 75, actual: 72, gap: -3, status: 'GAP_IDENTIFIED', suggestedCourseId: 'CRS-CSERV-087', suggestedCourse: 'Customer Care Excellence & Horeca Client Service' },
     ],
   },
