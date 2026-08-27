@@ -13,7 +13,7 @@ export default function AssessmentEditorModal({
   companyCategories = [],
   questionBanks = [],
 }) {
-  const isEditing = Boolean(assessment && assessment.id);
+  const isEditing = Boolean(assessment && assessment.id && !assessment.isNew);
   const [activeTab, setActiveTab] = useState('GENERAL'); // GENERAL | CONTENT | ANTI_CHEAT | ASSIGNMENTS
 
   const [formData, setFormData] = useState(() => {
@@ -473,7 +473,13 @@ export default function AssessmentEditorModal({
 
   return (
     <Modal
-      title={isEditing ? `Chỉnh Sửa Assessment: ${formData.title || formData.code}` : 'Tạo Assessment Mới (Quiz / Assignment / Survey)'}
+      title={
+        isEditing
+          ? `Chỉnh Sửa Assessment: ${formData.title || formData.code}`
+          : formData.isCourseExclusive
+            ? `Tạo Assessment Mới Cho Khóa Học: ${formData.courseTitle || 'Khóa Học Mới'}`
+            : 'Tạo Assessment Mới (Quiz / Assignment / Survey)'
+      }
       isOpen={isOpen}
       onClose={onClose}
       maxWidth={880}

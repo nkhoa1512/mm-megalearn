@@ -11,6 +11,9 @@ import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../state/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 import { generateCourseCode } from '../../utils/courseCatalog';
+import AssessmentEditorModal from '../../components/assessment/AssessmentEditorModal';
+import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/assessmentData';
+import { generateAssessmentCode } from '../../utils/assessmentCatalog';
 
 // 5 định dạng bài giảng chuẩn hóa (thay cho DOCUMENT/SCRIPT/IMAGE/TEXT cũ và
 // việc course.modality từng ghi đè loại bài giảng ở Lesson Player):
@@ -852,6 +855,99 @@ export default function AdminCourseBuilder() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [importMessage, setImportMessage] = useState('');
+  const [editingAssessment, setEditingAssessment] = useState(null);
+
+  const courseAssessment = useMemo(() => {
+    if (draft.courseAssessment) return draft.courseAssessment;
+    return (assessments || []).find((a) => a.courseId === draft.id || (a.courseIds && a.courseIds.includes(draft.id)));
+  }, [draft.courseAssessment, draft.id, assessments]);
+
+  function handleOpenCreateAssessment(forceNew = false) {
+    const isActuallyExisting = !forceNew && Boolean(courseAssessment);
+    const defaultTitle = draft.title ? `Bài Đánh Giá Cuối Khóa: ${draft.title}` : 'Bài Đánh Giá Năng Lực Cuối Khóa';
+    const newAsm = {
+      isNew: !isActuallyExisting,
+      id: isActuallyExisting ? courseAssessment.id : `ASM-CRS-${draft.id || Date.now()}`,
+      code: isActuallyExisting ? courseAssessment.code : generateAssessmentCode(defaultTitle),
+      title: isActuallyExisting ? courseAssessment.title : defaultTitle,
+      description: isActuallyExisting ? courseAssessment.description : `Bài kiểm tra đánh giá kiến thức tổng hợp sau khi hoàn thành toàn bộ bài học trong khóa ${draft.title || ''}.`,
+      deliveryFormat: 'COURSE_LINKED',
+      courseId: draft.id,
+      courseIds: [draft.id],
+      courseTitle: draft.title || 'Khóa Học Mới',
+      isCourseExclusive: true,
+      categories: draft.categories && draft.categories.length > 0 ? draft.categories : (draft.category ? [draft.category] : ['Food Safety & Hygiene']),
+      category: (draft.categories && draft.categories[0]) || draft.category || 'Food Safety & Hygiene',
+      status: 'PUBLISHED',
+      timeLimitMinutes: draft.config?.assessmentTimeLimit || 20,
+      passingScorePercent: draft.config?.passingScorePercent || 80,
+      maxAttempts: draft.config?.maxAttempts || 3,
+      questionsPerAttempt: draft.config?.questionsPerAttempt || 4,
+      uploadedFileName: courseAssessment?.uploadedFileName || 'Ngan_Hang_150_Cau_Hoi_Chuan.xlsx',
+      uploadedPoolSize: courseAssessment?.uploadedPoolSize || 150,
+      contentFormats: courseAssessment?.contentFormats || ['INTERACTIVE_BANK'],
+      contentFormat: courseAssessment?.contentFormat || 'INTERACTIVE_BANK',
+      questionMatrix: courseAssessment?.questionMatrix || {
+        singleChoice: 2,
+        multipleChoice: 1,
+        trueFalse: 1,
+        essay: 0,
+        ratingScale: 0,
+        matching: 0,
+      },
+      antiCheatSettings: courseAssessment?.antiCheatSettings || {
+        enforceFullscreen: true,
+        detectTabSwitch: true,
+        maxTabSwitches: 3,
+        randomizeQuestions: true,
+        randomizeOptions: true,
+        showWatermark: true,
+        webcamProctoringSimulation: false,
+        preventCopyPaste: true,
+      },
+      feedbackSettings: {
+        showAnswersAfterSubmit: true,
+        showExplanations: true,
+        allowReview: true,
+      },
+    };
+    setEditingAssessment(newAsm);
+  }
+
+  function handleSaveAssessmentFromModal(savedAsm) {
+    setDraft((prev) => ({
+      ...prev,
+      courseAssessment: savedAsm,
+      config: {
+        ...prev.config,
+        assessmentEnabled: true,
+        assessmentTimeLimit: savedAsm.timeLimitMinutes,
+        passingScorePercent: savedAsm.passingScorePercent,
+        maxAttempts: savedAsm.maxAttempts,
+        questionsPerAttempt: savedAsm.questionsPerAttempt,
+      },
+    }));
+    const existingAsm = (assessments || []).find((a) => a.id === savedAsm.id || a.courseId === draft.id);
+    if (existingAsm) {
+      updateAssessment(savedAsm.id, savedAsm);
+    } else {
+      addAssessment(savedAsm);
+    }
+    setEditingAssessment(null);
+  }
+
+  function handleRemoveCourseAssessment() {
+    if (window.confirm('Bạn có chắc chắn muốn gỡ bài Assessment này khỏi khóa học?')) {
+      setDraft((prev) => ({
+        ...prev,
+        courseAssessment: null,
+        config: {
+          ...prev.config,
+          assessmentEnabled: false,
+        },
+      }));
+    }
+  }
 
   useEffect(() => {
     const fresh = withLevelDefaults(withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())))));
@@ -1122,17 +1218,23 @@ export default function AdminCourseBuilder() {
       updateCourse(draft.id, withVersion);
     }
 
-    // Tự động đồng bộ bài Assessment gắn liền với Course này vào hệ thống Quản lý Assessment
+    // Đồng bộ Assessment của khóa học vào store assessments khi khóa học có bật bài kiểm tra
     if (draft.config?.assessmentEnabled) {
       const existingAsm = (assessments || []).find((a) => a.courseId === draft.id || (a.courseIds && a.courseIds.includes(draft.id)));
+      const baseAsm = draft.courseAssessment || existingAsm;
       const courseAsm = {
-        id: existingAsm?.id || `ASM-CRS-${draft.id}`,
-        code: existingAsm?.code || `ASM-${draft.code || draft.id}`,
-        title: `Bài Đánh Giá Cuối Khóa: ${draft.title}`,
-        description: `Bài kiểm tra đánh giá kiến thức sau khi hoàn thành khóa học ${draft.title}.`,
-        type: 'QUIZ',
-        types: ['QUIZ'],
-        contentFormat: 'INTERACTIVE_BANK',
+        id: baseAsm?.id || `ASM-CRS-${draft.id}`,
+        code: baseAsm?.code || `ASM-${draft.code || draft.id}`,
+        title: baseAsm?.title || `Bài Đánh Giá Cuối Khóa: ${draft.title}`,
+        description: baseAsm?.description || `Bài kiểm tra đánh giá kiến thức sau khi hoàn thành khóa học ${draft.title}.`,
+        type: baseAsm?.type || 'QUIZ',
+        types: baseAsm?.types || ['QUIZ'],
+        contentFormats: baseAsm?.contentFormats || ['INTERACTIVE_BANK'],
+        contentFormat: baseAsm?.contentFormat || 'INTERACTIVE_BANK',
+        uploadedFileName: baseAsm?.uploadedFileName || 'Ngan_Hang_150_Cau_Hoi_Chuan.xlsx',
+        uploadedPoolSize: baseAsm?.uploadedPoolSize || 150,
+        questionMatrix: baseAsm?.questionMatrix || { singleChoice: 2, multipleChoice: 1, trueFalse: 1, essay: 0, ratingScale: 0, matching: 0 },
+        questionTypesList: baseAsm?.questionTypesList || ['2 Trắc nghiệm đơn', '1 Nhiều đáp án', '1 Đúng/Sai'],
         deliveryFormat: 'COURSE_LINKED',
         courseId: draft.id,
         courseIds: [draft.id],
@@ -1144,9 +1246,8 @@ export default function AdminCourseBuilder() {
         timeLimitMinutes: draft.config.assessmentTimeLimit || 20,
         passingScorePercent: draft.config.passingScorePercent || 80,
         maxAttempts: draft.config.maxAttempts || 3,
-        questionsPerAttempt: draft.config.questionsPerAttempt || 3,
-        questionTypesList: ['Single Choice', 'Multiple Choice'],
-        antiCheatSettings: {
+        questionsPerAttempt: draft.config.questionsPerAttempt || 4,
+        antiCheatSettings: baseAsm?.antiCheatSettings || {
           enforceFullscreen: true,
           detectTabSwitch: true,
           maxTabSwitches: 3,
@@ -2200,94 +2301,120 @@ export default function AdminCourseBuilder() {
         </div>
       </div>
 
+      {/* KHỐI ASSESSMENT ĐÁNH GIÁ CUỐI KHÓA HỌC (TÁCH RIÊNG KHỎI MODULES) */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
-        <div className="section-label" style={{ margin: '0 0 14px', display: 'flex', justifyContent: 'space-between' }}>
-          <span>Assessment</span>
-          <label style={{ fontSize: 12.5, fontWeight: 400, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={cfg.assessmentEnabled} onChange={(e) => patchConfig({ assessmentEnabled: e.target.checked })} /> Required to complete course
-          </label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <i className="ti ti-shield-check" style={{ color: 'var(--rail)', fontSize: 18 }} />
+            <span>Bài Kiểm Tra / Assessment Đánh Giá Cuối Khóa (Course Assessment)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cfg.assessmentEnabled}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  patchConfig({ assessmentEnabled: checked });
+                  if (checked && !courseAssessment) {
+                    handleOpenCreateAssessment();
+                  }
+                }}
+              />
+              <span>Bắt buộc đạt bài Assessment để hoàn thành khóa học</span>
+            </label>
+            {courseAssessment ? (
+              <Badge tone="sage"><i className="ti ti-check" /> Đã gắn bài thi</Badge>
+            ) : (
+              <Badge tone="slate">Chưa có bài thi</Badge>
+            )}
+          </div>
         </div>
-        {cfg.assessmentEnabled ? (
-          <>
-            <div className="grid grid-3" style={{ marginBottom: 14 }}>
-              <div>
-                <label className="field-label">Question bank size</label>
-                <input className="field-input" value={cfg.questionBankSize} type="number" onChange={(e) => patchConfig({ questionBankSize: Number(e.target.value) })} />
-              </div>
-              <div>
-                <label className="field-label">Questions per attempt</label>
-                <input className="field-input" value={cfg.questionsPerAttempt} type="number" onChange={(e) => patchConfig({ questionsPerAttempt: Number(e.target.value) })} />
-              </div>
-              <div>
-                <label className="field-label">Passing score (%)</label>
-                <input className="field-input" value={cfg.passingScorePercent} type="number" onChange={(e) => patchConfig({ passingScorePercent: Number(e.target.value) })} />
-              </div>
-            </div>
-            <div className="grid grid-3" style={{ marginBottom: 14 }}>
-              <div>
-                <label className="field-label">Maximum attempts</label>
-                <input className="field-input" value={cfg.maxAttempts} type="number" onChange={(e) => patchConfig({ maxAttempts: Number(e.target.value) })} />
-              </div>
-              <div>
-                <label className="field-label">Time limit (minutes)</label>
-                <input className="field-input" value={cfg.assessmentTimeLimit} type="number" onChange={(e) => patchConfig({ assessmentTimeLimit: Number(e.target.value) })} />
-              </div>
-              <div>
-                <label className="field-label">Show correct answers</label>
-                <select className="field-select" value={cfg.showCorrectAnswers} onChange={(e) => patchConfig({ showCorrectAnswers: e.target.value })}>
-                  <option value="IMMEDIATELY">Immediately after submission</option>
-                  <option value="AFTER_PASSING">After passing</option>
-                  <option value="AFTER_FINAL_ATTEMPT">After final attempt</option>
-                  <option value="NEVER">Never</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-2" style={{ marginBottom: 18 }}>
-              <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={cfg.randomizeQuestions} onChange={(e) => patchConfig({ randomizeQuestions: e.target.checked })} /> Randomize questions
-              </label>
-              <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={cfg.randomizeAnswers} onChange={(e) => patchConfig({ randomizeAnswers: e.target.checked })} /> Randomize answers
-              </label>
-            </div>
 
-            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                <div className="section-label" style={{ margin: 0 }}>Question bank</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Button size="sm" icon="ti-plus" onClick={addQuestion}>Add question</Button>
-                  <label className="btn btn-sm" style={{ cursor: 'pointer' }}>
-                    <i className="ti ti-upload" aria-hidden="true" /> Import CSV
-                    <input type="file" accept=".csv" onChange={onImportCsv} style={{ display: 'none' }} />
-                  </label>
-                  <Button size="sm" variant="ghost" icon="ti-download" onClick={downloadQuestionCsvTemplate}>Download template</Button>
+        {courseAssessment ? (
+          <div style={{ background: 'var(--paper-sunken)', padding: '14px', borderRadius: 8, border: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-faint)', fontWeight: 600 }}>
+                    [{courseAssessment.code}]
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)' }}>
+                    {courseAssessment.title}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>
+                  {courseAssessment.description || 'Bài kiểm tra đánh giá kiến thức tổng hợp sau khi hoàn thành khóa học.'}
                 </div>
               </div>
-              {importMessage && <div style={{ fontSize: 12.5, color: 'var(--sage-soft-text)', marginBottom: 8 }}>{importMessage}</div>}
-              <Badge tone={draft.questionBank.length >= cfg.questionsPerAttempt ? 'sage' : 'rust'}>
-                {draft.questionBank.length} of {cfg.questionBankSize} configured questions added
-              </Badge>
-              <div style={{ marginTop: 12 }}>
-                {draft.questionBank.length === 0 && (
-                  <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>No questions yet — the assessment can't be taken until at least {cfg.questionsPerAttempt} are added.</p>
-                )}
-                {draft.questionBank.map((q, i) => (
-                  <QuestionEditor
-                    key={q.id}
-                    index={i}
-                    question={q}
-                    editing={editingQuestionId === q.id}
-                    onEdit={() => setEditingQuestionId(q.id)}
-                    onDone={() => setEditingQuestionId(null)}
-                    onChange={(fields) => updateQuestion(q.id, fields)}
-                    onRemove={() => removeQuestion(q.id)}
-                  />
-                ))}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button size="sm" variant="primary" icon="ti-edit" onClick={handleOpenCreateAssessment}>
+                  Chỉnh Sửa Assessment
+                </Button>
+                <Button size="sm" variant="ghost" icon="ti-trash" style={{ color: 'var(--rust)' }} onClick={handleRemoveCourseAssessment}>
+                  Gỡ Bài Thi
+                </Button>
               </div>
             </div>
-          </>
+
+            {/* Badges */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, fontSize: 11.5 }}>
+              <Badge tone="sage" size="sm">🎯 Gắn Liền Khóa Học (Course-linked)</Badge>
+              {(courseAssessment.contentFormats || (courseAssessment.contentFormat ? [courseAssessment.contentFormat] : [])).map((fmt) => (
+                <Badge key={fmt} tone="blue" size="sm">
+                  {fmt === 'UPLOAD_DOC' ? '📄 File Đề Tự Luận PDF' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Ngân Hàng Câu Hỏi'}
+                </Badge>
+              ))}
+              <Badge tone="slate" size="sm">
+                ⏱️ {courseAssessment.timeLimitMinutes} phút
+              </Badge>
+              <Badge tone="sage" size="sm">
+                🎯 Điểm đạt: {courseAssessment.passingScorePercent}%
+              </Badge>
+              <Badge tone="slate" size="sm">
+                🔄 Tối đa {courseAssessment.maxAttempts} lần thi
+              </Badge>
+              <Badge tone="amber" size="sm">
+                🎲 Bốc ngẫu nhiên: {courseAssessment.questionsPerAttempt} câu / đề
+              </Badge>
+            </div>
+
+            {/* Matrix / Breakdown info */}
+            {courseAssessment.questionTypesList && courseAssessment.questionTypesList.length > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-raised)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                <i className="ti ti-list-check" style={{ marginRight: 5, color: 'var(--rail)' }} />
+                <strong>Cấu hình đề thi:</strong> {courseAssessment.questionTypesList.join(' &middot; ')}
+                {courseAssessment.uploadedFileName && (
+                  <span style={{ marginLeft: 8, color: 'var(--ink-faint)' }}>
+                    (Nguồn: {courseAssessment.uploadedFileName} - {courseAssessment.uploadedPoolSize || 150} câu)
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Anti-cheat features */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
+              <span style={{ color: 'var(--ink-faint)', marginRight: 4 }}>Bảo mật:</span>
+              {courseAssessment.antiCheatSettings?.enforceFullscreen && <span style={{ color: 'var(--sage)' }}>✓ Toàn màn hình</span>}
+              {courseAssessment.antiCheatSettings?.detectTabSwitch && <span style={{ color: 'var(--amber)' }}>✓ Giám sát chuyển tab</span>}
+              {courseAssessment.antiCheatSettings?.randomizeQuestions && <span style={{ color: 'var(--ink-soft)' }}>✓ Xáo trộn đề</span>}
+              {courseAssessment.antiCheatSettings?.showWatermark && <span style={{ color: 'var(--ink-soft)' }}>✓ Watermark</span>}
+              {courseAssessment.antiCheatSettings?.preventCopyPaste && <span style={{ color: 'var(--rust)' }}>✓ Khóa Copy/Paste</span>}
+            </div>
+          </div>
         ) : (
-          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>This course has no assessment; completion depends only on required lessons.</p>
+          <div style={{ padding: '24px 16px', textAlign: 'center', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)' }}>
+            <i className="ti ti-award" style={{ fontSize: 32, color: 'var(--rail)', display: 'block', marginBottom: 8 }} />
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginBottom: 4 }}>
+              Khóa học này hiện chưa có bài Assessment đánh giá cuối khóa
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', maxWidth: 580, margin: '0 auto 14px' }}>
+              Bài Assessment nằm riêng biệt ngoài các Module bài giảng, dùng để kiểm tra đánh giá năng lực và cấp chứng chỉ sau khi học viên học xong toàn bộ bài học. Bạn có thể bốc câu hỏi ngẫu nhiên từ file ngân hàng, đề tự luận PDF, SCORM hoặc biểu mẫu online.
+            </div>
+            <Button variant="primary" icon="ti-plus" onClick={handleOpenCreateAssessment}>
+              Tạo Bài Assessment Riêng Cho Khóa Học Này
+            </Button>
+          </div>
         )}
       </div>
       </>
@@ -2374,6 +2501,19 @@ export default function AdminCourseBuilder() {
         <Button variant="outline" icon="ti-file-pencil" onClick={() => handleSave('DRAFT')}>Save as Draft</Button>
         <Button variant="primary" icon="ti-device-floppy" onClick={() => handleSave('PUBLISHED')}>{isNew ? 'Create Course' : 'Save Changes'}</Button>
       </div>
+
+      {/* MODAL TẠO & CHỈNH SỬA ASSESSMENT CHO KHÓA HỌC */}
+      {editingAssessment && (
+        <AssessmentEditorModal
+          isOpen={Boolean(editingAssessment)}
+          assessment={editingAssessment}
+          onClose={() => setEditingAssessment(null)}
+          onSave={handleSaveAssessmentFromModal}
+          courses={courses}
+          companyCategories={companyCategories}
+          questionBanks={questionBanks}
+        />
+      )}
     </>
   );
 }
