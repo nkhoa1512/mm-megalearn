@@ -623,7 +623,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 <thead>
                   <tr>
                     <th>{language === 'en' ? 'Course Program' : 'Khóa Học'}</th>
-                    <th style={{ width: 96 }}>{language === 'en' ? 'Level' : 'Cấp Bậc'}</th>
                     <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Truy Cập'}</th>
                     <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Định Dạng'}</th>
                     <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Tiến Độ'}</th>
@@ -634,7 +633,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
                         Không tìm thấy khóa học nào phù hợp với bộ lọc.
                       </td>
                     </tr>
@@ -682,7 +681,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                         </div>
                       </td>
 
-                      <td><JobLevelBadge level={c.targetLevel} title={c.targetLevelTitle} compact /></td>
                       <td><LevelAccessBadge access={access} /></td>
 
                       <td>
@@ -759,9 +757,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     alt={c.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  <div style={{ position: 'absolute', top: 8, right: 8 }}>
-                    <JobLevelBadge level={c.targetLevel} compact />
-                  </div>
                   <div style={{ position: 'absolute', top: 8, left: 8 }}>
                     <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
                   </div>

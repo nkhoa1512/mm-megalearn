@@ -52,6 +52,18 @@ function withCategoryDefaults(course) {
   return { ...course, categories: course.category ? [course.category] : [] };
 }
 
+function withLevelDefaults(course) {
+  const targetLevels = course.targetLevels && course.targetLevels.length > 0
+    ? course.targetLevels.map(normalizeLevel)
+    : course.targetLevel ? [normalizeLevel(course.targetLevel)] : ['7'];
+  return {
+    ...course,
+    targetLevels,
+    targetLevel: targetLevels[0] || '7',
+    targetLevelTitle: targetLevels.map((l) => `Level ${l}`).join(', '),
+  };
+}
+
 // deliveryType + onlineClassType đã quyết định đầy đủ hình thức đào tạo (3
 // nhánh: E-Learning tự học / Lớp trực tuyến Live / Đào tạo trực tiếp) — suy ra
 // modality/format từ đây thay vì để Admin chọn tay qua dropdown đã bỏ.
@@ -211,7 +223,7 @@ export default function AdminCourseBuilder() {
     };
   }
 
-  const [draft, setDraft] = useState(() => withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())))));
+  const [draft, setDraft] = useState(() => withLevelDefaults(withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))))));
   const [activeModuleId, setActiveModuleId] = useState(draft.modules[0]?.id);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -219,7 +231,7 @@ export default function AdminCourseBuilder() {
   const [importMessage, setImportMessage] = useState('');
 
   useEffect(() => {
-    const fresh = withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))));
+    const fresh = withLevelDefaults(withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())))));
     setDraft(fresh);
     setActiveModuleId(fresh.modules[0]?.id);
     setSaved(false);
@@ -1058,37 +1070,98 @@ export default function AdminCourseBuilder() {
             <input type="date" className="field-input" value={draft.endDate || ''} onChange={(e) => patch({ endDate: e.target.value })} />
           </div>
         </div>
-        <div className="grid grid-2" style={{ marginBottom: 14 }}>
-          <div>
-            <label className="field-label">Cấp bậc mục tiêu (Target job level)</label>
-            <select
-              className="field-select"
-              value={normalizeLevel(draft.targetLevel)}
-              onChange={(e) => {
-                const targetLevel = e.target.value;
-                patch({
-                  targetLevel,
-                  targetLevelTitle: `Level ${targetLevel}: ${levelTitle(targetLevel)}`,
-                  assignment: draft.assignment ? { ...draft.assignment, targetLevel } : draft.assignment,
-                });
-              }}
-            >
-              {[...LEVEL_DEFINITIONS].reverse().map((def) => (
-                <option key={def.level} value={def.level}>
-                  {def.emoji} Level {def.level} — {def.shortVi}
-                </option>
-              ))}
-            </select>
-            <div className="field-hint">
-              Thang cấp bậc đảo ngược: <strong>Level 7 là thấp nhất</strong>, <strong>Level 1 là cao nhất</strong>. Học viên
-              thấp hơn đúng 1 cấp phải được Quản lý phê duyệt mới học được; thấp hơn từ 2 cấp trở lên sẽ bị chặn cứng.
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+            <label className="field-label" style={{ margin: 0, fontWeight: 700 }}>
+              Cấp bậc mục tiêu (Target job level) — Có thể chọn 1 hoặc nhiều cấp bậc:
+            </label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                onClick={() => {
+                  const allLvls = ['1', '2', '3', '4', '5', '6', '7'];
+                  patch({ targetLevels: allLvls, targetLevel: '1', targetLevelTitle: 'Level 1 - 7' });
+                }}
+              >
+                Chọn Tất Cả (Lv 1 - 7)
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                onClick={() => {
+                  const mgmt = ['1', '2', '3', '4'];
+                  patch({ targetLevels: mgmt, targetLevel: '1', targetLevelTitle: 'Level 1 - 4' });
+                }}
+              >
+                Quản Lý (Lv 1 - 4)
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                onClick={() => {
+                  const frontline = ['5', '6', '7'];
+                  patch({ targetLevels: frontline, targetLevel: '7', targetLevelTitle: 'Level 5 - 7' });
+                }}
+              >
+                Tuyến Đầu (Lv 5 - 7)
+              </button>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <div style={{ background: 'var(--paper-sunken)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 6 }}>Xem trước huy hiệu cấp bậc trên danh mục:</div>
-              <JobLevelBadge level={draft.targetLevel} />
-            </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            {['1', '2', '3', '4', '5', '6', '7'].map((lvl) => {
+              const currentList = (draft.targetLevels || [draft.targetLevel || '7']).map(String);
+              const isSelected = currentList.includes(lvl);
+              return (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => {
+                    let next;
+                    if (isSelected) {
+                      if (currentList.length === 1) return; // Giữ tối thiểu 1 cấp bậc
+                      next = currentList.filter((l) => l !== lvl);
+                    } else {
+                      next = [...currentList, lvl].sort((a, b) => Number(a) - Number(b));
+                    }
+                    patch({
+                      targetLevels: next,
+                      targetLevel: next[0],
+                      targetLevelTitle: next.map((l) => `Lv ${l}`).join(', '),
+                      assignment: draft.assignment ? { ...draft.assignment, targetLevel: next[0] } : draft.assignment,
+                    });
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    border: isSelected ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
+                    background: isSelected ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                    color: isSelected ? 'var(--rail-soft-text, #166534)' : 'var(--ink-soft)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <i className={isSelected ? 'ti ti-checkbox' : 'ti ti-square'} style={{ fontSize: 16 }} />
+                  Level {lvl}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+            Đã chọn:{' '}
+            <strong style={{ color: 'var(--rail, #15803d)' }}>
+              {(draft.targetLevels || [draft.targetLevel || '7']).map((l) => `Level ${l}`).join(', ')}
+            </strong>
           </div>
         </div>
         <div style={{ marginBottom: 14 }}>

@@ -794,7 +794,20 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
   const sysAdminCoursesHtml = render('sysadmin AdminCourses curriculum tab renders without crashing', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
   check('sysadmin sees Curriculum tab and Chi Tiết & Phân Bổ buttons',
     Boolean(sysAdminCoursesHtml && sysAdminCoursesHtml.includes('Chi Tiết &amp; Phân Bổ')));
+
+  // Section 20: Multi-Target Assignment & Builder Multi-Level Support
+  console.log('\n--- Section 20: Multi-Target Batch Assignment, CourseBuilder Multi-Levels & Learner Badges ---');
+  actAs('useradmin');
+  const courseBuilderHtml = render('CourseBuilder renders with multi-level selector', <AdminCourseBuilder />, '/admin/courses/new', '/admin/courses/new');
+  check('CourseBuilder renders Level 1 through Level 7 multi-selector buttons',
+    Boolean(courseBuilderHtml && courseBuilderHtml.includes('Level 1') && courseBuilderHtml.includes('Level 7') && courseBuilderHtml.includes('Chọn Tất Cả (Lv 1 - 7)')));
+
+  actAs('learner');
+  const learnerCoursesHtml = render('LearnerCourses renders without Level badges in table/cards', <LearnerCourses />, '/learner/courses', '/learner/courses');
+  check('LearnerCourses does not render JobLevelBadge in catalog table header',
+    Boolean(learnerCoursesHtml && !learnerCoursesHtml.includes('>Cấp Bậc<')));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
+

@@ -114,7 +114,6 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                 <span style={{ background: 'rgba(255,255,255,0.9)', color: 'var(--ink)', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                   {course.code}
                 </span>
-                <JobLevelBadge level={course.targetLevel} compact />
                 <CourseTypeBadge courseType={course.courseType} />
               </div>
               <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>

@@ -437,25 +437,26 @@ export function CourseStoreProvider({ children }) {
     setCurricula((prev) => prev.filter((c) => c.id !== curriculumId));
   }, []);
 
-  const assignCurriculum = useCallback((curriculumId, assignment) => {
-    const newAsg = {
+  const assignCurriculum = useCallback((curriculumId, assignmentOrAssignments) => {
+    const rawList = Array.isArray(assignmentOrAssignments) ? assignmentOrAssignments : [assignmentOrAssignments];
+    const newAsgs = rawList.map((assignment) => ({
       id: `asg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       assignedBy: currentUser?.userId || userAdminUser.userId,
       assignedAt: new Date().toISOString().slice(0, 10),
       ...assignment,
-    };
+    }));
     setCurricula((prev) =>
       prev.map((c) =>
         c.id === curriculumId
           ? {
               ...c,
-              assignments: [...(c.assignments || []), newAsg],
+              assignments: [...(c.assignments || []), ...newAsgs],
               updatedAt: new Date().toISOString().slice(0, 10),
             }
           : c
       )
     );
-    return newAsg;
+    return newAsgs.length === 1 ? newAsgs[0] : newAsgs;
   }, [currentUser]);
 
   const removeCurriculumAssignment = useCallback((curriculumId, assignmentId) => {
@@ -469,6 +470,44 @@ export function CourseStoreProvider({ children }) {
             }
           : c
       )
+    );
+  }, []);
+
+  const assignCourse = useCallback((courseId, assignmentOrAssignments) => {
+    const rawList = Array.isArray(assignmentOrAssignments) ? assignmentOrAssignments : [assignmentOrAssignments];
+    const newAsgs = rawList.map((asg) => ({
+      id: `asg-c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      assignedBy: currentUser?.userId || userAdminUser.userId,
+      assignedAt: new Date().toISOString().slice(0, 10),
+      ...asg,
+    }));
+    setCourses((prev) =>
+      prev.map((c) => {
+        if (c.id !== courseId) return c;
+        const currentAsgs = c.assignments || (c.assignment ? [c.assignment] : []);
+        return {
+          ...c,
+          courseType: 'MANDATORY',
+          assignments: [...currentAsgs, ...newAsgs],
+          updatedAt: new Date().toISOString().slice(0, 10),
+        };
+      })
+    );
+    return newAsgs.length === 1 ? newAsgs[0] : newAsgs;
+  }, [currentUser]);
+
+  const removeCourseAssignment = useCallback((courseId, assignmentId) => {
+    setCourses((prev) =>
+      prev.map((c) => {
+        if (c.id !== courseId) return c;
+        const currentAsgs = c.assignments || (c.assignment ? [c.assignment] : []);
+        const updated = currentAsgs.filter((a) => a.id !== assignmentId);
+        return {
+          ...c,
+          assignments: updated,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        };
+      })
     );
   }, []);
 
@@ -1164,6 +1203,8 @@ export function CourseStoreProvider({ children }) {
         addCourse,
         updateCourse,
         removeCourse,
+        assignCourse,
+        removeCourseAssignment,
         saveCourseProgress,
         publishNewCourseVersion,
         assignTrainerToCourse,

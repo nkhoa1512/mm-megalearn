@@ -93,6 +93,7 @@ export default function AdminCourses() {
 
   const [editingCurriculum, setEditingCurriculum] = useState(null);
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
+  const [viewingCourse, setViewingCourse] = useState(null);
 
   function publish(course) {
     publishNewCourseVersion(course.id, null, 'Phát hành phiên bản mới.');
@@ -143,10 +144,15 @@ export default function AdminCourses() {
     const badge = courseFormatBadge(c);
     const lifecycle = computeLifecycleStatus(c);
     const lifecycleMeta = LIFECYCLE_STATUS_META[lifecycle];
+    const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
     return (
       <tr key={c.id}>
         <td>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div
+            style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setViewingCourse(c)}
+            title="Bấm để xem chi tiết & phân bổ khóa học"
+          >
             <img
               src={getCourseImage(c)}
               alt={c.title}
@@ -171,7 +177,9 @@ export default function AdminCourses() {
         <td style={{ color: 'var(--ink-soft)', fontSize: 12 }}>
           {c.courseType === 'MANDATORY' ? (
             <span style={{ background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 4, display: 'inline-block' }}>
-              {c.assignment?.targetLabel || 'Assigned Division'}
+              {asgCount > 0
+                ? `${asgCount} đối tượng được gán`
+                : (c.assignment?.targetLabel || 'Assigned Division')}
             </span>
           ) : (
             <span style={{ color: 'var(--ink-faint)' }}>All MMVN Associates (Catalog)</span>
@@ -186,6 +194,14 @@ export default function AdminCourses() {
         </td>
         <td>
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              icon="ti-list-details"
+              onClick={() => setViewingCourse(c)}
+            >
+              Chi Tiết &amp; Phân Bổ
+            </Button>
             {canManage ? (
               <>
                 <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
@@ -490,6 +506,20 @@ export default function AdminCourses() {
         </>
       )}
 
+      {viewingCourse && (
+        <CourseDetailModal
+          course={viewingCourse}
+          courses={courses}
+          onClose={() => setViewingCourse(null)}
+          onEdit={(c) => {
+            setViewingCourse(null);
+            navigate(`/admin/courses/${c.id}`);
+          }}
+          isAdmin={isAdmin}
+          currentUser={currentUser}
+        />
+      )}
+
       {viewingCurriculum && (
         <CurriculumDetailModal
           curriculum={viewingCurriculum}
@@ -522,6 +552,287 @@ export default function AdminCourses() {
   );
 }
 
+function MultiTargetAssigner({ onSave, onCancel, isHrbp = false, initialAssignType = 'SUBDEPARTMENT' }) {
+  const [assignType, setAssignType] = useState(initialAssignType);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [dueDate, setDueDate] = useState('');
+  const [justification, setJustification] = useState('');
+  const [userLevelFilter, setUserLevelFilter] = useState('ALL');
+  const [userSubDeptFilter, setUserSubDeptFilter] = useState('ALL');
+  const [search, setSearch] = useState('');
+
+  const targetOptions = targetOptionsFor(assignType) || [];
+
+  const visibleOptions = useMemo(() => {
+    if (assignType === 'USER') {
+      return targetOptions.filter((u) => {
+        const matchLvl = userLevelFilter === 'ALL' || String(u.level) === String(userLevelFilter);
+        const matchSubDept = userSubDeptFilter === 'ALL' ||
+          u.subDepartmentId === userSubDeptFilter ||
+          u.subDepartmentCode === userSubDeptFilter;
+        const matchQuery = !search ||
+          (u.label && u.label.toLowerCase().includes(search.toLowerCase())) ||
+          (u.fullName && u.fullName.toLowerCase().includes(search.toLowerCase())) ||
+          (u.employeeCode && u.employeeCode.toLowerCase().includes(search.toLowerCase())) ||
+          (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(search.toLowerCase())) ||
+          (u.departmentName && u.departmentName.toLowerCase().includes(search.toLowerCase()));
+        return matchLvl && matchSubDept && matchQuery;
+      });
+    }
+    if (!search.trim()) return targetOptions;
+    const q = search.toLowerCase();
+    return targetOptions.filter((o) => o.label && o.label.toLowerCase().includes(q));
+  }, [assignType, targetOptions, userLevelFilter, userSubDeptFilter, search]);
+
+  function handleTypeChange(nextType) {
+    setAssignType(nextType);
+    setSelectedIds([]);
+    setSearch('');
+  }
+
+  function toggleId(id) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function selectAll() {
+    setSelectedIds(visibleOptions.map((o) => o.id));
+  }
+
+  function clearAll() {
+    setSelectedIds([]);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (selectedIds.length === 0) return;
+    const targets = selectedIds.map((id) => {
+      const opt = targetOptions.find((o) => o.id === id);
+      return {
+        targetId: id,
+        targetLabel: opt ? opt.label : id,
+      };
+    });
+    onSave({
+      assignmentType: assignType,
+      targets,
+      dueDate,
+      justification,
+    });
+  }
+
+  return (
+    <div className="card card-pad" style={{ background: 'var(--paper-sunken)', marginBottom: 16, border: '1px solid var(--line-strong)' }}>
+      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: isHrbp ? '#0369A1' : 'var(--rail)' }}>
+        <i className={isHrbp ? 'ti ti-send' : 'ti-user-plus'} />
+        {isHrbp ? 'Đề Xuất Phân Bổ (Gửi Lên User Admin Phê Duyệt)' : 'Gán Đối Tượng Mới (Hỗ Trợ Chọn Nhiều / Multi-Select)'}
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 12 }}>
+          <label className="field-label" style={{ fontSize: 11.5 }}>Loại đối tượng (Target Type)</label>
+          <select
+            className="field-select"
+            style={{ fontSize: 12, height: 34, width: '100%' }}
+            value={assignType}
+            onChange={(e) => handleTypeChange(e.target.value)}
+          >
+            {ASSIGNMENT_TYPES.map((t) => (
+              <option key={t} value={t}>{assignmentTypeLabel(t)}</option>
+            ))}
+          </select>
+        </div>
+
+        {assignType === 'USER' && (
+          <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, color: 'var(--blue)', fontWeight: 700 }}>
+                <i className="ti ti-filter" /> Lọc theo Cấp Bậc (Job Level)
+              </label>
+              <select
+                className="field-select"
+                style={{ fontSize: 12, height: 34, width: '100%', borderColor: 'var(--blue)' }}
+                value={userLevelFilter}
+                onChange={(e) => setUserLevelFilter(e.target.value)}
+              >
+                <option value="ALL">Tất Cả Cấp Bậc (Level 1 - 7)</option>
+                {['1', '2', '3', '4', '5', '6', '7'].map((lvl) => (
+                  <option key={lvl} value={lvl}>Level {lvl}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, color: 'var(--rail)', fontWeight: 700 }}>
+                <i className="ti ti-git-branch" /> Lọc theo Sub-Department
+              </label>
+              <select
+                className="field-select"
+                style={{ fontSize: 12, height: 34, width: '100%', borderColor: 'var(--rail)' }}
+                value={userSubDeptFilter}
+                onChange={(e) => setUserSubDeptFilter(e.target.value)}
+              >
+                <option value="ALL">Tất Cả Sub-Departments</option>
+                {subDepartments.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5 }}>Tìm kiếm nhân sự</label>
+              <div style={{ position: 'relative' }}>
+                <i className="ti ti-search" style={{ position: 'absolute', left: 9, top: 9, color: 'var(--ink-faint)', fontSize: 13 }} />
+                <input
+                  type="text"
+                  className="field-input"
+                  style={{ fontSize: 12, height: 34, paddingLeft: 28, width: '100%' }}
+                  placeholder="Nhập tên, mã NV, phòng ban..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {assignType !== 'USER' && (
+          <div style={{ marginBottom: 10 }}>
+            <label className="field-label" style={{ fontSize: 11.5 }}>Tìm kiếm nhanh {assignmentTypeLabel(assignType)}</label>
+            <div style={{ position: 'relative' }}>
+              <i className="ti ti-search" style={{ position: 'absolute', left: 9, top: 9, color: 'var(--ink-faint)', fontSize: 13 }} />
+              <input
+                type="text"
+                className="field-input"
+                style={{ fontSize: 12, height: 34, paddingLeft: 28, width: '100%' }}
+                placeholder={`Tìm kiếm trong ${targetOptions.length} ${assignmentTypeLabel(assignType)}...`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--line-light)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+              Danh sách lựa chọn ({visibleOptions.length} mục) &middot; <span style={{ color: 'var(--rail, #15803d)' }}>Đã chọn: {selectedIds.length} đối tượng</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px' }}
+                onClick={selectAll}
+                disabled={visibleOptions.length === 0}
+              >
+                Chọn tất cả ({visibleOptions.length})
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px' }}
+                onClick={clearAll}
+                disabled={selectedIds.length === 0}
+              >
+                Bỏ chọn
+              </button>
+            </div>
+          </div>
+
+          <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {visibleOptions.map((opt) => {
+              const checked = selectedIds.includes(opt.id);
+              return (
+                <label
+                  key={opt.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    background: checked ? 'var(--rail-soft, #f0fdf4)' : 'transparent',
+                    border: checked ? '1px solid #bbf7d0' : '1px solid transparent',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    userSelect: 'none',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleId(opt.id)}
+                    style={{ cursor: 'pointer', accentColor: 'var(--rail)' }}
+                  />
+                  {assignType === 'USER' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 700, color: 'var(--ink)' }}>
+                        {opt.avatar || (opt.fullName ? opt.fullName.slice(0, 2).toUpperCase() : 'NV')}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{opt.fullName || opt.label}</span>
+                        <span style={{ color: 'var(--ink-faint)', marginLeft: 6, fontSize: 11 }}>({opt.employeeCode || opt.id})</span>
+                        <span style={{ color: 'var(--ink-soft)', marginLeft: 6, fontSize: 11 }}>· {opt.subDepartmentName || opt.departmentName || opt.position || ''}</span>
+                      </div>
+                      <Badge tone="rail" size="sm">Lv {opt.level || '7'}</Badge>
+                    </div>
+                  ) : (
+                    <span style={{ fontWeight: checked ? 600 : 400, color: 'var(--ink)' }}>
+                      {opt.label}
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+            {visibleOptions.length === 0 && (
+              <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--ink-faint)', fontSize: 12 }}>
+                Không có đối tượng nào phù hợp bộ lọc tìm kiếm.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-2" style={{ gap: 10, marginBottom: 14 }}>
+          <div>
+            <label className="field-label" style={{ fontSize: 11.5 }}>Hạn hoàn thành (Due Date)</label>
+            <input
+              type="date"
+              className="field-input"
+              style={{ fontSize: 12, height: 34, width: '100%' }}
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+          {isHrbp && (
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5 }}>Lý do / Căn cứ đề xuất cho User Admin</label>
+              <input
+                type="text"
+                className="field-input"
+                style={{ fontSize: 12, height: 34, width: '100%' }}
+                placeholder="VD: Đề xuất bổ sung năng lực cho đội ngũ kế nhiệm SGM..."
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
+          <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-check'} type="submit" disabled={selectedIds.length === 0}>
+            {isHrbp
+              ? `Gửi Đề Xuất Phân Bổ (${selectedIds.length} Đối Tượng)`
+              : `Xác Nhận Phân Bổ (${selectedIds.length} Đối Tượng)`}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function CurriculumDetailModal({
   curriculum: initialCurriculum,
   courses,
@@ -551,102 +862,48 @@ function CurriculumDetailModal({
   const handlePropose = onPropose || storePropose;
   const handleRemove = onRemoveAssignment || storeRemove;
 
-  const role = normalizeRole(currentUser?.role);
   const access = curriculumAccessOf(currentUser);
   const { mode: modalMode, canDirectAssign, canPropose, canEdit: isCurriculumAdmin } = access;
   const isHrbp = modalMode === CURRICULUM_ACCESS_MODE.VIEW_ALL;
 
   const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'assignments'
   const [showAssignForm, setShowAssignForm] = useState(false);
-  const [assignType, setAssignType] = useState('SUBDEPARTMENT');
-  const [targetId, setTargetId] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [justification, setJustification] = useState('');
-  const [userLevelFilter, setUserLevelFilter] = useState('ALL');
-  const [userSubDeptFilter, setUserSubDeptFilter] = useState('ALL');
-  const [userSearch, setUserSearch] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState(null);
 
-  // Always read live state from store
   const liveCurriculum = curricula.find((c) => c.id === initialCurriculum.id) || initialCurriculum;
   const assignments = liveCurriculum.assignments || [];
-  const targetOptions = targetOptionsFor(assignType) || [];
 
-  // Filter pending proposals for this curriculum
   const pendingProposals = (approvals || []).filter(
     (a) => a.curriculumId === liveCurriculum.id && a.status === 'PENDING'
   );
 
-  // Filter options for USER based on userLevelFilter, userSubDeptFilter, and userSearch
-  const visibleUserOptions = useMemo(() => {
-    if (assignType !== 'USER') return targetOptions;
-    return targetOptions.filter((u) => {
-      const matchLvl = userLevelFilter === 'ALL' || String(u.level) === String(userLevelFilter);
-      const matchSubDept = userSubDeptFilter === 'ALL' ||
-        u.subDepartmentId === userSubDeptFilter ||
-        u.subDepartmentCode === userSubDeptFilter;
-      const matchQuery = !userSearch ||
-        (u.label && u.label.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.fullName && u.fullName.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.employeeCode && u.employeeCode.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.subDepartmentCode && u.subDepartmentCode.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.departmentName && u.departmentName.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.departmentCode && u.departmentCode.toLowerCase().includes(userSearch.toLowerCase()));
-      return matchLvl && matchSubDept && matchQuery;
-    });
-  }, [assignType, targetOptions, userLevelFilter, userSubDeptFilter, userSearch]);
-
-  // Keep targetId in sync if filtered list changes
-  useEffect(() => {
-    if (assignType === 'USER') {
-      if (!visibleUserOptions.some((o) => o.id === targetId)) {
-        setTargetId(visibleUserOptions[0]?.id || '');
-      }
-    }
-  }, [assignType, visibleUserOptions, targetId]);
-
-  function handleOpenAssignForm() {
-    const opts = targetOptionsFor(assignType) || [];
-    setTargetId(opts[0]?.id || '');
-    setUserLevelFilter('ALL');
-    setUserSubDeptFilter('ALL');
-    setUserSearch('');
-    setJustification('');
-    setShowAssignForm(true);
-  }
-
-  function handleSaveAssignment(e) {
-    e.preventDefault();
-    if (!targetId) return;
-    const selectedOpt = targetOptions.find((o) => o.id === targetId);
-    const targetLabel = selectedOpt ? selectedOpt.label : targetId;
-
+  function handleSaveAssignment({ assignmentType, targets, dueDate, justification }) {
     if (canDirectAssign) {
-      handleAssign(liveCurriculum.id, {
-        assignmentType: assignType,
-        targetId,
-        targetLabel,
+      const toAdd = targets.map((t) => ({
+        assignmentType,
+        targetId: t.targetId,
+        targetLabel: t.targetLabel,
         dueDate: dueDate || '',
-      });
-      setFeedbackMsg('✅ Đã phân bổ giáo trình thành công!');
+      }));
+      handleAssign(liveCurriculum.id, toAdd);
+      setFeedbackMsg(`✅ Đã phân bổ giáo trình thành công cho ${targets.length} đối tượng!`);
     } else if (isHrbp && handlePropose) {
-      handlePropose(
-        liveCurriculum.id,
-        {
-          assignmentType: assignType,
-          targetId,
-          targetLabel,
-          dueDate: dueDate || '',
-        },
-        justification
-      );
-      setFeedbackMsg('📋 Đã gửi đơn đề xuất phân bổ giáo trình tới User Admin để phê duyệt!');
+      targets.forEach((t) => {
+        handlePropose(
+          liveCurriculum.id,
+          {
+            assignmentType,
+            targetId: t.targetId,
+            targetLabel: t.targetLabel,
+            dueDate: dueDate || '',
+          },
+          justification
+        );
+      });
+      setFeedbackMsg(`📋 Đã gửi ${targets.length} đơn đề xuất phân bổ giáo trình tới User Admin để phê duyệt!`);
     }
 
     setShowAssignForm(false);
-    setDueDate('');
-    setJustification('');
     setTimeout(() => setFeedbackMsg(null), 5000);
   }
 
@@ -718,196 +975,23 @@ function CurriculumDetailModal({
             <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
               {isHrbp
                 ? 'HRBP có thể gửi đơn đề xuất phân bổ giáo trình cho nhân sự/bộ phận lên User Admin duyệt:'
-                : 'Phân bổ giáo trình cho đơn vị hoặc cá nhân học viên bắt buộc tuân thủ:'}
+                : 'Phân bổ giáo trình cho đơn vị hoặc cá nhân học viên bắt buộc tuân thủ (hỗ trợ chọn nhiều):'}
             </div>
             {(canDirectAssign || canPropose) && !showAssignForm && (
-              <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-plus'} onClick={handleOpenAssignForm}>
+              <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-plus'} onClick={() => setShowAssignForm(true)}>
                 {isHrbp ? 'Đề Xuất Gán Giáo Trình (Gửi Duyệt)' : 'Gán Đối Tượng Mới'}
               </Button>
             )}
           </div>
 
           {showAssignForm && (
-            <div className="card card-pad" style={{ background: 'var(--paper-sunken)', marginBottom: 16, border: '1px solid var(--line-strong)' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: isHrbp ? '#0369A1' : 'var(--rail)' }}>
-                <i className={isHrbp ? 'ti ti-send' : 'ti-user-plus'} />
-                {isHrbp ? 'Đề Xuất Phân Bổ Giáo Trình (Gửi Lên User Admin Phê Duyệt)' : 'Gán Giáo Trình Cho Đối Tượng Mới'}
-              </div>
-              <form onSubmit={handleSaveAssignment}>
-                {assignType === 'USER' ? (
-                  <>
-                    <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
-                      <div>
-                        <label className="field-label" style={{ fontSize: 11.5 }}>Loại đối tượng (Target Type)</label>
-                        <select
-                          className="field-select"
-                          style={{ fontSize: 12, height: 34, width: '100%' }}
-                          value={assignType}
-                          onChange={(e) => {
-                            const nextType = e.target.value;
-                            setAssignType(nextType);
-                            const nextOpts = targetOptionsFor(nextType) || [];
-                            setTargetId(nextOpts[0]?.id || '');
-                          }}
-                        >
-                          {ASSIGNMENT_TYPES.map((t) => (
-                            <option key={t} value={t}>{assignmentTypeLabel(t)}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="field-label" style={{ fontSize: 11.5, color: 'var(--blue)', fontWeight: 700 }}>
-                          <i className="ti ti-filter" /> Lọc theo Cấp Bậc (Job Level)
-                        </label>
-                        <select
-                          className="field-select"
-                          style={{ fontSize: 12, height: 34, width: '100%', borderColor: 'var(--blue)' }}
-                          value={userLevelFilter}
-                          onChange={(e) => setUserLevelFilter(e.target.value)}
-                        >
-                          <option value="ALL">Tất Cả Cấp Bậc (Level 1 - 7)</option>
-                          <option value="1">Level 1 - Director / Ban Giám Đốc</option>
-                          <option value="2">Level 2 - Head of Division / Trưởng Khối</option>
-                          <option value="3">Level 3 - Department Manager / Trưởng Phòng</option>
-                          <option value="4">Level 4 - Section Manager / Supervisor Quản Lý</option>
-                          <option value="5">Level 5 - Officer / Chuyên Viên</option>
-                          <option value="6">Level 6 - Senior Associate / Trưởng Nhóm</option>
-                          <option value="7">Level 7 - Junior Associate / Nhân Viên</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="field-label" style={{ fontSize: 11.5, color: 'var(--rail)', fontWeight: 700 }}>
-                          <i className="ti ti-git-branch" /> Lọc theo Sub-Department
-                        </label>
-                        <select
-                          className="field-select"
-                          style={{ fontSize: 12, height: 34, width: '100%', borderColor: 'var(--rail)' }}
-                          value={userSubDeptFilter}
-                          onChange={(e) => setUserSubDeptFilter(e.target.value)}
-                        >
-                          <option value="ALL">Tất Cả Sub-Departments</option>
-                          {subDepartments.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name} ({s.code})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
-                      <div>
-                        <label className="field-label" style={{ fontSize: 11.5 }}>Tìm kiếm nhân sự</label>
-                        <div style={{ position: 'relative' }}>
-                          <i className="ti ti-search" style={{ position: 'absolute', left: 9, top: 9, color: 'var(--ink-faint)', fontSize: 13 }} />
-                          <input
-                            type="text"
-                            className="field-input"
-                            style={{ fontSize: 12, height: 34, paddingLeft: 28, width: '100%' }}
-                            placeholder="Nhập tên, mã NV, phòng ban, sub-department..."
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="field-label" style={{ fontSize: 11.5 }}>
-                          Chọn người dùng ({visibleUserOptions.length} người phù hợp)
-                        </label>
-                        <select
-                          className="field-select"
-                          style={{ fontSize: 12, height: 34, width: '100%' }}
-                          value={targetId}
-                          onChange={(e) => setTargetId(e.target.value)}
-                          required
-                          disabled={visibleUserOptions.length === 0}
-                        >
-                          {visibleUserOptions.map((o) => (
-                            <option key={o.id} value={o.id}>{o.label}</option>
-                          ))}
-                          {visibleUserOptions.length === 0 && (
-                            <option value="">Không có nhân sự phù hợp bộ lọc</option>
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11.5 }}>Loại đối tượng (Target Type)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 12, height: 34, width: '100%' }}
-                        value={assignType}
-                        onChange={(e) => {
-                          const nextType = e.target.value;
-                          setAssignType(nextType);
-                          const nextOpts = targetOptionsFor(nextType) || [];
-                          setTargetId(nextOpts[0]?.id || '');
-                        }}
-                      >
-                        {ASSIGNMENT_TYPES.map((t) => (
-                          <option key={t} value={t}>{assignmentTypeLabel(t)}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11.5 }}>
-                        {assignType === 'SUBDEPARTMENT' ? 'Chọn Bộ Phận Trực Thuộc (Sub-Department)' : 'Chọn mục tiêu phân bổ'}
-                      </label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 12, height: 34, width: '100%' }}
-                        value={targetId}
-                        onChange={(e) => setTargetId(e.target.value)}
-                        required
-                      >
-                        {targetOptions.map((o) => (
-                          <option key={o.id} value={o.id}>{o.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-2" style={{ gap: 10, marginBottom: 14 }}>
-                  <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Hạn hoàn thành (Due Date)</label>
-                    <input
-                      type="date"
-                      className="field-input"
-                      style={{ fontSize: 12, height: 34, width: '100%' }}
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                    />
-                  </div>
-                  {isHrbp && (
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11.5 }}>Lý do / Căn cứ đề xuất cho User Admin</label>
-                      <input
-                        type="text"
-                        className="field-input"
-                        style={{ fontSize: 12, height: 34, width: '100%' }}
-                        placeholder="VD: Đề xuất bổ sung năng lực cho đội ngũ kế nhiệm SGM..."
-                        value={justification}
-                        onChange={(e) => setJustification(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  <Button size="sm" variant="ghost" onClick={() => setShowAssignForm(false)}>Hủy</Button>
-                  <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-check'} type="submit" disabled={!targetId}>
-                    {isHrbp ? 'Gửi Đơn Phê Duyệt Cho User Admin' : 'Xác Nhận Phân Bổ'}
-                  </Button>
-                </div>
-              </form>
-            </div>
+            <MultiTargetAssigner
+              onSave={handleSaveAssignment}
+              onCancel={() => setShowAssignForm(false)}
+              isHrbp={isHrbp}
+            />
           )}
 
-          {/* DANH SÁCH ĐỀ XUẤT ĐANG CHỜ USER ADMIN PHÊ DUYỆT */}
           {pendingProposals.length > 0 && (
             <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -918,12 +1002,14 @@ function CurriculumDetailModal({
                   <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #FEF3C7', fontSize: 12, flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{p.targetLabel}</span>
-                      <span style={{ color: 'var(--ink-soft)', marginLeft: 8 }}>
-                        · Đề xuất bởi: <strong>{p.requesterName}</strong> ({p.requestDate})
-                        {p.dueDate && ` · Hạn: ${p.dueDate}`}
-                      </span>
+                      <span style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>({assignmentTypeLabel(p.assignmentType)})</span>
+                      {p.justification && (
+                        <div style={{ color: 'var(--ink-soft)', fontSize: 11.5, marginTop: 2, fontStyle: 'italic' }}>
+                          Lý do: {p.justification}
+                        </div>
+                      )}
                     </div>
-                    <Badge tone="amber" icon="ti-clock">Chờ User Admin Duyệt</Badge>
+                    <Badge tone="amber" size="sm">Đang Chờ Duyệt</Badge>
                   </div>
                 ))}
               </div>
@@ -934,9 +1020,6 @@ function CurriculumDetailModal({
             <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
               <i className="ti ti-target-arrow" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
               Chưa có đối tượng nào được gán chính thức giáo trình này.
-              {isHrbp
-                ? ' Bấm "Đề Xuất Gán Giáo Trình (Gửi Duyệt)" để gửi đơn lên User Admin.'
-                : ' Bấm "Gán Đối Tượng Mới" để phân bổ cho BU, Division, Department, Sub-Dept hoặc User.'}
             </div>
           ) : (
             <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
@@ -1000,14 +1083,265 @@ function CurriculumDetailModal({
   );
 }
 
+function CourseDetailModal({
+  course: initialCourse,
+  courses,
+  onClose,
+  onEdit,
+  isAdmin,
+  currentUser,
+}) {
+  const {
+    courses: storeCourses,
+    assignCourse,
+    removeCourseAssignment,
+  } = useCourseStore();
+
+  const liveCourse = (storeCourses || courses || []).find((c) => c.id === initialCourse.id) || initialCourse;
+  const assignments = liveCourse.assignments || (liveCourse.assignment ? [liveCourse.assignment] : []);
+
+  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'assignments'
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  const formatBadge = courseFormatBadge(liveCourse);
+  const targetLevels = liveCourse.targetLevels && liveCourse.targetLevels.length > 0
+    ? liveCourse.targetLevels
+    : liveCourse.targetLevel ? [liveCourse.targetLevel] : ['7'];
+
+  function handleSaveAssignment({ assignmentType, targets, dueDate }) {
+    const toAdd = targets.map((t) => ({
+      assignmentType,
+      targetId: t.targetId,
+      targetLabel: t.targetLabel,
+      dueDate: dueDate || '',
+    }));
+    assignCourse(liveCourse.id, toAdd);
+    setFeedbackMsg(`✅ Đã phân bổ khóa học thành công cho ${targets.length} đối tượng!`);
+    setShowAssignForm(false);
+    setTimeout(() => setFeedbackMsg(null), 5000);
+  }
+
+  return (
+    <Modal
+      isOpen
+      title={liveCourse.title}
+      subtitle={`${liveCourse.code} · ${liveCourse.category || liveCourse.domain || 'General'} · Version ${liveCourse.version || 'v1.0'} · ${assignments.length} đối tượng được gán`}
+      onClose={onClose}
+      size="lg"
+      footer={(
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <Badge tone={formatBadge.tone}>{formatBadge.icon} {formatBadge.label}</Badge>
+            <Badge tone={STATUS_TONE[liveCourse.status]}>{liveCourse.status || 'PUBLISHED'}</Badge>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {isAdmin && (
+              <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(liveCourse)}>
+                Chỉnh Sửa (Course Builder)
+              </Button>
+            )}
+            <Button variant="ghost" onClick={onClose}>Đóng</Button>
+          </div>
+        </div>
+      )}
+    >
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
+          <button
+            type="button"
+            className={`btn btn-sm ${activeTab === 'info' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setActiveTab('info')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <i className="ti ti-info-circle" /> Thông Tin &amp; Nội Dung
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${activeTab === 'assignments' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setActiveTab('assignments')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'info' ? (
+        <div>
+          {/* Header Banner */}
+          <div style={{ display: 'flex', gap: 14, marginBottom: 16, background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--line)' }}>
+            <img
+              src={getCourseImage(liveCourse)}
+              alt={liveCourse.title}
+              style={{ width: 100, height: 100, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--line)' }}
+            />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)', marginBottom: 4 }}>{liveCourse.title}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>{liveCourse.description}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12 }}>
+                <span><strong>Thời lượng:</strong> {liveCourse.estimatedDuration || liveCourse.estimatedHours || '2h'}</span>
+                <span>&middot;</span>
+                <span><strong>Cấp bậc mục tiêu:</strong> {targetLevels.map((l) => `Level ${l}`).join(', ')}</span>
+                <span>&middot;</span>
+                <span><strong>Loại khóa:</strong> <CourseTypeBadge courseType={liveCourse.courseType} /></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Module / Logistics Content */}
+          {liveCourse.onlineClassType === 'VIRTUAL_CLASS' ? (
+            <div className="card card-pad" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#92400E', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-broadcast" /> Thông Tin Lớp Học Trực Tuyến Live
+              </div>
+              <div className="grid grid-2" style={{ gap: 10, fontSize: 12.5 }}>
+                <div><strong>Nền tảng:</strong> {liveCourse.virtualMeeting?.platform || 'Microsoft Teams'}</div>
+                <div><strong>Giảng viên chủ trì:</strong> {liveCourse.virtualMeeting?.instructorName || 'Chưa phân công'}</div>
+                <div><strong>Lịch học:</strong> {liveCourse.virtualMeeting?.scheduleDate || '—'} ({liveCourse.virtualMeeting?.scheduleTime || '—'})</div>
+                <div><strong>Link phòng họp:</strong> <a href={liveCourse.virtualMeeting?.meetingUrl || '#'} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>{liveCourse.virtualMeeting?.meetingUrl || '—'}</a></div>
+              </div>
+            </div>
+          ) : (liveCourse.deliveryType === 'IN_PERSON_CLASSROOM' || liveCourse.modality === 'CLASSROOM_LAB') ? (
+            <div className="card card-pad" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-school" /> Thông Tin Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành
+              </div>
+              <div className="grid grid-2" style={{ gap: 10, fontSize: 12.5 }}>
+                <div><strong>Giảng viên:</strong> {liveCourse.trainerName || 'Nguyen Van Hung'}</div>
+                <div><strong>Địa điểm / Xưởng:</strong> {liveCourse.venue || 'Fresh Food & Bakery Lab'}</div>
+                <div><strong>Lịch đào tạo:</strong> {liveCourse.scheduleDate || '2026-08-28'} ({liveCourse.scheduleTime || '08:30 - 11:30'})</div>
+                <div><strong>Sức chứa:</strong> {liveCourse.maxCapacity || 25} học viên &middot; Live QR Attendance</div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 10 }}>
+                Cấu Trúc Mô-đun &amp; Bài Học ({liveCourse.modules?.length || 2} modules)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(liveCourse.modules || [{ id: 'm1', title: 'Module 1: Tổng quan nội dung', lessons: [] }]).map((m, idx) => (
+                  <div key={m.id || idx} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}>
+                    <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)', marginBottom: 6 }}>
+                      {idx + 1}. {m.title}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 12 }}>
+                      {(m.lessons || []).map((l, lIdx) => (
+                        <div key={l.id || lIdx} style={{ fontSize: 12, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <i className={`ti ${l.lessonType === 'VIDEO' ? 'ti-video' : l.lessonType === 'SCORM' ? 'ti-package' : l.lessonType === 'PPT' ? 'ti-presentation' : l.lessonType === 'ASSESSMENT' ? 'ti-writing' : 'ti-file-text'}`} />
+                          <span>{l.title}</span>
+                          <Badge tone="slate" size="sm">{l.lessonType || 'E-Learning'}</Badge>
+                        </div>
+                      ))}
+                      {(!m.lessons || m.lessons.length === 0) && (
+                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Bao gồm học liệu trực tuyến, slide tương tác và video thực tế.</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          {feedbackMsg && (
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: 12.5, fontWeight: 600, marginBottom: 14 }}>
+              {feedbackMsg}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+              Phân bổ khóa học bắt buộc cho BU, Division, Department, Sub-Dept, Store hoặc nhiều nhân sự cụ thể (chọn nhiều):
+            </div>
+            {isAdmin && !showAssignForm && (
+              <Button size="sm" variant="primary" icon="ti-plus" onClick={() => setShowAssignForm(true)}>
+                Gán Đối Tượng Mới
+              </Button>
+            )}
+          </div>
+
+          {showAssignForm && (
+            <MultiTargetAssigner
+              onSave={handleSaveAssignment}
+              onCancel={() => setShowAssignForm(false)}
+            />
+          )}
+
+          {assignments.length === 0 ? (
+            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
+              <i className="ti ti-target-arrow" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
+              Chưa có đối tượng nào được gán khóa học này. Bấm "Gán Đối Tượng Mới" để phân bổ.
+            </div>
+          ) : (
+            <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+              <table className="table" style={{ margin: 0, fontSize: 12.5 }}>
+                <thead>
+                  <tr style={{ background: 'var(--paper-sunken)' }}>
+                    <th>Phân Loại</th>
+                    <th>Tên Đối Tượng Được Gán</th>
+                    <th>Hạn Chót</th>
+                    <th>Ngày Gán</th>
+                    {isAdmin && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignments.map((asg, index) => (
+                    <tr key={asg.id || index}>
+                      <td>
+                        <Badge tone="rail" size="sm">{assignmentTypeLabel(asg.assignmentType)}</Badge>
+                      </td>
+                      <td style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                        {asg.targetLabel || resolveTargetLabel(asg.assignmentType, asg.targetId)}
+                      </td>
+                      <td>
+                        {asg.dueDate ? (
+                          <span style={{ color: 'var(--ink-soft)' }}>
+                            <i className="ti ti-calendar" style={{ marginRight: 4 }} />
+                            {asg.dueDate}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--ink-faint)' }}>Không giới hạn</span>
+                        )}
+                      </td>
+                      <td style={{ color: 'var(--ink-faint)', fontSize: 11.5 }}>
+                        {asg.assignedAt || '—'}
+                      </td>
+                      {isAdmin && (
+                        <td style={{ textAlign: 'right' }}>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            icon="ti-trash"
+                            onClick={() => {
+                              if (window.confirm(`Hủy phân bổ khóa học này cho "${asg.targetLabel || asg.targetId}"?`)) {
+                                removeCourseAssignment(liveCourse.id, asg.id);
+                              }
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 function CurriculumEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
   const [form, setForm] = useState(() => ({
     ...draft,
     category: draft.category || companyCategories[0] || 'Store Operations',
     assignments: draft.assignments || [],
   }));
-
-  const eLearningCourses = courses.filter((c) => catalogSectionOf(c) === CATALOG_SECTIONS.LEARNING_OBJECTS);
 
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [levelFilter, setLevelFilter] = useState('ALL');
