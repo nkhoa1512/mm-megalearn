@@ -8,6 +8,7 @@ import { Badge, ProgressBar, Button } from '../ui';
 const LESSON_ICON = {
   SCORM: 'ti-package', VIDEO: 'ti-video', PDF: 'ti-file-text',
   PPT: 'ti-presentation', EXTERNAL_LINK: 'ti-external-link', ASSESSMENT: 'ti-writing',
+  QUIZ: 'ti-writing',
 };
 
 function CourseNode({ course, userEnrollment, onNavigateCourse }) {

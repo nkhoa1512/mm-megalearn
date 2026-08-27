@@ -19,7 +19,7 @@ import { generateCourseCode } from '../../utils/courseCatalog';
 // 5 định dạng truyền tải nội dung này.
 const LESSON_ICON = {
   SCORM: 'ti-package', VIDEO: 'ti-video', PDF: 'ti-file-text',
-  PPT: 'ti-presentation', EXTERNAL_LINK: 'ti-external-link', ASSESSMENT: 'ti-writing',
+  PPT: 'ti-presentation', EXTERNAL_LINK: 'ti-external-link',
 };
 const EXTERNAL_LINK_PLATFORMS = [
   { value: 'UDEMY', label: 'Udemy' },
@@ -76,12 +76,11 @@ function deriveModalityFormat(deliveryType, onlineClassType) {
 function defaultRuleFor(lessonType) {
   if (lessonType === 'VIDEO') return { requiredWatchPercent: 90 };
   if (lessonType === 'PPT' || lessonType === 'SCORM') return { requireAllViewed: true };
-  if (lessonType === 'ASSESSMENT') return {};
   return { requiredReadPercent: 90 };
 }
 
 function defaultContentFor(lessonType) {
-  if (lessonType === 'PPT' || lessonType === 'SCORM' || lessonType === 'ASSESSMENT') return {};
+  if (lessonType === 'PPT' || lessonType === 'SCORM') return {};
   if (lessonType === 'EXTERNAL_LINK') return { platform: 'UDEMY', url: '' };
   return { url: '', fileName: null, fileType: null };
 }
@@ -788,7 +787,17 @@ export default function AdminCourseBuilder() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { courses, addCourse, updateCourse, publishNewCourseVersion, companyCategories, currentUser: authUser } = useCourseStore();
+  const {
+    courses,
+    addCourse,
+    updateCourse,
+    publishNewCourseVersion,
+    companyCategories,
+    currentUser: authUser,
+    assessments,
+    addAssessment,
+    updateAssessment,
+  } = useCourseStore();
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
@@ -1112,6 +1121,59 @@ export default function AdminCourseBuilder() {
       const withVersion = { ...toSave, versionHistory: [entry, ...(draft.versionHistory || [])] };
       updateCourse(draft.id, withVersion);
     }
+
+    // Tự động đồng bộ bài Assessment gắn liền với Course này vào hệ thống Quản lý Assessment
+    if (draft.config?.assessmentEnabled) {
+      const existingAsm = (assessments || []).find((a) => a.courseId === draft.id || (a.courseIds && a.courseIds.includes(draft.id)));
+      const courseAsm = {
+        id: existingAsm?.id || `ASM-CRS-${draft.id}`,
+        code: existingAsm?.code || `ASM-${draft.code || draft.id}`,
+        title: `Bài Đánh Giá Cuối Khóa: ${draft.title}`,
+        description: `Bài kiểm tra đánh giá kiến thức sau khi hoàn thành khóa học ${draft.title}.`,
+        type: 'QUIZ',
+        types: ['QUIZ'],
+        contentFormat: 'INTERACTIVE_BANK',
+        deliveryFormat: 'COURSE_LINKED',
+        courseId: draft.id,
+        courseIds: [draft.id],
+        courseTitle: draft.title,
+        isCourseExclusive: true,
+        category: draft.category || 'General',
+        categories: draft.categories || [draft.category || 'General'],
+        status: 'PUBLISHED',
+        timeLimitMinutes: draft.config.assessmentTimeLimit || 20,
+        passingScorePercent: draft.config.passingScorePercent || 80,
+        maxAttempts: draft.config.maxAttempts || 3,
+        questionsPerAttempt: draft.config.questionsPerAttempt || 3,
+        questionTypesList: ['Single Choice', 'Multiple Choice'],
+        antiCheatSettings: {
+          enforceFullscreen: true,
+          detectTabSwitch: true,
+          maxTabSwitches: 3,
+          randomizeQuestions: draft.config.randomizeQuestions ?? true,
+          randomizeOptions: draft.config.randomizeAnswers ?? true,
+          showWatermark: true,
+          webcamProctoringSimulation: false,
+          preventCopyPaste: true,
+        },
+        feedbackSettings: {
+          showAnswersAfterSubmit: draft.config.showCorrectAnswers !== 'NEVER',
+          showExplanations: true,
+          allowReview: true,
+        },
+        questionIds: (draft.questionBank || []).map((q) => q.id),
+        createdBy: authUser?.userId || 'USR-ADMIN',
+        createdByName: authUser?.fullName || 'L&D Admin',
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+
+      if (existingAsm) {
+        updateAssessment(existingAsm.id, courseAsm);
+      } else {
+        addAssessment(courseAsm);
+      }
+    }
+
     // Lưu xong quay về danh sách khóa học (Create lẫn Save Changes) — Admin
     // muốn sửa tiếp thì bấm Edit lại từ danh sách, không giữ lại trên form.
     navigate('/admin/courses');
@@ -2365,7 +2427,7 @@ function LessonEditor({ lesson, onChange, onRemove }) {
             value={lesson.lessonType}
             onChange={(e) => onChange({ lessonType: e.target.value, rule: defaultRuleFor(e.target.value), content: defaultContentFor(e.target.value) })}
           >
-            {['SCORM', 'VIDEO', 'PDF', 'PPT', 'EXTERNAL_LINK', 'ASSESSMENT'].map((t) => <option key={t} value={t}>{t}</option>)}
+            {['SCORM', 'VIDEO', 'PDF', 'PPT', 'EXTERNAL_LINK'].map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={lesson.isRequired} onChange={(e) => onChange({ isRequired: e.target.checked })} /> Required
@@ -2523,9 +2585,6 @@ function LessonRuleFields({ lesson, onChange }) {
   }
   if (lesson.lessonType === 'EXTERNAL_LINK') {
     return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Hoàn thành = học viên bấm xác nhận đã học xong tại nền tảng đối tác.</span>;
-  }
-  if (lesson.lessonType === 'ASSESSMENT') {
-    return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Uses the course assessment configuration below.</span>;
   }
   return (
     <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>

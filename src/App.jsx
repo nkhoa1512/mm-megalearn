@@ -173,6 +173,7 @@ function Shell({ role, setRole }) {
               <Route path="/learner/courses/:courseId" element={<LearnerCourseDetail />} />
               <Route path="/learner/courses/:courseId/lessons/:lessonId" element={<LessonPlayer />} />
               <Route path="/learner/courses/:courseId/assessment" element={<AssessmentPlayer />} />
+              <Route path="/learner/assessment/:assessmentId" element={<AssessmentPlayer basePath="/learner/catalog?tab=assessment" />} />
               <Route path="/learner/classrooms" element={<LearnerClassrooms />} />
               <Route path="/learner/paths" element={<LearnerLearningPaths />} />
               <Route path="/learner/ai-hub" element={<AiLearningHub />} />
@@ -185,6 +186,7 @@ function Shell({ role, setRole }) {
               <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
               <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
+              <Route path="/my-learning/assessment/:assessmentId" element={<AssessmentPlayer basePath="/my-learning" />} />
               <Route path="/my-learning-dashboard" element={<LearnerDashboard />} />
               <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
@@ -203,8 +205,11 @@ function Shell({ role, setRole }) {
               <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
               <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
               <Route path="/manager/learning/:courseId/assessment" element={<AssessmentPlayer basePath="/manager/learning" />} />
+              <Route path="/manager/assessment/:assessmentId" element={<AssessmentPlayer basePath="/manager/catalog?tab=assessment" />} />
               <Route path="/manager/certificates" element={<ManagerCertificates />} />
               <Route path="/manager/catalog" element={<AdminCourses />} />
+
+              <Route path="/assessment/:assessmentId" element={<AssessmentPlayer basePath="/admin/courses?tab=assessment" />} />
 
               {/* HRBP Routes */}
               <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />

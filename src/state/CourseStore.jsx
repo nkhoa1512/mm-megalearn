@@ -21,6 +21,7 @@ import { translate, translateDomain, translateStatus, translateDelivery, getLoca
 import { curricula as initialCurricula } from '../data/mockData';
 import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -41,6 +42,9 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // tồn tại trước bản Catalog 5-Phân-Hệ này.
 const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
+const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
+const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
+const ATTEMPT_KEY = 'mm-megalearn-assessment-attempts-v1';
 const INTERVENTION_KEY = 'mm-megalearn-interventions-v2';
 const SUCCESSION_KEY = 'mm-megalearn-succession-v2';
 const ALIGNMENT_KEY = 'mm-megalearn-alignment-v1';
@@ -275,6 +279,11 @@ export function CourseStoreProvider({ children }) {
   const [successionAlignments, setSuccessionAlignments] = useState(() => loadItem(ALIGNMENT_KEY, DEFAULT_ALIGNMENTS));
   const [complianceNudges, setComplianceNudges] = useState(() => loadItem(COMPLIANCE_NUDGES_KEY, []));
 
+  // Enterprise Assessment system (Quiz, Assignment, Survey, Question Bank, Attempts)
+  const [assessments, setAssessments] = useState(() => loadItem(ASSESSMENT_KEY, INITIAL_ASSESSMENTS));
+  const [questionBanks, setQuestionBanks] = useState(() => loadItem(QUESTION_BANK_KEY, QUESTION_BANK));
+  const [assessmentAttempts, setAssessmentAttempts] = useState(() => loadItem(ATTEMPT_KEY, INITIAL_ASSESSMENT_ATTEMPTS));
+
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeAiTab, setActiveAiTab] = useState('tutor');
@@ -316,6 +325,9 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
       localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
       localStorage.setItem(COMPLIANCE_NUDGES_KEY, JSON.stringify(complianceNudges));
+      localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(assessments));
+      localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify(questionBanks));
+      localStorage.setItem(ATTEMPT_KEY, JSON.stringify(assessmentAttempts));
       localStorage.setItem(THEME_KEY, JSON.stringify(theme));
       localStorage.setItem(LANG_KEY, JSON.stringify(language));
       if (typeof document !== 'undefined') {
@@ -324,7 +336,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -589,6 +601,75 @@ export function CourseStoreProvider({ children }) {
     setComplianceNudges((prev) => [newNudge, ...prev]);
     return newNudge;
   }, [currentUser]);
+
+  // -------------------------------------------------------------------------
+  // Enterprise Assessment: Quizzes, Assignments, Surveys, Question Bank, Attempts
+  // -------------------------------------------------------------------------
+
+  const addAssessment = useCallback((draft) => {
+    const newAsm = {
+      id: draft.id || `ASM-${Date.now()}`,
+      code: draft.code || `ASM-${String(Date.now()).slice(-6)}`,
+      createdAt: new Date().toISOString().slice(0, 10),
+      updatedAt: new Date().toISOString().slice(0, 10),
+      createdBy: currentUser?.userId || 'USR-ADMIN',
+      createdByName: currentUser?.fullName || 'Administrator',
+      status: draft.status || 'PUBLISHED',
+      assignments: draft.assignments || [],
+      questionIds: draft.questionIds || [],
+      ...draft,
+    };
+    setAssessments((prev) => [newAsm, ...prev]);
+    return newAsm;
+  }, [currentUser]);
+
+  const updateAssessment = useCallback((id, patch) => {
+    setAssessments((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString().slice(0, 10) } : a)));
+  }, []);
+
+  const deleteAssessment = useCallback((id) => {
+    setAssessments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
+  const assignAssessmentTarget = useCallback((assessmentId, assignment) => {
+    setAssessments((prev) => prev.map((a) => {
+      if (a.id !== assessmentId) return a;
+      const current = a.assignments || [];
+      const updated = [...current.filter((x) => x.targetId !== assignment.targetId), assignment];
+      return { ...a, assignments: updated, updatedAt: new Date().toISOString().slice(0, 10) };
+    }));
+  }, []);
+
+  const removeAssessmentTarget = useCallback((assessmentId, targetId) => {
+    setAssessments((prev) => prev.map((a) => {
+      if (a.id !== assessmentId) return a;
+      return { ...a, assignments: (a.assignments || []).filter((x) => x.targetId !== targetId), updatedAt: new Date().toISOString().slice(0, 10) };
+    }));
+  }, []);
+
+  const recordAssessmentAttempt = useCallback((attempt) => {
+    const newAttempt = {
+      attemptId: attempt.attemptId || `ATT-${Date.now()}`,
+      startTime: attempt.startTime || new Date().toISOString(),
+      endTime: attempt.endTime || new Date().toISOString(),
+      userId: attempt.userId || currentUser?.userId,
+      userName: attempt.userName || currentUser?.fullName,
+      userRole: attempt.userRole || currentUser?.role,
+      userLevel: attempt.userLevel || currentUser?.level,
+      ...attempt,
+    };
+    setAssessmentAttempts((prev) => [newAttempt, ...prev]);
+    return newAttempt;
+  }, [currentUser]);
+
+  const addQuestionToBank = useCallback((question) => {
+    const newQ = {
+      id: question.id || `QB-${Date.now()}`,
+      ...question,
+    };
+    setQuestionBanks((prev) => [...prev, newQ]);
+    return newQ;
+  }, []);
 
   // -------------------------------------------------------------------------
   // Sequential Level Gate: đơn xin học vượt cấp & trạng thái truy cập khóa học
@@ -1229,6 +1310,16 @@ export function CourseStoreProvider({ children }) {
         proposeCurriculumAssignment,
         removeCurriculumAssignment,
         myCurriculumProposals,
+        assessments,
+        addAssessment,
+        updateAssessment,
+        deleteAssessment,
+        assignAssessmentTarget,
+        removeAssessmentTarget,
+        questionBanks,
+        addQuestionToBank,
+        assessmentAttempts,
+        recordAssessmentAttempt,
         companyCategories,
         addCompanyCategory,
         accessFor,

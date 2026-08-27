@@ -17,6 +17,12 @@ import {
   assignmentTargetSummary, resolveTargetLabel,
   visibleCurriculaFor, curriculumAccessOf, CURRICULUM_ACCESS_MODE,
 } from '../../utils/curriculumAssignment';
+import AssessmentEditorModal from '../../components/assessment/AssessmentEditorModal';
+import AssessmentDetailModal from '../../components/assessment/AssessmentDetailModal';
+import {
+  getAssessmentAccess, filterAssessments, buildAssessmentGroups, ASSESSMENT_GROUP_BY_OPTIONS,
+} from '../../utils/assessmentCatalog';
+import { DELIVERY_FORMATS, ASSESSMENT_TYPES } from '../../data/assessmentData';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
@@ -26,6 +32,7 @@ const CATALOG_TABS = [
   { id: 'classroom', label: 'Classroom / In-Person', icon: 'ti-chalkboard', section: CATALOG_SECTIONS.CLASSROOM },
   { id: 'curriculum', label: 'Curriculum', icon: 'ti-books' },
   { id: 'library', label: 'Library Course', icon: 'ti-database' },
+  { id: 'assessment', label: 'Assessment', icon: 'ti-writing' },
 ];
 
 const COURSE_GROUP_BY_OPTIONS = [
@@ -48,6 +55,9 @@ export default function AdminCourses() {
     companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
     assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
     approvals, myEnrollments,
+    assessments, addAssessment, updateAssessment, deleteAssessment,
+    assignAssessmentTarget, removeAssessmentTarget,
+    questionBanks, addQuestionToBank, assessmentAttempts,
   } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
@@ -169,6 +179,65 @@ export default function AdminCourses() {
 
   const isLibrary = activeTabDef.id === 'library';
   const isCurriculum = activeTabDef.id === 'curriculum';
+  const isAssessment = activeTabDef.id === 'assessment';
+
+  // Assessment management & catalog state
+  const [editingAssessment, setEditingAssessment] = useState(null);
+  const [viewingAssessment, setViewingAssessment] = useState(null);
+  const [assessmentSearch, setAssessmentSearch] = useState('');
+  const [selectedAssessmentType, setSelectedAssessmentType] = useState('ALL');
+  const [selectedAssessmentFormat, setSelectedAssessmentFormat] = useState('ALL');
+  const [selectedAssessmentCategory, setSelectedAssessmentCategory] = useState('ALL');
+  const [selectedAssessmentStatus, setSelectedAssessmentStatus] = useState('ALL');
+  const [assessmentGroupBy, setAssessmentGroupBy] = useState('NONE');
+  const [collapsedAssessmentGroups, setCollapsedAssessmentGroups] = useState(new Set());
+
+  const visibleAssessments = useMemo(() => {
+    return (assessments || []).filter((asm) => {
+      if (asm.status === 'DRAFT') {
+        if (isFullAdmin) return true;
+        if (role === 'trainer' && asm.createdBy === currentUser?.userId) return true;
+        return false;
+      }
+      return true;
+    });
+  }, [assessments, isFullAdmin, role, currentUser]);
+
+  const filteredAssessments = useMemo(() => {
+    return filterAssessments(visibleAssessments, {
+      search: assessmentSearch,
+      selectedType: selectedAssessmentType,
+      selectedFormat: selectedAssessmentFormat,
+      selectedCategory: selectedAssessmentCategory,
+      selectedStatus: selectedAssessmentStatus,
+      currentUser,
+      courses,
+    });
+  }, [visibleAssessments, assessmentSearch, selectedAssessmentType, selectedAssessmentFormat, selectedAssessmentCategory, selectedAssessmentStatus, currentUser, courses]);
+
+  const assessmentGroups = useMemo(() => {
+    return buildAssessmentGroups(filteredAssessments, assessmentGroupBy);
+  }, [filteredAssessments, assessmentGroupBy]);
+
+  function toggleAssessmentGroup(key) {
+    setCollapsedAssessmentGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  const assessmentPlayerBasePath = role === 'manager'
+    ? '/manager/assessment'
+    : role === 'learner'
+    ? '/learner/assessment'
+    : '/my-learning/assessment';
+
+  const learnerCourseBasePath = role === 'manager'
+    ? '/manager/learning'
+    : role === 'learner'
+    ? '/learner/courses'
+    : '/my-learning';
 
   // Bộ lọc Trạng Thái Vòng Đời và Gộp Nhóm áp dụng cho MỌI tab liệt kê khóa
   // học (Learning Objects/Online Class/Classroom/Library), không riêng gì
@@ -176,7 +245,7 @@ export default function AdminCourses() {
   // còn 3 tab kia lọc thêm theo đúng section của tab đang mở. Với role KHÔNG
   // PHẢI Full Admin, bộ trạng thái đổi sang góc nhìn cá nhân hóa (xem
   // personalLifecycleStatusOf) thay vì Nháp/Chưa Mở/Đang Mở/Đã Đóng của Admin.
-  const filtered = isCurriculum
+  const filtered = isCurriculum || isAssessment
     ? []
     : bySearchCategoryType.filter((c) => {
       if (!isLibrary && catalogSectionOf(c) !== activeTabDef.section) return false;
@@ -187,7 +256,7 @@ export default function AdminCourses() {
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const groups = isCurriculum ? null : buildCourseGroups(filtered, groupBy, { personal: !isFullAdmin });
+  const groups = isCurriculum || isAssessment ? null : buildCourseGroups(filtered, groupBy, { personal: !isFullAdmin });
 
   function toggleGroup(key) {
     setCollapsedGroups((prev) => {
@@ -346,7 +415,7 @@ export default function AdminCourses() {
               : 'Thiết lập mô-đun bài học, bài kiểm tra tương tác, ngân hàng câu hỏi và phân bổ đào tạo bắt buộc theo Khối, Phòng ban hoặc Cấp bậc định biên.'}
           </p>
         </div>
-        {isAdmin && !isCurriculum && !hideCreateForTrainerTab && (
+        {isAdmin && !isCurriculum && !isAssessment && !hideCreateForTrainerTab && (
           <Button
             variant="primary"
             icon="ti-plus"
@@ -371,6 +440,11 @@ export default function AdminCourses() {
             Tạo Giáo Trình Mới
           </Button>
         )}
+        {isFullAdmin && isAssessment && (
+          <Button variant="primary" icon="ti-plus" onClick={() => setEditingAssessment({})}>
+            Tạo Assessment Mới
+          </Button>
+        )}
       </div>
 
       <Tabs
@@ -378,7 +452,13 @@ export default function AdminCourses() {
           id: tb.id,
           label: tb.label,
           icon: tb.icon,
-          count: tb.id === 'curriculum' ? visibleCurricula.length : tb.id === 'library' ? visibleCourses.length : visibleCourses.filter((c) => catalogSectionOf(c) === tb.section).length,
+          count: tb.id === 'curriculum'
+            ? visibleCurricula.length
+            : tb.id === 'assessment'
+            ? visibleAssessments.length
+            : tb.id === 'library'
+            ? visibleCourses.length
+            : visibleCourses.filter((c) => catalogSectionOf(c) === tb.section).length,
         }))}
         activeTab={activeTab}
         onChange={(id) => { setActiveTab(id); setPage(1); }}
@@ -442,6 +522,306 @@ export default function AdminCourses() {
               <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
                 <i className="ti ti-books" aria-hidden="true" />
                 <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Bạn chưa được phân bổ giáo trình nào.' : 'Chưa có giáo trình nào.'}</p>
+              </div>
+            )}
+          </div>
+        </>
+      ) : isAssessment ? (
+        <>
+          {/* Assessment Filter & Search Bar */}
+          <div className="card card-pad" style={{ marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ position: 'relative', width: 220, flexShrink: 0 }}>
+                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 10, color: 'var(--ink-faint)', fontSize: 14 }} />
+                <input
+                  type="text"
+                  className="field-input"
+                  style={{ paddingLeft: 32, height: 34, fontSize: 12, width: '100%' }}
+                  placeholder="Tìm kiếm assessment, mã..."
+                  value={assessmentSearch}
+                  onChange={(e) => setAssessmentSearch(e.target.value)}
+                />
+              </div>
+
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 170 }}
+                value={selectedAssessmentCategory}
+                onChange={(e) => setSelectedAssessmentCategory(e.target.value)}
+              >
+                <option value="ALL">Mọi Lĩnh Vực</option>
+                {companyCategories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 140 }}
+                value={selectedAssessmentType}
+                onChange={(e) => setSelectedAssessmentType(e.target.value)}
+              >
+                <option value="ALL">Mọi Loại Hình</option>
+                <option value={ASSESSMENT_TYPES.QUIZ}>📝 Quiz</option>
+                <option value={ASSESSMENT_TYPES.ASSIGNMENT}>📂 Assignment</option>
+                <option value={ASSESSMENT_TYPES.SURVEY}>📊 Survey</option>
+              </select>
+
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 160 }}
+                value={selectedAssessmentFormat}
+                onChange={(e) => setSelectedAssessmentFormat(e.target.value)}
+              >
+                <option value="ALL">Mọi Hình Thức</option>
+                <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Độc Lập (Standalone)</option>
+                <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Gắn Khóa Học (Course)</option>
+              </select>
+
+              {isFullAdmin && (
+                <select
+                  className="field-select"
+                  style={{ height: 34, fontSize: 12, width: 130 }}
+                  value={selectedAssessmentStatus}
+                  onChange={(e) => setSelectedAssessmentStatus(e.target.value)}
+                >
+                  <option value="ALL">Mọi Trạng Thái</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
+                </select>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Gộp nhóm:</span>
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 160 }}
+                value={assessmentGroupBy}
+                onChange={(e) => setAssessmentGroupBy(e.target.value)}
+              >
+                {ASSESSMENT_GROUP_BY_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Assessment List / Grouped View */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {assessmentGroups.map((grp) => {
+              const isCollapsed = collapsedAssessmentGroups.has(grp.id);
+
+              return (
+                <div key={grp.id}>
+                  {assessmentGroupBy !== 'NONE' && (
+                    <button
+                      type="button"
+                      onClick={() => toggleAssessmentGroup(grp.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        background: 'var(--paper-sunken)',
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        marginBottom: 10,
+                        border: '1px solid var(--line)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>
+                        <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} />
+                        <span>{grp.title}</span>
+                      </div>
+                      <Badge tone="sage" size="sm">{grp.items.length} bài thi</Badge>
+                    </button>
+                  )}
+
+                  {!isCollapsed && (
+                    <div className="grid grid-3" style={{ gap: 14 }}>
+                      {grp.items.map((asm) => {
+                        const access = getAssessmentAccess(asm, currentUser, courses);
+                        const isOwner = isFullAdmin || (role === 'trainer' && asm.createdBy === currentUser?.userId);
+                        const asgCount = (asm.assignments || []).length;
+                        const asgSummary = asm.assignments && asm.assignments.length > 0
+                          ? asm.assignments.map((a) => a.targetName).join(', ')
+                          : 'Chưa phân bổ';
+
+                        const typesList = asm.types || (asm.type ? [asm.type] : ['QUIZ']);
+                        const catsList = asm.categories || (asm.category ? [asm.category] : ['General']);
+                        const qTypes = asm.questionTypesList || [];
+
+                        return (
+                          <div
+                            key={asm.id}
+                            className="card card-pad"
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              borderColor: !access.canTake && !isOwner ? 'var(--line)' : undefined,
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                                <div>
+                                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                                    {asm.title}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                                    {asm.code}
+                                  </div>
+                                </div>
+                                <Badge tone={asm.status === 'PUBLISHED' ? 'sage' : 'rail'}>
+                                  {asm.status}
+                                </Badge>
+                              </div>
+
+                              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 34 }}>
+                                {asm.description || 'Chưa có mô tả chi tiết.'}
+                              </div>
+
+                              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8, fontSize: 11 }}>
+                                {catsList.map((c) => (
+                                  <Badge key={c} tone="slate" size="sm">{c}</Badge>
+                                ))}
+                                {typesList.map((t) => (
+                                  <Badge key={t} tone={t === 'QUIZ' ? 'sage' : t === 'ASSIGNMENT' ? 'amber' : 'rail'} size="sm">
+                                    {t}
+                                  </Badge>
+                                ))}
+                                <Badge tone={asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? 'sage' : 'slate'} size="sm">
+                                  {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? '🎯 Độc Lập' : '🔗 Gắn Khóa'}
+                                </Badge>
+                                {(asm.contentFormats || (asm.contentFormat ? [asm.contentFormat] : [])).map((fmt) => (
+                                  <Badge key={fmt} tone="blue" size="sm">
+                                    {fmt === 'UPLOAD_DOC' ? '📄 File Đề Tự Luận' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Ngân Hàng Câu Hỏi'}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              {/* Question Types breakdown */}
+                              {qTypes.length > 0 && (
+                                <div style={{ fontSize: 11, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '5px 8px', borderRadius: 6, marginBottom: 8 }}>
+                                  <i className="ti ti-list-check" style={{ marginRight: 4, color: 'var(--rail)' }} />
+                                  <strong>Dạng câu hỏi:</strong> {qTypes.join(', ')}
+                                </div>
+                              )}
+
+                              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8 }}>
+                                <i className="ti ti-clock" style={{ marginRight: 4 }} />
+                                {asm.timeLimitMinutes} phút &middot; Điểm đạt: {asm.passingScorePercent}% &middot; {(asm.questionIds || []).length} câu hỏi
+                              </div>
+
+                              {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? (
+                                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                                  <i className="ti ti-target" style={{ color: asgCount > 0 ? 'var(--rail)' : 'var(--ink-faint)', marginRight: 5 }} />
+                                  <strong>Phân bổ:</strong> {asgSummary}
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                                  <i className="ti ti-link" style={{ color: 'var(--rail)', marginRight: 5 }} />
+                                  <strong>Khóa học:</strong> {(asm.courseIds || [asm.courseId]).filter(Boolean).join(', ') || asm.courseTitle || 'E-Learning'}
+                                </div>
+                              )}
+
+                              {!access.canTake && !isOwner && (
+                                <div style={{ fontSize: 11, color: 'var(--rust)', background: 'rgba(220,38,38,0.06)', padding: '5px 8px', borderRadius: 6, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <i className="ti ti-lock" />
+                                  <span>{access.reason}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 6 }}>
+                              <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingAssessment(asm)}>
+                                Xem Chi Tiết
+                              </Button>
+
+                              {isOwner ? (
+                                <>
+                                  <Button size="sm" icon="ti-pencil" onClick={() => setEditingAssessment(asm)}>
+                                    Sửa
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="danger"
+                                    icon="ti-trash"
+                                    onClick={() => {
+                                      if (window.confirm(`Xóa bài assessment "${asm.title}"?`)) {
+                                        deleteAssessment(asm.id);
+                                      }
+                                    }}
+                                  >
+                                    Xóa
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    icon="ti-player-play"
+                                    onClick={() => {
+                                      if (asm.deliveryFormat === DELIVERY_FORMATS.COURSE_LINKED) {
+                                        navigate(`${learnerCourseBasePath}/${asm.courseId}`);
+                                      } else {
+                                        navigate(`${assessmentPlayerBasePath}/${asm.id}`);
+                                      }
+                                    }}
+                                  >
+                                    Làm Thử
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? (
+                                    access.canTake ? (
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        icon="ti-player-play"
+                                        onClick={() => navigate(`${assessmentPlayerBasePath}/${asm.id}`)}
+                                      >
+                                        Bắt Đầu Làm Bài
+                                      </Button>
+                                    ) : (
+                                      <Button size="sm" disabled icon="ti-lock">
+                                        Không Dành Cho Bạn
+                                      </Button>
+                                    )
+                                  ) : (
+                                    access.canTake ? (
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        icon="ti-arrow-right"
+                                        onClick={() => navigate(`${learnerCourseBasePath}/${asm.courseId}`)}
+                                      >
+                                        Vào Khóa Học Để Thi
+                                      </Button>
+                                    ) : (
+                                      <Button size="sm" disabled icon="ti-lock">
+                                        Khóa Học Bị Khóa
+                                      </Button>
+                                    )
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {filteredAssessments.length === 0 && (
+              <div className="empty-state">
+                <i className="ti ti-writing" aria-hidden="true" />
+                <p>Không tìm thấy bài assessment nào phù hợp với bộ lọc.</p>
               </div>
             )}
           </div>
@@ -620,6 +1000,50 @@ export default function AdminCourses() {
           companyCategories={companyCategories}
           onCancel={() => setEditingCurriculum(null)}
           onSave={saveCurriculum}
+        />
+      )}
+
+      {editingAssessment && (
+        <AssessmentEditorModal
+          assessment={editingAssessment.id ? editingAssessment : null}
+          isOpen={Boolean(editingAssessment)}
+          onClose={() => setEditingAssessment(null)}
+          onSave={(saved) => {
+            if (assessments.some((a) => a.id === saved.id)) {
+              updateAssessment(saved.id, saved);
+            } else {
+              addAssessment(saved);
+            }
+            setEditingAssessment(null);
+          }}
+          courses={courses}
+          companyCategories={companyCategories}
+          questionBanks={questionBanks}
+          onAddQuestionToBank={addQuestionToBank}
+        />
+      )}
+
+      {viewingAssessment && (
+        <AssessmentDetailModal
+          assessment={viewingAssessment}
+          isOpen={Boolean(viewingAssessment)}
+          onClose={() => setViewingAssessment(null)}
+          attempts={assessmentAttempts}
+          questionBanks={questionBanks}
+          courses={courses}
+          canTake={getAssessmentAccess(viewingAssessment, currentUser, courses).canTake}
+          accessReason={getAssessmentAccess(viewingAssessment, currentUser, courses).reason}
+          onStartAssessment={() => {
+            const targetId = viewingAssessment.id;
+            const isCourseLinked = viewingAssessment.deliveryFormat === DELIVERY_FORMATS.COURSE_LINKED;
+            const cId = viewingAssessment.courseId;
+            setViewingAssessment(null);
+            if (isCourseLinked && cId) {
+              navigate(`${learnerCourseBasePath}/${cId}`);
+            } else {
+              navigate(`${assessmentPlayerBasePath}/${targetId}`);
+            }
+          }}
         />
       )}
     </>
