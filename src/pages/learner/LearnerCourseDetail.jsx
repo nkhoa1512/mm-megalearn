@@ -6,6 +6,7 @@ import { currentUser, resolveCourseView, deriveCertificates, deriveLessonStatuse
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 import { getCourseImage } from '../../data/courseImages';
 import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
+import { computeLifecycleStatus } from '../../utils/courseCatalog';
 
 function statusLabel(status) {
   switch (status) {
@@ -85,6 +86,10 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
     return !p || myEnrollments[pid]?.status !== 'COMPLETED';
   });
   const isPrereqLocked = unmetPrerequisites.length > 0;
+  // Khóa Đã Đóng mà chưa từng ghi danh: catalog giờ vẫn cho xem lại (đánh dấu
+  // "Đã qua thời gian tham gia" thay vì ẩn hẳn như trước), nhưng chắc chắn
+  // không cho đăng ký mới — cửa sổ ghi danh đã hết hạn.
+  const isRegistrationClosed = !course.enrollment && computeLifecycleStatus(course) === 'CLOSED';
 
   const completedRequired = allRequiredLessons.filter((l) => l.status === 'COMPLETED').length;
   const completionPct = allRequiredLessons.length
@@ -189,7 +194,13 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         <LevelAccessBadge access={access} />
       </div>
 
-      {isLevelLocked ? (
+      {isRegistrationClosed ? (
+        /* ĐÃ QUA THỜI GIAN THAM GIA — chưa từng ghi danh và cửa sổ đăng ký đã hết hạn */
+        <div className="card card-pad empty-state" style={{ marginBottom: 20 }}>
+          <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
+          <p>Khóa học này đã qua thời gian tham gia (hết hạn ghi danh) và bạn chưa từng đăng ký. Không thể đăng ký mới cho khóa đã đóng.</p>
+        </div>
+      ) : isLevelLocked ? (
         /* KHÓA BỞI QUY TẮC CẤP BẬC TUẦN TỰ */
         <div
           className="card card-pad"

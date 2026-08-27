@@ -107,6 +107,37 @@ export function isCourseVisibleWhenClosed(course) {
 }
 
 // ---------------------------------------------------------------------------
+// Trạng thái vòng đời "cá nhân hóa" — dùng cho catalog của Learner, Manager,
+// HRBP và Trainer/L&D (mọi role KHÔNG PHẢI User Admin/SysAdmin). Khác với
+// LIFECYCLE_STATUS_META (Nháp/Chưa Mở/Đang Mở/Đã Đóng — góc nhìn quản trị của
+// người tạo khóa), 4 role này quan tâm tới quan hệ CÁ NHÂN của họ với khóa học
+// hơn là vòng đời quản trị thuần túy, nên khi đã ghi danh thì trạng thái ghi
+// danh thật (Đã Hoàn Thành / Đã Quá Hạn / đang tham gia) được ưu tiên hiển thị
+// thay vì chỉ nói chung chung "Đang Mở". Chỉ khi CHƯA từng ghi danh mới quay
+// lại dùng đúng trạng thái vòng đời của khóa (Đang Mở / Đã Qua Thời Gian Tham
+// Gia — tương đương "Đã Đóng" bên Admin nhưng đổi tên cho đúng góc nhìn học
+// viên/quản lý).
+export const PERSONAL_LIFECYCLE_STATUS_META = {
+  OPEN: { label: 'Đang Mở', labelEn: 'Open', tone: 'sage', icon: 'ti-circle-check' },
+  CLOSED: { label: 'Đã Qua Thời Gian Tham Gia', labelEn: 'Enrollment Window Closed', tone: 'rust', icon: 'ti-lock' },
+  JOINED: { label: 'Đang Tham Gia', labelEn: 'Currently Enrolled', tone: 'blue', icon: 'ti-user-check' },
+  OVERDUE: { label: 'Đã Quá Hạn', labelEn: 'Overdue', tone: 'amber', icon: 'ti-alert-triangle' },
+  COMPLETED: { label: 'Đã Hoàn Thành', labelEn: 'Completed', tone: 'rail', icon: 'ti-certificate' },
+};
+
+// `course.enrollment` phải được gộp sẵn vào course (ghi danh thật của người
+// đang xem, không phải field tĩnh trên course template) trước khi gọi hàm này.
+export function personalLifecycleStatusOf(course) {
+  const enrollment = course.enrollment;
+  if (enrollment) {
+    if (enrollment.status === 'COMPLETED') return 'COMPLETED';
+    if (enrollment.status === 'OVERDUE') return 'OVERDUE';
+    return 'JOINED';
+  }
+  return computeLifecycleStatus(course) === 'CLOSED' ? 'CLOSED' : 'OPEN';
+}
+
+// ---------------------------------------------------------------------------
 // Delivery-format badge — the existing 3-way split (🌐 E-Learning / 💻 Live
 // Online Class / 🏢 In-Person ILT) that already cleanly maps onto 3 of the 5
 // Catalog tabs (Learning Objects / Online Class / Classroom), no new field
@@ -144,7 +175,7 @@ export const STATUS_GROUP_META = {
   NOT_ENROLLED: { label: 'Chưa Ghi Danh', icon: 'ti-bookmark-off' },
 };
 
-export function courseGroupOf(c, groupBy) {
+export function courseGroupOf(c, groupBy, opts = {}) {
   switch (groupBy) {
     case 'ORG_UNIT': {
       const a = c.assignment;
@@ -174,6 +205,11 @@ export function courseGroupOf(c, groupBy) {
       return { key: label, label, icon: 'ti-tag' };
     }
     case 'LIFECYCLE_STATUS': {
+      if (opts.personal) {
+        const s = personalLifecycleStatusOf(c);
+        const meta = PERSONAL_LIFECYCLE_STATUS_META[s];
+        return { key: s, label: meta.label, icon: meta.icon };
+      }
       const s = computeLifecycleStatus(c);
       const meta = LIFECYCLE_STATUS_META[s];
       return { key: s, label: meta.label, icon: meta.icon };
@@ -183,11 +219,11 @@ export function courseGroupOf(c, groupBy) {
   }
 }
 
-export function buildCourseGroups(items, groupBy) {
+export function buildCourseGroups(items, groupBy, opts = {}) {
   if (groupBy === 'NONE') return null;
   const map = new Map();
   items.forEach((c) => {
-    const g = courseGroupOf(c, groupBy);
+    const g = courseGroupOf(c, groupBy, opts);
     if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
     map.get(g.key).items.push(c);
   });

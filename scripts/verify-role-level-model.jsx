@@ -16,6 +16,22 @@ const { CourseStoreProvider } = await import('../src/state/CourseStore');
 const { personaForRole, pendingApprovalRequests, courses: mockCourses } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
+// CRS-FSH-005 (used below as the "1 level up, requires approval" fixture)
+// lands in mockData's date-driven CLOSED lifecycle bucket by pure index
+// cycling (~10% of courses are seeded CLOSED). Since AdminCourses now shows
+// CLOSED courses to non-admin roles (labeled "Đã Qua Thời Gian Tham Gia") and
+// LearnerCourseDetail correctly blocks registration on them, that unrelated
+// seeding coincidence was pre-empting these level-gate assertions. Force this
+// one fixture course back into an OPEN window so the level-gate tests below
+// exercise the approval flow they're actually about, not the closed-course path.
+{
+  const fixture = mockCourses.find((c) => c.id === 'CRS-FSH-005');
+  if (fixture) {
+    fixture.startDate = '2026-07-01';
+    fixture.endDate = '2027-01-01';
+  }
+}
+
 const AppHeader = (await import('../src/components/AppHeader')).default;
 const LearnerDashboard = (await import('../src/pages/learner/LearnerDashboard')).default;
 const LearnerCourses = (await import('../src/pages/learner/LearnerCourses')).default;

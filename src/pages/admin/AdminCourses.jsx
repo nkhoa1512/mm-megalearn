@@ -8,6 +8,7 @@ import { getCourseImage } from '../../data/courseImages';
 import {
   courseFormatBadge, catalogSectionOf, CATALOG_SECTIONS, courseMatchesCategory,
   computeLifecycleStatus, LIFECYCLE_STATUS_META, buildCourseGroups,
+  personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../components/catalog/CurriculumTree';
 import { ASSIGNMENT_TYPES, assignmentTypeLabel, targetOptionsFor } from '../../data/assignmentTargets';
@@ -103,12 +104,15 @@ export default function AdminCourses() {
   const hideAllocationDetails = isViewOnlyCatalogRole || hideCreateForTrainerTab;
 
   // Chỉ User Admin & SysAdmin (isFullAdmin, người thật sự tạo/quản trị danh
-  // mục) mới thấy TOÀN BỘ khóa — kể cả Nháp và Đã Đóng — để còn quản lý/audit.
-  // Learner, Manager, HRBP chỉ dùng trang này để duyệt & đăng ký nên:
+  // mục) mới thấy TOÀN BỘ khóa — kể cả Nháp — để còn quản lý/audit. Learner,
+  // Manager, HRBP, Trainer chỉ dùng trang này để duyệt & đăng ký nên:
   //   - Nháp (DRAFT): luôn ẩn, chưa phải nội dung chính thức.
-  //   - Đã Đóng (CLOSED): luôn ẩn, hết hạn ghi danh thì không có lý do hiện ra
-  //     trong danh mục để "đăng ký" nữa (khóa đã tham gia trước đó vẫn xem lại
-  //     được qua "Khóa Học Của Tôi", không phải qua trang duyệt danh mục này).
+  //   - Đã Đóng (CLOSED): VẪN hiện (không ẩn hẳn như trước) để họ còn thấy lại
+  //     những khóa mình từng tham gia/hoàn thành dù đã hết hạn, và để lộ đúng
+  //     khóa bắt buộc nào đã hết hạn mà mình CHƯA từng đăng ký (rủi ro tuân
+  //     thủ) — nhưng không cho đăng ký mới, gắn nhãn "Đã Qua Thời Gian Tham
+  //     Gia" (xem personalLifecycleStatusOf trong courseCatalog.js) thay vì
+  //     "Đã Đóng" như góc nhìn quản trị của Admin.
   //   - Chưa Mở (UPCOMING): khóa Lớp Trực Tiếp/Lớp Trực Tuyến vẫn hiện để đăng
   //     ký giữ chỗ trước; riêng khóa Tự Học (Learning Objects/E-Learning) ẩn
   //     tới khi thật sự mở vì không có "buổi học" nào để giữ chỗ trước cả.
@@ -118,13 +122,17 @@ export default function AdminCourses() {
   const enrolledCourseIdSet = new Set(Object.keys(myEnrollments || {}));
   const visibleCourses = isFullAdmin
     ? courses
-    : courses.filter((c) => {
-      if (c.status === 'DRAFT' && !canManageCourse(c)) return false;
-      const lifecycle = computeLifecycleStatus(c);
-      if (lifecycle === 'CLOSED') return false;
-      if (lifecycle === 'UPCOMING' && catalogSectionOf(c) === CATALOG_SECTIONS.LEARNING_OBJECTS) return false;
-      return true;
-    });
+    : courses
+      .filter((c) => {
+        if (c.status === 'DRAFT' && !canManageCourse(c)) return false;
+        const lifecycle = computeLifecycleStatus(c);
+        if (lifecycle === 'UPCOMING' && catalogSectionOf(c) === CATALOG_SECTIONS.LEARNING_OBJECTS) return false;
+        return true;
+      })
+      // Gộp sẵn ghi danh thật của người đang xem lên mỗi khóa — cần thiết để
+      // tính đúng trạng thái "cá nhân hóa" (Đang Tham Gia/Đã Quá Hạn/Đã Hoàn
+      // Thành/Đã Qua Thời Gian Tham Gia) ở bộ lọc, gộp nhóm và badge bên dưới.
+      .map((c) => ({ ...c, enrollment: myEnrollments?.[c.id] || null }));
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -165,18 +173,21 @@ export default function AdminCourses() {
   // Bộ lọc Trạng Thái Vòng Đời và Gộp Nhóm áp dụng cho MỌI tab liệt kê khóa
   // học (Learning Objects/Online Class/Classroom/Library), không riêng gì
   // Library — chỉ khác nhau ở chỗ Library không lọc theo section (xem hết),
-  // còn 3 tab kia lọc thêm theo đúng section của tab đang mở.
+  // còn 3 tab kia lọc thêm theo đúng section của tab đang mở. Với role KHÔNG
+  // PHẢI Full Admin, bộ trạng thái đổi sang góc nhìn cá nhân hóa (xem
+  // personalLifecycleStatusOf) thay vì Nháp/Chưa Mở/Đang Mở/Đã Đóng của Admin.
   const filtered = isCurriculum
     ? []
     : bySearchCategoryType.filter((c) => {
       if (!isLibrary && catalogSectionOf(c) !== activeTabDef.section) return false;
-      const matchLifecycle = selectedLifecycle === 'ALL' || computeLifecycleStatus(c) === selectedLifecycle;
+      const rowLifecycle = isFullAdmin ? computeLifecycleStatus(c) : personalLifecycleStatusOf(c);
+      const matchLifecycle = selectedLifecycle === 'ALL' || rowLifecycle === selectedLifecycle;
       return matchLifecycle;
     });
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const groups = isCurriculum ? null : buildCourseGroups(filtered, groupBy);
+  const groups = isCurriculum ? null : buildCourseGroups(filtered, groupBy, { personal: !isFullAdmin });
 
   function toggleGroup(key) {
     setCollapsedGroups((prev) => {
@@ -191,12 +202,17 @@ export default function AdminCourses() {
     const canManage = canManageCourse(c);
     const badge = courseFormatBadge(c);
     const lifecycle = computeLifecycleStatus(c);
-    // Khóa "Đang Mở" mà chính người xem đã ghi danh rồi thì hiện "Đã Tham
-    // Gia" thay vì "Đang Mở" — tránh gây hiểu lầm là mình chưa đăng ký.
+    // Full Admin: giữ nguyên góc nhìn quản trị (Nháp/Chưa Mở/Đang Mở/Đã Đóng),
+    // chỉ đổi thành "Đã Tham Gia" khi Đang Mở mà chính họ cũng đã ghi danh.
+    // Các role còn lại (Learner/Manager/HRBP/Trainer): dùng thẳng trạng thái cá
+    // nhân hóa (Đang Tham Gia/Đã Quá Hạn/Đã Hoàn Thành/Đã Qua Thời Gian Tham
+    // Gia/Đang Mở) cho khớp với bộ lọc & gộp nhóm cùng vừa thêm ở trên.
     const isMineAndOpen = lifecycle === 'OPEN' && enrolledCourseIdSet.has(c.id);
-    const lifecycleMeta = isMineAndOpen
-      ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
-      : LIFECYCLE_STATUS_META[lifecycle];
+    const lifecycleMeta = isFullAdmin
+      ? (isMineAndOpen
+        ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
+        : LIFECYCLE_STATUS_META[lifecycle])
+      : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
     const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
     return (
       <tr key={c.id}>
@@ -477,7 +493,7 @@ export default function AdminCourses() {
                 onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
               >
                 <option value="ALL">Tất Cả Trạng Thái</option>
-                {Object.entries(LIFECYCLE_STATUS_META).map(([key, meta]) => (
+                {Object.entries(isFullAdmin ? LIFECYCLE_STATUS_META : PERSONAL_LIFECYCLE_STATUS_META).map(([key, meta]) => (
                   <option key={key} value={key}>{meta.label}</option>
                 ))}
               </select>
