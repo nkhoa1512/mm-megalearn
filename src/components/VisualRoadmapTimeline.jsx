@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Badge, Button, JobLevelBadge } from './ui';
 import { getCourseImage } from '../data/courseImages';
 import { useCourseStore } from '../state/CourseStore';
+
+const NODE_SIZE = 64;
+const COLUMN_WIDTH = 180;
+const POPOVER_WIDTH = 300;
 
 const STATUS_META = {
   COMPLETED: {
@@ -38,9 +43,95 @@ const LOCKED_META = {
   labelVi: 'Đang Khóa',
 };
 
+// Node ảnh tròn dùng chung cho Start / Milestone / Finish. Lớp icon nền luôn
+// được vẽ trước — nếu ảnh minh họa (hotlink Unsplash) load lỗi thì <img> tự ẩn
+// và icon nền lộ ra, tránh vòng tròn trống trơn.
+function NodeCircle({ size = NODE_SIZE, borderColor, bg, iconColor, icon, imageSrc, imageAlt, grayscale, scale = 1 }) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        border: `3px solid ${borderColor}`,
+        background: bg,
+        flexShrink: 0,
+        overflow: 'hidden',
+        boxShadow: scale > 1 ? '0 6px 16px rgba(0,0,0,0.18)' : '0 2px 8px rgba(0,0,0,0.08)',
+        transform: `scale(${scale})`,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: iconColor,
+          fontSize: size * 0.4,
+        }}
+      >
+        <i className={`ti ${icon}`} aria-hidden="true" />
+      </div>
+      {imageSrc && (
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: grayscale ? 'grayscale(80%) opacity(60%)' : 'none',
+          }}
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Đường nối ngang giữa 2 node, cao bằng NODE_SIZE và tự canh giữa theo tâm
+// node (nhờ alignItems: 'center') để không bị lệch khi nhãn bên dưới xuống dòng.
+function HConnector({ color }) {
+  return (
+    <div style={{ flex: 1, minWidth: 28, height: NODE_SIZE, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+      <div style={{ width: '100%', height: 4, background: color, borderRadius: 2 }} />
+    </div>
+  );
+}
+
+const clampStyle = {
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+};
+
 export default function VisualRoadmapTimeline({ milestones = [], locked = false, onOpenCourse }) {
   const { t, language } = useCourseStore();
-  const [selected, setSelected] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  const [popoverPos, setPopoverPos] = useState(null);
+  const wrapperRef = useRef(null);
+  const hideTimer = useRef(null);
+
+  // Popover được portal thẳng ra document.body (position: fixed theo toạ độ
+  // viewport) vì thẻ ".card" cha có overflow: hidden — nếu render lồng bên
+  // trong khung cuộn, popover sẽ bị cắt cụt ở đúng biên dưới của thẻ card.
+  useEffect(() => {
+    if (!hovered) return;
+    function handleDismiss() { setHovered(null); }
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [hovered]);
 
   if (milestones.length === 0) {
     return (
@@ -53,11 +144,48 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
 
   const allCompleted = !locked && milestones.every((m) => m.completed);
   const completedCount = milestones.filter((m) => m.completed).length;
+  const neutralLine = locked ? 'var(--line)' : 'var(--line-strong)';
+  const doneLine = locked ? 'var(--line)' : '#10b981';
+
+  // Hover vào 1 mốc: tính vị trí popover ngay bên dưới node đó theo toạ độ
+  // viewport (dùng position: fixed qua portal), canh giữa theo tâm node và
+  // kẹp trong biên màn hình để không tràn ra ngoài; nếu không đủ chỗ phía
+  // dưới thì tự lật lên phía trên node.
+  const POPOVER_EST_HEIGHT = 260;
+  function showPopover(m, evt) {
+    if (locked) return;
+    clearTimeout(hideTimer.current);
+    const nodeRect = evt.currentTarget.getBoundingClientRect();
+    const rawLeft = nodeRect.left + nodeRect.width / 2;
+    const minLeft = POPOVER_WIDTH / 2 + 8;
+    const maxLeft = window.innerWidth - POPOVER_WIDTH / 2 - 8;
+    const fitsBelow = nodeRect.bottom + 10 + POPOVER_EST_HEIGHT <= window.innerHeight;
+    setPopoverPos({
+      left: Math.min(Math.max(rawLeft, minLeft), maxLeft),
+      top: fitsBelow ? nodeRect.bottom + 10 : undefined,
+      bottom: fitsBelow ? undefined : window.innerHeight - nodeRect.top + 10,
+    });
+    setHovered(m);
+  }
+  function hidePopoverDelayed() {
+    hideTimer.current = setTimeout(() => setHovered(null), 150);
+  }
+  function cancelHide() {
+    clearTimeout(hideTimer.current);
+  }
 
   return (
     <div>
-      {/* Visual Progress Bar Ribbon */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, fontSize: 12, color: 'var(--ink-soft)' }}>
+      <style>{`
+        .roadmap-h-scroll { scrollbar-width: auto; scrollbar-color: var(--line-strong) var(--paper-sunken); }
+        .roadmap-h-scroll::-webkit-scrollbar { height: 12px; }
+        .roadmap-h-scroll::-webkit-scrollbar-track { background: var(--paper-sunken); border-radius: 8px; }
+        .roadmap-h-scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; border: 2px solid var(--paper-sunken); }
+        .roadmap-h-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+      `}</style>
+
+      {/* Progress Summary Ribbon */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 12, color: 'var(--ink-soft)', flexWrap: 'wrap', gap: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--blue)' }}>
           <i className="ti ti-rocket" /> {language === 'en' ? 'Starting Point' : 'Điểm Xuất Phát'}
         </span>
@@ -69,339 +197,197 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
         </span>
       </div>
 
-      {/* Horizontal Scrollable Timeline */}
-      <div style={{ overflowX: 'auto', padding: '52px 16px 20px', background: 'var(--paper-raised)', borderRadius: 12, border: '1px solid var(--line)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', minWidth: milestones.length * 150 + 180, position: 'relative' }}>
-          {/* Connector Line */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 50,
-              right: 50,
-              top: '50%',
-              height: 4,
-              background: 'linear-gradient(90deg, #3b82f6 0%, #f59e0b 50%, #10b981 100%)',
-              opacity: locked ? 0.35 : 0.85,
-              borderRadius: 2,
-              zIndex: 0,
-            }}
-          />
-
-          {/* 1. START NODE (XUẤT PHÁT) */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, flexShrink: 0, width: 80 }}>
-            <div
-              style={{
-                marginBottom: 8,
-                textAlign: 'center',
-                fontSize: 11,
-                fontWeight: 800,
-                color: '#2563eb',
-                letterSpacing: '0.3px',
-                textTransform: 'uppercase',
-                background: '#eff6ff',
-                padding: '2px 8px',
-                borderRadius: 10,
-                border: '1px solid #bfdbfe',
-              }}
-            >
-              {language === 'en' ? 'Start' : 'Xuất Phát'}
+      {/* Horizontal Scrollable Path — thanh cuộn ngang rõ ở đáy khung,
+          nhãn luôn nằm cố định phía dưới node (không zigzag) để dễ đọc.
+          Hover vào 1 mốc hiện popover thông tin ngay tại đó thay vì phải bấm. */}
+      <div ref={wrapperRef} style={{ position: 'relative' }}>
+        <div
+          className="roadmap-h-scroll"
+          style={{ overflowX: 'auto', padding: '26px 52px 20px', background: 'var(--paper-raised)', borderRadius: 12, border: '1px solid var(--line)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            {/* START NODE */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: COLUMN_WIDTH, flexShrink: 0 }}>
+              <NodeCircle
+                borderColor="#1d4ed8"
+                bg="linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"
+                iconColor="#fff"
+                icon="ti-player-play-filled"
+              />
+              <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#2563eb', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                {language === 'en' ? 'Start' : 'Xuất Phát'}
+              </div>
             </div>
-            <div
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
-                fontSize: 22,
-                cursor: 'default',
-              }}
-              title={language === 'en' ? 'Learning roadmap start node' : 'Điểm xuất phát lộ trình học tập'}
-            >
-              <i className="ti ti-player-play-filled" aria-hidden="true" />
-            </div>
-            <div style={{ marginTop: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
-              {language === 'en' ? 'Start' : 'Khởi đầu'}
-            </div>
-          </div>
 
-          {/* 2. MILESTONE NODES (CÁC MỐC TRÊN LỘ TRÌNH VỚI ẢNH) */}
-          {milestones.map((m, idx) => {
-            const isTop = idx % 2 === 0;
-            const meta = locked ? LOCKED_META : (STATUS_META[m.status] || STATUS_META.NOT_STARTED);
-            const isSelected = selected?.course.id === m.course.id;
-            const courseImage = getCourseImage(m.course);
-            const stageText = language === 'en' ? `STAGE ${idx + 1}` : `CHẶNG ${idx + 1}`;
-            const statusLabel = language === 'en' ? t(meta.labelKey, meta.labelVi) : meta.labelVi;
+            <HConnector color={milestones[0].completed ? doneLine : neutralLine} />
 
-            return (
-              <div
-                key={m.course.id}
-                style={{
-                  flex: 1,
-                  minWidth: 140,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  position: 'relative',
-                  zIndex: 2,
-                }}
-              >
-                {/* TOP LABEL */}
-                {isTop && (
-                  <div style={{ marginBottom: 10, textAlign: 'center', width: 130 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: meta.color, marginBottom: 2 }}>
-                      {stageText}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        color: isSelected ? 'var(--blue)' : 'var(--ink)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={m.course.title}
-                    >
-                      {m.course.title}
-                    </div>
-                  </div>
-                )}
+            {/* MILESTONE NODES */}
+            {milestones.map((m, idx) => {
+              const meta = locked ? LOCKED_META : (STATUS_META[m.status] || STATUS_META.NOT_STARTED);
+              const isHovered = hovered?.course.id === m.course.id;
+              const isLastMilestone = idx === milestones.length - 1;
+              const stageText = language === 'en' ? `STAGE ${idx + 1}` : `CHẶNG ${idx + 1}`;
+              const statusLabel = language === 'en' ? t(meta.labelKey, meta.labelVi) : meta.labelVi;
 
-                {/* CIRCULAR IMAGE NODE */}
-                <div style={{ position: 'relative' }}>
+              return (
+                <React.Fragment key={m.course.id}>
                   <button
                     type="button"
-                    onClick={() => !locked && setSelected(isSelected ? null : m)}
+                    onMouseEnter={(e) => showPopover(m, e)}
+                    onMouseLeave={hidePopoverDelayed}
+                    onFocus={(e) => showPopover(m, e)}
+                    onBlur={hidePopoverDelayed}
+                    onClick={() => !locked && onOpenCourse && onOpenCourse(m.course)}
                     disabled={locked}
+                    title={m.course.title}
                     style={{
-                      width: 54,
-                      height: 54,
-                      borderRadius: '50%',
-                      padding: 0,
-                      border: `3px solid ${meta.border}`,
-                      boxShadow: isSelected
-                        ? `0 0 0 4px ${meta.bg}, 0 6px 16px rgba(0,0,0,0.15)`
-                        : '0 2px 8px rgba(0,0,0,0.08)',
-                      background: meta.bg,
-                      overflow: 'hidden',
-                      cursor: locked ? 'default' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-                      transition: 'all 0.2s ease',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', width: COLUMN_WIDTH, flexShrink: 0,
+                      background: 'none', border: 'none', padding: 0, cursor: locked ? 'default' : 'pointer',
                     }}
-                    title={`${m.course.title} (${statusLabel})`}
                   >
-                    <img
-                      src={courseImage}
-                      alt={m.course.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: locked ? 'grayscale(80%) opacity(60%)' : 'none',
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
+                    <NodeCircle
+                      borderColor={meta.border}
+                      bg={meta.bg}
+                      iconColor={meta.color}
+                      icon={meta.icon}
+                      imageSrc={getCourseImage(m.course)}
+                      imageAlt={m.course.title}
+                      grayscale={locked}
+                      scale={isHovered ? 1.1 : 1}
                     />
-                  </button>
-
-                  {/* MINI STATUS BADGE */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      right: -3,
-                      bottom: -3,
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      background: meta.color,
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 11,
-                      border: '2px solid #fff',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    <i className={`ti ${meta.icon}`} aria-hidden="true" />
-                  </div>
-                </div>
-
-                {/* BOTTOM LABEL */}
-                {!isTop && (
-                  <div style={{ marginTop: 10, textAlign: 'center', width: 130 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: meta.color, marginBottom: 2 }}>
-                      {stageText}
-                    </div>
                     <div
                       style={{
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        color: isSelected ? 'var(--blue)' : 'var(--ink)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        marginTop: 10,
+                        textAlign: 'center',
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: 8,
+                        background: isHovered ? 'var(--paper-sunken)' : 'transparent',
+                        border: isHovered ? '1px solid var(--blue)' : '1px solid transparent',
                       }}
-                      title={m.course.title}
                     >
-                      {m.course.title}
+                      <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 3 }}>
+                        {stageText}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isHovered ? 'var(--blue)' : 'var(--ink)', lineHeight: 1.35, ...clampStyle }}>
+                        {m.course.title}
+                      </div>
+                      <div style={{ marginTop: 6 }}>
+                        <Badge tone={locked ? 'slate' : m.completed ? 'sage' : m.status === 'IN_PROGRESS' ? 'amber' : 'slate'} icon={meta.icon}>
+                          {statusLabel}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </button>
 
-          {/* 3. FINISH NODE (CỜ VỀ ĐÍCH) */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2, flexShrink: 0, width: 80 }}>
-            <div
-              style={{
-                marginBottom: 8,
-                textAlign: 'center',
-                fontSize: 11,
-                fontWeight: 800,
-                color: allCompleted ? '#059669' : '#d97706',
-                letterSpacing: '0.3px',
-                textTransform: 'uppercase',
-                background: allCompleted ? '#ecfdf5' : '#fef3c7',
-                padding: '2px 8px',
-                borderRadius: 10,
-                border: `1px solid ${allCompleted ? '#a7f3d0' : '#fde68a'}`,
-              }}
-            >
-              {language === 'en' ? 'Finish' : 'Về Đích'}
-            </div>
-            <div
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                background: allCompleted
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                  : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: allCompleted
-                  ? '0 4px 16px rgba(16, 185, 129, 0.4)'
-                  : '0 4px 12px rgba(245, 158, 11, 0.3)',
-                fontSize: 22,
-                cursor: 'default',
-              }}
-              title={allCompleted ? (language === 'en' ? 'All Completed!' : 'Chúc mừng! Đã hoàn thành toàn bộ lộ trình') : (language === 'en' ? 'Finish Line' : 'Cờ về đích - Mục tiêu hoàn thành')}
-            >
-              <i className={allCompleted ? 'ti ti-trophy' : 'ti ti-flag-filled'} aria-hidden="true" />
-            </div>
-            <div style={{ marginTop: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
-              {allCompleted ? (language === 'en' ? 'Completed' : 'Hoàn thành') : (language === 'en' ? 'Goal' : 'Đích đến')}
+                  {!isLastMilestone && <HConnector color={m.completed ? doneLine : neutralLine} />}
+                </React.Fragment>
+              );
+            })}
+
+            <HConnector color={allCompleted ? doneLine : neutralLine} />
+
+            {/* FINISH NODE */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: COLUMN_WIDTH, flexShrink: 0 }}>
+              <NodeCircle
+                borderColor={allCompleted ? '#059669' : '#d97706'}
+                bg={allCompleted ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}
+                iconColor="#fff"
+                icon={allCompleted ? 'ti-trophy' : 'ti-flag-filled'}
+              />
+              <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, fontWeight: 800, color: allCompleted ? '#059669' : '#d97706', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                {language === 'en' ? 'Finish' : 'Về Đích'}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* DETAILED MILESTONE MODAL / CARD */}
-      {selected && (
-        <div
-          className="card card-pad"
-          style={{
-            marginTop: 16,
-            borderColor: 'var(--blue)',
-            borderWidth: 1.5,
-            background: 'var(--paper-raised)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
-              {/* Milestone Image Thumbnail */}
+        {/* HOVER POPOVER — thông tin nhanh về mốc đang hover, neo ngay dưới
+            node đó. Portal ra document.body vì thẻ ".card" cha có overflow:
+            hidden nên popover lồng bên trong sẽ bị cắt cụt ở biên card. */}
+        {hovered && popoverPos && createPortal(
+          <div
+            onMouseEnter={cancelHide}
+            onMouseLeave={hidePopoverDelayed}
+            className="card"
+            style={{
+              position: 'fixed',
+              left: popoverPos.left,
+              top: popoverPos.top,
+              bottom: popoverPos.bottom,
+              transform: 'translateX(-50%)',
+              width: POPOVER_WIDTH,
+              zIndex: 9999,
+              borderColor: 'var(--blue)',
+              borderWidth: 1.5,
+              background: 'var(--paper-raised)',
+              boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
+              padding: 14,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <div
                 style={{
-                  width: 110,
-                  height: 75,
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                  border: '1px solid var(--line)',
+                  width: 72, height: 54, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+                  border: '1px solid var(--line)', background: 'var(--paper-sunken)',
                 }}
               >
                 <img
-                  src={getCourseImage(selected.course)}
-                  alt={selected.course.title}
+                  src={getCourseImage(hovered.course)}
+                  alt={hovered.course.title}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
               </div>
-
-              {/* Milestone Details */}
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>
-                    {selected.course.code}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 }}>
+                  <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>
+                    {hovered.course.code}
                   </span>
-                  <JobLevelBadge level={selected.course.targetLevel} compact />
-                  <Badge
-                    tone={selected.completed ? 'sage' : selected.status === 'IN_PROGRESS' ? 'amber' : 'slate'}
-                    icon={selected.completed ? 'ti-check' : 'ti-clock'}
-                  >
-                    {selected.completed
-                      ? (language === 'en' ? 'Completed' : 'Đã hoàn thành')
-                      : selected.status === 'IN_PROGRESS'
-                      ? (language === 'en' ? 'In Progress' : 'Đang học')
-                      : (language === 'en' ? 'Not Started' : 'Chưa bắt đầu')}
-                  </Badge>
+                  <JobLevelBadge level={hovered.course.targetLevel} compact />
                 </div>
-
-                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', lineHeight: 1.35 }}>
-                  {selected.course.title}
-                </div>
-
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-                  {selected.course.domain || selected.course.category} &middot; {language === 'en' ? 'Duration: ' : 'Thời lượng: '}{selected.course.estimatedHours || '2.5h'} &middot; {language === 'en' ? 'Pass: ' : 'Điểm đạt: '}{selected.course.passingScore || 80}%
+                <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--ink)', lineHeight: 1.3 }}>
+                  {hovered.course.title}
                 </div>
               </div>
             </div>
 
-            <button onClick={() => setSelected(null)} className="icon-btn" aria-label="Close">
-              <i className="ti ti-x" />
-            </button>
-          </div>
+            <div style={{ marginTop: 8 }}>
+              <Badge
+                tone={hovered.completed ? 'sage' : hovered.status === 'IN_PROGRESS' ? 'amber' : 'slate'}
+                icon={hovered.completed ? 'ti-check' : 'ti-clock'}
+              >
+                {hovered.completed
+                  ? (language === 'en' ? 'Completed' : 'Đã hoàn thành')
+                  : hovered.status === 'IN_PROGRESS'
+                  ? (language === 'en' ? 'In Progress' : 'Đang học')
+                  : (language === 'en' ? 'Not Started' : 'Chưa bắt đầu')}
+              </Badge>
+            </div>
 
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.6, marginBottom: 12 }}>
-            {selected.course.description}
-          </p>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 8 }}>
+              {hovered.course.domain || hovered.course.category} &middot; {language === 'en' ? 'Duration: ' : 'Thời lượng: '}{hovered.course.estimatedHours || '2.5h'} &middot; {language === 'en' ? 'Pass: ' : 'Điểm đạt: '}{hovered.course.passingScore || 80}%
+            </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'center' }}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelected(null)}
-            >
-              {t('close', 'Đóng')}
-            </Button>
+            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 8, marginBottom: 10, lineHeight: 1.5, ...clampStyle }}>
+              {hovered.course.description}
+            </p>
+
             <Button
               variant="primary"
               size="sm"
-              icon={selected.completed ? 'ti-rotate' : 'ti-player-play'}
-              onClick={() => onOpenCourse && onOpenCourse(selected.course)}
+              block
+              icon={hovered.completed ? 'ti-rotate' : 'ti-player-play'}
+              onClick={() => onOpenCourse && onOpenCourse(hovered.course)}
             >
-              {selected.completed
+              {hovered.completed
                 ? (language === 'en' ? 'Review Lesson' : 'Xem Lại Bài Giảng')
                 : (language === 'en' ? 'Start Learning' : 'Vào Học Ngay')}
             </Button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
+      </div>
     </div>
   );
 }
