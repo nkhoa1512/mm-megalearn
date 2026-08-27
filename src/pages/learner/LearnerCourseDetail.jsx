@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge, CertificateModal } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
-import { currentUser, resolveCourseView, deriveCertificates } from '../../data/mockData';
+import { currentUser, resolveCourseView, deriveCertificates, deriveLessonStatuses } from '../../data/mockData';
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 import { getCourseImage } from '../../data/courseImages';
 import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
@@ -15,44 +15,6 @@ function statusLabel(status) {
     case 'FAILED': return 'Cần Thi Lại';
     default: return 'Chưa Bắt Đầu';
   }
-}
-
-// `module.lessons[].status` trong dữ liệu khóa học gốc chỉ là placeholder
-// tĩnh ("Not started" cho mọi người) — không tự khớp với enrollment.status/
-// progressPercent thật của từng học viên. Không suy ra lại thì một khóa đã
-// Hoàn Thành 100% vẫn hiện toàn bộ bài học "Not started", còn bài thi cuối
-// khóa cũng bị coi là chưa đủ điều kiện mở dù đã có chứng chỉ.
-function deriveLessonStatuses(modules, enrollment) {
-  if (!modules) return modules;
-  const status = enrollment?.status;
-  if (!enrollment || status === 'NOT_STARTED') {
-    return modules.map((m) => ({
-      ...m,
-      lessons: m.lessons.map((l) => (l.lessonType === 'ASSESSMENT' ? l : { ...l, status: 'NOT_STARTED' })),
-    }));
-  }
-  if (status === 'COMPLETED') {
-    return modules.map((m) => ({
-      ...m,
-      lessons: m.lessons.map((l) => ({ ...l, status: 'COMPLETED' })),
-    }));
-  }
-  // IN_PROGRESS / OVERDUE / FAILED: đánh dấu hoàn thành đúng số bài tương ứng
-  // với progressPercent đã ghi nhận, bài kế tiếp đang học dở, phần còn lại
-  // chưa bắt đầu.
-  const flat = modules.flatMap((m) => m.lessons.filter((l) => l.lessonType !== 'ASSESSMENT'));
-  const completedCount = flat.length ? Math.round((flat.length * (enrollment.progressPercent || 0)) / 100) : 0;
-  let seen = 0;
-  return modules.map((m) => ({
-    ...m,
-    lessons: m.lessons.map((l) => {
-      if (l.lessonType === 'ASSESSMENT') return l;
-      seen += 1;
-      if (seen <= completedCount) return { ...l, status: 'COMPLETED' };
-      if (seen === completedCount + 1) return { ...l, status: 'IN_PROGRESS' };
-      return { ...l, status: 'NOT_STARTED' };
-    }),
-  }));
 }
 
 function formatDate(iso) {

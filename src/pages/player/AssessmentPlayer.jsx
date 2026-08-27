@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyAssessmentAttempt, drawAssessmentQuestions, currentUser, resolveCourseView } from '../../data/mockData';
+import { applyAssessmentAttempt, drawAssessmentQuestions, currentUser, resolveCourseView, deriveLessonStatuses, deriveAssessmentAttempts } from '../../data/mockData';
 import { Badge, Button, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -37,8 +37,12 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const lessonView = rawCourse
     ? (rawEnrollment ? resolveCourseView(rawCourse, rawEnrollment.enrolledVersion) : rawCourse)
     : null;
+  // Chuẩn hóa modules cho khớp với enrollment thật (xem ghi chú tại
+  // deriveLessonStatuses() trong mockData.js) — nếu không, "yêu cầu hoàn
+  // thành mọi bài học bắt buộc" bên dưới sẽ tính sai với các khóa đã có sẵn
+  // tiến độ từ seed data, gây khóa nhầm bài thi dù học viên đã đủ điều kiện.
   const course = rawCourse
-    ? { ...rawCourse, modules: lessonView.modules, enrollment: rawEnrollment }
+    ? { ...rawCourse, modules: deriveLessonStatuses(lessonView.modules, rawEnrollment), enrollment: rawEnrollment }
     : null;
 
   const [phase, setPhase] = useState('start');
@@ -91,7 +95,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   }
 
   const cfg = course.configuration;
-  const attempts = course.assessmentAttempts || [];
+  const attempts = deriveAssessmentAttempts(course.assessmentAttempts, course.enrollment, cfg);
   const attemptsLeft = cfg.maxAttempts - attempts.length;
   const alreadyPassed = attempts.some((a) => a.passed);
   const req = requiredLessonsOf(course);

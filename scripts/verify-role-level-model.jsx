@@ -633,7 +633,7 @@ console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav drawer, role badge
     Boolean(drawerHtml && drawerHtml.includes('Nhân Viên &amp; Khoảng Cách Năng Lực')));
 }
 
-console.log('\n=== 17. RoadmapTabsPanel extraction + inline (non-modal) timeline detail ===');
+console.log('\n=== 17. RoadmapTabsPanel extraction + hover-popover (non-modal) timeline detail ===');
 {
   actAs('learner');
   const pathsHtml = render('LearnerLearningPaths still shows all 4 tabs after extraction', <LearnerLearningPaths initialTab="CURRENT" />, '/learner/paths', '/learner/paths');
@@ -644,7 +644,14 @@ console.log('\n=== 17. RoadmapTabsPanel extraction + inline (non-modal) timeline
   const fs = await import('node:fs');
   const timelineSource = fs.readFileSync('src/components/VisualRoadmapTimeline.jsx', 'utf8');
   check('VisualRoadmapTimeline no longer imports Modal', !/import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*'\.\/ui'/.test(timelineSource));
-  check('VisualRoadmapTimeline renders an inline detail card on selection', timelineSource.includes('{selected && (') && timelineSource.includes('className="card card-pad"'));
+  // Thiết kế hiện tại: hover vào 1 mốc hiện popover thông tin (portal ra
+  // document.body vì thẻ cha ".card" có overflow:hidden), bấm vào mốc điều
+  // hướng thẳng vào khóa học — không còn trạng thái "selected" hiện thẻ chi
+  // tiết inline như thiết kế cũ (đã được thay thế theo yêu cầu người dùng).
+  check('VisualRoadmapTimeline shows a hover-triggered popover portaled to document.body',
+    timelineSource.includes('createPortal(') && timelineSource.includes('document.body'));
+  check('VisualRoadmapTimeline opens the course directly on click (no inline selection state)',
+    timelineSource.includes('onOpenCourse && onOpenCourse(m.course)') && !timelineSource.includes('useState(null); // selected'));
 }
 
 console.log('\n=== 18. LearnerDashboard restructure: real fields only, reachable by every role ===');

@@ -27,7 +27,7 @@ const CATALOG_TABS = [
   { id: 'library', label: 'Library Course', icon: 'ti-database' },
 ];
 
-const LIBRARY_GROUP_BY_OPTIONS = [
+const COURSE_GROUP_BY_OPTIONS = [
   { id: 'NONE', label: 'Không Gộp Nhóm' },
   { id: 'CATEGORY', label: 'Lĩnh Vực (Category)' },
   { id: 'ORG_UNIT', label: 'Phòng Ban & Khối' },
@@ -104,7 +104,7 @@ export default function AdminCourses() {
 
   // Chỉ User Admin & SysAdmin (isFullAdmin, người thật sự tạo/quản trị danh
   // mục) mới thấy TOÀN BỘ khóa — kể cả Nháp và Đã Đóng — để còn quản lý/audit.
-  // Learner, Manager, Trainer chỉ dùng trang này để duyệt & đăng ký nên:
+  // Learner, Manager, HRBP chỉ dùng trang này để duyệt & đăng ký nên:
   //   - Nháp (DRAFT): luôn ẩn, chưa phải nội dung chính thức.
   //   - Đã Đóng (CLOSED): luôn ẩn, hết hạn ghi danh thì không có lý do hiện ra
   //     trong danh mục để "đăng ký" nữa (khóa đã tham gia trước đó vẫn xem lại
@@ -112,11 +112,14 @@ export default function AdminCourses() {
   //   - Chưa Mở (UPCOMING): khóa Lớp Trực Tiếp/Lớp Trực Tuyến vẫn hiện để đăng
   //     ký giữ chỗ trước; riêng khóa Tự Học (Learning Objects/E-Learning) ẩn
   //     tới khi thật sự mở vì không có "buổi học" nào để giữ chỗ trước cả.
+  // Trainer là ngoại lệ cho riêng Nháp: khóa DRAFT do CHÍNH họ tạo (canManageCourse
+  // true) vẫn phải hiện để họ soạn tiếp/sửa/publish — chỉ Nháp của người khác
+  // (thuộc quyền User Admin) mới bị ẩn khỏi tầm nhìn của Trainer.
   const enrolledCourseIdSet = new Set(Object.keys(myEnrollments || {}));
   const visibleCourses = isFullAdmin
     ? courses
     : courses.filter((c) => {
-      if (c.status === 'DRAFT') return false;
+      if (c.status === 'DRAFT' && !canManageCourse(c)) return false;
       const lifecycle = computeLifecycleStatus(c);
       if (lifecycle === 'CLOSED') return false;
       if (lifecycle === 'UPCOMING' && catalogSectionOf(c) === CATALOG_SECTIONS.LEARNING_OBJECTS) return false;
@@ -159,17 +162,21 @@ export default function AdminCourses() {
   const isLibrary = activeTabDef.id === 'library';
   const isCurriculum = activeTabDef.id === 'curriculum';
 
+  // Bộ lọc Trạng Thái Vòng Đời và Gộp Nhóm áp dụng cho MỌI tab liệt kê khóa
+  // học (Learning Objects/Online Class/Classroom/Library), không riêng gì
+  // Library — chỉ khác nhau ở chỗ Library không lọc theo section (xem hết),
+  // còn 3 tab kia lọc thêm theo đúng section của tab đang mở.
   const filtered = isCurriculum
     ? []
     : bySearchCategoryType.filter((c) => {
-      if (!isLibrary) return catalogSectionOf(c) === activeTabDef.section;
+      if (!isLibrary && catalogSectionOf(c) !== activeTabDef.section) return false;
       const matchLifecycle = selectedLifecycle === 'ALL' || computeLifecycleStatus(c) === selectedLifecycle;
       return matchLifecycle;
     });
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const groups = isLibrary ? buildCourseGroups(filtered, groupBy) : null;
+  const groups = isCurriculum ? null : buildCourseGroups(filtered, groupBy);
 
   function toggleGroup(key) {
     setCollapsedGroups((prev) => {
@@ -463,40 +470,36 @@ export default function AdminCourses() {
                 <option value="OPTIONAL">Optional Elective</option>
               </select>
 
-              {isLibrary && (
-                <>
-                  <select
-                    className="field-select"
-                    style={{ height: 34, fontSize: 12, width: 170, flexShrink: 0 }}
-                    value={selectedLifecycle}
-                    onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
-                  >
-                    <option value="ALL">Tất Cả Trạng Thái</option>
-                    {Object.entries(LIFECYCLE_STATUS_META).map(([key, meta]) => (
-                      <option key={key} value={key}>{meta.label}</option>
-                    ))}
-                  </select>
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 170, flexShrink: 0 }}
+                value={selectedLifecycle}
+                onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
+              >
+                <option value="ALL">Tất Cả Trạng Thái</option>
+                {Object.entries(LIFECYCLE_STATUS_META).map(([key, meta]) => (
+                  <option key={key} value={key}>{meta.label}</option>
+                ))}
+              </select>
 
-                  <select
-                    className="field-select"
-                    style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }}
-                    value={groupBy}
-                    onChange={(e) => setGroupBy(e.target.value)}
-                  >
-                    {LIBRARY_GROUP_BY_OPTIONS.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.label}</option>
-                    ))}
-                  </select>
-                </>
-              )}
+              <select
+                className="field-select"
+                style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }}
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+              >
+                {COURSE_GROUP_BY_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Showing <strong>{isLibrary && groups ? filtered.length : paginated.length}</strong> of <strong>{filtered.length}</strong> matched courses
+              Showing <strong>{groups ? filtered.length : paginated.length}</strong> of <strong>{filtered.length}</strong> matched courses
             </div>
           </div>
 
-          {isLibrary && groups ? (
+          {groups ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {groups.map((g) => {
                 const collapsed = collapsedGroups.has(g.key);

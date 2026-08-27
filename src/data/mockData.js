@@ -1236,6 +1236,76 @@ export function resolveCourseView(course, enrolledVersion) {
   };
 }
 
+// `module.lessons[].status` trong dữ liệu khóa học gốc là trạng thái CHUNG của
+// khóa (dùng chung cho mọi học viên, không tách theo user), trong khi
+// enrollment.status/progressPercent mới là ghi danh THẬT của riêng từng học
+// viên (lấy từ userEnrollmentsMap — ma trận HRIS 100 nhân sự, sinh độc lập với
+// course.modules). Hai nguồn này không tự khớp nhau với các khóa đã có sẵn
+// tiến độ từ trước (seed data): nếu không suy ra lại, một khóa Đã Hoàn Thành
+// 100% vẫn hiện toàn bộ bài học "Not started", còn bài thi cuối khóa cũng bị
+// coi là chưa đủ điều kiện mở dù đã có chứng chỉ. Hàm này chuẩn hóa lại
+// modules cho KHỚP với enrollment thật trước khi đưa vào bất kỳ màn hình nào
+// hiển thị HOẶC dùng để gán trạng thái (LearnerCourseDetail, LessonPlayer,
+// AssessmentPlayer) — phải gọi Ở CẢ 3 nơi để tránh lệch nhau giữa trang xem
+// chi tiết và trang học/thi thật.
+export function deriveLessonStatuses(modules, enrollment) {
+  if (!modules) return modules;
+  const status = enrollment?.status;
+  if (!enrollment || status === 'NOT_STARTED') {
+    return modules.map((m) => ({
+      ...m,
+      lessons: m.lessons.map((l) => (l.lessonType === 'ASSESSMENT' ? l : { ...l, status: 'NOT_STARTED' })),
+    }));
+  }
+  if (status === 'COMPLETED') {
+    return modules.map((m) => ({
+      ...m,
+      lessons: m.lessons.map((l) => ({ ...l, status: 'COMPLETED' })),
+    }));
+  }
+  // IN_PROGRESS / OVERDUE / FAILED: đánh dấu hoàn thành đúng số bài tương ứng
+  // với progressPercent đã ghi nhận, bài kế tiếp đang học dở, phần còn lại
+  // chưa bắt đầu.
+  const flat = modules.flatMap((m) => m.lessons.filter((l) => l.lessonType !== 'ASSESSMENT'));
+  const exactPosition = flat.length ? (flat.length * (enrollment.progressPercent || 0)) / 100 : 0;
+  const completedCount = Math.round(exactPosition);
+  // Phần lẻ giữa vị trí thật (chưa làm tròn) và số bài đã xong: dùng làm % dở
+  // dang của đúng bài đang học, để hiện "45% complete" thay vì lúc nào cũng
+  // "0% complete" trên bài đang học dở — trông giống dữ liệu thật hơn.
+  const inProgressPercent = Math.round((exactPosition - Math.floor(exactPosition)) * 100);
+  let seen = 0;
+  return modules.map((m) => ({
+    ...m,
+    lessons: m.lessons.map((l) => {
+      if (l.lessonType === 'ASSESSMENT') return l;
+      seen += 1;
+      if (seen <= completedCount) return { ...l, status: 'COMPLETED' };
+      if (seen === completedCount + 1) return { ...l, status: 'IN_PROGRESS', progressPercent: inProgressPercent || 10 };
+      return { ...l, status: 'NOT_STARTED' };
+    }),
+  }));
+}
+
+// Cùng khoảng trống dữ liệu như deriveLessonStatuses(), nhưng cho lịch sử thi:
+// course.assessmentAttempts luôn khởi tạo rỗng ở template (chỉ được ghi thật
+// khi học viên thi ngay trong phiên hiện tại qua AssessmentPlayer), nên một
+// khóa đã seed sẵn enrollment COMPLETED (và đã có chứng chỉ) vẫn hiện "chưa
+// từng thi" nếu không suy ra 1 lượt thi đạt tương ứng khi enrollment nói đã
+// hoàn thành. Chỉ tổng hợp thêm khi thật sự thiếu — không đụng vào các lượt
+// thi có thật đã ghi nhận.
+export function deriveAssessmentAttempts(attempts, enrollment, configuration) {
+  const real = attempts || [];
+  if (real.length > 0 || !configuration?.assessmentEnabled) return real;
+  if (enrollment?.status !== 'COMPLETED') return real;
+  return [{
+    n: 1,
+    score: enrollment.score || configuration.passingScorePercent || 80,
+    passed: true,
+    answered: configuration.questionsPerAttempt || 0,
+    submittedAt: `${enrollment.completedAt || '2026-07-15'}T09:00:00.000Z`,
+  }];
+}
+
 // Marks one lesson's progress and returns a new, immutable course object with
 // enrollment recomputed — pass the result straight to CourseStore.updateCourse.
 export function applyLessonProgress(course, lessonId, fields) {

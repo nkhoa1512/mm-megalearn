@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { applyLessonProgress, currentUser, resolveCourseView } from '../../data/mockData';
+import { applyLessonProgress, currentUser, resolveCourseView, deriveLessonStatuses } from '../../data/mockData';
 import { Badge, Button, ProgressBar, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 
@@ -49,7 +49,13 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const versionedCourse = rawCourse
     ? (enrollment ? resolveCourseView(rawCourse, enrollment.enrolledVersion) : rawCourse)
     : null;
-  const course = versionedCourse ? { ...versionedCourse, enrollment } : null;
+  // Chuẩn hóa modules cho khớp với enrollment thật (xem ghi chú tại
+  // deriveLessonStatuses() trong mockData.js) — nếu không, một khóa đã có sẵn
+  // tiến độ từ seed data sẽ hiện sai bài đang học/đã xong ngay tại chính màn
+  // hình học thật, dù trang chi tiết khóa học đã hiện đúng.
+  const course = versionedCourse
+    ? { ...versionedCourse, enrollment, modules: deriveLessonStatuses(versionedCourse.modules, enrollment) }
+    : null;
   const lesson = course?.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
 
   const flat = useMemo(() => (course ? flattenLessons(course) : []), [course]);
