@@ -278,6 +278,11 @@ export default function AdminCourses() {
             variant="primary"
             icon="ti-plus"
             onClick={() => {
+              if (!isFullAdmin) {
+                // Trainer chỉ mở lớp Trực tiếp
+                navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
+                return;
+              }
               const section = activeTabDef.section;
               if (section === CATALOG_SECTIONS.CLASSROOM) navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
               else if (section === CATALOG_SECTIONS.ONLINE_CLASS) navigate('/admin/courses/new?deliveryType=ONLINE_ELEARNING&onlineClassType=VIRTUAL_CLASS');
@@ -290,7 +295,7 @@ export default function AdminCourses() {
         )}
         {isCurriculumAdmin && isCurriculum && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingCurriculum(emptyCurriculumDraft())}>
-            Create Curriculum
+            Tạo Giáo Trình Mới
           </Button>
         )}
       </div>
@@ -833,7 +838,7 @@ function MultiTargetAssigner({ onSave, onCancel, isHrbp = false, initialAssignTy
   );
 }
 
-function CurriculumDetailModal({
+export function CurriculumDetailModal({
   curriculum: initialCurriculum,
   courses,
   curricula: propCurricula,
@@ -1336,7 +1341,7 @@ function CourseDetailModal({
   );
 }
 
-function CurriculumEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
+export function CurriculumEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
   const [form, setForm] = useState(() => ({
     ...draft,
     category: draft.category || companyCategories[0] || 'Store Operations',
@@ -1347,17 +1352,28 @@ function CurriculumEditorModal({ draft, courses, companyCategories, onCancel, on
   const [levelFilter, setLevelFilter] = useState('ALL');
   const [search, setSearch] = useState('');
 
+  const eLearningCourses = useMemo(() => {
+    return (courses || []).filter((c) => {
+      // Ưu tiên các khóa Online E-Learning tự học
+      if (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB') return false;
+      if (c.onlineClassType === 'VIRTUAL_CLASS') return false;
+      return true;
+    });
+  }, [courses]);
+
   function toggleCourse(id) {
     setForm((f) => ({
       ...f,
-      courseIds: f.courseIds.includes(id) ? f.courseIds.filter((x) => x !== id) : [...f.courseIds, id],
+      courseIds: (f.courseIds || []).includes(id)
+        ? (f.courseIds || []).filter((x) => x !== id)
+        : [...(f.courseIds || []), id],
     }));
   }
 
   function removeCourse(id) {
     setForm((f) => ({
       ...f,
-      courseIds: f.courseIds.filter((x) => x !== id),
+      courseIds: (f.courseIds || []).filter((x) => x !== id),
     }));
   }
 

@@ -13,7 +13,7 @@ globalThis.localStorage = {
 };
 
 const { CourseStoreProvider } = await import('../src/state/CourseStore');
-const { personaForRole, pendingApprovalRequests } = await import('../src/data/mockData');
+const { personaForRole, pendingApprovalRequests, courses: mockCourses } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
 const AppHeader = (await import('../src/components/AppHeader')).default;
@@ -35,7 +35,7 @@ const MyCertificates = (await import('../src/pages/shared/MyCertificates')).defa
 const LessonPlayer = (await import('../src/pages/player/LessonPlayer')).default;
 const AssessmentPlayer = (await import('../src/pages/player/AssessmentPlayer')).default;
 const AdminDashboard = (await import('../src/pages/admin/AdminDashboard')).default;
-const AdminCourses = (await import('../src/pages/admin/AdminCourses')).default;
+const { default: AdminCourses, CurriculumEditorModal } = await import('../src/pages/admin/AdminCourses');
 const AdminCourseBuilder = (await import('../src/pages/admin/AdminCourseBuilder')).default;
 const AdminConfig = (await import('../src/pages/admin/AdminConfig')).default;
 const AdminReports = (await import('../src/pages/admin/AdminReports')).default;
@@ -806,6 +806,28 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
   const learnerCoursesHtml = render('LearnerCourses renders without Level badges in table/cards', <LearnerCourses />, '/learner/courses', '/learner/courses');
   check('LearnerCourses does not render JobLevelBadge in catalog table header',
     Boolean(learnerCoursesHtml && !learnerCoursesHtml.includes('>Cấp Bậc<')));
+
+  // Section 21: Curriculum Editor Modal & Editing Flow
+  console.log('\n--- Section 21: Curriculum Editor Modal & Detail Modal Rendering ---');
+  actAs('useradmin');
+  const userAdminCurriculaHtml = render('User Admin Curriculum tab render', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
+  check('User Admin can view curriculum list with Edit buttons',
+    Boolean(userAdminCurriculaHtml && userAdminCurriculaHtml.includes('Sửa') && userAdminCurriculaHtml.includes('Chi Tiết &amp; Phân Bổ')));
+
+  const mockCurriculumDraft = { id: 'CUR-TEST', title: 'Test Curriculum', category: 'Store Operations', courseIds: ['course-fs-001'], status: 'PUBLISHED', assignments: [] };
+  const editorHtml = render(
+    'CurriculumEditorModal renders without crashing',
+    <CurriculumEditorModal
+      draft={mockCurriculumDraft}
+      courses={mockCourses}
+      companyCategories={['Store Operations', 'Fresh Food & Bakery']}
+      onCancel={() => {}}
+      onSave={() => {}}
+    />,
+    '/admin/courses', '/admin/courses'
+  );
+  check('CurriculumEditorModal renders with title input and course list',
+    Boolean(editorHtml && editorHtml.includes('Chỉnh Sửa Giáo Trình') && editorHtml.includes('Danh sách khóa E-Learning')));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));

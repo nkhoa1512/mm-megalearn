@@ -548,459 +548,193 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {/* DELIVERY MODE SWITCHER */}
-      <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div className="section-label" style={{ margin: 0 }}>
-            <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Hình Thức Đào Tạo / Delivery Mode
+      {isTrainerOnly ? (
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1.5px solid #93c5fd', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--blue, #2563eb)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 8px rgba(37,99,235,0.25)', flexShrink: 0 }}>
+                <i className="ti ti-school" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14.5, color: '#1e3a8a' }}>Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành (In-Person Workshop)</div>
+                <div style={{ fontSize: 12, color: '#2563eb', marginTop: 2 }}>
+                  Giảng viên / L&amp;D chỉ tạo được khóa Trực Tiếp và tự động là người đứng lớp: <strong>{authUser.fullName}</strong> (Chính bạn &middot; Quản trị lớp học và quét mã QR Điểm danh trực tiếp)
+                </div>
+              </div>
+            </div>
+            <Badge tone="blue" icon="ti-lock">Quyền Hạn: Giảng Viên / L&amp;D (Chỉ Mở Lớp Trực Tiếp)</Badge>
           </div>
-          <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
-            {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
-          </Badge>
         </div>
-
-        {isTrainerOnly && (
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10 }}>
-            <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-            Giảng viên / L&amp;D chỉ tạo được khóa Trực Tiếp và tự động là người đứng lớp.
+      ) : (
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+              <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
+              1. Hình Thức Đào Tạo (Delivery Mode)
+            </div>
+            <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
+              {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
+            </Badge>
           </div>
-        )}
-        <div style={{ display: 'grid', gridTemplateColumns: canAuthorOnline ? '1fr 1fr' : '1fr', gap: 12 }}>
-          {canAuthorOnline && (
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
             <button
               type="button"
               onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', onlineClassType: draft.onlineClassType || 'E_LEARNING' })}
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 gap: 12,
-                padding: '12px 16px',
+                padding: '14px 16px',
                 borderRadius: 8,
-                border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail)' : '1px solid var(--line)',
-                background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft)' : '#fff',
+                border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
+                background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft, #f0fdf4)' : '#fff',
                 cursor: 'pointer',
                 textAlign: 'left',
+                transition: 'all 0.15s ease',
               }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail, #15803d)' : 'var(--paper-sunken)', color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
                 <i className="ti ti-device-laptop" />
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Học Trực Tuyến (Online E-learning)</div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học qua Video, YouTube, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                  Khóa Học Trực Tuyến (Online E-learning)
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  Học viên tự học qua Video, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm hoặc Lớp Zoom/Teams.
+                </div>
               </div>
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => patch({
-              deliveryType: 'IN_PERSON_CLASSROOM',
-              modality: 'CLASSROOM_LAB',
-              format: 'Store Practical Lab / ILT',
-              trainerId: isTrainerOnly ? authUser.userId : (draft.trainerId || eligibleTrainers[0]?.userId),
-              trainerName: isTrainerOnly ? authUser.fullName : (draft.trainerName || eligibleTrainers[0]?.fullName),
-              venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
-              venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
-              scheduleDate: draft.scheduleDate || '2026-08-28',
-              scheduleTime: draft.scheduleTime || '08:30 - 11:30 (3.0 hours)',
-              maxCapacity: draft.maxCapacity || 25,
-            })}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 16px',
-              borderRadius: 8,
-              border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue)' : '1px solid var(--line)',
-              background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft)' : '#fff',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-              <i className="ti ti-chalkboard" />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Khóa Đào Tạo Trực Tiếp (In-Person Workshop)</div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học tập trung tại xưởng/phòng học có Giảng viên (Trainer) &amp; Điểm danh Live QR</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* CLASS TYPE SELECTOR — chỉ hiện khi thực sự có 2 lựa chọn để chọn: tự
-          học (E_LEARNING qua PDF/PPT/SCORM/Video) hoặc lớp trực tuyến trực
-          tiếp qua Zoom/Teams có Giảng viên chủ trì (VIRTUAL_CLASS, chỉ User
-          Admin mới có quyền này). Với người không có canCreateVirtualClass,
-          khóa Online chỉ có thể là E_LEARNING (đã mặc định sẵn) nên ẩn hẳn
-          card này đi — tránh trùng lặp với thẻ "Khóa Học Trực Tuyến" phía trên. */}
-      {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
-        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)' }}>
-          <div className="section-label" style={{ margin: '0 0 10px' }}>
-            <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Loại Khóa Trực Tuyến / Class Type
+            <button
+              type="button"
+              onClick={() => patch({
+                deliveryType: 'IN_PERSON_CLASSROOM',
+                modality: 'CLASSROOM_LAB',
+                format: 'Store Practical Lab / ILT',
+                trainerId: draft.trainerId || eligibleTrainers[0]?.userId,
+                trainerName: draft.trainerName || eligibleTrainers[0]?.fullName,
+                venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
+                venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
+                scheduleDate: draft.scheduleDate || '2026-08-28',
+                scheduleTime: draft.scheduleTime || '08:30 - 11:30 (3.0 hours)',
+                maxCapacity: draft.maxCapacity || 25,
+              })}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12,
+                padding: '14px 16px',
+                borderRadius: 8,
+                border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue, #2563eb)' : '1px solid var(--line)',
+                background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft, #eff6ff)' : '#fff',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue, #2563eb)' : 'var(--paper-sunken)', color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                <i className="ti ti-chalkboard" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#1e40af' : 'var(--ink)', marginBottom: 2 }}>
+                  Khóa Đào Tạo Trực Tiếp (In-Person Workshop)
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  Học tập trung tại xưởng/phòng thực hành có Giảng viên (Trainer) &amp; Điểm danh Live QR.
+                </div>
+              </div>
+            </button>
           </div>
-          <div className="grid" style={{ gridTemplateColumns: canCreateVirtualClass ? '1fr 1fr' : '1fr', gap: 12 }}>
+        </div>
+      )}
+
+      {/* CLASS TYPE SELECTOR (FOR ONLINE COURSES) */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+              <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
+              2. Phân Loại Khóa Trực Tuyến (Class Type)
+            </div>
+            <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
+              {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'Tự Học (Self-Paced)' : 'Lớp Live Zoom/Teams'}
+            </Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
             <button
               type="button"
               onClick={() => patch({ onlineClassType: 'E_LEARNING', ...deriveModalityFormat(draft.deliveryType, 'E_LEARNING') })}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
-                border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail)' : '1px solid var(--line)',
-                background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft)' : '#fff',
+                display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
+                border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
+                background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : '#fff',
                 cursor: 'pointer', textAlign: 'left',
+                transition: 'all 0.15s ease',
               }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail, #15803d)' : 'var(--paper-sunken)', color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
                 <i className="ti ti-player-play" />
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>E-Learning (Tự học)</div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Học viên tự học Module/Bài học theo tiến độ riêng, có thể kèm bài thi trắc nghiệm</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                  E-Learning (Tự Học Theo Tiến Độ)
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  Học viên tự học theo Module/Bài học (SCORM, Video, Slide PPT, PDF) kèm bài thi trắc nghiệm.
+                </div>
               </div>
             </button>
 
-            {canCreateVirtualClass && (
-              <button
-                type="button"
-                onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat(draft.deliveryType, 'VIRTUAL_CLASS') })}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
-                  border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber)' : '1px solid var(--line)',
-                  background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft)' : '#fff',
-                  cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--amber)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                  <i className="ti ti-video" />
+            <button
+              type="button"
+              onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat(draft.deliveryType, 'VIRTUAL_CLASS') })}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
+                border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
+                background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber, #d97706)' : 'var(--paper-sunken)', color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                <i className="ti ti-video" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
+                  Lớp Học Trực Tuyến Live (Virtual Classroom)
                 </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>Lớp Học Trực Tuyến Trực Tiếp (Virtual Classroom)</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Lớp live qua Zoom/Teams/Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
                 </div>
-              </button>
-            )}
+              </div>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Người không có canCreateVirtualClass (Trainer/L&D, HRBP...) lỡ mở 1
-          khóa Virtual Class có sẵn qua URL trực tiếp — không thấy Class Type
-          Selector ở trên (đã ẩn), nhưng vẫn cần biết vì sao panel bên dưới bị khóa. */}
-      {draft.deliveryType === 'ONLINE_ELEARNING' && !canCreateVirtualClass && draft.onlineClassType === 'VIRTUAL_CLASS' && (
-        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', fontSize: 11.5, color: 'var(--ink-soft)' }}>
-          <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-          Đây là Lớp Học Trực Tuyến Zoom/Teams — chỉ <strong>User Admin/SysAdmin</strong> được tạo và chỉnh sửa mục này. Bạn chỉ có thể xem.
-        </div>
-      )}
-
-      {/* VIRTUAL CLASSROOM LOGISTICS CARD — thay thế hoàn toàn Module/Bài học/Assessment
-          khi chọn VIRTUAL_CLASS: cấu hình nền tảng, link phòng họp, Giảng viên chủ trì,
-          lịch học cố định, sức chứa, Meeting ID/Passcode, hướng dẫn chuẩn bị & tài liệu.
-          Không có Quiz kết thúc khóa — hoàn thành = đã tham gia buổi học (điểm danh do
-          Giảng viên đánh dấu qua trang Điểm Danh hiện có ở Cổng Giảng Dạy). Bọc trong
-          <fieldset disabled> để chỉ User Admin/SysAdmin chỉnh sửa được — người
-          khác (nếu lỡ mở 1 khóa Virtual Class có sẵn) chỉ xem, không sửa. */}
-      {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS' && (
-        <fieldset disabled={!canCreateVirtualClass} style={{ border: 'none', padding: 0, margin: 0 }}>
-        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--amber)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--amber-soft) 100%)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div className="section-label" style={{ margin: 0, color: 'var(--amber-soft-text)' }}>
-              <i className="ti ti-device-tv" style={{ marginRight: 6 }} />
-              Virtual Classroom Logistics
-            </div>
-            <Badge tone="amber" icon="ti-checklist">Điểm danh qua Cổng Giảng Dạy hiện có</Badge>
-          </div>
-
-          <div className="grid grid-2" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Nền tảng (Platform)</label>
-              <select
-                className="field-select"
-                value={draft.virtualMeeting?.platform || 'TEAMS'}
-                onChange={(e) => patchVirtualMeeting({ platform: e.target.value })}
-              >
-                <option value="TEAMS">Microsoft Teams</option>
-                <option value="ZOOM">Zoom</option>
-                <option value="MEET">Google Meet</option>
-                <option value="WEBEX">Cisco Webex</option>
-                <option value="CUSTOM">Khác (Custom)</option>
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Đường dẫn phòng họp (Meeting URL) *</label>
-              <input
-                className="field-input"
-                placeholder="https://teams.microsoft.com/l/meetup-join/..."
-                value={draft.virtualMeeting?.meetingUrl || ''}
-                onChange={(e) => patchVirtualMeeting({ meetingUrl: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-2" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Giảng viên / Người chủ trì (Host Instructor) *</label>
-              <select
-                className="field-select"
-                value={draft.virtualMeeting?.instructorId || ''}
-                onChange={(e) => {
-                  const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
-                  patchVirtualMeeting({ instructorId: tr?.userId || '', instructorName: tr?.fullName || '', instructorTitle: tr?.position || '' });
-                }}
-              >
-                <option value="">— Chọn Giảng viên —</option>
-                {eligibleTrainers.map((t) => (
-                  <option key={t.userId} value={t.userId}>
-                    {t.fullName} — {roleDefinition(t.role).labelVi}
-                    {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
-                  </option>
-                ))}
-              </select>
-              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong "Lớp Học Phụ Trách" tại Cổng Giảng Dạy, kèm nút Chủ Trì Lớp Học (Host Meeting) và trang Điểm Danh đúng cơ chế đang dùng cho lớp Trực tiếp.</div>
-            </div>
-            <div>
-              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
-              <input
-                type="number"
-                className="field-input"
-                value={draft.virtualMeeting?.maxCapacity || 50}
-                onChange={(e) => patchVirtualMeeting({ maxCapacity: Number(e.target.value) || 50 })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-3" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Ngày tổ chức (Schedule Date) *</label>
-              <input
-                type="date"
-                className="field-input"
-                value={draft.virtualMeeting?.scheduleDate || ''}
-                onChange={(e) => patchVirtualMeeting({ scheduleDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="field-label">Khung giờ (Time Window) *</label>
-              <input
-                className="field-input"
-                placeholder="14:00 - 16:00 (2.0 giờ)"
-                value={draft.virtualMeeting?.scheduleTime || ''}
-                onChange={(e) => patchVirtualMeeting({ scheduleTime: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="field-label">Trạng thái buổi học</label>
-              <select
-                className="field-select"
-                value={draft.virtualMeeting?.status || 'UPCOMING'}
-                onChange={(e) => patchVirtualMeeting({ status: e.target.value })}
-              >
-                <option value="UPCOMING">Sắp diễn ra</option>
-                <option value="COMPLETED">Đã kết thúc</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-2" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Meeting ID</label>
-              <input className="field-input" value={draft.virtualMeeting?.meetingId || ''} onChange={(e) => patchVirtualMeeting({ meetingId: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label">Passcode</label>
-              <input className="field-input" value={draft.virtualMeeting?.passcode || ''} onChange={(e) => patchVirtualMeeting({ passcode: e.target.value })} />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label className="field-label">Hướng dẫn chuẩn bị (Prep Instructions)</label>
-            <textarea
-              className="field-input"
-              rows={2}
-              style={{ resize: 'vertical' }}
-              value={draft.virtualMeeting?.instructions || ''}
-              onChange={(e) => patchVirtualMeeting({ instructions: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="field-label">Tài liệu đính kèm (Materials)</label>
-            <VirtualMaterialsEditor
-              materials={draft.virtualMeeting?.materials || []}
-              onAdd={addVirtualMaterial}
-              onRemove={removeVirtualMaterial}
-            />
-          </div>
-        </div>
-        </fieldset>
-      )}
-
-      {/* DEDICATED IN-PERSON CLASSROOM LOGISTICS CARD */}
-      {draft.deliveryType === 'IN_PERSON_CLASSROOM' && (
-        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--blue)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--blue-soft) 100%)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div className="section-label" style={{ margin: 0, color: 'var(--blue)' }}>
-              <i className="ti ti-school" style={{ marginRight: 6 }} />
-              In-Person Training Logistics &amp; Faculty Assignment
-            </div>
-            <Badge tone="blue" icon="ti-qrcode">Live QR Attendance Enabled</Badge>
-          </div>
-
-          <div className="grid grid-2" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Giảng viên Đứng lớp (Assigned Trainer / Faculty)</label>
-              {isTrainerOnly ? (
-                // Trainer/L&D tự động là giảng viên đứng lớp — không chọn được người khác.
-                <div className="field-input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)' }}>
-                  <i className="ti ti-user-check" style={{ color: 'var(--blue)' }} />
-                  {authUser.fullName} — {roleDefinition(authRole).labelVi} (chính bạn)
-                </div>
-              ) : (
-                <select
-                  className="field-select"
-                  value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
-                  onChange={(e) => {
-                    const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
-                    patch({ trainerId: tr?.userId, trainerName: tr?.fullName });
-                  }}
-                >
-                  {eligibleTrainers.map((t) => (
-                    <option key={t.userId} value={t.userId}>
-                      {t.fullName} — {roleDefinition(t.role).labelVi}
-                      {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Giảng Dạy và mở mã QR Điểm danh tại lớp.</div>
-            </div>
-
-            <div>
-              <label className="field-label">Địa điểm / Phòng Thực hành (Venue &amp; Practical Lab)</label>
-              <select
-                className="field-select"
-                value={draft.venueId || 'lab-ap-fresh'}
-                onChange={(e) => {
-                  const r = meetingRoomsAndLabs.find((rm) => rm.id === e.target.value);
-                  patch({ venueId: r?.id, venue: r?.name, maxCapacity: r?.capacity || 25 });
-                }}
-              >
-                {meetingRoomsAndLabs.map((rm) => (
-                  <option key={rm.id} value={rm.id}>
-                    {rm.name} (Sức chứa: {rm.capacity} chỗ &middot; {rm.location})
-                  </option>
-                ))}
-              </select>
-              <div className="field-hint">Phòng học / Xưởng thực hành tổ chức buổi đào tạo thực tế.</div>
-            </div>
-          </div>
-
-          <div className="grid grid-3" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="field-label">Ngày tổ chức (Training Date)</label>
-              <input
-                type="date"
-                className="field-input"
-                value={draft.scheduleDate || '2026-08-28'}
-                onChange={(e) => patch({ scheduleDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="field-label">Khung giờ (Time Window)</label>
-              <select
-                className="field-select"
-                value={draft.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
-                onChange={(e) => patch({ scheduleTime: e.target.value })}
-              >
-                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (Sáng - 3.0 tiếng)</option>
-                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (Chiều - 3.0 tiếng)</option>
-                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (Sáng - 3.0 tiếng)</option>
-                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (Chiều - 3.0 tiếng)</option>
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
-              <input
-                type="number"
-                className="field-input"
-                value={draft.maxCapacity || 25}
-                onChange={(e) => patch({ maxCapacity: Number(e.target.value) || 25 })}
-              />
-            </div>
-          </div>
-
-          {/* Quick Target Audience Presets */}
-          <div style={{ background: '#fff', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--line)' }}>
-            <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-              <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--blue)' }} />
-              Gán Nhanh Đối Tượng Học Viên Bắt Buộc Tham Gia (Target Cohort Enrollment)
-            </label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { label: '👥 Tất cả Quản lý (All Managers)', type: 'ROLE', target: 'MANAGER' },
-                { label: '🌱 Tất cả Nhân sự Mới (New Joiners)', type: 'STATUS', target: 'NEW_JOINER' },
-                { label: '🥖 Nhân viên Quầy Bánh & Tươi sống (MM An Phú)', type: 'DEPARTMENT', target: 'dept-ppf' },
-                { label: '🏢 Toàn bộ Nhân viên Siêu thị An Phú', type: 'STORE', target: 'store-an-phu' },
-              ].map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    patch({
-                      courseType: 'MANDATORY',
-                      assignedCohortNote: preset.label,
-                    });
-                    if (preset.type === 'DEPARTMENT') {
-                      setDraft((d) => ({
-                        ...d,
-                        courseType: 'MANDATORY',
-                        assignment: {
-                          assignmentType: 'DEPARTMENT',
-                          targetDepartmentId: preset.target,
-                          assignedBy: 'Sarah Nguyen (L&OD Admin)',
-                          startDate: draft.scheduleDate || '2026-08-28',
-                          dueDate: draft.scheduleDate || '2026-08-28',
-                        },
-                      }));
-                    } else if (preset.type === 'STORE') {
-                      setDraft((d) => ({
-                        ...d,
-                        courseType: 'MANDATORY',
-                        assignment: {
-                          assignmentType: 'STORE',
-                          targetStoreId: preset.target,
-                          assignedBy: 'Sarah Nguyen (L&OD Admin)',
-                          startDate: draft.scheduleDate || '2026-08-28',
-                          dueDate: draft.scheduleDate || '2026-08-28',
-                        },
-                      }));
-                    }
-                  }}
-                  className="btn btn-sm"
-                  style={{
-                    background: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--paper-sunken)',
-                    color: draft.assignedCohortNote === preset.label ? '#fff' : 'var(--ink)',
-                    borderColor: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--line)',
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* BASIC INFORMATION CARD */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
-        <div className="section-label" style={{ margin: '0 0 14px' }}>Basic information</div>
-        <div className="grid grid-3" style={{ marginBottom: 14 }}>
-          <div>
-            <label className="field-label">Course name</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
+          <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
+            <i className="ti ti-info-circle" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Thông Tin Cơ Bản / Basic Information
+          </div>
+          <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Phiên bản hiện hành: <strong>{draft.version || 'v1.0'}</strong></span>
+        </div>
+
+        {/* Row 1: Course Title & Code */}
+        <div className="grid grid-3" style={{ gap: 14, marginBottom: 14 }}>
+          <div style={{ gridColumn: 'span 2' }}>
+            <label className="field-label" style={{ fontWeight: 700 }}>
+              Tên khóa học (Course Title) <span style={{ color: 'var(--rust)' }}>*</span>
+            </label>
             <input
               className="field-input"
+              style={{ fontWeight: 600, fontSize: 13.5 }}
+              placeholder="VD: Quy Trình Kiểm Soát An Toàn Vệ Sinh Thực Phẩm (HACCP)"
               value={draft.title}
               onChange={(e) => {
                 const title = e.target.value;
@@ -1015,9 +749,14 @@ export default function AdminCourseBuilder() {
             />
           </div>
           <div>
-            <label className="field-label">Course code</label>
+            <label className="field-label" style={{ fontWeight: 700 }}>Mã khóa học (Course Code)</label>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input className="field-input" value={draft.code} onChange={(e) => patch({ code: e.target.value })} style={{ flex: 1 }} />
+              <input
+                className="field-input"
+                style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}
+                value={draft.code}
+                onChange={(e) => patch({ code: e.target.value })}
+              />
               <button
                 type="button"
                 className="icon-btn"
@@ -1029,57 +768,139 @@ export default function AdminCourseBuilder() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Row 2: Dates, Duration & Course Type - PERFECTLY ALIGNED 4 COLUMNS */}
+        <div className="grid grid-4" style={{ gap: 14, marginBottom: 16 }}>
           <div>
-            <label className="field-label">Start date</label>
-            <input type="date" className="field-input" value={draft.startDate || ''} onChange={(e) => patch({ startDate: e.target.value })} />
+            <label className="field-label">Ngày bắt đầu (Start Date)</label>
+            <input
+              type="date"
+              className="field-input"
+              value={draft.startDate || ''}
+              onChange={(e) => patch({ startDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="field-label">Ngày kết thúc (End Date)</label>
+            <input
+              type="date"
+              className="field-input"
+              value={draft.endDate || ''}
+              onChange={(e) => patch({ endDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="field-label">Thời lượng ước tính</label>
+            <input
+              type="text"
+              className="field-input"
+              placeholder="VD: 3h hoặc 2.5 hours"
+              value={draft.estimatedHours || draft.estimatedDuration || ''}
+              onChange={(e) => patch({ estimatedHours: e.target.value, estimatedDuration: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="field-label">Loại khóa (Course Type)</label>
+            <select
+              className="field-select"
+              value={draft.courseType}
+              onChange={(e) => setCourseType(e.target.value)}
+            >
+              <option value="OPTIONAL">Optional (Tự chọn)</option>
+              <option value="MANDATORY">Mandatory (Bắt buộc)</option>
+            </select>
           </div>
         </div>
-        <div className="grid grid-3" style={{ marginBottom: 14 }}>
-          <div style={{ gridColumn: 'span 2' }}>
-            <label className="field-label">Category (Lĩnh vực)</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {companyCategories.map((cat) => {
-                const active = (draft.categories || []).includes(cat);
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setDraft((d) => {
-                        const cur = d.categories && d.categories.length ? d.categories : (d.category ? [d.category] : []);
-                        const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
-                        return { ...d, categories: next, category: next[0] || '' };
-                      });
-                    }}
-                    style={{
-                      padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      border: active ? '1.5px solid var(--rail)' : '1px solid var(--line-strong)',
-                      background: active ? 'var(--rail)' : 'var(--paper-raised)',
-                      color: active ? '#fff' : 'var(--ink)',
-                    }}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
+
+        {/* Row 3: Category Multi-Select Chips (Lĩnh vực chuyên môn) */}
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, border: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
+                <i className="ti ti-tag" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                Lĩnh Vực Chuyên Môn (Course Categories) &middot; <span style={{ color: 'var(--rail, #15803d)' }}>Đã chọn: {(draft.categories && draft.categories.length) || (draft.category ? 1 : 0)}</span>
+              </label>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Chọn một hoặc nhiều lĩnh vực đào tạo phù hợp:
+              </div>
             </div>
-            <div className="field-hint">Chọn một hoặc nhiều lĩnh vực — quản trị danh mục tại System Configuration &gt; Course Categories.</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px', background: '#fff', border: '1px solid var(--line)' }}
+                onClick={() => patch({ categories: [...companyCategories], category: companyCategories[0] })}
+              >
+                Chọn tất cả ({companyCategories.length})
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px', background: '#fff', border: '1px solid var(--line)' }}
+                onClick={() => patch({ categories: [companyCategories[0]], category: companyCategories[0] })}
+              >
+                Mặc định ({companyCategories[0]})
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="field-label">End date</label>
-            <input type="date" className="field-input" value={draft.endDate || ''} onChange={(e) => patch({ endDate: e.target.value })} />
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {companyCategories.map((cat) => {
+              const active = (draft.categories || []).includes(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setDraft((d) => {
+                      const cur = d.categories && d.categories.length ? d.categories : (d.category ? [d.category] : []);
+                      const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
+                      const safeNext = next.length === 0 ? [cat] : next;
+                      return { ...d, categories: safeNext, category: safeNext[0] || '' };
+                    });
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: active ? '1.5px solid var(--rail, #15803d)' : '1px solid var(--line-strong)',
+                    background: active ? 'var(--rail, #15803d)' : '#fff',
+                    color: active ? '#fff' : 'var(--ink)',
+                    boxShadow: active ? '0 1px 4px rgba(21,128,61,0.25)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <i className={`ti ${active ? 'ti-check' : 'ti-plus'}`} style={{ fontSize: 12 }} />
+                  {cat}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-            <label className="field-label" style={{ margin: 0, fontWeight: 700 }}>
-              Cấp bậc mục tiêu (Target job level) — Có thể chọn 1 hoặc nhiều cấp bậc:
-            </label>
+
+        {/* Row 4: Target Job Levels (Level 1 to Level 7 Multi-Select) */}
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, border: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
+                <i className="ti ti-chart-arrows" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                Cấp Bậc Mục Tiêu (Target Job Level) — Có thể chọn 1 hoặc nhiều cấp bậc:
+              </label>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Áp dụng cho học viên theo khung năng lực 7 cấp bậc của MMVN:
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
                 onClick={() => {
                   const allLvls = ['1', '2', '3', '4', '5', '6', '7'];
                   patch({ targetLevels: allLvls, targetLevel: '1', targetLevelTitle: 'Level 1 - 7' });
@@ -1090,7 +911,7 @@ export default function AdminCourseBuilder() {
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
                 onClick={() => {
                   const mgmt = ['1', '2', '3', '4'];
                   patch({ targetLevels: mgmt, targetLevel: '1', targetLevelTitle: 'Level 1 - 4' });
@@ -1101,7 +922,7 @@ export default function AdminCourseBuilder() {
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 8px', border: '1px solid var(--line)' }}
+                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
                 onClick={() => {
                   const frontline = ['5', '6', '7'];
                   patch({ targetLevels: frontline, targetLevel: '7', targetLevelTitle: 'Level 5 - 7' });
@@ -1164,19 +985,18 @@ export default function AdminCourseBuilder() {
             </strong>
           </div>
         </div>
-        <div style={{ marginBottom: 14 }}>
-          <label className="field-label">Description</label>
-          <textarea className="field-input" value={draft.description} onChange={(e) => patch({ description: e.target.value })} rows={2} style={{ resize: 'vertical' }} />
-        </div>
-        <div className="grid grid-3" style={{ marginBottom: 14 }}>
-          <div>
-            <label className="field-label">Course type</label>
-            <select className="field-select" value={draft.courseType} onChange={(e) => setCourseType(e.target.value)}>
-              <option value="OPTIONAL">Optional</option>
-              <option value="MANDATORY">Mandatory</option>
-            </select>
-            <div className="field-hint">Only Admin can create, configure, publish and assign Mandatory courses.</div>
-          </div>
+
+        {/* Row 5: Description */}
+        <div style={{ marginBottom: 16 }}>
+          <label className="field-label" style={{ fontWeight: 700 }}>Mô tả khóa học (Course Description)</label>
+          <textarea
+            className="field-input"
+            value={draft.description}
+            onChange={(e) => patch({ description: e.target.value })}
+            rows={3}
+            style={{ resize: 'vertical' }}
+            placeholder="Mô tả mục tiêu khóa học, kiến thức cốt lõi và kết quả đầu ra của học viên sau khi hoàn thành..."
+          />
         </div>
 
         {/* Course Thumbnail & Roadmap Milestone Visual Image */}
@@ -1337,6 +1157,308 @@ export default function AdminCourseBuilder() {
           )}
         </div>
       </div>
+
+      {/* VIRTUAL CLASSROOM LOGISTICS CARD */}
+      {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS' && (
+        <fieldset disabled={!canCreateVirtualClass} style={{ border: 'none', padding: 0, margin: 0 }}>
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--amber)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--amber-soft) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div className="section-label" style={{ margin: 0, color: 'var(--amber-soft-text)' }}>
+              <i className="ti ti-device-tv" style={{ marginRight: 6 }} />
+              Virtual Classroom Logistics &amp; Host Setup
+            </div>
+            <Badge tone="amber" icon="ti-checklist">Điểm danh qua Cổng Giảng Dạy</Badge>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Nền tảng (Platform)</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.platform || 'TEAMS'}
+                onChange={(e) => patchVirtualMeeting({ platform: e.target.value })}
+              >
+                <option value="TEAMS">Microsoft Teams</option>
+                <option value="ZOOM">Zoom</option>
+                <option value="MEET">Google Meet</option>
+                <option value="WEBEX">Cisco Webex</option>
+                <option value="CUSTOM">Khác (Custom)</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Đường dẫn phòng họp (Meeting URL) *</label>
+              <input
+                className="field-input"
+                placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                value={draft.virtualMeeting?.meetingUrl || ''}
+                onChange={(e) => patchVirtualMeeting({ meetingUrl: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Giảng viên / Người chủ trì (Host Instructor) *</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.instructorId || ''}
+                onChange={(e) => {
+                  const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
+                  patchVirtualMeeting({ instructorId: tr?.userId || '', instructorName: tr?.fullName || '', instructorTitle: tr?.position || '' });
+                }}
+              >
+                <option value="">— Chọn Giảng viên —</option>
+                {eligibleTrainers.map((t) => (
+                  <option key={t.userId} value={t.userId}>
+                    {t.fullName} — {roleDefinition(t.role).labelVi}
+                    {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong "Lớp Học Phụ Trách" tại Cổng Giảng Dạy, kèm nút Chủ Trì Lớp Học (Host Meeting).</div>
+            </div>
+            <div>
+              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <input
+                type="number"
+                className="field-input"
+                value={draft.virtualMeeting?.maxCapacity || 50}
+                onChange={(e) => patchVirtualMeeting({ maxCapacity: Number(e.target.value) || 50 })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Ngày tổ chức (Schedule Date) *</label>
+              <input
+                type="date"
+                className="field-input"
+                value={draft.virtualMeeting?.scheduleDate || draft.startDate || ''}
+                onChange={(e) => patchVirtualMeeting({ scheduleDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Khung giờ (Time Window) *</label>
+              <input
+                className="field-input"
+                placeholder="14:00 - 16:00 (2.0 giờ)"
+                value={draft.virtualMeeting?.scheduleTime || ''}
+                onChange={(e) => patchVirtualMeeting({ scheduleTime: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Trạng thái buổi học</label>
+              <select
+                className="field-select"
+                value={draft.virtualMeeting?.status || 'UPCOMING'}
+                onChange={(e) => patchVirtualMeeting({ status: e.target.value })}
+              >
+                <option value="UPCOMING">Sắp diễn ra</option>
+                <option value="COMPLETED">Đã kết thúc</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Meeting ID</label>
+              <input className="field-input" value={draft.virtualMeeting?.meetingId || ''} onChange={(e) => patchVirtualMeeting({ meetingId: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label">Passcode</label>
+              <input className="field-input" value={draft.virtualMeeting?.passcode || ''} onChange={(e) => patchVirtualMeeting({ passcode: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label className="field-label">Hướng dẫn chuẩn bị (Prep Instructions)</label>
+            <textarea
+              className="field-input"
+              rows={2}
+              style={{ resize: 'vertical' }}
+              value={draft.virtualMeeting?.instructions || ''}
+              onChange={(e) => patchVirtualMeeting({ instructions: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="field-label">Tài liệu đính kèm (Materials)</label>
+            <VirtualMaterialsEditor
+              materials={draft.virtualMeeting?.materials || []}
+              onAdd={addVirtualMaterial}
+              onRemove={removeVirtualMaterial}
+            />
+          </div>
+        </div>
+        </fieldset>
+      )}
+
+      {/* DEDICATED IN-PERSON CLASSROOM LOGISTICS CARD */}
+      {draft.deliveryType === 'IN_PERSON_CLASSROOM' && (
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--blue)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--blue-soft) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div className="section-label" style={{ margin: 0, color: 'var(--blue)' }}>
+              <i className="ti ti-school" style={{ marginRight: 6 }} />
+              In-Person Training Logistics &amp; Faculty Assignment
+            </div>
+            <Badge tone="blue" icon="ti-qrcode">Live QR Attendance Enabled</Badge>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Giảng viên Đứng lớp (Assigned Trainer / Faculty)</label>
+              {isTrainerOnly ? (
+                <div className="field-input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)' }}>
+                  <i className="ti ti-user-check" style={{ color: 'var(--blue)' }} />
+                  {authUser.fullName} — {roleDefinition(authRole).labelVi} (chính bạn)
+                </div>
+              ) : (
+                <select
+                  className="field-select"
+                  value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
+                  onChange={(e) => {
+                    const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
+                    patch({ trainerId: tr?.userId, trainerName: tr?.fullName });
+                  }}
+                >
+                  {eligibleTrainers.map((t) => (
+                    <option key={t.userId} value={t.userId}>
+                      {t.fullName} — {roleDefinition(t.role).labelVi}
+                      {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Giảng Dạy và mở mã QR Điểm danh tại lớp.</div>
+            </div>
+
+            <div>
+              <label className="field-label">Địa điểm / Phòng Thực hành (Venue &amp; Practical Lab)</label>
+              <select
+                className="field-select"
+                value={draft.venueId || 'lab-ap-fresh'}
+                onChange={(e) => {
+                  const r = meetingRoomsAndLabs.find((rm) => rm.id === e.target.value);
+                  patch({ venueId: r?.id, venue: r?.name, maxCapacity: r?.capacity || 25 });
+                }}
+              >
+                {meetingRoomsAndLabs.map((rm) => (
+                  <option key={rm.id} value={rm.id}>
+                    {rm.name} (Sức chứa: {rm.capacity} chỗ &middot; {rm.location})
+                  </option>
+                ))}
+              </select>
+              <div className="field-hint">Phòng học / Xưởng thực hành tổ chức buổi đào tạo thực tế.</div>
+            </div>
+          </div>
+
+          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+            <div>
+              <label className="field-label">Ngày tổ chức (Training Date)</label>
+              <input
+                type="date"
+                className="field-input"
+                value={draft.scheduleDate || draft.startDate || '2026-08-28'}
+                onChange={(e) => patch({ scheduleDate: e.target.value, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="field-label">Khung giờ (Time Window)</label>
+              <select
+                className="field-select"
+                value={draft.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
+                onChange={(e) => patch({ scheduleTime: e.target.value })}
+              >
+                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (Sáng - 3.0 tiếng)</option>
+                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (Chiều - 3.0 tiếng)</option>
+                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (Sáng - 3.0 tiếng)</option>
+                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (Chiều - 3.0 tiếng)</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <input
+                type="number"
+                className="field-input"
+                value={draft.maxCapacity || 25}
+                onChange={(e) => patch({ maxCapacity: Number(e.target.value) || 25 })}
+              />
+            </div>
+          </div>
+
+          {/* Quick Target Audience Presets */}
+          <div style={{ background: '#fff', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--line)' }}>
+            <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
+              <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--blue)' }} />
+              Gán Nhanh Đối Tượng Học Viên Bắt Buộc Tham Gia (Target Cohort Enrollment)
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { label: '👥 Tất cả Quản lý (All Managers)', type: 'ROLE', target: 'MANAGER' },
+                { label: '🌱 Tất cả Nhân sự Mới (New Joiners)', type: 'STATUS', target: 'NEW_JOINER' },
+                { label: '🥖 Nhân viên Quầy Bánh & Tươi sống (MM An Phú)', type: 'DEPARTMENT', target: 'dept-ppf' },
+                { label: '🏢 Toàn bộ Nhân viên Siêu thị An Phú', type: 'STORE', target: 'store-an-phu' },
+              ].map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    patch({
+                      courseType: 'MANDATORY',
+                      assignedCohortNote: preset.label,
+                    });
+                    if (preset.type === 'DEPARTMENT') {
+                      setDraft((d) => ({
+                        ...d,
+                        courseType: 'MANDATORY',
+                        assignment: {
+                          assignmentType: 'DEPARTMENT',
+                          targetDepartmentId: preset.target,
+                          assignedBy: authUser?.fullName || 'L&OD Admin',
+                          startDate: draft.scheduleDate || '2026-08-28',
+                          dueDate: draft.scheduleDate || '2026-08-28',
+                        },
+                      }));
+                    } else if (preset.type === 'STORE') {
+                      setDraft((d) => ({
+                        ...d,
+                        courseType: 'MANDATORY',
+                        assignment: {
+                          assignmentType: 'STORE',
+                          targetStoreId: preset.target,
+                          assignedBy: authUser?.fullName || 'L&OD Admin',
+                          startDate: draft.scheduleDate || '2026-08-28',
+                          dueDate: draft.scheduleDate || '2026-08-28',
+                        },
+                      }));
+                    } else {
+                      setDraft((d) => ({
+                        ...d,
+                        courseType: 'MANDATORY',
+                        assignment: {
+                          assignmentType: 'ALL_ASSOCIATES',
+                          assignedBy: authUser?.fullName || 'L&OD Admin',
+                          startDate: draft.scheduleDate || '2026-08-28',
+                          dueDate: draft.scheduleDate || '2026-08-28',
+                        },
+                      }));
+                    }
+                  }}
+                  className="btn btn-sm"
+                  style={{
+                    background: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--paper-sunken)',
+                    color: draft.assignedCohortNote === preset.label ? '#fff' : 'var(--ink)',
+                    borderColor: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--line)',
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {draft.courseType === 'MANDATORY' && draft.assignment && (
         <div className="card card-pad" style={{ marginBottom: 16 }}>
