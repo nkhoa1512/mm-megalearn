@@ -1,4 +1,5 @@
 import { targetOptionsFor, assignmentTypeLabel } from '../data/assignmentTargets';
+import { hasCapability, normalizeRole } from '../data/roles';
 
 /**
  * Kiểm tra xem một giáo trình (Curriculum) có được phân bổ cho người dùng `user` hay không.
@@ -33,6 +34,8 @@ export function isCurriculumAssignedToUser(curriculum, user) {
   const uSubDeptCode = user.subDepartmentCode;
   const uAreaId = user.areaId;
   const uStoreId = user.storeId;
+  const uStoreTypeId = user.storeTypeId;
+  const uClusterId = user.clusterId;
 
   for (const asg of assignments) {
     const type = asg.assignmentType;
@@ -58,6 +61,12 @@ export function isCurriculumAssignedToUser(curriculum, user) {
         break;
       case 'STORE':
         matched = targetId === uStoreId;
+        break;
+      case 'STORE_TYPE':
+        matched = targetId === uStoreTypeId;
+        break;
+      case 'CLUSTER':
+        matched = targetId === uClusterId;
         break;
       case 'LEVEL':
         matched = String(targetId) === uLevel;
@@ -177,4 +186,95 @@ export function resolveTargetLabel(assignmentType, targetId) {
   const opts = targetOptionsFor(assignmentType) || [];
   const found = opts.find((o) => o.id === targetId);
   return found ? found.label : targetId;
+}
+
+// ---------------------------------------------------------------------------
+// Phân quyền Giáo trình (Curriculum) — nguồn sự thật DUY NHẤT cho câu hỏi
+// "role này thấy được giáo trình nào và làm được gì với nó", dùng chung cho
+// AdminCourses, LearnerCourses và tab Giáo Trình của HRBP.
+//
+//   MANAGE_ALL    (User Admin, SysAdmin) — thấy mọi giáo trình kể cả Nháp,
+//                 toàn quyền tạo/sửa/xóa và phân bổ trực tiếp.
+//   VIEW_ALL      (HRBP) — thấy mọi giáo trình đã Xuất bản nhưng CHỈ ĐỌC;
+//                 được đề xuất ứng viên nhân tài vào học (qua duyệt).
+//   ASSIGNED_ONLY (Learner, Manager, Trainer/L&D) — chỉ thấy đúng giáo trình
+//                 đã được User Admin/SysAdmin phân bổ cho chính mình.
+// ---------------------------------------------------------------------------
+export const CURRICULUM_ACCESS_MODE = {
+  MANAGE_ALL: 'MANAGE_ALL',
+  VIEW_ALL: 'VIEW_ALL',
+  ASSIGNED_ONLY: 'ASSIGNED_ONLY',
+};
+
+export function curriculumAccessOf(user) {
+  const role = normalizeRole(user?.role);
+  const canEdit = hasCapability(role, 'canManageCurriculum');
+  const canPropose = !canEdit && hasCapability(role, 'canProposeCurriculum');
+  const mode = canEdit
+    ? CURRICULUM_ACCESS_MODE.MANAGE_ALL
+    : canPropose
+      ? CURRICULUM_ACCESS_MODE.VIEW_ALL
+      : CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY;
+  return {
+    mode,
+    role,
+    canEdit,
+    canDirectAssign: canEdit,
+    canPropose,
+    canSeeDrafts: canEdit,
+  };
+}
+
+/** Danh sách giáo trình mà `user` được phép NHÌN THẤY, theo đúng 3 chế độ trên. */
+export function visibleCurriculaFor(curricula = [], user) {
+  if (!Array.isArray(curricula)) return [];
+  const { mode } = curriculumAccessOf(user);
+  if (mode === CURRICULUM_ACCESS_MODE.MANAGE_ALL) return curricula;
+  if (mode === CURRICULUM_ACCESS_MODE.VIEW_ALL) return curricula.filter((c) => c.status === 'PUBLISHED');
+  return getAssignedCurriculaForUser(curricula, user);
+}
+
+/**
+ * Hai nhóm giáo trình cho bộ lọc của HRBP:
+ *   mine     — giáo trình của chính HRBP với tư cách người học (được phân bổ cho họ).
+ *   proposed — giáo trình HRBP đã đề xuất cho người khác, kèm đơn đề xuất
+ *              (`request`) để hiển thị trạng thái Chờ duyệt / Đã duyệt / Từ chối.
+ *
+ * `proposed` truy vết qua CẢ hai nguồn: đơn trong `approvals` (còn chờ hoặc đã
+ * bị từ chối) và `assignments[].proposedBy` (đơn đã được duyệt và ghi vào giáo
+ * trình) — vì sau khi duyệt, `assignedBy` là người DUYỆT chứ không phải HRBP.
+ */
+export function hrbpCurriculumBuckets(curricula = [], user, approvals = []) {
+  const mine = getAssignedCurriculaForUser(curricula, user);
+  const uid = user?.userId;
+  if (!uid) return { mine, proposed: [] };
+
+  const myRequests = (approvals || []).filter(
+    (a) => a.requestType === 'CURRICULUM_ASSIGNMENT' && a.requesterId === uid
+  );
+
+  const proposed = [];
+  const seen = new Set();
+  const pushOnce = (cur, request, assignment) => {
+    const key = `${cur.id}::${request?.id || assignment?.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    proposed.push({ ...cur, proposalRequest: request || null, proposalAssignment: assignment || null });
+  };
+
+  myRequests.forEach((req) => {
+    const cur = curricula.find((c) => c.id === req.curriculumId);
+    if (cur) pushOnce(cur, req, null);
+  });
+
+  curricula.forEach((cur) => {
+    (cur.assignments || []).forEach((asg) => {
+      if (asg.proposedBy !== uid) return;
+      const linked = myRequests.find((r) => r.id === asg.sourceRequestId);
+      if (linked) return; // đã đưa vào ở vòng trên qua chính đơn đó
+      pushOnce(cur, null, asg);
+    });
+  });
+
+  return { mine, proposed };
 }

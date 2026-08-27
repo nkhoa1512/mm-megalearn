@@ -8,6 +8,7 @@ import {
   demoUsers,
   allUsers,
   currentUser as defaultUser,
+  userAdminUser,
   myLearningCourses,
   enrollmentsForUser,
   nextMajorVersion,
@@ -38,12 +39,12 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // Curriculum (Curriculum -> Courses -> Modules -> Lessons) và danh mục lĩnh
 // vực công ty (Category) do System Admin quản lý — hai domain mới, chưa từng
 // tồn tại trước bản Catalog 5-Phân-Hệ này.
-const CURRICULUM_KEY = 'mm-megalearn-curriculum-v1';
+const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
-const INTERVENTION_KEY = 'mm-megalearn-interventions-v1';
-const SUCCESSION_KEY = 'mm-megalearn-succession-v1';
+const INTERVENTION_KEY = 'mm-megalearn-interventions-v2';
+const SUCCESSION_KEY = 'mm-megalearn-succession-v2';
 const ALIGNMENT_KEY = 'mm-megalearn-alignment-v1';
-const COMPLIANCE_NUDGES_KEY = 'mm-megalearn-nudges-v1';
+const COMPLIANCE_NUDGES_KEY = 'mm-megalearn-nudges-v2';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -69,7 +70,7 @@ export const DEFAULT_INTERVENTIONS = [
     unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
     departmentCode: 'FE',
     skill: 'Cash Handling, POS Speed & Shrinkage Control',
-    courseId: 'CRS-CUST-031',
+    courseId: 'CRS-CSERV-087',
     courseTitle: 'Service Mindset & Cashier POS Fast Operation',
     urgency: 'MEDIUM',
     impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
@@ -439,7 +440,7 @@ export function CourseStoreProvider({ children }) {
   const assignCurriculum = useCallback((curriculumId, assignment) => {
     const newAsg = {
       id: `asg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      assignedBy: currentUser?.userId || 'USR-1000',
+      assignedBy: currentUser?.userId || userAdminUser.userId,
       assignedAt: new Date().toISOString().slice(0, 10),
       ...assignment,
     };
@@ -760,6 +761,13 @@ export function CourseStoreProvider({ children }) {
       const cur = curricula.find((c) => c.id === curriculumId);
       if (!cur) return { ok: false, reason: 'Không tìm thấy giáo trình.' };
 
+      const userRole = normalizeRole(currentUser?.role);
+      const canManage = hasCapability(userRole, 'canManageCurriculum');
+      const canPropose = hasCapability(userRole, 'canProposeCurriculum');
+      if (!canManage && !canPropose) {
+        return { ok: false, reason: 'Bạn không có quyền đề xuất phân bổ giáo trình.' };
+      }
+
       const request = {
         id: `req-curric-${Date.now()}`,
         requestType: 'CURRICULUM_ASSIGNMENT',
@@ -779,7 +787,18 @@ export function CourseStoreProvider({ children }) {
         status: 'PENDING',
       };
 
-      setApprovals((prev) => [request, ...prev]);
+      setApprovals((prev) => {
+        const filtered = prev.filter(
+          (a) =>
+            !(
+              a.requestType === 'CURRICULUM_ASSIGNMENT' &&
+              a.status === 'PENDING' &&
+              a.curriculumId === cur.id &&
+              a.targetId === assignmentData.targetId
+            )
+        );
+        return [request, ...filtered];
+      });
       return { ok: true, request };
     },
     [curricula, currentUser]
@@ -808,6 +827,8 @@ export function CourseStoreProvider({ children }) {
           targetId: target.targetId,
           targetLabel: target.targetLabel,
           dueDate: target.dueDate,
+          proposedBy: target.requesterId,
+          sourceRequestId: target.id,
         });
         return;
       }
@@ -849,7 +870,7 @@ export function CourseStoreProvider({ children }) {
         };
       });
     },
-    [approvals, courses, promoteUserLevel]
+    [approvals, courses, promoteUserLevel, assignCurriculum]
   );
 
   const getUserRoadmapTabs = useCallback(
@@ -926,6 +947,18 @@ export function CourseStoreProvider({ children }) {
         a.requestType === 'LEVEL_ADVANCE' ||
         a.requestType === 'ROADMAP_PROMOTION' ||
         a.requestType === 'CURRICULUM_ASSIGNMENT'
+      );
+    },
+    [approvals, currentUser]
+  );
+
+  /** Đơn đề xuất phân bổ giáo trình do `user` gửi (dành cho HRBP theo dõi tiến độ phê duyệt). */
+  const myCurriculumProposals = useCallback(
+    (user = currentUser) => {
+      const uid = user?.userId;
+      if (!uid) return [];
+      return approvals.filter(
+        (a) => a.requestType === 'CURRICULUM_ASSIGNMENT' && a.requesterId === uid
       );
     },
     [approvals, currentUser]
@@ -1154,6 +1187,7 @@ export function CourseStoreProvider({ children }) {
         assignCurriculum,
         proposeCurriculumAssignment,
         removeCurriculumAssignment,
+        myCurriculumProposals,
         companyCategories,
         addCompanyCategory,
         accessFor,

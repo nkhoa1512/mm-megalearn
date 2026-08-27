@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser } from '../../data/mockData';
 import { Badge, ProgressBar, Button, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
@@ -17,7 +17,7 @@ import {
   computeLifecycleStatus, isCourseVisibleWhenClosed,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../components/catalog/CurriculumTree';
-import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
+import { getAssignedCurriculaForUser, getCurriculumProgress, visibleCurriculaFor } from '../../utils/curriculumAssignment';
 
 // Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
 // 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
@@ -69,6 +69,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const enrolledCourses = myCourses(allCourses, user);
   const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
+  const visibleCurricula = useMemo(() => visibleCurriculaFor(curricula, user), [curricula, user]);
 
   // Scope Tab: MY_COURSES (khóa đã gán) vs FULL_CATALOG (100 khóa toàn doanh nghiệp)
   const [scopeTab, setScopeTab] = useState('MY_COURSES');
@@ -484,17 +485,18 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
       )}
 
-      {/* CURRICULUM (GIÁO TRÌNH HỌC) — chỉ hiện ở Toàn Bộ Thư Viện, chỉ liệt
-          kê giáo trình đã Published; mỗi giáo trình gộp nhiều khóa E-Learning
-          tự học thành 1 lộ trình Curriculum -> Courses -> Modules -> Lessons. */}
-      {scopeTab === 'FULL_CATALOG' && curricula.filter((cur) => cur.status === 'PUBLISHED').length > 0 && (
+      {/* CURRICULUM (GIÁO TRÌNH HỌC) — chỉ hiển thị giáo trình được phân bổ cho người dùng */}
+      {scopeTab === 'FULL_CATALOG' && visibleCurricula.length > 0 && (
         <div className="card card-pad" style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <i className="ti ti-books" style={{ color: 'var(--rail)' }} />
             📚 Giáo Trình Học (Curriculum)
           </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12 }}>
+            {language === 'en' ? 'Only showing curricula assigned to you' : 'Chỉ hiển thị giáo trình đã được phân bổ cho bạn'}
+          </div>
           <div className="grid grid-3" style={{ gap: 12 }}>
-            {curricula.filter((cur) => cur.status === 'PUBLISHED').map((cur) => (
+            {visibleCurricula.map((cur) => (
               <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cur.title}</div>
                 <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 30 }}>{cur.description}</div>

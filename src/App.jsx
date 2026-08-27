@@ -72,6 +72,7 @@ const PAGE_META = {
   '/hrbp': { title: 'Ma Trận Khoảng Cách Năng Lực (Skill Gap Matrix)', crumb: 'HRBP (Level 2)' },
   '/hrbp/succession': { title: 'Lộ Trình Kế Nhiệm 70-20-10 & Thánh Gióng Pipeline', crumb: 'HRBP (Level 2)' },
   '/hrbp/compliance': { title: 'Báo Cáo Tuân Thủ Đào Tạo Theo Vùng & Siêu Thị', crumb: 'HRBP (Level 2)' },
+  '/hrbp/curriculum': { title: 'Giáo Trình Phân Bổ & Đề Xuất Nhân Tài', crumb: 'HRBP (Level 2)' },
 
   '/user-admin': { title: 'Quản Trị Danh Mục 100+ Nhân Sự (Employee Master)', crumb: 'User Admin (Level 2)' },
   '/user-admin/hierarchy': { title: 'Cây Cơ Cấu Tổ Chức 2 Nhánh (Dual-Branch Org Tree)', crumb: 'User Admin (Level 2)' },
@@ -204,6 +205,7 @@ function Shell({ role, setRole }) {
               <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />
               <Route path="/hrbp/succession" element={<HrbpDashboard initialTab="SUCCESSION" />} />
               <Route path="/hrbp/compliance" element={<HrbpDashboard initialTab="COMPLIANCE" />} />
+              <Route path="/hrbp/curriculum" element={<HrbpDashboard initialTab="CURRICULUM" />} />
 
               {/* User Admin Routes */}
               <Route path="/user-admin" element={<UserAdminPortal initialTab="DIRECTORY" />} />

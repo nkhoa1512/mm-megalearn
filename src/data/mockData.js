@@ -19,6 +19,7 @@ export {
   competencyFramework,
   meetingRoomsAndLabs,
   trainersDirectory,
+  trainerUserIdFor,
 } from './orgHierarchy';
 
 import {
@@ -26,12 +27,14 @@ import {
   generated100Courses,
   generated100EnrollmentMatrix,
   getCourseAccessControl,
+  UNIVERSAL_COMPLIANCE_COURSE_IDS,
 } from './generated100Data';
 import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from './levelSystem';
 import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 import { canonicalizeCategory } from '../utils/courseCatalog';
 
+export { UNIVERSAL_COMPLIANCE_COURSE_IDS } from './generated100Data';
 export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 
 // Thang 7 cấp bậc & mô hình 6 role được tái xuất khẩu ở đây để các màn hình chỉ
@@ -474,7 +477,7 @@ export const teamMembers = [
     name: 'Quoc Bao',
     position: 'Store Floor Assistant',
     divisionId: 'div-opt', divisionCode: 'OPT',
-    departmentId: 'dept-opt', departmentCode: 'OPT',
+    departmentId: 'dept-ops-s', departmentCode: 'OPS-S',
     level: 'CL',
     course: 'Store Floor Merchandising & Shelf Restocking SOP',
     courseType: 'OPTIONAL',
@@ -776,16 +779,16 @@ export const curricula = [
     category: 'Food Safety & Hygiene',
     courseIds: ['CRS-FSH-001', 'CRS-FSH-003', 'CRS-FSH-004', 'CRS-FSH-005'],
     status: 'PUBLISHED',
-    createdBy: adminUser.userId,
+    createdBy: userAdminUser.userId,
     createdAt: '2026-07-01',
     updatedAt: '2026-07-01',
     assignments: [
       {
         id: 'asg-fsh-1',
-        assignmentType: 'SUBDEPARTMENT',
-        targetId: 'sdept-fresh',
+        assignmentType: 'DEPARTMENT',
+        targetId: 'dept-ppf',
         targetLabel: 'Fresh Food Operations (Khối Tươi Sống)',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-01',
         dueDate: '2026-09-30',
       },
@@ -794,7 +797,7 @@ export const curricula = [
         assignmentType: 'USER',
         targetId: 'USR-1042',
         targetLabel: 'Minh Tran (MMVN-1042 · Lvl 7 · Bakery Section)',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-01',
         dueDate: '2026-09-30',
       },
@@ -807,7 +810,7 @@ export const curricula = [
     category: 'Leadership & Management',
     courseIds: ['CRS-LEAD-049', 'CRS-LEAD-050', 'CRS-LEAD-051', 'CRS-LEAD-052'],
     status: 'PUBLISHED',
-    createdBy: adminUser.userId,
+    createdBy: userAdminUser.userId,
     createdAt: '2026-07-05',
     updatedAt: '2026-07-05',
     assignments: [
@@ -816,7 +819,7 @@ export const curricula = [
         assignmentType: 'ROLE',
         targetId: 'manager',
         targetLabel: 'Line Manager (Quản lý cấp trung Level 4-5)',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-05',
         dueDate: '2026-10-15',
       },
@@ -825,7 +828,7 @@ export const curricula = [
         assignmentType: 'LEVEL',
         targetId: '4',
         targetLabel: 'Level 4 - Senior Supervisor / Section Manager',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-05',
         dueDate: '2026-10-15',
       },
@@ -838,7 +841,7 @@ export const curricula = [
     category: 'Information Security',
     courseIds: ['CRS-ISA-011', 'CRS-ISA-012', 'CRS-ISA-013'],
     status: 'PUBLISHED',
-    createdBy: adminUser.userId,
+    createdBy: userAdminUser.userId,
     createdAt: '2026-07-10',
     updatedAt: '2026-07-10',
     assignments: [
@@ -847,7 +850,7 @@ export const curricula = [
         assignmentType: 'BUSINESS_UNIT',
         targetId: 'bu-mmvn',
         targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-10',
         dueDate: '2026-09-15',
       },
@@ -860,7 +863,7 @@ export const curricula = [
     category: 'Supply Chain & Logistics',
     courseIds: ['CRS-SCM-059', 'CRS-SCM-060', 'CRS-SCM-061'],
     status: 'DRAFT',
-    createdBy: adminUser.userId,
+    createdBy: userAdminUser.userId,
     createdAt: '2026-08-01',
     updatedAt: '2026-08-01',
     assignments: [
@@ -869,7 +872,7 @@ export const curricula = [
         assignmentType: 'DIVISION',
         targetId: 'div-scm',
         targetLabel: 'SCM - Supply Chain Management',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-08-01',
         dueDate: '2026-11-30',
       },
@@ -882,7 +885,7 @@ export const curricula = [
     category: 'Compliance & Ethics',
     courseIds: ['CRS-ETHIC-081', 'CRS-ETHIC-082', 'CRS-ETHIC-083'],
     status: 'PUBLISHED',
-    createdBy: adminUser.userId,
+    createdBy: userAdminUser.userId,
     createdAt: '2026-08-05',
     updatedAt: '2026-08-05',
     assignments: [
@@ -891,7 +894,7 @@ export const curricula = [
         assignmentType: 'BUSINESS_UNIT',
         targetId: 'bu-mmvn',
         targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
-        assignedBy: adminUser.userId,
+        assignedBy: userAdminUser.userId,
         assignedAt: '2026-08-05',
         dueDate: '2026-09-25',
       },
@@ -1876,6 +1879,7 @@ export const classroomSessions = [
     qrToken: 'MMVN-QR-ILT001-20260828',
     description: 'Hands-on sanitation and sterilization of dough mixers, oven pressure calibration, and mechanical jam handling compliant with Gold HACCP standards.',
     prerequisiteCourse: 'Food Safety & Hygiene Standards (HACCP)',
+    prerequisiteCourseId: 'CRS-FSH-001',
     enrolledStudents: [
       { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
       { id: 'MMVN-1078', name: 'Sarah Johnson', position: 'Pastry Chef Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -1903,7 +1907,8 @@ export const classroomSessions = [
     attendanceStatus: 'NOT_REGISTERED',
     qrToken: 'MMVN-QR-ILT002-20260905',
     description: 'Hands-on gas fire suppression, fire blanket deployment, and peak-hour customer evacuation protocols in hypermarkets.',
-    prerequisiteCourse: 'Corporate Orientation',
+    prerequisiteCourse: 'Workplace Health, Safety & Environment (HSE)',
+    prerequisiteCourseId: 'CRS-HSE-019',
     enrolledStudents: [],
   },
   {
@@ -1929,7 +1934,8 @@ export const classroomSessions = [
     attendanceStatus: 'CHECKED_IN',
     qrToken: 'MMVN-QR-ILT003-COMPLETED',
     description: 'Case analysis of 5 phishing incidents identified in Q3/2026 and immediate POS workstation isolation protocols.',
-    prerequisiteCourse: 'Information Security Awareness',
+    prerequisiteCourse: 'Information Security & Data Protection Awareness',
+    prerequisiteCourseId: 'CRS-ISA-011',
     enrolledStudents: [],
   },
   {
@@ -1956,6 +1962,7 @@ export const classroomSessions = [
     qrToken: 'MMVN-QR-ILT004-20260912',
     description: 'High-speed barcode scanning on physical POS units, digital voucher processing, and L.A.S.T customer complaint resolution.',
     prerequisiteCourse: 'Store Operations Excellence & Planogram Compliance',
+    prerequisiteCourseId: 'CRS-STOPS-033',
     enrolledStudents: [],
   },
 ];

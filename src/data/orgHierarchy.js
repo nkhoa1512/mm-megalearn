@@ -438,6 +438,7 @@ export const meetingRoomsAndLabs = [
 export const trainersDirectory = [
   {
     id: 'tr-01',
+    userId: 'USR-9003',
     code: 'TRN-101',
     name: 'Nguyen Van Hung',
     role: 'Master Trainer / Head of Operational Training',
@@ -453,6 +454,7 @@ export const trainersDirectory = [
   },
   {
     id: 'tr-02',
+    userId: null,
     code: 'TRN-102',
     name: 'Dang Thanh Mai',
     role: 'Senior L&OD Specialist / Soft Skills Instructor',
@@ -468,6 +470,7 @@ export const trainersDirectory = [
   },
   {
     id: 'tr-03',
+    userId: 'USR-9006',
     code: 'TRN-103',
     name: 'Vu Duc Thanh',
     role: 'Loss Prevention & HSE Director',
@@ -483,6 +486,7 @@ export const trainersDirectory = [
   },
   {
     id: 'tr-04',
+    userId: null,
     code: 'TRN-104',
     name: 'Tran Minh Quang',
     role: 'Store General Manager (MM An Phu) / Leadership Mentor',
@@ -497,3 +501,8 @@ export const trainersDirectory = [
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
   },
 ];
+
+export function trainerUserIdFor(trainerId) {
+  const t = trainersDirectory.find((tr) => tr.id === trainerId);
+  return t?.userId || null;
+}

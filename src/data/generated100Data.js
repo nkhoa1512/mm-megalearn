@@ -887,7 +887,7 @@ const MINH_TRAN_ENROLLMENTS = {
 };
 
 // Ba khóa tuân thủ bắt buộc toàn công ty (Level 7) - ai cũng được gán.
-const UNIVERSAL_COMPLIANCE_COURSE_IDS = ['CRS-ISA-011', 'CRS-HSE-019', 'CRS-STOPS-037'];
+export const UNIVERSAL_COMPLIANCE_COURSE_IDS = ['CRS-ISA-011', 'CRS-HSE-019', 'CRS-STOPS-037'];
 
 generated100Users.forEach((user, uIdx) => {
   const userEnrollmentMap = {};

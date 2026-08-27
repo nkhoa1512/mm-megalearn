@@ -8,11 +8,20 @@ import {
 import { useCourseStore } from '../../state/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
 import UserTranscriptModal from '../../components/UserTranscriptModal';
+import HrbpCurriculumTab from './HrbpCurriculumTab';
+import {
+  complianceByStore,
+  regionalComplianceRate,
+  headcountInScope,
+  skillGapRows,
+} from '../../utils/hrbpAnalytics';
+import { getCurriculumProgress } from '../../utils/curriculumAssignment';
 
 const TAB_PATH = {
   SKILL_GAP: '/hrbp',
   SUCCESSION: '/hrbp/succession',
   COMPLIANCE: '/hrbp/compliance',
+  CURRICULUM: '/hrbp/curriculum',
 };
 
 export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
@@ -27,11 +36,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     cancelIntervention,
     successionTalents,
     addSuccessionTalent,
+    updateSuccessionTalent,
     successionAlignments,
     saveSuccessionAlignment,
     complianceNudges,
     sendComplianceNudge,
     currentUser,
+    enrollments,
   } = useCourseStore();
 
   const navigate = useNavigate();
@@ -106,7 +117,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   function handleAssignCurriculumToCandidate() {
     if (!assignCurriculumModal || !selectedCurriculumId) return;
     const targetUserId = assignCurriculumModal.userId || assignCurriculumModal.id;
-    proposeCurriculumAssignment(
+    const result = proposeCurriculumAssignment(
       selectedCurriculumId,
       {
         assignmentType: 'USER',
@@ -116,6 +127,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       },
       `HRBP đề xuất bổ sung Giáo trình phát triển năng lực cho ứng viên kế nhiệm ${assignCurriculumModal.name}.`
     );
+    if (result && result.ok && updateSuccessionTalent) {
+      updateSuccessionTalent(assignCurriculumModal.id, {
+        curriculumId: selectedCurriculumId,
+        curriculumProposalId: result.request?.id,
+      });
+    }
     setAssignCurriculumModal(null);
     showToast(`📋 Đã gửi đơn đề xuất gán Giáo Trình cho ứng viên ${assignCurriculumModal.name} lên User Admin phê duyệt!`);
   }
@@ -186,71 +203,20 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     showToast(`⚠️ Đã gửi cảnh báo chính thức tới Giám Đốc Siêu Thị ${nudgeModal.store}!`);
   }
 
-  // Store compliance list
-  const storeComplianceList = useMemo(() => [
-    { id: 'store-an-phu', code: 'MM-AP', store: 'MM Mega Market An Phú (Flagship)', region: 'Miền Nam', totalStaff: 320, haccp: 98, pccc: 96, sec: 95, overall: 96.3, status: 'CHUẨN_XUẤT_SẮC', overdueCount: 2 },
-    { id: 'store-binh-phu', code: 'MM-BP', store: 'MM Mega Market Bình Phú', region: 'Miền Nam', totalStaff: 240, haccp: 92, pccc: 94, sec: 90, overall: 92.0, status: 'ĐẠT_CHUẨN', overdueCount: 6 },
-    { id: 'store-hiep-phu', code: 'MM-HP', store: 'MM Mega Market Hiệp Phú', region: 'Miền Nam', totalStaff: 210, haccp: 88, pccc: 91, sec: 89, overall: 89.3, status: 'ĐẠT_CHUẨN', overdueCount: 9 },
-    { id: 'store-rach-gia', code: 'MM-RG', store: 'MM Mega Market Rạch Giá', region: 'Miền Nam (Tỉnh)', totalStaff: 180, haccp: 82, pccc: 85, sec: 84, overall: 83.6, status: 'CẦN_CẢNH_BÁO', overdueCount: 16 },
-    { id: 'store-can-tho', code: 'MM-CT', store: 'MM Mega Market Cần Thơ', region: 'Miền Tây', totalStaff: 220, haccp: 95, pccc: 96, sec: 94, overall: 95.0, status: 'CHUẨN_XUẤT_SẮC', overdueCount: 3 },
-    { id: 'store-vung-tau', code: 'MM-VT', store: 'MM Mega Market Vũng Tàu', region: 'Đông Nam Bộ', totalStaff: 190, haccp: 94, pccc: 90, sec: 92, overall: 92.0, status: 'ĐẠT_CHUẨN', overdueCount: 7 },
-  ], []);
+  // Real store compliance list & analytics derived from store users
+  const storeComplianceList = useMemo(
+    () => complianceByStore(users, enrollments, courses),
+    [users, enrollments, courses]
+  );
 
-  // Skill Gap Matrix static presets
-  const skillGapList = useMemo(() => [
-    {
-      unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
-      deptCode: 'PPF',
-      skill: 'HACCP & Cold-Chain Storage Protocols',
-      gap: -18,
-      current: 72,
-      required: 90,
-      impact: 'Ảnh hưởng trực tiếp đến tỷ lệ hao hụt hàng hóa và vệ sinh an toàn thực phẩm.',
-      recommendedCourseId: 'CRS-FSH-001',
-      recommendedCourse: 'Food Safety & Hygiene Standards (HACCP)',
-      trainer: 'Nguyen Van Hung (Master Trainer)',
-      status: 'CẦN CAN THIỆP GẤP',
-    },
-    {
-      unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
-      deptCode: 'FE',
-      skill: 'Cash Handling, POS Speed & Shrinkage Control',
-      gap: -14,
-      current: 76,
-      required: 90,
-      impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
-      recommendedCourseId: 'CRS-CUST-031',
-      recommendedCourse: 'Service Mindset & Cashier POS Fast Operation',
-      trainer: 'Le Hoang Nam',
-      status: 'ĐANG THEO DÕI',
-    },
-    {
-      unit: 'Đội Ngũ Quản Trị & Giám Sát Ca (MM Rạch Giá)',
-      deptCode: 'OPS-S',
-      skill: 'Team Coaching & Performance Management',
-      gap: -15,
-      current: 70,
-      required: 85,
-      impact: 'Tỷ lệ hoàn thành đánh giá Kirkpatrick Cấp 3 của nhân viên ca đạt dưới 70%.',
-      recommendedCourseId: 'CRS-LEAD-001',
-      recommendedCourse: 'Frontline Leadership & 1-on-1 Coaching',
-      trainer: 'Sarah Nguyen (L&D Director)',
-      status: 'CẦN CAN THIỆP GẤP',
-    },
-    {
-      unit: 'Kho Vận & Giao Nhận B2B (MM Hiệp Phú)',
-      deptCode: 'SSP',
-      skill: 'Data Analytics & Stock Optimization',
-      gap: -10,
-      current: 75,
-      required: 85,
-      impact: 'Sai lệch số liệu tồn kho thực tế vs hệ thống ERP trong kỳ kiểm kê Q2.',
-      recommendedCourseId: 'CRS-LOG-012',
-      recommendedCourse: 'Warehouse Forklift Safety & Cross-Docking SOP',
-      trainer: 'Vu Duc Thanh (HSE Trainer)',
-      status: 'KẾ HOẠCH Q3',
-    },
-  ], []);
+  const overallComplianceRate = useMemo(
+    () => regionalComplianceRate(users, enrollments, courses),
+    [users, enrollments, courses]
+  );
+
+  const skillGapList = useMemo(() => skillGapRows(undefined, users), [users]);
+
+  const headcount = useMemo(() => headcountInScope(users), [users]);
 
   // Export audit report JSON/CSV
   function handleExportAuditReport() {
@@ -300,7 +266,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <Badge tone="blue" icon="ti-users">HR Business Partner (Level 2)</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Đối tác Nhân sự Chiến lược: <strong>{hrbpUser.fullName}</strong> &middot; {hrbpUser.departmentName || 'HR Business Partnering'} &middot; Phụ trách: Khối Vận hành Siêu thị Khu vực Miền Nam
+            Đối tác Nhân sự Chiến lược: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Phụ trách: Khối Vận hành Siêu thị Khu vực Miền Nam
           </p>
         </div>
 
@@ -336,7 +302,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
               variant="outline"
               icon="ti-books"
               style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
-              onClick={() => navigate('/admin/courses?tab=curriculum')}
+              onClick={() => goToTab('CURRICULUM')}
             >
               📚 Giáo Trình (Curricula)
             </Button>
@@ -360,7 +326,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <i className="ti ti-shield-check" />
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>94.2%</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>{overallComplianceRate}%</div>
             <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
           </div>
         </div>
@@ -389,8 +355,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <i className="ti ti-users" />
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>1,450</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự Phụ trách<br />Khu vực Miền Nam</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{headcount}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự trong phạm vi<br />HRBP phụ trách</div>
           </div>
         </div>
       </div>
@@ -400,7 +366,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         {[
           { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-dots', count: `${interventions.length} Ticket` },
           { id: 'SUCCESSION', label: 'Quy Hoạch Kế Nhiệm & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: `${successionTalents.length} Kế nhiệm` },
-          { id: 'COMPLIANCE', label: 'Bản Đồ Tuân Thủ Bắt Buộc Theo Siêu Thị (Regional Heatmap)', icon: 'ti-shield-check', count: '94.2%' },
+          { id: 'COMPLIANCE', label: 'Bản Đồ Tuân Thủ Bắt Buộc Theo Siêu Thị (Regional Heatmap)', icon: 'ti-shield-check', count: `${overallComplianceRate}%` },
+          { id: 'CURRICULUM', label: 'Giáo Trình & Đề Xuất Nhân Tài (Curriculum)', icon: 'ti-books', count: `${(curricula || []).filter(c => c.status === 'PUBLISHED').length} Giáo Trình` },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -668,6 +635,49 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--blue)' }}>{talent.targetRole}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Mentor: {talent.mentor}</div>
+                      {talent.curriculumId && (() => {
+                        const cur = (curricula || []).find((c) => c.id === talent.curriculumId);
+                        if (!cur) return null;
+                        const talentUser = (users || []).find(
+                          (u) => u.userId === talent.userId || u.employeeCode === talent.id
+                        ) || { userId: talent.userId || talent.id, level: '6' };
+                        const curProg = getCurriculumProgress(
+                          cur,
+                          talentUser,
+                          enrollments[talentUser.userId] || {},
+                          courses
+                        );
+                        return (
+                          <div
+                            style={{
+                              marginTop: 4,
+                              padding: '4px 6px',
+                              background: 'var(--paper-sunken)',
+                              borderRadius: 4,
+                              fontSize: 10.5,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                color: 'var(--ink-soft)',
+                                marginBottom: 2,
+                              }}
+                            >
+                              <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                                📚 {cur.title}
+                              </span>
+                              <span>{curProg.progressPercent}%</span>
+                            </div>
+                            <ProgressBar
+                              value={curProg.progressPercent}
+                              tone={curProg.status === 'COMPLETED' ? 'sage' : 'blue'}
+                              size="sm"
+                            />
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td>
                       <Badge tone={talent.readiness === 'READY_NOW' ? 'sage' : talent.readiness === 'READY_IN_6_MONTHS' ? 'amber' : 'blue'}>
@@ -893,6 +903,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           )}
         </div>
       )}
+
+      {/* TAB 4: CURRICULUM MANAGEMENT & SUCCESSION PROPOSALS */}
+      {activeTab === 'CURRICULUM' && <HrbpCurriculumTab />}
 
       {/* MODAL: SUBMIT L&D INTERVENTION REQUEST */}
       {interventionModal && (
@@ -1222,28 +1235,37 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { code: 'MMVN-1042', name: 'Minh Tran', dept: 'Quầy Bánh Tươi (PPF)', cert: 'ATTP & HACCP Quầy Tươi', due: '15/07/2026', status: 'OVERDUE' },
-                    { code: 'MMVN-2041', name: 'Quoc Bao', dept: 'Sơ Chế Thịt (PPF)', cert: 'An Toàn PCCC & Cứu Hộ', due: '01/08/2026', status: 'OVERDUE' },
-                    { code: 'MMVN-1250', name: 'Thanh Pham', dept: 'Kho Lạnh (FSP)', cert: 'Quy Trình Chuỗi Cung Ứng Lạnh', due: '10/08/2026', status: 'IN_PROGRESS' },
-                    { code: 'MMVN-3108', name: 'Nguyen Thi Mai', dept: 'Thu Ngân POS (FE)', cert: 'Bảo Mật Thông Tin & Máy POS', due: '20/07/2026', status: 'OVERDUE' },
-                    { code: 'MMVN-4022', name: 'Hoang Van Duc', dept: 'Bảo Vệ & An Ninh (LP)', cert: 'Diễn Tập Thoát Hiểm Khẩn Cấp', due: '05/08/2026', status: 'OVERDUE' },
-                  ].map((emp, i) => (
-                    <tr key={i}>
-                      <td>
-                        <strong>{emp.name}</strong>
-                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.code}</div>
-                      </td>
-                      <td style={{ fontSize: 12 }}>{emp.dept}</td>
-                      <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--rail)' }}>{emp.cert}</td>
-                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{emp.due}</td>
-                      <td>
-                        <Badge tone={emp.status === 'OVERDUE' ? 'rust' : 'amber'}>
-                          {emp.status === 'OVERDUE' ? 'Quá Hạn' : 'Đang Học'}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    const storeUsers = (users || []).filter((u) => u.storeId === storeDrilldown.id);
+                    const list = storeUsers.length > 0 ? storeUsers.slice(0, 10) : [
+                      { employeeCode: 'MMVN-1042', fullName: 'Minh Tran', departmentName: 'Quầy Bánh Tươi (PPF)', userId: 'USR-1042' },
+                      { employeeCode: 'MMVN-2041', fullName: 'Quoc Bao', departmentName: 'Sơ Chế Thịt (PPF)', userId: 'USR-2041' },
+                    ];
+                    return list.map((emp, i) => {
+                      const uEnr = enrollments[emp.userId] || {};
+                      const incompleteCourse = (courses || []).find((c) => {
+                        const enr = uEnr[c.id];
+                        return enr && enr.status !== 'COMPLETED';
+                      }) || { title: 'ATTP & HACCP Quầy Tươi' };
+                      const enrInfo = uEnr[incompleteCourse.id] || { status: 'OVERDUE', dueDate: '2026-08-15' };
+                      return (
+                        <tr key={emp.userId || i}>
+                          <td>
+                            <strong>{emp.fullName}</strong>
+                            <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.employeeCode || emp.userId}</div>
+                          </td>
+                          <td style={{ fontSize: 12 }}>{emp.departmentName || emp.department || 'Vận Hành'}</td>
+                          <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--rail)' }}>{incompleteCourse.title}</td>
+                          <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{enrInfo.dueDate || '2026-08-30'}</td>
+                          <td>
+                            <Badge tone={enrInfo.status === 'OVERDUE' ? 'rust' : 'amber'}>
+                              {enrInfo.status === 'OVERDUE' ? 'Quá Hạn' : 'Đang Học'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -3,6 +3,7 @@ import {
   operationsAreas, storeTypes, clusters, retailStores,
   demoUsers, allUsers,
 } from './mockData';
+import { ROLE_DEFINITIONS } from './roles';
 
 export const ASSIGNMENT_TYPES = [
   'BUSINESS_UNIT', 'DIVISION', 'DEPARTMENT', 'SUBDEPARTMENT',
@@ -41,15 +42,10 @@ export function targetOptionsFor(assignmentType) {
     case 'CLUSTER': return clusters.map((c) => ({ id: c.id, label: `${c.code} - ${c.name}` }));
     case 'STORE': return retailStores.map((s) => ({ id: s.id, label: `${s.code} - ${s.name}` }));
     case 'LEVEL': return jobLevels.map((l) => ({ id: l.level, label: `Level ${l.level} - ${l.title}` }));
-    case 'ROLE': return [
-      { id: 'admin', label: 'Admin (HRD Director Level 1)' },
-      { id: 'manager', label: 'Line Manager (Level 4-5)' },
-      { id: 'learner', label: 'Learner (Level 6-7, CL, IN)' },
-    ];
+    case 'ROLE': return ROLE_DEFINITIONS.map((r) => ({ id: r.id, label: `${r.labelVi} (${r.shortVi})` }));
     case 'USER': {
       const list = typeof allUsers === 'function' ? allUsers() : (demoUsers || []);
       return list
-        .filter((u) => u.role !== 'admin')
         .map((u) => {
           const subInfo = u.subDepartmentName ? ` · 🌿 ${u.subDepartmentName}` : (u.subDepartmentCode ? ` · ${u.subDepartmentCode}` : '');
           const deptInfo = u.departmentCode || u.departmentName || u.department || 'MMVN';

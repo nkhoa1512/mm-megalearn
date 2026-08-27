@@ -12,7 +12,10 @@ import {
 import CurriculumTree from '../../components/catalog/CurriculumTree';
 import { ASSIGNMENT_TYPES, assignmentTypeLabel, targetOptionsFor } from '../../data/assignmentTargets';
 import { subDepartments } from '../../data/orgHierarchy';
-import { assignmentTargetSummary, resolveTargetLabel } from '../../utils/curriculumAssignment';
+import {
+  assignmentTargetSummary, resolveTargetLabel,
+  visibleCurriculaFor, curriculumAccessOf, CURRICULUM_ACCESS_MODE,
+} from '../../utils/curriculumAssignment';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
@@ -47,7 +50,9 @@ export default function AdminCourses() {
   } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
-  const isCurriculumAdmin = role === 'useradmin' || role === 'sysadmin';
+  const isCurriculumAdmin = hasCapability(role, 'canManageCurriculum');
+  const { mode: curriculumMode } = curriculumAccessOf(currentUser);
+  const visibleCurricula = useMemo(() => visibleCurriculaFor(curricula, currentUser), [curricula, currentUser]);
   // User Admin & SysAdmin quản lý TOÀN BỘ khóa học (canAuthorOnlineCourses là
   // tín hiệu phân biệt họ với Trainer/L&D — chỉ 2 role này có). Trainer/L&D
   // chỉ được sửa/xóa đúng khóa do chính họ tạo; 100 khóa danh mục gốc chưa có
@@ -279,7 +284,7 @@ export default function AdminCourses() {
           id: tb.id,
           label: tb.label,
           icon: tb.icon,
-          count: tb.id === 'curriculum' ? curricula.length : tb.id === 'library' ? courses.length : courses.filter((c) => catalogSectionOf(c) === tb.section).length,
+          count: tb.id === 'curriculum' ? visibleCurricula.length : tb.id === 'library' ? courses.length : courses.filter((c) => catalogSectionOf(c) === tb.section).length,
         }))}
         activeTab={activeTab}
         onChange={(id) => { setActiveTab(id); setPage(1); }}
@@ -299,7 +304,7 @@ export default function AdminCourses() {
             )}
           </div>
           <div className="grid grid-3" style={{ gap: 14 }}>
-            {curricula.map((cur) => {
+            {visibleCurricula.map((cur) => {
               const asgCount = (cur.assignments || []).length;
               const asgSummary = assignmentTargetSummary(cur);
               return (
@@ -322,7 +327,7 @@ export default function AdminCourses() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
                     <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                      Chi Tiết &amp; Phân Bổ
+                      {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Xem Chi Tiết' : 'Chi Tiết & Phân Bổ'}
                     </Button>
                     {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
                     {isCurriculumAdmin && (
@@ -339,10 +344,10 @@ export default function AdminCourses() {
                 </div>
               );
             })}
-            {curricula.length === 0 && (
+            {visibleCurricula.length === 0 && (
               <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
                 <i className="ti ti-books" aria-hidden="true" />
-                <p>Chưa có giáo trình nào.</p>
+                <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Bạn chưa được phân bổ giáo trình nào.' : 'Chưa có giáo trình nào.'}</p>
               </div>
             )}
           </div>
@@ -547,12 +552,9 @@ function CurriculumDetailModal({
   const handleRemove = onRemoveAssignment || storeRemove;
 
   const role = normalizeRole(currentUser?.role);
-  const isSysOrUserAdmin = role === 'useradmin' || role === 'sysadmin';
-  const isCurriculumAdmin = isSysOrUserAdmin;
-  const isHrbp = role === 'hrbp';
-
-  const canDirectAssign = isCurriculumAdmin;
-  const canPropose = isHrbp;
+  const access = curriculumAccessOf(currentUser);
+  const { mode: modalMode, canDirectAssign, canPropose, canEdit: isCurriculumAdmin } = access;
+  const isHrbp = modalMode === CURRICULUM_ACCESS_MODE.VIEW_ALL;
 
   const [activeTab, setActiveTab] = useState('tree'); // 'tree' | 'assignments'
   const [showAssignForm, setShowAssignForm] = useState(false);
@@ -677,30 +679,32 @@ function CurriculumDetailModal({
         <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 14, lineHeight: 1.5 }}>
           {liveCurriculum.description}
         </div>
-        <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${activeTab === 'tree' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveTab('tree')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <i className="ti ti-sitemap" /> Cấu Trúc Khóa Học ({(liveCurriculum.courseIds || []).length})
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${activeTab === 'assignments' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveTab('assignments')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
-            {pendingProposals.length > 0 && (
-              <Badge tone="amber" size="sm">{pendingProposals.length} Chờ Duyệt</Badge>
-            )}
-          </button>
-        </div>
+        {modalMode !== CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY && (
+          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${activeTab === 'tree' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setActiveTab('tree')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <i className="ti ti-sitemap" /> Cấu Trúc Khóa Học ({(liveCurriculum.courseIds || []).length})
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${activeTab === 'assignments' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setActiveTab('assignments')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
+              {pendingProposals.length > 0 && (
+                <Badge tone="amber" size="sm">{pendingProposals.length} Chờ Duyệt</Badge>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
-      {activeTab === 'tree' ? (
+      {modalMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY || activeTab === 'tree' ? (
         <CurriculumTree curriculum={liveCurriculum} courses={courses} />
       ) : (
         <div>
@@ -943,7 +947,7 @@ function CurriculumDetailModal({
                     <th>Tên Đối Tượng Được Gán</th>
                     <th>Hạn Chót</th>
                     <th>Ngày Gán</th>
-                    {isAdmin && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
+                    {isCurriculumAdmin && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
                   </tr>
                 </thead>
                 <tbody>

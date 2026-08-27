@@ -73,6 +73,9 @@ export const ROLE_DEFINITIONS = [
       // được User Admin/SysAdmin phân công đứng lớp các khóa cấp cao.
       // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
       'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
+      // Giáo trình: HRBP CHỈ được xem (không sửa/xóa) và đề xuất ứng viên nhân
+      // tài vào học — đề xuất phải qua User Admin/SysAdmin duyệt mới có hiệu lực.
+      'canProposeCurriculum',
     ],
   },
   {
@@ -94,6 +97,9 @@ export const ROLE_DEFINITIONS = [
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
       // Chỉ User Admin & SysAdmin cấu hình Lộ trình Cấp bậc (Tab 1/Tab 2).
       'canManageLevelRoadmaps',
+      // Chỉ User Admin & SysAdmin được tạo/sửa/xóa Giáo trình và phân bổ trực
+      // tiếp cho đối tượng học — các role khác chỉ xem phần được phân bổ.
+      'canManageCurriculum',
       // User Admin & SysAdmin đều toàn quyền tạo cả 3 hình thức khóa học
       // (E-Learning, Virtual Class Zoom/Teams, In-Person ILT) và chỉ định
       // Giảng viên chủ trì — Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy).
@@ -117,7 +123,7 @@ export const ROLE_DEFINITIONS = [
       'canAssignTrainers', 'canConfigureOrg', 'canConfigureSystem', 'canViewAuditLogs',
       'canManageAllRoles', 'canDevelopPlatform', 'canViewCsat',
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
-      'canManageLevelRoadmaps',
+      'canManageLevelRoadmaps', 'canManageCurriculum',
       // Toàn quyền tạo cả 3 hình thức khóa học (E-Learning, Virtual Class
       // Zoom/Teams, In-Person ILT) và chỉ định Giảng viên chủ trì — như User Admin.
       'canCreateVirtualClass',
@@ -188,6 +194,13 @@ export function hasCapability(role, capability) {
  *  quyết định có hiện nút "Tạo Khóa Học Mới" hay không. */
 export function canAuthorAnyCourse(role) {
   return hasCapability(role, 'canAuthorOnlineCourses') || hasCapability(role, 'canAuthorOfflineCourses');
+}
+
+/** Được xem TOÀN BỘ danh mục Giáo trình (không chỉ phần được phân bổ cho mình)?
+ *  User Admin/SysAdmin xem để quản trị; HRBP xem để đề xuất ứng viên nhân tài.
+ *  Learner/Manager/Trainer chỉ thấy giáo trình đã được phân bổ cho chính họ. */
+export function canSeeAllCurricula(role) {
+  return hasCapability(role, 'canManageCurriculum') || hasCapability(role, 'canProposeCurriculum');
 }
 
 /** Nhãn mô tả phạm vi quản lý, dùng cho header các trang team/scope. */

@@ -674,5 +674,105 @@ console.log('\n=== 18. LearnerDashboard restructure: real fields only, reachable
   }
 }
 
+console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & Link Repairs ===');
+{
+  const { hasCapability, canSeeAllCurricula } = await import('../src/data/roles');
+  const {
+    curricula,
+    userAdminUser,
+    hrbpUser,
+    currentUser: learnerMinh,
+    allUsers,
+    courses,
+    classroomSessions,
+    trainerUserIdFor,
+  } = await import('../src/data/mockData');
+  const {
+    visibleCurriculaFor,
+    hrbpCurriculumBuckets,
+    curriculumAccessOf,
+    CURRICULUM_ACCESS_MODE,
+  } = await import('../src/utils/curriculumAssignment');
+  const {
+    complianceByStore,
+    regionalComplianceRate,
+    headcountInScope,
+    skillGapRows,
+  } = await import('../src/utils/hrbpAnalytics');
+  const HrbpCurriculumTab = (await import('../src/pages/hrbp/HrbpCurriculumTab')).default;
+
+  // Capabilities
+  check('useradmin has canManageCurriculum', hasCapability('useradmin', 'canManageCurriculum') === true);
+  check('sysadmin has canManageCurriculum', hasCapability('sysadmin', 'canManageCurriculum') === true);
+  check('hrbp has canProposeCurriculum and NOT canManageCurriculum',
+    hasCapability('hrbp', 'canProposeCurriculum') === true && hasCapability('hrbp', 'canManageCurriculum') === false);
+  check('manager does NOT have canManageCurriculum nor canProposeCurriculum',
+    hasCapability('manager', 'canManageCurriculum') === false && hasCapability('manager', 'canProposeCurriculum') === false);
+  check('learner does NOT have canManageCurriculum nor canProposeCurriculum',
+    hasCapability('learner', 'canManageCurriculum') === false && hasCapability('learner', 'canProposeCurriculum') === false);
+
+  check('canSeeAllCurricula(sysadmin) is true', canSeeAllCurricula('sysadmin') === true);
+  check('canSeeAllCurricula(useradmin) is true', canSeeAllCurricula('useradmin') === true);
+  check('canSeeAllCurricula(hrbp) is true', canSeeAllCurricula('hrbp') === true);
+  check('canSeeAllCurricula(learner) is false', canSeeAllCurricula('learner') === false);
+
+  // Curriculum Access & Visibility
+  const learnerVis = visibleCurriculaFor(curricula, learnerMinh);
+  check('learner only sees assigned curricula in published status',
+    learnerVis.every((c) => c.status === 'PUBLISHED'));
+
+  const hrbpVis = visibleCurriculaFor(curricula, hrbpUser);
+  check('hrbp sees all published curricula',
+    hrbpVis.length >= 4 && hrbpVis.every((c) => c.status === 'PUBLISHED'));
+
+  const userAdminVis = visibleCurriculaFor(curricula, userAdminUser);
+  check('useradmin sees all curricula (including draft if any)', userAdminVis.length === curricula.length);
+
+  check('curriculumAccessOf(sysadmin) is MANAGE_ALL', curriculumAccessOf({ role: 'sysadmin' }).mode === CURRICULUM_ACCESS_MODE.MANAGE_ALL);
+  check('curriculumAccessOf(useradmin) is MANAGE_ALL', curriculumAccessOf(userAdminUser).mode === CURRICULUM_ACCESS_MODE.MANAGE_ALL);
+  check('curriculumAccessOf(hrbp) is VIEW_ALL', curriculumAccessOf(hrbpUser).mode === CURRICULUM_ACCESS_MODE.VIEW_ALL);
+  check('curriculumAccessOf(learner) is ASSIGNED_ONLY', curriculumAccessOf(learnerMinh).mode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY);
+
+  const buckets = hrbpCurriculumBuckets(curricula, hrbpUser, []);
+  check('hrbpCurriculumBuckets returns mine and proposed buckets', Array.isArray(buckets.mine) && Array.isArray(buckets.proposed));
+
+  // Analytics
+  const storeList = complianceByStore(allUsers(), {}, courses);
+  check('complianceByStore derives compliance for 8 stores', storeList.length === 8 && storeList.every((s) => s.overall > 0));
+  const rate = regionalComplianceRate(allUsers(), {}, courses);
+  check('regionalComplianceRate returns reasonable percentage', typeof rate === 'number' && rate >= 80 && rate <= 100);
+  check('headcountInScope returns headcount', headcountInScope(allUsers()) >= 100);
+  const gaps = skillGapRows(undefined, allUsers());
+  check('skillGapRows returns non-empty gap list', Array.isArray(gaps) && gaps.length > 0);
+
+  // Link repairs & Trainers
+  check('trainerUserIdFor(tr-01) is USR-9003', trainerUserIdFor('tr-01') === 'USR-9003');
+  check('trainerUserIdFor(tr-02) is null', trainerUserIdFor('tr-02') === null);
+  check('trainerUserIdFor(tr-03) is USR-9006', trainerUserIdFor('tr-03') === 'USR-9006');
+  check('classroomSessions have prerequisiteCourseId', classroomSessions.every((s) => Boolean(s.prerequisiteCourseId)));
+  check('seed curricula createdBy & assignedBy point to useradmin',
+    curricula.every((c) => c.createdBy === userAdminUser.userId && (c.assignments || []).every((a) => a.assignedBy === userAdminUser.userId)));
+
+  // Component rendering
+  actAs('hrbp');
+  const hrbpCurriculumHtml = render('HRBP Curriculum Tab renders without crashing', <HrbpDashboard initialTab="CURRICULUM" />, '/hrbp/curriculum', '/hrbp/curriculum');
+  check('HRBP Curriculum Tab renders tab switcher and filter controls',
+    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('Giáo Trình Của Bản Thân')
+      && hrbpCurriculumHtml.includes('Giáo Trình Tôi Đã Đề Xuất')
+      && hrbpCurriculumHtml.includes('Toàn Bộ Giáo Trình')));
+  check('HRBP Curriculum Tab renders proposal tracking table',
+    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('Hàng Đợi Theo Dõi Đơn Đề Xuất Của Bạn')));
+
+  actAs('useradmin');
+  const userAdminCoursesHtml = render('useradmin AdminCourses curriculum tab renders without crashing', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
+  check('useradmin sees Curriculum tab and Chi Tiết & Phân Bổ buttons',
+    Boolean(userAdminCoursesHtml && userAdminCoursesHtml.includes('Chi Tiết &amp; Phân Bổ')));
+
+  actAs('sysadmin');
+  const sysAdminCoursesHtml = render('sysadmin AdminCourses curriculum tab renders without crashing', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
+  check('sysadmin sees Curriculum tab and Chi Tiết & Phân Bổ buttons',
+    Boolean(sysAdminCoursesHtml && sysAdminCoursesHtml.includes('Chi Tiết &amp; Phân Bổ')));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
