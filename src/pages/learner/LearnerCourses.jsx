@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser } from '../../data/mockData';
 import { Badge, ProgressBar, Button, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
@@ -8,16 +8,14 @@ import {
   levelShortLabel,
   nextLevelUp,
   normalizeLevel,
-  isCourseVisibleInCatalog,
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../state/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
 import {
   courseFormatBadge, courseGroupOf, buildCourseGroups, courseMatchesCategory,
-  computeLifecycleStatus, isCourseVisibleWhenClosed,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../components/catalog/CurriculumTree';
-import { getAssignedCurriculaForUser, getCurriculumProgress, visibleCurriculaFor } from '../../utils/curriculumAssignment';
+import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
 
 // Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
 // 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
@@ -69,10 +67,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const enrolledCourses = myCourses(allCourses, user);
   const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
-  const visibleCurricula = useMemo(() => visibleCurriculaFor(curricula, user), [curricula, user]);
-
-  // Scope Tab: MY_COURSES (khóa đã gán) vs FULL_CATALOG (100 khóa toàn doanh nghiệp)
-  const [scopeTab, setScopeTab] = useState('MY_COURSES');
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -80,7 +74,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const [orgUnitFilter, setOrgUnitFilter] = useState('ALL');
   const [formatFilter, setFormatFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState('TABLE');
-  const [showRecommendations, setShowRecommendations] = useState(true);
   const [groupBy, setGroupBy] = useState('NONE');
   const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
 
@@ -120,21 +113,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     navigate(`${basePath}/${course.id}`);
   }
 
-  // Full Catalog chỉ hiện khóa cùng cấp/thấp hơn hoặc vượt đúng 1 cấp liền kề —
-  // khóa nhảy cóc từ 2 cấp trở lên bị ẩn hoàn toàn khỏi danh mục, không hiện
-  // dạng khóa bị chặn nữa (khác với "Khóa Học Của Tôi": khóa đã gán thì luôn
-  // hiện đủ, không lọc theo cấp bậc).
-  // Khóa Đã Đóng (CLOSED): học viên chưa từng tham gia thì ẩn hẳn khỏi Toàn Bộ
-  // Thư Viện (không mở đăng ký mới); đã hoàn thành/đang học dở thì vẫn thấy để
-  // ôn tập/học tiếp. `allCourses` là danh sách thô (không merge enrollment cá
-  // nhân), nên tra theo id trong `enrolledCourses` (đã merge sẵn) thay vì đọc
-  // trực tiếp c.enrollment — xem isCourseVisibleWhenClosed() trong courseCatalog.js.
-  const enrolledCourseIdSet = new Set(enrolledCourses.map((c) => c.id));
-  const activeCourseList = scopeTab === 'MY_COURSES'
-    ? enrolledCourses
-    : allCourses
-      .filter((c) => isCourseVisibleInCatalog(userLevel, c.targetLevel))
-      .filter((c) => computeLifecycleStatus(c) !== 'CLOSED' || enrolledCourseIdSet.has(c.id) || isCourseVisibleWhenClosed(c));
+  const activeCourseList = enrolledCourses;
 
   // Bảng tra cứu trạng thái truy cập theo cấp bậc cho danh sách đang hiển thị.
   const accessById = {};
@@ -193,21 +172,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const myLevelCourses = enrolledCourses.filter((c) => normalizeLevel(c.targetLevel) === userLevel);
   const myLevelDone = myLevelCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length;
   const myLevelPct = myLevelCourses.length ? Math.round((myLevelDone / myLevelCourses.length) * 100) : 0;
-
-  const isManagerBand = ['1', '2', '3', '4'].includes(userLevel);
-  const isFreshFood = user?.departmentCode === 'PPF' || user?.sectionId?.includes('bakery') || user?.position?.includes('Bakery');
-  const isNewHire = user?.status === 'NEW_JOINER';
-
-  // Gợi ý chỉ lấy khóa học viên thực sự vào học được ngay (không gợi ý khóa bị khóa).
-  const recommendations = allCourses
-    .filter((c) => accessFor(c, user).canAccess)
-    .filter((c) => {
-      if (isNewHire) return c.code.includes('CULT') || c.code.includes('FSH');
-      if (isManagerBand) return c.code.includes('LEAD') || c.code.includes('STOPS');
-      if (isFreshFood) return c.code.includes('FSH') || c.code.includes('COLD') || c.code.includes('STOPS');
-      return c.courseType === 'MANDATORY';
-    })
-    .slice(0, 3);
 
   /** Nút thao tác của một khóa học, quyết định hoàn toàn bởi `access.state`. */
   function renderAction(c, access, size = 'sm') {
@@ -288,10 +252,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowRecommendations(!showRecommendations)} className="btn btn-sm btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="ti ti-sparkles" />
-            {showRecommendations ? 'Ẩn Gợi Ý Bổ Trợ' : 'Hiện Gợi Ý Bổ Trợ'}
-          </button>
           <button onClick={() => setViewMode(viewMode === 'TABLE' ? 'GRID' : 'TABLE')} className="btn btn-sm btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <i className={`ti ${viewMode === 'TABLE' ? 'ti-layout-grid' : 'ti-list'}`} />
             {viewMode === 'TABLE' ? 'Dạng Lưới (Grid)' : 'Dạng Bảng (Table)'}
@@ -351,82 +311,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
       </div>
 
-      {/* TOP SCOPE TABS */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap' }}>
-        <button
-          onClick={() => { setScopeTab('MY_COURSES'); setStatusFilter('ALL'); }}
-          className="btn btn-sm"
-          style={{
-            background: scopeTab === 'MY_COURSES' ? 'var(--blue)' : 'var(--paper-raised)',
-            color: scopeTab === 'MY_COURSES' ? '#fff' : 'var(--ink)',
-            borderColor: scopeTab === 'MY_COURSES' ? 'var(--blue)' : 'var(--line-strong)',
-            fontWeight: scopeTab === 'MY_COURSES' ? 700 : 500,
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          <i className="ti ti-bookmark" />
-          <span>Khóa Học Của Tôi (Level {userLevel})</span>
-          <Badge tone={scopeTab === 'MY_COURSES' ? 'slate' : 'blue'}>{enrolledCourses.length}</Badge>
-        </button>
-
-        <button
-          onClick={() => { setScopeTab('FULL_CATALOG'); setStatusFilter('ALL'); }}
-          className="btn btn-sm"
-          style={{
-            background: scopeTab === 'FULL_CATALOG' ? 'var(--blue)' : 'var(--paper-raised)',
-            color: scopeTab === 'FULL_CATALOG' ? '#fff' : 'var(--ink)',
-            borderColor: scopeTab === 'FULL_CATALOG' ? 'var(--blue)' : 'var(--line-strong)',
-            fontWeight: scopeTab === 'FULL_CATALOG' ? 700 : 500,
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          <i className="ti ti-books" />
-          <span>Toàn Bộ Thư Viện Doanh Nghiệp (Level 7 → Level 1)</span>
-          <Badge tone={scopeTab === 'FULL_CATALOG' ? 'slate' : 'blue'}>{allCourses.length} Khóa</Badge>
-        </button>
-      </div>
-
-      {/* SMART RECOMMENDATION BANNER */}
-      {showRecommendations && recommendations.length > 0 && (
-        <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #FAFDF5 0%, #F0FDF4 100%)', borderLeft: '4px solid var(--sage)', marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--sage-soft)', color: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="ti ti-sparkles" />
-              </div>
-              <span style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--sage)' }}>
-                Khóa Bổ Trợ Đề Xuất — vào học được ngay ở cấp bậc của bạn
-              </span>
-            </div>
-            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              {isManagerBand ? 'Lộ trình Lãnh đạo & Kèm cặp 70/20/10' : 'Tiêu chuẩn Thực phẩm Tươi sống & Vận hành quầy'}
-            </span>
-          </div>
-
-          <div className="grid grid-3" style={{ gap: 12 }}>
-            {recommendations.map((rec) => (
-              <div key={rec.id} className="card card-pad" style={{ background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{rec.code}</span>
-                    <JobLevelBadge level={rec.targetLevel} compact />
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{rec.title}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10 }}>
-                    Thời lượng: {rec.estimatedHours || '3h'} &middot; Điểm đạt: {rec.passingScore || 80}%
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" icon="ti-player-play" onClick={() => handleStart(rec, accessFor(rec, user))}>
-                  Vào Học Ngay
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* GIÁO TRÌNH BẮT BUỘC ĐƯỢC GÁN CHO BẠN (MY ASSIGNED CURRICULA) */}
-      {scopeTab === 'MY_COURSES' && assignedCurricula.length > 0 && (
+      {assignedCurricula.length > 0 && (
         <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--paper-raised) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid var(--rail-soft, #c7d2fe)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
             <div style={{ fontWeight: 800, fontSize: 14.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
@@ -485,85 +371,43 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
       )}
 
-      {/* CURRICULUM (GIÁO TRÌNH HỌC) — chỉ hiển thị giáo trình được phân bổ cho người dùng */}
-      {scopeTab === 'FULL_CATALOG' && visibleCurricula.length > 0 && (
-        <div className="card card-pad" style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <i className="ti ti-books" style={{ color: 'var(--rail)' }} />
-            📚 Giáo Trình Học (Curriculum)
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12 }}>
-            {language === 'en' ? 'Only showing curricula assigned to you' : 'Chỉ hiển thị giáo trình đã được phân bổ cho bạn'}
-          </div>
-          <div className="grid grid-3" style={{ gap: 12 }}>
-            {visibleCurricula.map((cur) => (
-              <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
-                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cur.title}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 30 }}>{cur.description}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 8 }}>{(cur.courseIds || []).length} khóa E-Learning</div>
-                <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>Xem Chi Tiết</Button>
-              </div>
+      {/* FILTER BAR */}
+      <div className="card card-pad" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: 'Tất Cả Khóa Đã Gán', count: enrolledCourses.length },
+              { id: 'IN_PROGRESS', label: 'Đang Học', count: inProgressCount },
+              { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: completedCount },
+              { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
+              { id: 'MANDATORY', label: 'Bắt Buộc Tuân Thủ', count: mandatoryCount },
+              { id: 'CURRICULUM', label: '📚 Theo Giáo Trình', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
+              { id: 'IN_PERSON', label: '🏢 Đào Tạo Trực Tiếp (In-Person)', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
+              { id: 'VIRTUAL_CLASS', label: '💻 Lớp Trực Tuyến (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`btn btn-sm ${statusFilter === tab.id ? 'btn-primary' : 'btn-outline'}`}
+                style={{
+                  fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
+                  borderColor: statusFilter === tab.id ? 'var(--blue)' : 'var(--line)',
+                  background: statusFilter === tab.id ? 'var(--blue)' : 'transparent',
+                  color: statusFilter === tab.id ? '#fff' : 'var(--ink)',
+                }}
+              >
+                {tab.label}
+                <span style={{
+                  background: statusFilter === tab.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
+                  color: statusFilter === tab.id ? '#fff' : 'var(--ink-soft)',
+                  padding: '1px 6px', borderRadius: 10, fontSize: 10.5, fontWeight: 700,
+                }}>
+                  {tab.count}
+                </span>
+              </button>
             ))}
           </div>
         </div>
-      )}
-
-      {/* FILTER BAR */}
-      <div className="card card-pad" style={{ marginBottom: 20 }}>
-        {scopeTab === 'MY_COURSES' ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { id: 'ALL', label: 'Tất Cả Khóa Đã Gán', count: enrolledCourses.length },
-                { id: 'IN_PROGRESS', label: 'Đang Học', count: inProgressCount },
-                { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: completedCount },
-                { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
-                { id: 'MANDATORY', label: 'Bắt Buộc Tuân Thủ', count: mandatoryCount },
-                { id: 'CURRICULUM', label: '📚 Theo Giáo Trình', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
-                { id: 'IN_PERSON', label: '🏢 Đào Tạo Trực Tiếp (In-Person)', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
-                { id: 'VIRTUAL_CLASS', label: '💻 Lớp Trực Tuyến (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setStatusFilter(tab.id)}
-                  className={`btn btn-sm ${statusFilter === tab.id ? 'btn-primary' : 'btn-outline'}`}
-                  style={{
-                    fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
-                    borderColor: statusFilter === tab.id ? 'var(--blue)' : 'var(--line)',
-                    background: statusFilter === tab.id ? 'var(--blue)' : 'transparent',
-                    color: statusFilter === tab.id ? '#fff' : 'var(--ink)',
-                  }}
-                >
-                  {tab.label}
-                  <span style={{
-                    background: statusFilter === tab.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
-                    color: statusFilter === tab.id ? '#fff' : 'var(--ink-soft)',
-                    padding: '1px 6px', borderRadius: 10, fontSize: 10.5, fontWeight: 700,
-                  }}>
-                    {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              <i className="ti ti-info-circle" style={{ color: 'var(--blue)', marginRight: 4 }} />
-              Hiện <strong>{activeCourseList.length}/{allCourses.length} khóa học</strong> (đã ẩn {hardLockedCount} khóa nhảy cóc ≥ 2 cấp).
-              Thang cấp bậc <strong>đảo ngược</strong>: Level 7 thấp nhất → Level 1 cao nhất.
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setStatusFilter(statusFilter === 'LEVEL_UP' ? 'ALL' : 'LEVEL_UP')}
-                className={`btn btn-sm ${statusFilter === 'LEVEL_UP' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ fontSize: 12, fontWeight: 700 }}
-              >
-                🔒 Xin Học Vượt 1 Cấp (Level {oneLevelUp || '—'}) ({requestableCount})
-              </button>
-            </div>
-          </div>
-        )}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', width: 260 }}>
@@ -830,14 +674,12 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     </div>
                     <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{g.label}</div>
                     <Badge tone="slate">{g.items.length} khóa</Badge>
-                    {scopeTab === 'MY_COURSES' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 130 }}>
-                        <div style={{ width: 80 }}>
-                          <ProgressBar value={g.percent} tone={g.percent === 100 ? 'sage' : 'amber'} size="sm" />
-                        </div>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{g.percent}%</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 130 }}>
+                      <div style={{ width: 80 }}>
+                        <ProgressBar value={g.percent} tone={g.percent === 100 ? 'sage' : 'amber'} size="sm" />
                       </div>
-                    )}
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{g.percent}%</span>
+                    </div>
                   </button>
                   {!isCollapsed && (
                     <div style={{ padding: viewMode === 'GRID' ? '16px 16px 0' : 0 }}>
