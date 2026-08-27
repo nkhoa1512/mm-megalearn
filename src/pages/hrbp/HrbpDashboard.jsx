@@ -275,50 +275,6 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         </Button>
       </div>
 
-      {/* CROSS-ROLE ACTION HUB */}
-      <div
-        className="card card-pad"
-        style={{
-          background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
-          borderColor: '#BFDBFE',
-          marginBottom: 20,
-          padding: '14px 18px',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '6px 10px', borderRadius: 8, fontSize: 16 }}>
-              <i className="ti ti-arrows-shuffle" />
-            </span>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#1E293B' }}>Thanh Điều Hướng Nghiệp Vụ Đa Vai Trò (Cross-Role Action Hub)</div>
-              <div style={{ fontSize: 12, color: '#64748B' }}>Chuyển nhanh tới các phân hệ đối ứng để phối hợp giải quyết nhu cầu đào tạo &amp; nhân tài:</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button
-              size="sm"
-              variant="outline"
-              icon="ti-books"
-              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
-              onClick={() => goToTab('CURRICULUM')}
-            >
-              📚 Giáo Trình (Curricula)
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              icon="ti-school"
-              style={{ background: '#fff', color: '#1E293B', borderColor: '#CBD5E1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 600 }}
-              onClick={() => navigate('/trainer')}
-            >
-              🏫 Lớp Học &amp; Check-in QR
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Quick KPI stats */}
       <div className="grid grid-4" style={{ marginBottom: 20 }}>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -401,35 +357,6 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* TAB 1: REGIONAL SKILL GAP MATRIX & L&D INTERVENTION */}
       {activeTab === 'SKILL_GAP' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', borderColor: 'var(--blue)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#1E40AF' }}>
-                  Phân Tích Năng Lực Chi Nhánh &amp; Đề Xuất Can Thiệp Đào Tạo Cùng L&amp;D
-                </div>
-                <p style={{ fontSize: 12.5, color: '#1E3A8A', margin: '4px 0 0', lineHeight: 1.45 }}>
-                  HRBP theo dõi khoảng cách giữa năng lực thực tế của nhân sự vs chuẩn định biên để chủ động yêu cầu L&amp;D mở lớp đào tạo thực hành bù đắp kỹ năng.
-                </p>
-              </div>
-              <Button
-                variant="primary"
-                icon="ti-plus"
-                onClick={() => {
-                  setFormUnit('Quầy Bánh & Tươi Sống (MM An Phú)');
-                  setFormDeptCode('PPF');
-                  setFormSkill('HACCP & Cold-Chain Storage Protocols');
-                  setFormCourseId('CRS-FSH-001');
-                  setFormCourseTitle('Food Safety & Hygiene Standards (HACCP)');
-                  setFormUrgency('HIGH');
-                  setFormImpact('Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.');
-                  setInterventionModal(true);
-                }}
-              >
-                Đề Xuất L&amp;D Mở Lớp Can Thiệp
-              </Button>
-            </div>
-          </div>
-
           <div>
             <div className="section-label" style={{ marginBottom: 12 }}>
               Ma Trận Thiếu Hụt Năng Lực Cần Can Thiệp Theo Khối / Bộ Phận:

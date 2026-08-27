@@ -64,37 +64,6 @@ export default function ManagerDashboard() {
         </div>
       </div>
 
-      {/* AI Risk Prediction & Approvals Banner */}
-      <div className="grid grid-2" style={{ marginBottom: 24 }}>
-        {/* Pending Approvals Widget */}
-        <div className="card card-pad" style={{ borderColor: 'var(--amber)', background: 'linear-gradient(135deg, #FFFDF8 0%, #FEF3C7 100%)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--amber-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-bell-ringing" /> Pending Course Requests ({pendingApprovals.length})
-            </div>
-            <Button size="sm" variant="primary" onClick={() => navigate('/manager/approvals')}>Process</Button>
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
-            {pendingApprovals.length > 0
-              ? `${pendingApprovals[0].employeeName} (${pendingApprovals[0].position}) submitted an enrollment request for ${pendingApprovals[0].courseName}.`
-              : 'No pending enrollment requests at this time.'}
-          </div>
-        </div>
-
-        {/* AI Compliance Risk Predictor */}
-        <div className="card card-pad" style={{ borderColor: '#DDD6FE', background: 'var(--ai-soft)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ai-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-sparkles" /> AI Compliance Risk Predictor
-            </div>
-            <Badge tone="ai">AI Insights</Badge>
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
-            Detected <strong>2 associates</strong> at risk of missing the compliance deadline for <em>Risk Management &amp; Information Security</em> before Sep 30.
-          </div>
-        </div>
-      </div>
-
       {/* KPI Stats Grid */}
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
         <StatCard label="Total Direct Reports" value={total} icon="ti-users" />

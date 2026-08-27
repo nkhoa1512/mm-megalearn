@@ -81,6 +81,14 @@ export default function AdminCourses() {
     });
   }
   const activeTabDef = CATALOG_TABS.find((tb) => tb.id === activeTab) || CATALOG_TABS[0];
+  // Trainer/L&D chỉ được tạo khóa Lớp Trực Tiếp (Classroom/In-Person) — nút
+  // "Create New Course" luôn tạo IN_PERSON_CLASSROOM bất kể đang ở tab nào
+  // (xem onClick bên dưới), nên hiện nút đó ở tab Learning Objects / Online
+  // Class dễ gây hiểu lầm là tạo được khóa E-Learning/Lớp Online. Chỉ ẩn cho
+  // đúng Trainer trên 2 tab này; các role khác (User Admin, SysAdmin) và các
+  // tab khác của Trainer không đổi.
+  const hideCreateForTrainerTab = isAdmin && !isFullAdmin
+    && (activeTabDef.section === CATALOG_SECTIONS.LEARNING_OBJECTS || activeTabDef.section === CATALOG_SECTIONS.ONLINE_CLASS);
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -273,7 +281,7 @@ export default function AdminCourses() {
               : 'Thiết lập mô-đun bài học, bài kiểm tra tương tác, ngân hàng câu hỏi và phân bổ đào tạo bắt buộc theo Khối, Phòng ban hoặc Cấp bậc định biên.'}
           </p>
         </div>
-        {isAdmin && !isCurriculum && (
+        {isAdmin && !isCurriculum && !hideCreateForTrainerTab && (
           <Button
             variant="primary"
             icon="ti-plus"
@@ -858,6 +866,7 @@ export function CurriculumDetailModal({
     proposeCurriculumAssignment: storePropose,
     removeCurriculumAssignment: storeRemove,
     approvals: storeApprovals,
+    myEnrollments,
   } = useCourseStore();
 
   const currentUser = propCurrentUser || storeCurrentUser;
@@ -967,7 +976,7 @@ export function CurriculumDetailModal({
       </div>
 
       {modalMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY || activeTab === 'tree' ? (
-        <CurriculumTree curriculum={liveCurriculum} courses={courses} />
+        <CurriculumTree curriculum={liveCurriculum} courses={courses} enrollmentsMap={myEnrollments} />
       ) : (
         <div>
           {feedbackMsg && (

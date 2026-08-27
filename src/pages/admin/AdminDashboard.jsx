@@ -25,8 +25,6 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { courses: storeCourses } = useCourseStore();
   const [leagueFilter, setLeagueFilter] = useState('ALL');
-  const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [broadcastSent, setBroadcastSent] = useState(false);
 
   const mandatoryCount = storeCourses.filter((c) => c.courseType === 'MANDATORY').length;
   const optionalCount = storeCourses.filter((c) => c.courseType === 'OPTIONAL').length;
@@ -35,15 +33,6 @@ export default function AdminDashboard() {
     if (leagueFilter === 'ALL') return true;
     return d.status === leagueFilter;
   });
-
-  function handleBroadcastReminders() {
-    setIsBroadcasting(true);
-    setTimeout(() => {
-      setIsBroadcasting(false);
-      setBroadcastSent(true);
-      setTimeout(() => setBroadcastSent(false), 4000);
-    }, 1200);
-  }
 
   return (
     <>
@@ -68,39 +57,6 @@ export default function AdminDashboard() {
           <Button variant="primary" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
             Create New Course
           </Button>
-        </div>
-      </div>
-
-      {/* AI Predictive Risk & Early Warning Banner */}
-      <div className="card card-pad" style={{ marginBottom: 24, background: 'linear-gradient(135deg, #EEF2FF 0%, #FAF5FF 100%)', borderColor: '#C7D2FE' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 280 }}>
-            <div className="stat-icon-badge" style={{ background: 'var(--ai-gradient)', color: '#fff', width: 46, height: 46, fontSize: 22, flexShrink: 0 }}>
-              <i className="ti ti-sparkles" />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 15, color: '#3730A3', display: 'flex', alignItems: 'center', gap: 8 }}>
-                AI Early-Warning: Regulatory Compliance Risk Detected
-                <span style={{ fontSize: 11, background: '#FEE2E2', color: '#991B1B', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
-                  Inspection in 14 Days
-                </span>
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 3 }}>
-                <strong>OPT (Store Operations)</strong> has <strong>18 overdue associates</strong> in <em>Food Safety (HACCP)</em>. Company-wide completion is <strong>74.8%</strong> (+12% QoQ). Automated intervention recommended.
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              size="sm"
-              variant={broadcastSent ? 'primary' : 'ai'}
-              icon={broadcastSent ? 'ti-check' : isBroadcasting ? 'ti-loader' : 'ti-send'}
-              onClick={handleBroadcastReminders}
-              disabled={isBroadcasting}
-            >
-              {broadcastSent ? 'Reminders Sent (Zalo/Teams)!' : isBroadcasting ? 'Broadcasting...' : '1-Click Target Escalation'}
-            </Button>
-          </div>
         </div>
       </div>
 
