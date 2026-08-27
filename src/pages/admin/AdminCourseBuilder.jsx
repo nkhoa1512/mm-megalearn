@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
@@ -55,12 +55,12 @@ function withCategoryDefaults(course) {
 function withLevelDefaults(course) {
   const targetLevels = course.targetLevels && course.targetLevels.length > 0
     ? course.targetLevels.map(normalizeLevel)
-    : course.targetLevel ? [normalizeLevel(course.targetLevel)] : ['7'];
+    : course.targetLevel ? [normalizeLevel(course.targetLevel)] : [];
   return {
     ...course,
     targetLevels,
-    targetLevel: targetLevels[0] || '7',
-    targetLevelTitle: targetLevels.map((l) => `Level ${l}`).join(', '),
+    targetLevel: targetLevels[0] || '',
+    targetLevelTitle: targetLevels.length ? targetLevels.map((l) => `Level ${l}`).join(', ') : '',
   };
 }
 
@@ -168,6 +168,620 @@ function blankQuestion() {
     options: [{ id: genId('o'), text: '', isCorrect: true }, { id: genId('o'), text: '', isCorrect: false }],
     explanation: '',
   };
+}
+
+function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange, hasError, errorMessage }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    return options.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
+  }, [options, search]);
+
+  const toggleOption = (cat) => {
+    const next = selected.includes(cat) ? selected.filter((c) => c !== cat) : [...selected, cat];
+    onChange(next);
+  };
+
+  const removeOption = (e, cat) => {
+    e.stopPropagation();
+    onChange(selected.filter((c) => c !== cat));
+  };
+
+  return (
+    <div id={id} ref={dropdownRef} style={{ position: 'relative' }}>
+      <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+        <span>
+          <i className="ti ti-tag" style={{ marginRight: 6, color: 'var(--rail)' }} />
+          Danh Mục Khóa Học (Course Categories) <span style={{ color: 'var(--rust)' }}>*</span>
+        </span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
+          {selected.length > 0 ? `Đã chọn: ${selected.length}` : 'Chưa chọn'}
+        </span>
+      </label>
+
+      {/* Input Display Box */}
+      <div
+        onClick={() => setIsOpen((prev) => !prev)}
+        style={{
+          minHeight: 42,
+          padding: '6px 10px',
+          background: '#fff',
+          border: hasError
+            ? '2px solid var(--rust, #dc2626)'
+            : isOpen
+            ? '1.5px solid var(--rail, #15803d)'
+            : '1px solid var(--line-strong, #cbd5e1)',
+          borderRadius: 8,
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 6,
+          boxShadow: hasError
+            ? '0 0 0 3px rgba(220, 38, 38, 0.15)'
+            : isOpen
+            ? '0 0 0 3px rgba(21, 128, 61, 0.12)'
+            : 'none',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1, minWidth: 0 }}>
+          {selected.length === 0 ? (
+            <span style={{ color: hasError ? 'var(--rust, #dc2626)' : 'var(--ink-faint)', fontSize: 13 }}>
+              Chọn danh mục khóa học... (Bắt buộc)
+            </span>
+          ) : (
+            selected.map((cat) => (
+              <span
+                key={cat}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  background: 'var(--rail-soft, #f0fdf4)',
+                  color: 'var(--rail-soft-text, #166534)',
+                  border: '1px solid #bbf7d0',
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                }}
+              >
+                {cat}
+                <i
+                  className="ti ti-x"
+                  style={{ fontSize: 10, cursor: 'pointer', marginLeft: 2, opacity: 0.8 }}
+                  onClick={(e) => removeOption(e, cat)}
+                />
+              </span>
+            ))
+          )}
+        </div>
+        <i className={`ti ${isOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ color: hasError ? 'var(--rust)' : 'var(--ink-faint)', fontSize: 13, flexShrink: 0 }} />
+      </div>
+
+      {hasError && errorMessage && (
+        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 11.5, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <i className="ti ti-alert-circle" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Dropdown Menu */}
+      <div
+        style={{
+          display: isOpen ? 'block' : 'none',
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: 6,
+          background: '#fff',
+          border: '1px solid var(--line-strong, #cbd5e1)',
+          borderRadius: 8,
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          zIndex: 50,
+          padding: 10,
+        }}
+      >
+        {/* Quick Action Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Thao tác nhanh:</span>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
+              onClick={() => onChange([...options])}
+            >
+              Chọn tất cả ({options.length})
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
+              onClick={() => onChange([options[0]])}
+            >
+              Mặc định
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
+              onClick={() => onChange([])}
+            >
+              Xóa chọn
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Search */}
+        <div style={{ position: 'relative', marginBottom: 8 }}>
+          <i className="ti ti-search" style={{ position: 'absolute', left: 8, top: 8, color: 'var(--ink-faint)', fontSize: 12 }} />
+          <input
+            type="text"
+            className="field-input"
+            style={{ paddingLeft: 26, height: 30, fontSize: 12 }}
+            placeholder="Tìm kiếm danh mục..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {/* Options List */}
+        <div style={{ maxHeight: 210, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredOptions.map((cat) => {
+            const isChecked = selected.includes(cat);
+            return (
+              <div
+                key={cat}
+                onClick={() => toggleOption(cat)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 8px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  background: isChecked ? 'var(--rail-soft, #f0fdf4)' : 'transparent',
+                  fontSize: 12.5,
+                  color: isChecked ? 'var(--rail-soft-text, #166534)' : 'var(--ink)',
+                  fontWeight: isChecked ? 600 : 400,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {}} // handled by parent
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>{cat}</span>
+              </div>
+            );
+          })}
+          {filteredOptions.length === 0 && (
+            <div style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
+              Không tìm thấy danh mục phù hợp.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, errorMessage }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const allLevels = ['1', '2', '3', '4', '5', '6', '7'];
+  const filteredLevels = useMemo(() => {
+    if (!search.trim()) return allLevels;
+    const q = search.toLowerCase().trim();
+    return allLevels.filter((lvl) => `level ${lvl}`.includes(q) || `lv ${lvl}`.includes(q) || lvl === q);
+  }, [search]);
+
+  const toggleLevel = (lvl) => {
+    const next = selected.includes(lvl) ? selected.filter((l) => l !== lvl) : [...selected, lvl].sort((a, b) => Number(a) - Number(b));
+    onChange(next);
+  };
+
+  const removeLevel = (e, lvl) => {
+    e.stopPropagation();
+    onChange(selected.filter((l) => l !== lvl));
+  };
+
+  return (
+    <div id={id} ref={dropdownRef} style={{ position: 'relative' }}>
+      <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+        <span>
+          <i className="ti ti-chart-arrows" style={{ marginRight: 6, color: 'var(--rail)' }} />
+          Cấp Bậc Áp Dụng (Target Job Level) <span style={{ color: 'var(--rust)' }}>*</span>
+        </span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
+          {selected.length > 0 ? `Đã chọn: ${selected.length} Level` : 'Chưa chọn'}
+        </span>
+      </label>
+
+      {/* Input Display Box */}
+      <div
+        onClick={() => setIsOpen((prev) => !prev)}
+        style={{
+          minHeight: 42,
+          padding: '6px 10px',
+          background: '#fff',
+          border: hasError
+            ? '2px solid var(--rust, #dc2626)'
+            : isOpen
+            ? '1.5px solid var(--rail, #15803d)'
+            : '1px solid var(--line-strong, #cbd5e1)',
+          borderRadius: 8,
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 6,
+          boxShadow: hasError
+            ? '0 0 0 3px rgba(220, 38, 38, 0.15)'
+            : isOpen
+            ? '0 0 0 3px rgba(21, 128, 61, 0.12)'
+            : 'none',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1, minWidth: 0 }}>
+          {selected.length === 0 ? (
+            <span style={{ color: hasError ? 'var(--rust, #dc2626)' : 'var(--ink-faint)', fontSize: 13 }}>
+              Chọn cấp bậc áp dụng... (Bắt buộc)
+            </span>
+          ) : (
+            selected.map((lvl) => (
+              <span
+                key={lvl}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  background: 'var(--blue-soft, #eff6ff)',
+                  color: 'var(--blue, #1e40af)',
+                  border: '1px solid #bfdbfe',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                }}
+              >
+                Level {lvl}
+                <i
+                  className="ti ti-x"
+                  style={{ fontSize: 10, cursor: 'pointer', marginLeft: 2, opacity: 0.8 }}
+                  onClick={(e) => removeLevel(e, lvl)}
+                />
+              </span>
+            ))
+          )}
+        </div>
+        <i className={`ti ${isOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ color: hasError ? 'var(--rust)' : 'var(--ink-faint)', fontSize: 13, flexShrink: 0 }} />
+      </div>
+
+      {hasError && errorMessage && (
+        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 11.5, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <i className="ti ti-alert-circle" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Dropdown Menu */}
+      <div
+        style={{
+          display: isOpen ? 'block' : 'none',
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: 6,
+          background: '#fff',
+          border: '1px solid var(--line-strong, #cbd5e1)',
+          borderRadius: 8,
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          zIndex: 50,
+          padding: 10,
+        }}
+      >
+        {/* Quick Action Presets */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Chọn nhanh:</span>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
+              onClick={() => onChange([...allLevels])}
+            >
+              Chọn Tất Cả (Lv 1 - 7)
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
+              onClick={() => onChange(['1', '2', '3', '4'])}
+            >
+              Quản Lý (Lv 1 - 4)
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
+              onClick={() => onChange(['5', '6', '7'])}
+            >
+              Tuyến Đầu (Lv 5 - 7)
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
+              onClick={() => onChange([])}
+            >
+              Xóa chọn
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Search */}
+        <div style={{ position: 'relative', marginBottom: 8 }}>
+          <i className="ti ti-search" style={{ position: 'absolute', left: 8, top: 8, color: 'var(--ink-faint)', fontSize: 12 }} />
+          <input
+            type="text"
+            className="field-input"
+            style={{ paddingLeft: 26, height: 30, fontSize: 12 }}
+            placeholder="Tìm kiếm Level (VD: 1, 2, Level 5)..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {/* Level Options Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 6 }}>
+          {filteredLevels.map((lvl) => {
+            const isChecked = selected.includes(lvl);
+            return (
+              <div
+                key={lvl}
+                onClick={() => toggleLevel(lvl)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  background: isChecked ? 'var(--blue-soft, #eff6ff)' : 'var(--paper-sunken)',
+                  border: isChecked ? '1px solid var(--blue, #3b82f6)' : '1px solid var(--line)',
+                  fontSize: 12.5,
+                  color: isChecked ? 'var(--blue, #1e40af)' : 'var(--ink)',
+                  fontWeight: isChecked ? 700 : 500,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {}} // handled by parent
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Level {lvl}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds = [], onToggle, onClear }) {
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const availableCourses = useMemo(() => {
+    return courses.filter((c) => c.id !== currentCourseId);
+  }, [courses, currentCourseId]);
+
+  const categories = useMemo(() => {
+    const set = new Set(availableCourses.map((c) => c.category || 'Store Operations'));
+    return Array.from(set);
+  }, [availableCourses]);
+
+  const filteredCourses = useMemo(() => {
+    return availableCourses.filter((c) => {
+      const matchCat = categoryFilter === 'ALL' || (c.category || 'Store Operations') === categoryFilter;
+      const matchSearch = !search.trim() ||
+        c.title.toLowerCase().includes(search.toLowerCase()) ||
+        (c.code && c.code.toLowerCase().includes(search.toLowerCase()));
+      return matchCat && matchSearch;
+    });
+  }, [availableCourses, categoryFilter, search]);
+
+  const selectedCourseObjects = useMemo(() => {
+    return selectedIds.map((id) => courses.find((c) => c.id === id)).filter(Boolean);
+  }, [selectedIds, courses]);
+
+  return (
+    <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '14px', border: '1px solid var(--line)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
+            <i className="ti ti-link" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Khóa Học Tiên Quyết (Prerequisite Courses) &middot; <span style={{ color: 'var(--rail)' }}>Đã chọn: {selectedIds.length} khóa</span>
+          </label>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+            Học viên bắt buộc phải hoàn thành các khóa này trước khi bắt đầu khóa học hiện tại.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline"
+            style={{ fontSize: 11.5, display: 'flex', alignItems: 'center', gap: 5 }}
+            onClick={() => setIsExpanded((v) => !v)}
+          >
+            <i className={`ti ${isExpanded ? 'ti-chevron-up' : 'ti-plus'}`} />
+            {isExpanded ? 'Thu gọn danh sách' : 'Chọn thêm khóa tiên quyết'}
+          </button>
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: 11.5, color: 'var(--rust)' }}
+              onClick={onClear}
+            >
+              Bỏ chọn tất cả
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Selected Tags Display */}
+      {selectedCourseObjects.length > 0 ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: isExpanded ? 12 : 0 }}>
+          {selectedCourseObjects.map((c) => (
+            <span
+              key={c.id}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 6,
+                background: '#fff',
+                border: '1px solid var(--rail, #15803d)',
+                color: 'var(--ink)',
+                fontSize: 12,
+                fontWeight: 600,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)' }}>{c.code}</span>
+              <span>{c.title}</span>
+              <i
+                className="ti ti-x"
+                style={{ fontSize: 11, cursor: 'pointer', color: 'var(--rust)', marginLeft: 2 }}
+                onClick={() => onToggle(c.id)}
+                title="Xóa khóa tiên quyết"
+              />
+            </span>
+          ))}
+        </div>
+      ) : !isExpanded && (
+        <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>
+          Chưa có khóa học tiên quyết (học viên có thể tham gia trực tiếp).
+        </div>
+      )}
+
+      {/* Filterable & Searchable Course Picker Dropdown/Panel */}
+      {isExpanded && (
+        <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px' }}>
+              <i className="ti ti-search" style={{ position: 'absolute', left: 9, top: 8, color: 'var(--ink-faint)', fontSize: 12 }} />
+              <input
+                type="text"
+                className="field-input"
+                style={{ paddingLeft: 28, height: 32, fontSize: 12 }}
+                placeholder="Tìm mã hoặc tên khóa học..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <select
+              className="field-select"
+              style={{ width: 180, height: 32, fontSize: 12 }}
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="ALL">Tất cả danh mục ({categories.length})</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {filteredCourses.map((c) => {
+              const isSelected = selectedIds.includes(c.id);
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => onToggle(c.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: isSelected ? 'var(--rail-soft, #f0fdf4)' : 'transparent',
+                    border: isSelected ? '1px solid var(--rail, #15803d)' : '1px solid transparent',
+                    transition: 'all 0.1s ease',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {}}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: isSelected ? 700 : 500, color: 'var(--ink)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)' }}>{c.code}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
+                    </div>
+                  </div>
+                  <Badge tone="slate" size="sm">{c.category || 'Store Ops'}</Badge>
+                  <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Lv {c.targetLevel || c.level || '7'}</span>
+                </div>
+              );
+            })}
+            {filteredCourses.length === 0 && (
+              <div style={{ padding: '16px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
+                Không tìm thấy khóa học nào phù hợp với bộ lọc.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function AdminCourseBuilder() {
@@ -437,9 +1051,31 @@ export default function AdminCourseBuilder() {
   // nextStatus: 'DRAFT' (nút Lưu Nháp) hoặc 'PUBLISHED' (nút Tạo Khóa Học /
   // Lưu Thay Đổi) — thay cho dropdown Status thủ công đã bỏ.
   function handleSave(nextStatus) {
-    if (!draft.title.trim()) { setError('Course name is required.'); return; }
-    if (nextStatus === 'PUBLISHED' && draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) { setError('Mandatory courses need a due date for their target audience.'); return; }
-    if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) { setError('End date must be after start date.'); return; }
+    if (!draft.title.trim()) {
+      setError('Vui lòng nhập tên khóa học (Course Title is required).');
+      document.getElementById('builder-title-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const cats = draft.categories && draft.categories.length ? draft.categories : (draft.category ? [draft.category] : []);
+    if (cats.length === 0) {
+      setError('Vui lòng chọn ít nhất một Danh mục khóa học (Course Category is required).');
+      document.getElementById('builder-category-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const lvls = (draft.targetLevels && draft.targetLevels.length ? draft.targetLevels : (draft.targetLevel ? [draft.targetLevel] : [])).map(String);
+    if (lvls.length === 0) {
+      setError('Vui lòng chọn ít nhất một Cấp bậc áp dụng (Target Job Level is required).');
+      document.getElementById('builder-level-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (nextStatus === 'PUBLISHED' && draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) {
+      setError('Mandatory courses need a due date for their target audience.');
+      return;
+    }
+    if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
+      setError('End date must be after start date.');
+      return;
+    }
     if (nextStatus === 'PUBLISHED' && draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS') {
       const vm = draft.virtualMeeting || {};
       if (!vm.meetingUrl?.trim()) { setError('Virtual Class cần đường dẫn phòng họp (Meeting URL).'); return; }
@@ -449,7 +1085,17 @@ export default function AdminCourseBuilder() {
     }
     setError('');
     const { modality, format } = deriveModalityFormat(draft.deliveryType, draft.onlineClassType);
-    const toSave = { ...draft, status: nextStatus, modality, format };
+    const toSave = {
+      ...draft,
+      categories: cats,
+      category: cats[0] || '',
+      targetLevels: lvls,
+      targetLevel: lvls[0] || '',
+      targetLevelTitle: lvls.length === 7 ? 'Level 1 - 7' : lvls.map((l) => `Level ${l}`).join(', '),
+      status: nextStatus,
+      modality,
+      format,
+    };
     if (isNew) {
       addCourse(toSave);
     } else {
@@ -715,6 +1361,37 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
+      {/* GLOBAL VALIDATION ERROR BANNER */}
+      {error && (
+        <div
+          style={{
+            background: 'var(--rust-soft, #fef2f2)',
+            border: '1.5px solid var(--rust, #ef4444)',
+            borderRadius: 8,
+            padding: '12px 16px',
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            color: 'var(--rust, #b91c1c)',
+            fontWeight: 600,
+            fontSize: 13,
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)',
+          }}
+        >
+          <i className="ti ti-alert-triangle" style={{ fontSize: 18, color: 'var(--rust, #ef4444)', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>{error}</div>
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            style={{ color: 'var(--rust, #b91c1c)', padding: '2px 8px' }}
+            onClick={() => setError('')}
+          >
+            Đóng
+          </button>
+        </div>
+      )}
+
       {/* BASIC INFORMATION CARD */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
@@ -727,13 +1404,17 @@ export default function AdminCourseBuilder() {
 
         {/* Row 1: Course Title & Code */}
         <div className="grid grid-3" style={{ gap: 14, marginBottom: 14 }}>
-          <div style={{ gridColumn: 'span 2' }}>
+          <div id="builder-title-field" style={{ gridColumn: 'span 2' }}>
             <label className="field-label" style={{ fontWeight: 700 }}>
               Tên khóa học (Course Title) <span style={{ color: 'var(--rust)' }}>*</span>
             </label>
             <input
               className="field-input"
-              style={{ fontWeight: 600, fontSize: 13.5 }}
+              style={{
+                fontWeight: 600,
+                fontSize: 13.5,
+                border: error && !draft.title.trim() ? '2px solid var(--rust, #dc2626)' : undefined,
+              }}
               placeholder="VD: Quy Trình Kiểm Soát An Toàn Vệ Sinh Thực Phẩm (HACCP)"
               value={draft.title}
               onChange={(e) => {
@@ -745,6 +1426,9 @@ export default function AdminCourseBuilder() {
                   }
                   return next;
                 });
+                if (title.trim() && error && error.includes('tên khóa học')) {
+                  setError('');
+                }
               }}
             />
           </div>
@@ -813,177 +1497,40 @@ export default function AdminCourseBuilder() {
           </div>
         </div>
 
-        {/* Row 3: Category Multi-Select Chips (Lĩnh vực chuyên môn) */}
-        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, border: '1px solid var(--line)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <div>
-              <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
-                <i className="ti ti-tag" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                Lĩnh Vực Chuyên Môn (Course Categories) &middot; <span style={{ color: 'var(--rail, #15803d)' }}>Đã chọn: {(draft.categories && draft.categories.length) || (draft.category ? 1 : 0)}</span>
-              </label>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Chọn một hoặc nhiều lĩnh vực đào tạo phù hợp:
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '2px 8px', background: '#fff', border: '1px solid var(--line)' }}
-                onClick={() => patch({ categories: [...companyCategories], category: companyCategories[0] })}
-              >
-                Chọn tất cả ({companyCategories.length})
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '2px 8px', background: '#fff', border: '1px solid var(--line)' }}
-                onClick={() => patch({ categories: [companyCategories[0]], category: companyCategories[0] })}
-              >
-                Mặc định ({companyCategories[0]})
-              </button>
-            </div>
-          </div>
+        {/* Row 3: 2-Column Grid for Category & Target Job Level (Multi-Select Dropdowns) */}
+        <div className="grid grid-2" style={{ gap: 14, marginBottom: 16 }}>
+          <CategoryMultiSelectDropdown
+            id="builder-category-field"
+            selected={draft.categories || (draft.category ? [draft.category] : [])}
+            options={companyCategories}
+            hasError={Boolean(error && (error.includes('Danh mục') || error.includes('Category')))}
+            errorMessage={error && (error.includes('Danh mục') || error.includes('Category')) ? error : ''}
+            onChange={(nextCats) => {
+              patch({ categories: nextCats, category: nextCats[0] || '' });
+              if (nextCats.length > 0 && error && (error.includes('Danh mục') || error.includes('Category'))) {
+                setError('');
+              }
+            }}
+          />
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {companyCategories.map((cat) => {
-              const active = (draft.categories || []).includes(cat);
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => {
-                    setDraft((d) => {
-                      const cur = d.categories && d.categories.length ? d.categories : (d.category ? [d.category] : []);
-                      const next = cur.includes(cat) ? cur.filter((c) => c !== cat) : [...cur, cat];
-                      const safeNext = next.length === 0 ? [cat] : next;
-                      return { ...d, categories: safeNext, category: safeNext[0] || '' };
-                    });
-                  }}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    border: active ? '1.5px solid var(--rail, #15803d)' : '1px solid var(--line-strong)',
-                    background: active ? 'var(--rail, #15803d)' : '#fff',
-                    color: active ? '#fff' : 'var(--ink)',
-                    boxShadow: active ? '0 1px 4px rgba(21,128,61,0.25)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <i className={`ti ${active ? 'ti-check' : 'ti-plus'}`} style={{ fontSize: 12 }} />
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Row 4: Target Job Levels (Level 1 to Level 7 Multi-Select) */}
-        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, border: '1px solid var(--line)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <div>
-              <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
-                <i className="ti ti-chart-arrows" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                Cấp Bậc Mục Tiêu (Target Job Level) — Có thể chọn 1 hoặc nhiều cấp bậc:
-              </label>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Áp dụng cho học viên theo khung năng lực 7 cấp bậc của MMVN:
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
-                onClick={() => {
-                  const allLvls = ['1', '2', '3', '4', '5', '6', '7'];
-                  patch({ targetLevels: allLvls, targetLevel: '1', targetLevelTitle: 'Level 1 - 7' });
-                }}
-              >
-                Chọn Tất Cả (Lv 1 - 7)
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
-                onClick={() => {
-                  const mgmt = ['1', '2', '3', '4'];
-                  patch({ targetLevels: mgmt, targetLevel: '1', targetLevelTitle: 'Level 1 - 4' });
-                }}
-              >
-                Quản Lý (Lv 1 - 4)
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontSize: 11, padding: '3px 10px', background: '#fff', border: '1px solid var(--line)' }}
-                onClick={() => {
-                  const frontline = ['5', '6', '7'];
-                  patch({ targetLevels: frontline, targetLevel: '7', targetLevelTitle: 'Level 5 - 7' });
-                }}
-              >
-                Tuyến Đầu (Lv 5 - 7)
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-            {['1', '2', '3', '4', '5', '6', '7'].map((lvl) => {
-              const currentList = (draft.targetLevels || [draft.targetLevel || '7']).map(String);
-              const isSelected = currentList.includes(lvl);
-              return (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => {
-                    let next;
-                    if (isSelected) {
-                      if (currentList.length === 1) return; // Giữ tối thiểu 1 cấp bậc
-                      next = currentList.filter((l) => l !== lvl);
-                    } else {
-                      next = [...currentList, lvl].sort((a, b) => Number(a) - Number(b));
-                    }
-                    patch({
-                      targetLevels: next,
-                      targetLevel: next[0],
-                      targetLevelTitle: next.map((l) => `Lv ${l}`).join(', '),
-                      assignment: draft.assignment ? { ...draft.assignment, targetLevel: next[0] } : draft.assignment,
-                    });
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    border: isSelected ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
-                    background: isSelected ? 'var(--rail-soft, #f0fdf4)' : '#fff',
-                    color: isSelected ? 'var(--rail-soft-text, #166534)' : 'var(--ink-soft)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <i className={isSelected ? 'ti ti-checkbox' : 'ti ti-square'} style={{ fontSize: 16 }} />
-                  Level {lvl}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-            Đã chọn:{' '}
-            <strong style={{ color: 'var(--rail, #15803d)' }}>
-              {(draft.targetLevels || [draft.targetLevel || '7']).map((l) => `Level ${l}`).join(', ')}
-            </strong>
-          </div>
+          <LevelMultiSelectDropdown
+            id="builder-level-field"
+            selected={(draft.targetLevels || (draft.targetLevel ? [draft.targetLevel] : [])).map(String)}
+            hasError={Boolean(error && (error.includes('Cấp bậc') || error.includes('Level')))}
+            errorMessage={error && (error.includes('Cấp bậc') || error.includes('Level')) ? error : ''}
+            onChange={(nextLvls) => {
+              const sorted = [...nextLvls].sort((a, b) => Number(a) - Number(b));
+              patch({
+                targetLevels: sorted,
+                targetLevel: sorted[0] || '',
+                targetLevelTitle: sorted.length === 7 ? 'Level 1 - 7' : sorted.map((l) => `Level ${l}`).join(', '),
+                assignment: draft.assignment ? { ...draft.assignment, targetLevel: sorted[0] || '' } : draft.assignment,
+              });
+              if (sorted.length > 0 && error && (error.includes('Cấp bậc') || error.includes('Level'))) {
+                setError('');
+              }
+            }}
+          />
         </div>
 
         {/* Row 5: Description */}
@@ -1684,27 +2231,74 @@ export default function AdminCourseBuilder() {
       </>
       )}
 
-      <div className="card card-pad">
-        <div className="section-label" style={{ margin: '0 0 14px' }}>Completion, prerequisites &amp; certificate</div>
-        <div style={{ marginBottom: 14 }}>
-          <label className="field-label">Course completion rule</label>
-          <input className="field-input" value={cfg.completionRule} onChange={(e) => patchConfig({ completionRule: e.target.value })} />
+      {/* COMPLETION, PREREQUISITES & CERTIFICATE CARD */}
+      <div className="card card-pad" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
+          <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
+            <i className="ti ti-award" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Quy Tắc Hoàn Thành, Điều Kiện Tiên Quyết &amp; Chứng Chỉ (Completion &amp; Certificate)
+          </div>
+          <Badge tone={cfg.certificateEnabled ? 'sage' : 'slate'}>
+            {cfg.certificateEnabled ? '🎓 Có cấp chứng chỉ' : 'Không cấp chứng chỉ'}
+          </Badge>
         </div>
-        <div className="grid grid-2">
+
+        {/* Top 2-Column: Completion Rules & Certificate Settings */}
+        <div className="grid grid-2" style={{ gap: 14, marginBottom: 14 }}>
           <div>
-            <label className="field-label">Prerequisite courses</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-              {courses.filter((c) => c.id !== draft.id).map((c) => (
-                <label key={c.id} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" checked={draft.prerequisites.includes(c.id)} onChange={() => togglePrerequisite(c.id)} /> {c.title}
-                </label>
+            <label className="field-label" style={{ fontWeight: 700 }}>
+              Quy tắc hoàn thành khóa học (Course Completion Rule)
+            </label>
+            <input
+              className="field-input"
+              value={cfg.completionRule}
+              placeholder="VD: Complete all required lessons"
+              onChange={(e) => patchConfig({ completionRule: e.target.value })}
+            />
+            {/* Quick preset chips */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Gợi ý:</span>
+              {[
+                'Complete all required lessons',
+                'Hoàn thành 100% bài học & Đạt bài thi >= 80%',
+                'Điểm danh đủ các buổi học trực tiếp',
+              ].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  style={{ fontSize: 10.5, padding: '1px 6px', background: 'var(--paper-sunken)' }}
+                  onClick={() => patchConfig({ completionRule: preset })}
+                >
+                  {preset}
+                </button>
               ))}
             </div>
           </div>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, marginTop: 22 }}>
-            <input type="checkbox" checked={cfg.certificateEnabled} onChange={(e) => patchConfig({ certificateEnabled: e.target.checked })} /> Issue certificate on completion
-          </label>
+
+          <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cfg.certificateEnabled}
+                onChange={(e) => patchConfig({ certificateEnabled: e.target.checked })}
+              />
+              <span>Cấp chứng chỉ tốt nghiệp khi hoàn thành (Issue Certificate)</span>
+            </label>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4, marginLeft: 24 }}>
+              Học viên sau khi đạt tiêu chuẩn hoàn thành sẽ được tải chứng chỉ PDF và ghi nhận vào hồ sơ năng lực.
+            </div>
+          </div>
         </div>
+
+        {/* Prerequisite Courses: Compact & Filterable */}
+        <PrerequisiteCoursesPicker
+          courses={courses}
+          currentCourseId={draft.id}
+          selectedIds={draft.prerequisites || []}
+          onToggle={(cid) => togglePrerequisite(cid)}
+          onClear={() => patch({ prerequisites: [] })}
+        />
       </div>
 
       {/* BOTTOM ACTION BAR — Save/Create được dời xuống cuối trang; lưu xong

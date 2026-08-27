@@ -1037,17 +1037,16 @@ export function createBlankCourse() {
     code: '',
     title: 'Untitled course',
     description: '',
-    category: 'Store Operations',
-    categories: ['Store Operations'],
+    category: '',
+    categories: [],
     startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     thumbnail: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
     imageUrl: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
     milestoneImage: COURSE_IMAGE_PRESETS[8]?.url || 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
-    // Mặc định khóa mới nhắm tới cấp thấp nhất (Level 7) để mở tối đa cho học viên;
-    // người biên soạn nâng cấp bậc mục tiêu trong Course Builder nếu cần.
-    targetLevel: '7',
-    targetLevelTitle: `Level 7: ${levelTitle('7')}`,
+    targetLevel: '',
+    targetLevels: [],
+    targetLevelTitle: '',
     deliveryType: 'ONLINE_ELEARNING', // 'ONLINE_ELEARNING' | 'IN_PERSON_CLASSROOM'
     // Chỉ có ý nghĩa khi deliveryType là ONLINE_ELEARNING: 'E_LEARNING' (tự học
     // qua Module/Bài học/Quiz, cơ chế hiện tại) hoặc 'VIRTUAL_CLASS' (lớp học
