@@ -989,6 +989,31 @@ console.log('\n=== Section 25: LearnerCalendar page renders at both routes ===')
   check('LearnerCalendar (/my-learning-calendar) renders without crashing', Boolean(sharedRouteHtml));
 }
 
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 26: Learning Calendar nav entry — all 6 roles ===');
+{
+  const nonLearnerRoles = ['manager', 'trainer', 'hrbp', 'useradmin', 'sysadmin'];
+  for (const role of nonLearnerRoles) {
+    actAs(role);
+    const headerHtml = render(
+      `${role} header has Lịch Học Tập nav item`,
+      <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />,
+      '/', '/'
+    );
+    check(`${role} header links to /my-learning-calendar`,
+      Boolean(headerHtml && headerHtml.includes('Lịch Học Tập') && headerHtml.includes('my-learning-calendar')));
+  }
+
+  actAs('learner');
+  const learnerHeaderHtml = render(
+    'learner header uses its own /learner/calendar, not the shared route',
+    <AppHeader role="learner" onRoleChange={() => {}} title="" crumb="" />,
+    '/', '/'
+  );
+  check('learner header links to its own /learner/calendar (not the shared /my-learning-calendar)',
+    Boolean(learnerHeaderHtml && learnerHeaderHtml.includes('/learner/calendar') && !learnerHeaderHtml.includes('my-learning-calendar')));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
 

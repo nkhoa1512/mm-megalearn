@@ -10,6 +10,7 @@ import { Button, Badge } from './ui';
 const LEARNER_SELF_NAV = [
   { to: '/my-learning', label: 'Khóa Học Của Tôi', labelVi: 'Khóa Học Của Tôi', labelEn: 'My Courses', icon: 'ti-book-2' },
   { to: '/my-learning-dashboard', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard' },
+  { to: '/my-learning-calendar', label: 'Lịch Học Tập', labelVi: 'Lịch Học Tập', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
   { to: '/my-learning-path', label: 'Lộ Trình Học Tập', labelVi: 'Lộ Trình Học Tập', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
   { to: '/my-certificates', label: 'Chứng Chỉ Của Tôi', labelVi: 'Chứng Chỉ Của Tôi', labelEn: 'My Certificates', icon: 'ti-certificate' },
   { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', labelVi: 'Đánh Giá Giảng Viên (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
@@ -19,6 +20,7 @@ const LEARNER_SELF_NAV = [
 const ROLE_WORK_NAV = {
   learner: [
     { to: '/learner', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard', end: true },
+    { to: '/learner/calendar', label: 'Lịch Học Tập', labelVi: 'Lịch Học Tập', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
     { to: '/learner/courses', label: 'Khóa Học Của Tôi', labelVi: 'Khóa Học Của Tôi', labelEn: 'My Courses', icon: 'ti-book-2' },
     { to: '/learner/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-stack-2' },
     { to: '/learner/classrooms', label: 'Lớp Trực Tiếp & QR Check-in', labelVi: 'Lớp Trực Tiếp & QR Check-in', labelEn: 'Live Classrooms & QR', icon: 'ti-chalkboard' },
