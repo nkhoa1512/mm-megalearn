@@ -2292,177 +2292,179 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {/* SECTION: GIÁO TRÌNH & TÀI LIỆU GIẢNG DẠY (SYLLABUS & PRE-CLASS MATERIALS) */}
-      <div className="card card-pad" style={{ marginBottom: 16, border: '1.5px solid var(--blue, #2563eb)', background: 'var(--paper-raised)', borderRadius: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
-          <div>
-            <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
-              <i className="ti ti-notebook" style={{ marginRight: 6, color: 'var(--blue)' }} />
-              Giáo Trình &amp; Tài Liệu Giảng Dạy (Session Syllabus &amp; Pre-Class Materials)
+      {/* SECTION: GIÁO TRÌNH & TÀI LIỆU GIẢNG DẠY (CHỈ ÁP DỤNG CHO KHÓA TRỰC TIẾP HOẶC LỚP TRỰC TUYẾN LIVE) */}
+      {(draft.deliveryType === 'IN_PERSON_CLASSROOM' || (draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS')) && (
+        <div className="card card-pad" style={{ marginBottom: 16, border: '1.5px solid var(--blue, #2563eb)', background: 'var(--paper-raised)', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
+                <i className="ti ti-notebook" style={{ marginRight: 6, color: 'var(--blue)' }} />
+                Giáo Trình &amp; Tài Liệu Giảng Dạy (Session Syllabus &amp; Pre-Class Materials)
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Khung chương trình bài giảng từng phần và file tài liệu (SOP PDF, Slide PPT) để học viên tải về xem trước khi bắt đầu khóa học trực tiếp / trực tuyến.
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-              Khung chương trình bài giảng từng phần và file tài liệu (SOP PDF, Slide PPT) để học viên tải về xem trước khi bắt đầu khóa học.
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Badge tone="blue" icon="ti-list-check">{(draft.syllabus || []).length} Phần Học</Badge>
+              <Badge tone="sage" icon="ti-paperclip">{(draft.materials || []).length} File Tài Liệu</Badge>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Badge tone="blue" icon="ti-list-check">{(draft.syllabus || []).length} Phần Học</Badge>
-            <Badge tone="sage" icon="ti-paperclip">{(draft.materials || []).length} File Tài Liệu</Badge>
-          </div>
-        </div>
 
-        <div className="grid grid-2" style={{ gap: 20, alignItems: 'start' }}>
-          {/* COLUMN 1: KHUNG CHƯƠNG TRÌNH (SYLLABUS / SESSION AGENDA) */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <label className="field-label" style={{ fontWeight: 700, margin: 0, color: 'var(--blue)' }}>
-                <i className="ti ti-list-numbers" style={{ marginRight: 4 }} /> Khung Chương Trình Buổi Học (Syllabus Agenda)
+          <div className="grid grid-2" style={{ gap: 20, alignItems: 'start' }}>
+            {/* COLUMN 1: KHUNG CHƯƠNG TRÌNH (SYLLABUS / SESSION AGENDA) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <label className="field-label" style={{ fontWeight: 700, margin: 0, color: 'var(--blue)' }}>
+                  <i className="ti ti-list-numbers" style={{ marginRight: 4 }} /> Khung Chương Trình Buổi Học (Syllabus Agenda)
+                </label>
+                <Button size="sm" variant="outline" icon="ti-plus" onClick={addSyllabusStep}>
+                  Thêm Phần Học
+                </Button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+                {(draft.syllabus || []).length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)', color: 'var(--ink-soft)', fontSize: 12.5 }}>
+                    Chưa có khung chương trình. Bấm "+ Thêm Phần Học" để thiết lập nội dung từng bước.
+                  </div>
+                ) : (
+                  draft.syllabus.map((step, sIdx) => (
+                    <div key={sIdx} style={{ background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
+                          <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                            {sIdx + 1}
+                          </span>
+                          <input
+                            className="field-input"
+                            style={{ height: 30, fontSize: 12.5, fontWeight: 700 }}
+                            value={step.step}
+                            onChange={(e) => updateSyllabusStep(sIdx, 'step', e.target.value)}
+                            placeholder="Tên phần học (VD: Phần 1: Giới thiệu...)"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          style={{ color: 'var(--rust)' }}
+                          onClick={() => removeSyllabusStep(sIdx)}
+                          title="Xóa phần này"
+                        >
+                          <i className="ti ti-trash" />
+                        </button>
+                      </div>
+                      <textarea
+                        className="field-input"
+                        rows={2}
+                        style={{ fontSize: 12, resize: 'vertical' }}
+                        value={step.detail}
+                        onChange={(e) => updateSyllabusStep(sIdx, 'detail', e.target.value)}
+                        placeholder="Mô tả chi tiết nội dung đào tạo và yêu cầu thực hành..."
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* COLUMN 2: TÀI LIỆU ĐÍNH KÈM & SLIDE (COURSE MATERIALS & UPLOADS) */}
+            <div>
+              <label className="field-label" style={{ fontWeight: 700, marginBottom: 10, color: 'var(--bigc-green, #007A38)' }}>
+                <i className="ti ti-upload" style={{ marginRight: 4 }} /> File Giáo Trình, Slide &amp; Tài Liệu Đính Kèm
               </label>
-              <Button size="sm" variant="outline" icon="ti-plus" onClick={addSyllabusStep}>
-                Thêm Phần Học
-              </Button>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
-              {(draft.syllabus || []).length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)', color: 'var(--ink-soft)', fontSize: 12.5 }}>
-                  Chưa có khung chương trình. Bấm "+ Thêm Phần Học" để thiết lập nội dung từng bước.
-                </div>
-              ) : (
-                draft.syllabus.map((step, sIdx) => (
-                  <div key={sIdx} style={{ background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
-                        <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
-                          {sIdx + 1}
-                        </span>
-                        <input
-                          className="field-input"
-                          style={{ height: 30, fontSize: 12.5, fontWeight: 700 }}
-                          value={step.step}
-                          onChange={(e) => updateSyllabusStep(sIdx, 'step', e.target.value)}
-                          placeholder="Tên phần học (VD: Phần 1: Giới thiệu...)"
+              {/* Simulated Drag & Drop Upload Zone */}
+              <div style={{
+                background: '#f8fafc',
+                border: '2px dashed #94a3b8',
+                borderRadius: 8,
+                padding: '16px 12px',
+                textAlign: 'center',
+                marginBottom: 12,
+                position: 'relative',
+                cursor: 'pointer',
+              }}>
+                <input
+                  type="file"
+                  accept=".pdf,.ppt,.pptx,.doc,.docx,.zip"
+                  onChange={handleSimulatedFileUpload}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0,
+                    cursor: 'pointer',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+                <i className="ti ti-cloud-upload" style={{ fontSize: 28, color: 'var(--blue)', marginBottom: 4 }} />
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>Kéo thả file hoặc Bấm để tải lên tài liệu</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hỗ trợ: PDF (SOP, Hướng dẫn), PPT/PPTX (Slide bài giảng), DOCX (Biểu mẫu)</div>
+              </div>
+
+              {/* Quick manual entry form */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                <input
+                  className="field-input"
+                  style={{ flex: 1, minWidth: 160, height: 32, fontSize: 12 }}
+                  placeholder="Tên tài liệu đính kèm..."
+                  value={newMaterialName}
+                  onChange={(e) => setNewMaterialName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(); } }}
+                />
+                <select
+                  className="field-select"
+                  style={{ width: 80, height: 32, fontSize: 12 }}
+                  value={newMaterialType}
+                  onChange={(e) => setNewMaterialType(e.target.value)}
+                >
+                  <option value="PDF">PDF</option>
+                  <option value="PPT">PPT</option>
+                  <option value="DOC">DOC</option>
+                  <option value="LINK">LINK</option>
+                </select>
+                <Button size="sm" variant="primary" icon="ti-plus" onClick={addMaterial}>
+                  Thêm File
+                </Button>
+              </div>
+
+              {/* List of current uploaded materials */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+                {(draft.materials || []).length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '14px', background: 'var(--paper-sunken)', borderRadius: 6, color: 'var(--ink-soft)', fontSize: 12 }}>
+                    Chưa có tài liệu đính kèm. Tải file hoặc nhập tên ở trên.
+                  </div>
+                ) : (
+                  draft.materials.map((mat) => (
+                    <div key={mat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                        <i
+                          className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
+                          style={{ fontSize: 18, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)', flexShrink: 0 }}
                         />
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{mat.name}</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{mat.type} &middot; {mat.size || '2.0 MB'} &middot; {mat.uploadedBy || 'Admin'}</div>
+                        </div>
                       </div>
                       <button
                         type="button"
                         className="icon-btn"
                         style={{ color: 'var(--rust)' }}
-                        onClick={() => removeSyllabusStep(sIdx)}
-                        title="Xóa phần này"
+                        onClick={() => removeMaterial(mat.id)}
+                        title="Xóa tài liệu"
                       >
-                        <i className="ti ti-trash" />
+                        <i className="ti ti-x" />
                       </button>
                     </div>
-                    <textarea
-                      className="field-input"
-                      rows={2}
-                      style={{ fontSize: 12, resize: 'vertical' }}
-                      value={step.detail}
-                      onChange={(e) => updateSyllabusStep(sIdx, 'detail', e.target.value)}
-                      placeholder="Mô tả chi tiết nội dung đào tạo và yêu cầu thực hành..."
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* COLUMN 2: TÀI LIỆU ĐÍNH KÈM & SLIDE (COURSE MATERIALS & UPLOADS) */}
-          <div>
-            <label className="field-label" style={{ fontWeight: 700, marginBottom: 10, color: 'var(--bigc-green, #007A38)' }}>
-              <i className="ti ti-upload" style={{ marginRight: 4 }} /> File Giáo Trình, Slide &amp; Tài Liệu Đính Kèm
-            </label>
-
-            {/* Simulated Drag & Drop Upload Zone */}
-            <div style={{
-              background: '#f8fafc',
-              border: '2px dashed #94a3b8',
-              borderRadius: 8,
-              padding: '16px 12px',
-              textAlign: 'center',
-              marginBottom: 12,
-              position: 'relative',
-              cursor: 'pointer',
-            }}>
-              <input
-                type="file"
-                accept=".pdf,.ppt,.pptx,.doc,.docx,.zip"
-                onChange={handleSimulatedFileUpload}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: 0,
-                  cursor: 'pointer',
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
-              <i className="ti ti-cloud-upload" style={{ fontSize: 28, color: 'var(--blue)', marginBottom: 4 }} />
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>Kéo thả file hoặc Bấm để tải lên tài liệu</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hỗ trợ: PDF (SOP, Hướng dẫn), PPT/PPTX (Slide bài giảng), DOCX (Biểu mẫu)</div>
-            </div>
-
-            {/* Quick manual entry form */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-              <input
-                className="field-input"
-                style={{ flex: 1, minWidth: 160, height: 32, fontSize: 12 }}
-                placeholder="Tên tài liệu đính kèm..."
-                value={newMaterialName}
-                onChange={(e) => setNewMaterialName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(); } }}
-              />
-              <select
-                className="field-select"
-                style={{ width: 80, height: 32, fontSize: 12 }}
-                value={newMaterialType}
-                onChange={(e) => setNewMaterialType(e.target.value)}
-              >
-                <option value="PDF">PDF</option>
-                <option value="PPT">PPT</option>
-                <option value="DOC">DOC</option>
-                <option value="LINK">LINK</option>
-              </select>
-              <Button size="sm" variant="primary" icon="ti-plus" onClick={addMaterial}>
-                Thêm File
-              </Button>
-            </div>
-
-            {/* List of current uploaded materials */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
-              {(draft.materials || []).length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '14px', background: 'var(--paper-sunken)', borderRadius: 6, color: 'var(--ink-soft)', fontSize: 12 }}>
-                  Chưa có tài liệu đính kèm. Tải file hoặc nhập tên ở trên.
-                </div>
-              ) : (
-                draft.materials.map((mat) => (
-                  <div key={mat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                      <i
-                        className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
-                        style={{ fontSize: 18, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)', flexShrink: 0 }}
-                      />
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{mat.name}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{mat.type} &middot; {mat.size || '2.0 MB'} &middot; {mat.uploadedBy || 'Admin'}</div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      style={{ color: 'var(--rust)' }}
-                      onClick={() => removeMaterial(mat.id)}
-                      title="Xóa tài liệu"
-                    >
-                      <i className="ti ti-x" />
-                    </button>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Module/Lesson editor & Assessment CHỈ áp dụng cho khóa Online E-Learning
           tự học — không áp dụng cho Virtual Class (lớp live qua Zoom/Teams,

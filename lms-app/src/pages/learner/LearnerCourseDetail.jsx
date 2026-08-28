@@ -395,9 +395,6 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         />
       ) : (
         <>
-          {/* COURSE SYLLABUS & PRE-CLASS MATERIALS */}
-          <CourseMaterialsCard course={course} onPreviewDoc={setPreviewDoc} />
-
           {/* MODULES & LESSONS */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div className="card-pad" style={{ paddingBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -814,49 +811,6 @@ function VirtualClassCard({ course, isLocked, isEnrolled, onPreviewDoc }) {
         <div style={{ marginTop: 14, fontSize: 11.5, color: 'var(--ink-faint)' }}>
           Không có bài thi cuối khóa — hoàn thành khóa học được ghi nhận khi bạn tham gia đầy đủ buổi học (Giảng viên điểm danh).
         </div>
-      </div>
-    </div>
-  );
-}
-
-function CourseMaterialsCard({ course, onPreviewDoc }) {
-  const materials = course.materials || [];
-  const syllabus = course.syllabus || [];
-  if (materials.length === 0 && syllabus.length === 0) return null;
-
-  return (
-    <div className="card card-pad" style={{ marginBottom: 16, border: '1px solid var(--line)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-        <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
-          <i className="ti ti-notebook" style={{ marginRight: 6, color: 'var(--blue)' }} />
-          Giáo Trình &amp; Tài Liệu Đính Kèm (Syllabus &amp; Attachments)
-        </div>
-        <Badge tone="blue" icon="ti-download">{materials.length} File Tài Liệu</Badge>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {materials.map((mat, idx) => (
-          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <i
-                className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
-                style={{ fontSize: 22, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)' }}
-              />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{mat.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Định dạng: {mat.type} &middot; Dung lượng: {mat.size || '2.0 MB'}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <Button size="sm" variant="outline" icon="ti-eye" onClick={() => onPreviewDoc(mat)}>
-                Xem Trực Tuyến
-              </Button>
-              <Button size="sm" variant="ghost" icon="ti-download" onClick={() => alert(`Đang tải về: ${mat.name}`)}>
-                Tải Về Máy
-              </Button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
