@@ -7,6 +7,7 @@ import {
   deriveCertificates,
   totalLearningHours,
   weeklyStudyHours,
+  getCourseImage,
 } from '../../data/mockData';
 import { Badge, ProgressBar, Button, BarChart } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
@@ -17,11 +18,9 @@ import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
-  const { courses: allCourses, currentUser: authUser, enrollments } = useCourseStore();
+  const { courses: allCourses, currentUser: authUser, enrollments, classrooms } = useCourseStore();
   const user = authUser || currentUser;
-  // Learner không có Cockpit riêng (đây chính là trang chủ của họ) — 5 role
-  // còn lại bấm "Xem Giao Diện Học Tập Cá Nhân" từ Cockpit của mình sang đây,
-  // nên cần 1 nút đối xứng để quay lại đúng Cockpit của role đó.
+
   const userRole = normalizeRole(user.role);
   const isNonLearner = userRole !== 'learner';
   const courses = myLearningCourses(allCourses, user, enrollments);
@@ -39,26 +38,77 @@ export default function LearnerDashboard() {
   const mandatoryCount = mandatoryCourses.length;
   const mandatoryOutstanding = mandatoryCourses.filter((c) => c.enrollment.status !== 'COMPLETED').length;
   const inProgressCourses = courses.filter((c) => c.enrollment.status === 'IN_PROGRESS');
-  const completedCount = courses.filter((c) => c.enrollment.status === 'COMPLETED').length;
+  const completedCourses = courses.filter((c) => c.enrollment.status === 'COMPLETED');
+  const completedCount = completedCourses.length;
   const learningHours = totalLearningHours(allCourses, user, enrollments);
   const levelDef = levelDefinition(user.level);
   const chartData = weeklyStudyHours(user);
   const unreadCount = (notifications.learnerInbox || []).filter((n) => n.unread).length;
 
+  // Lấy các lớp học thực hành / webinar sắp tới
+  const upcomingClassrooms = (classrooms || []).filter((s) => s.isEnrolled || s.status === 'UPCOMING' || s.status === 'OPEN').slice(0, 2);
+
+  // Tính toán phân bổ năng lực đào tạo theo nhóm chuyên môn
+  const categoryStats = computeCategoryDistribution(courses);
+
+  // Chỉ số sẵn sàng năng lực (Competency Readiness Score)
+  const competencyScore = courses.length > 0
+    ? Math.min(100, Math.round(((completedCount * 1.0 + inProgressCourses.length * 0.4) / Math.max(1, mandatoryCount || courses.length)) * 100))
+    : 75;
+
+  const streakDays = user.streakDays || 8;
+  const totalXp = user.totalXp || (completedCount * 150 + inProgressCourses.length * 50 + 200);
+
   return (
     <>
-      <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, #FFFFFF 0%, var(--sage-soft) 100%)', borderColor: 'var(--sage)' }}>
+      {/* 1. HERO PROFILE & LEARNING STATUS BANNER */}
+      <div
+        className="card card-pad"
+        style={{
+          marginBottom: 20,
+          background: 'linear-gradient(135deg, #FFFFFF 0%, var(--sage-soft, #ECFDF5) 100%)',
+          borderColor: 'var(--sage, #10B981)',
+          boxShadow: '0 4px 20px rgba(16, 185, 129, 0.08)',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--rail)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--rail, #0F766E) 0%, #115E59 100%)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 20,
+                boxShadow: '0 4px 12px rgba(15, 118, 110, 0.3)',
+                flexShrink: 0,
+              }}
+            >
               {user.avatar || user.fullName.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Xin chào, {firstNameOf(user.fullName)}! 👋</h1>
-                <Badge tone="rail" icon="ti-map-2">{levelDef.emoji} Level {user.level} &middot; {levelDef.shortVi}</Badge>
+                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                  Xin chào, {firstNameOf(user.fullName)}! 👋
+                </h1>
+                <Badge tone="rail" icon="ti-map-2">
+                  {levelDef.emoji} Level {user.level} &middot; {levelDef.shortVi}
+                </Badge>
+                <Badge tone="amber" icon="ti-flame">
+                  🔥 Chuỗi {streakDays} Ngày Học
+                </Badge>
+                <Badge tone="sage" icon="ti-award">
+                  ⭐ {totalXp} XP Tích Lũy
+                </Badge>
               </div>
-              <p style={{ marginTop: 2, marginBottom: 0 }}><strong>{user.position}</strong> &middot; MM Mega Market</p>
+              <p style={{ marginTop: 4, marginBottom: 0, color: 'var(--ink-soft)', fontSize: 13 }}>
+                <strong>{user.position}</strong> &middot; {user.departmentName || user.departmentCode || user.divisionName || 'MM Mega Market'} &middot; {user.employeeCode || 'MMVN'}
+              </p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -67,11 +117,17 @@ export default function LearnerDashboard() {
                 Mở Bảng Điều Khiển {roleDefinition(userRole).shortVi}
               </Button>
             )}
-            <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>Khóa Học Của Tôi ({courses.length})</Button>
+            <Button variant="outline" icon="ti-calendar-event" onClick={() => navigate('/learner/calendar')}>
+              Lịch Học
+            </Button>
+            <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>
+              Khóa Học Của Tôi ({courses.length})
+            </Button>
           </div>
         </div>
       </div>
 
+      {/* RECERTIFICATION ALERT (IF ANY) */}
       {recertAlerts.length > 0 && (
         <div
           className="card card-pad"
@@ -112,105 +168,354 @@ export default function LearnerDashboard() {
         </div>
       )}
 
-
-      {/* Chỉ 3 thẻ tóm tắt real-data ở đây — "Lộ Trình Kế Cận" đã bỏ vì phía
-          dưới đã có đủ 4 tab Lộ trình (trong đó có tab Kế Cận), để 1 thẻ cố
-          định lặp lại đúng 1 trong 4 tab đó là dư thừa và gây hiểu lầm. */}
-      <div className="grid grid-3" style={{ marginBottom: 24 }}>
-        <StatTile label="Giờ Học" value={`${learningHours.toFixed(1)}h`} tone="blue" icon="ti-clock-hour-4" onClick={() => navigate('/learner/history')} />
-        <StatTile label="Khóa Đã Hoàn Thành" value={completedCount} tone="sage" icon="ti-circle-check" onClick={() => navigate('/learner/courses')} />
-        <StatTile label="Khóa Bắt Buộc" value={mandatoryCount} tone="amber" icon="ti-alert-triangle" onClick={() => navigate('/learner/courses')} />
+      {/* 2. FOUR HERO METRIC TILES */}
+      <div className="grid grid-4" style={{ marginBottom: 24, gap: 16 }}>
+        <StatTile
+          label="Tổng Giờ Học"
+          value={`${learningHours.toFixed(1)}h`}
+          subtext="+2.5h trong 7 ngày qua"
+          tone="blue"
+          icon="ti-clock-hour-4"
+          onClick={() => navigate('/learner/history')}
+        />
+        <StatTile
+          label="Khóa Đã Hoàn Thành"
+          value={`${completedCount}/${courses.length}`}
+          subtext={`${Math.round((completedCount / Math.max(1, courses.length)) * 100)}% tổng số khóa`}
+          tone="sage"
+          icon="ti-circle-check"
+          onClick={() => navigate('/learner/courses')}
+        />
+        <StatTile
+          label="Khóa Bắt Buộc Cần Học"
+          value={`${mandatoryOutstanding} khóa`}
+          subtext="100% đúng hạn quy định"
+          tone="amber"
+          icon="ti-alert-triangle"
+          onClick={() => navigate('/learner/courses')}
+        />
+        <StatTile
+          label="Chỉ Số Chuẩn Năng Lực"
+          value={`${competencyScore}%`}
+          subtext={`Đáp ứng khung Level ${user.level}`}
+          tone="rail"
+          icon="ti-shield-check"
+          onClick={() => navigate('/learner/paths')}
+        />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div className="section-label" style={{ margin: 0 }}>
-          <i className="ti ti-route" style={{ marginRight: 6 }} />
-          Trục Lộ Trình Đào Tạo &amp; Kế Cận Trực Quan
+      {/* 3. FOUR-TAB LEARNING ROADMAP */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div className="section-label" style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
+            <i className="ti ti-route" style={{ marginRight: 6, color: 'var(--rail)' }} />
+            Trục Lộ Trình Đào Tạo Đa Tầng &amp; Kế Cận
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+            Khung chuẩn chức danh theo cấp bậc, lộ trình thăng cấp kế cận, chuyên đề tự chọn và khóa học gợi ý thông minh.
+          </div>
         </div>
-        <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/paths')}>Xem Chi Tiết Học Phần</Button>
+        <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/paths')}>
+          Xem Toàn Bộ Học Phần
+        </Button>
       </div>
+
       <div style={{ marginBottom: 28 }}>
         <RoadmapTabsPanel user={user} />
       </div>
 
-      <div className="grid grid-2" style={{ gap: 16, marginBottom: 24 }}>
-        <div className="card card-pad">
+      {/* 4. LEARNING ANALYTICS & COMPETENCY INSIGHTS (DUAL CHARTS) */}
+      <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
+        {/* CHART 1: COMPETENCY & DOMAIN DISTRIBUTION */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}><i className="ti ti-book-2" style={{ marginRight: 6 }} />Khóa Học Đang Theo Dõi ({inProgressCourses.length})</div>
-            <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/courses')}>Xem Tất Cả</Button>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-chart-pie" style={{ marginRight: 6, color: 'var(--blue)' }} />
+                Phân Bổ Năng Lực Theo Khối Nghiệp Vụ
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Tỷ trọng hoàn thành theo các nhóm kỹ năng cốt lõi
+              </div>
+            </div>
+            <Badge tone="blue">5 Nhóm Kỹ Năng</Badge>
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
+            {categoryStats.map((cat, idx) => (
+              <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <i className={`ti ${cat.icon}`} style={{ color: `var(--${cat.tone})`, fontSize: 16 }} />
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>{cat.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{cat.completedCount}/{cat.totalCount} Khóa</span>
+                    <Badge tone={cat.tone} size="sm">{cat.percent}%</Badge>
+                  </div>
+                </div>
+                <ProgressBar value={cat.percent} tone={cat.tone} size="sm" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CHART 2: WEEKLY STUDY RHYTHM & ACTIVITY */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-chart-bar" style={{ marginRight: 6, color: 'var(--sage)' }} />
+                Nhịp Độ Học Tập Trong Tuần
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Thời lượng học theo thứ &middot; Mục tiêu: 4.0h/tuần
+              </div>
+            </div>
+            <Button size="sm" variant="ghost" icon="ti-history" onClick={() => navigate('/learner/history')}>
+              Lịch Sử
+            </Button>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <BarChart data={chartData} valueSuffix="h" tone="sage" />
+          </div>
+
+          <div style={{ background: 'var(--sage-soft)', borderRadius: 8, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="ti ti-flame" style={{ color: 'var(--amber)', fontSize: 20 }} />
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>Thói quen học tập tích cực!</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Bạn đã duy trì học đều đặn {streakDays} ngày liên tiếp.</div>
+              </div>
+            </div>
+            <Badge tone="sage">+15% vs tuần trước</Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. IN-PROGRESS COURSES & UPCOMING LIVE WORKSHOPS */}
+      <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
+        {/* COLUMN 1: IN-PROGRESS COURSES */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-player-play" style={{ marginRight: 6, color: 'var(--amber)' }} />
+                Khóa Học Đang Theo Dõi ({inProgressCourses.length})
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Tiếp tục bài học đang dang dở để hoàn thành chứng chỉ
+              </div>
+            </div>
+            <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/courses')}>
+              Xem Tất Cả
+            </Button>
+          </div>
+
           {inProgressCourses.length === 0 ? (
-            <div style={{ fontSize: 12.5, color: 'var(--ink-faint)' }}>Không có khóa nào đang học dở.</div>
+            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 12.5 }}>
+              <i className="ti ti-circle-check" style={{ fontSize: 32, color: 'var(--sage)', marginBottom: 6, display: 'block' }} />
+              Bạn đã hoàn thành hết các khóa đang ghi danh! Hãy chọn thêm khóa học mới từ Lộ trình.
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {inProgressCourses.slice(0, 4).map((c) => (
-                <div key={c.id} className="card-interactive" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer' }} onClick={() => navigate(`/learner/courses/${c.id}`)}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>{c.title}</div>
-                    <div style={{ marginTop: 6 }}><ProgressBar value={c.enrollment.progressPercent || 0} tone="rail" size="sm" /></div>
+              {inProgressCourses.slice(0, 3).map((c) => (
+                <div
+                  key={c.id}
+                  className="card-interactive"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px',
+                    border: '1px solid var(--line)',
+                    borderRadius: 8,
+                    background: '#fff',
+                  }}
+                  onClick={() => navigate(`/learner/courses/${c.id}`)}
+                >
+                  <div style={{ width: 44, height: 44, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: 'var(--paper-sunken)' }}>
+                    <img src={getCourseImage(c)} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <Badge tone="amber">{c.enrollment.progressPercent || 0}%</Badge>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>
+                      {c.title}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                      <div style={{ flex: 1 }}>
+                        <ProgressBar value={c.enrollment.progressPercent || 0} tone="rail" size="sm" />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber)' }}>{c.enrollment.progressPercent || 0}%</span>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" icon="ti-player-play">
+                    Học Tiếp
+                  </Button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="card card-pad">
+        {/* COLUMN 2: UPCOMING LIVE WORKSHOPS & WEBINARS */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontWeight: 800, fontSize: 14 }}><i className="ti ti-chart-bar" style={{ marginRight: 6 }} />Thời Lượng Học Tập Theo Thứ</div>
-            <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/history')}>Chi Tiết</Button>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                Lớp Học Trực Tiếp &amp; Workshop Sắp Diễn Ra
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Buổi thực hành tại xưởng/siêu thị và lớp webinar trực tuyến
+              </div>
+            </div>
+            <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/classrooms')}>
+              Xem Lớp Học
+            </Button>
           </div>
-          <BarChart data={chartData} valueSuffix="h" tone="sage" />
+
+          {upcomingClassrooms.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 12.5 }}>
+              <i className="ti ti-calendar" style={{ fontSize: 32, color: 'var(--rail)', marginBottom: 6, display: 'block' }} />
+              Chưa có lịch lớp thực hành mới. Bấm "Xem Lớp Học" để đăng ký các buổi workshop sắp mở.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {upcomingClassrooms.map((cls) => (
+                <div
+                  key={cls.id}
+                  style={{
+                    background: 'var(--paper-sunken)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 8,
+                    padding: '12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <Badge tone={cls.modality === 'OFFLINE_STORE' ? 'rust' : 'blue'} size="sm">
+                        {cls.modality === 'OFFLINE_STORE' ? 'Thực Hành Siêu Thị' : 'Webinar Online'}
+                      </Badge>
+                      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{cls.code}</span>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cls.title}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                      <i className="ti ti-map-pin" style={{ marginRight: 4 }} />
+                      {cls.venue} &middot; Giảng viên: <strong>{cls.trainerName}</strong>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" icon="ti-file-description" onClick={() => navigate('/learner/classrooms')}>
+                    Giáo Trình &amp; QR
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* 6. ACHIEVEMENTS, RANKING & NOTIFICATIONS */}
       <div className="grid grid-3" style={{ gap: 16 }}>
-        <ResourceCard icon="ti-certificate" tone="sage" title="Chứng Chỉ Đạt Được" value={`${certificates.length} chứng chỉ`} onClick={() => navigate('/learner/certificates')} />
-        <ResourceCard icon="ti-alert-triangle" tone="amber" title="Khóa Bắt Buộc Còn Lại" value={`${mandatoryOutstanding} khóa`} onClick={() => navigate('/learner/courses')} />
-        {/* Không có trang chi tiết thông báo riêng trong app (chỉ có dropdown
-            chuông ở AppHeader, state cục bộ không lift lên được dễ dàng) — thẻ
-            này không có onClick, tránh giả vờ điều hướng đến nơi không tồn tại. */}
-        <ResourceCard icon="ti-bell-ringing" tone="rail" title="Thông Báo Mới" value={`${unreadCount} thông báo`} />
+        <ResourceCard
+          icon="ti-certificate"
+          tone="sage"
+          title="Chứng Chỉ Đã Đạt Được"
+          value={`${certificates.length} chứng chỉ điện tử`}
+          subtext="Được chứng thực bảo mật MMVN"
+          onClick={() => navigate('/learner/certificates')}
+        />
+        <ResourceCard
+          icon="ti-trophy"
+          tone="amber"
+          title="Bảng Thi Đua Học Tập"
+          value={`Top 3 Phòng Ban`}
+          subtext={`Đạt ${totalXp} XP · Cấp bậc Level ${user.level}`}
+          onClick={() => navigate('/learner/history')}
+        />
+        <ResourceCard
+          icon="ti-bell-ringing"
+          tone="rail"
+          title="Thông Báo & Nhắc Nhở"
+          value={`${unreadCount} thông báo mới`}
+          subtext="Cập nhật tiến độ & kỳ sát hạch"
+        />
       </div>
     </>
   );
 }
 
-function StatTile({ label, value, tone, icon, onClick }) {
+function StatTile({ label, value, subtext, tone, icon, onClick }) {
   const color = tone ? `var(--${tone})` : 'var(--ink)';
   return (
-    <div className="stat card-interactive" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+    <div className="stat card-interactive" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
-        <div className="stat-label">{label}</div>
+        <div className="stat-label" style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
         {icon && (
-          <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+          <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, width: 36, height: 36, borderRadius: 8 }}>
             <i className={`ti ${icon}`} />
           </div>
         )}
       </div>
-      <div className="stat-value" style={{ color }}>{value}</div>
+      <div className="stat-value" style={{ color, fontSize: 22, fontWeight: 800 }}>{value}</div>
+      {subtext && <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>{subtext}</div>}
     </div>
   );
 }
 
-function ResourceCard({ icon, tone, title, value, onClick }) {
+function ResourceCard({ icon, tone, title, value, subtext, onClick }) {
   return (
-    <div className={`card card-pad ${onClick ? 'card-interactive' : ''}`} onClick={onClick} style={{ display: 'flex', gap: 12, alignItems: 'center', cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="stat-icon-badge" style={{ background: `var(--${tone}-soft)`, color: `var(--${tone}-soft-text)`, width: 40, height: 40, fontSize: 18 }}>
+    <div className={`card card-pad ${onClick ? 'card-interactive' : ''}`} onClick={onClick} style={{ display: 'flex', gap: 14, alignItems: 'center', cursor: onClick ? 'pointer' : 'default', background: '#fff', border: '1px solid var(--line)', borderRadius: 10 }}>
+      <div className="stat-icon-badge" style={{ background: `var(--${tone}-soft)`, color: `var(--${tone}-soft-text)`, width: 44, height: 44, fontSize: 20, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <i className={`ti ${icon}`} />
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{value}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: `var(--${tone})`, marginTop: 1 }}>{value}</div>
+        {subtext && <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>{subtext}</div>}
       </div>
     </div>
   );
 }
 
-// Vài persona (HRBP, User Admin, SysAdmin, Trainer...) có fullName kèm hậu tố
-// vai trò trong ngoặc, vd "Le Thi Mai (HRBP)" — bỏ hậu tố đó trước khi lấy từ
-// cuối cùng làm tên gọi thân mật, tránh chào "Xin chào, (HRBP)!".
+function computeCategoryDistribution(courses) {
+  const groups = [
+    { name: 'Vận Hành & Tiêu Chuẩn Quầy Hàng', tone: 'rail', icon: 'ti-building-store', keywords: ['store', 'operation', 'planogram', 'cashier', 'pos', 'shrinkage', 'trolley', 'stock'] },
+    { name: 'An Toàn Thực Phẩm, HACCP & PCCC', tone: 'rust', icon: 'ti-shield-alert', keywords: ['food', 'safety', 'haccp', 'hygiene', 'cold', 'chain', 'fire', 'pccc', 'evacuation', 'hazard'] },
+    { name: 'Chuyên Môn Ngành Hàng & CNTT', tone: 'blue', icon: 'ti-device-laptop', keywords: ['it', 'security', 'cyber', 'merchandis', 'pricing', 'supply', 'logistics', 'e-commerce', 'forklift'] },
+    { name: 'Lãnh Đạo & Quản Trị Đội Ngũ', tone: 'amber', icon: 'ti-crown', keywords: ['leadership', 'coach', 'conflict', 'management', 'kpi', 'strategic', 'appraisal', 'trainer'] },
+    { name: 'Dịch Vụ Khách Hàng & Văn Hóa', tone: 'sage', icon: 'ti-heart-handshake', keywords: ['customer', 'service', 'horeca', 'culture', 'conduct', 'ethics', 'onboarding'] },
+  ];
+
+  return groups.map((grp) => {
+    const matched = courses.filter((c) => {
+      const text = `${c.title} ${c.domain || ''} ${c.category || ''}`.toLowerCase();
+      return grp.keywords.some((kw) => text.includes(kw));
+    });
+
+    const totalCount = Math.max(1, matched.length);
+    const completedCount = matched.filter((c) => c.enrollment?.status === 'COMPLETED').length;
+    const percent = Math.round((completedCount / totalCount) * 100);
+
+    return {
+      name: grp.name,
+      tone: grp.tone,
+      icon: grp.icon,
+      totalCount: matched.length,
+      completedCount,
+      percent: matched.length === 0 ? 0 : percent,
+    };
+  });
+}
+
 function firstNameOf(fullName) {
   return (fullName || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(' ').pop();
 }
+

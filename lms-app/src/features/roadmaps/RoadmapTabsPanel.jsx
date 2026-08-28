@@ -144,12 +144,18 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
 
       {activeTab === 'SELF_PROPOSED' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5 }}>
-            <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
-            {language === 'en'
-              ? 'Self-proposed specialized elective tracks for personal career development or assigned by direct manager.'
-              : 'Các lộ trình chuyên đề mở rộng ngoài định biên — tự chọn theo định hướng phát triển bản thân, hoặc do Quản lý trực tiếp giao thêm.'}
+          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="ti ti-route-2" style={{ fontSize: 18 }} />
+              <span>
+                {language === 'en'
+                  ? 'Specialized elective career tracks automatically tailored to your Department, Job Role and Level.'
+                  : `Lộ trình chuyên đề tự chọn được cá nhân hóa tự động theo đúng Phòng Ban (${user?.departmentName || user?.departmentCode || 'Bộ phận'}), Chức danh và Cấp bậc hiện tại.`}
+              </span>
+            </div>
+            <Badge tone="rail">{roadmap.selfProposed.tracks.length} Chuyên Đề Nâng Cao</Badge>
           </div>
+
           {roadmap.selfProposed.tracks.length === 0 ? (
             <div className="card empty-state">
               <i className="ti ti-mood-empty" />
@@ -158,14 +164,14 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
           ) : (
             roadmap.selfProposed.tracks.map((track) => (
               <div key={track.id} className="card card-pad">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minWidth: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>
                       <i className={`ti ${track.icon}`} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>{language === 'en' ? (track.titleEn || track.titleVi) : track.titleVi}</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{track.description}</div>
+                      <div style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--ink)' }}>{language === 'en' ? (track.titleEn || track.titleVi) : track.titleVi}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{track.description}</div>
                     </div>
                   </div>
                   {track.joined ? (
@@ -173,15 +179,50 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                       {track.percent}% {language === 'en' ? 'Completed' : 'Hoàn Thành'}
                     </Badge>
                   ) : (
-                    <Button size="sm" variant="outline" icon="ti-plus" onClick={() => joinTrack(track)}>
-                      {language === 'en' ? 'Start This Track' : 'Bắt Đầu Track Này'}
+                    <Button size="sm" variant="primary" icon="ti-plus" onClick={() => joinTrack(track)}>
+                      {language === 'en' ? 'Enroll This Track' : 'Bắt Đầu Lộ Trình Này'}
                     </Button>
                   )}
                 </div>
-                {track.joined && <ProgressBar value={track.percent} tone={track.percent >= 100 ? 'sage' : 'rail'} size="sm" />}
-                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {track.milestones.map(({ course, completed }) => (
-                    <Badge key={course.id} tone={completed ? 'sage' : 'slate'} icon={completed ? 'ti-check' : 'ti-book-2'}>{course.code}</Badge>
+
+                {track.joined && (
+                  <div style={{ marginBottom: 12 }}>
+                    <ProgressBar value={track.percent} tone={track.percent >= 100 ? 'sage' : 'rail'} size="sm" />
+                  </div>
+                )}
+
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>
+                  {language === 'en' ? 'Courses in this track (click to study):' : 'Các khóa học trong lộ trình (bấm để xem chi tiết & vào học):'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {track.milestones.map(({ course, completed, status }) => (
+                    <button
+                      type="button"
+                      key={course.id}
+                      onClick={() => openCourse(course)}
+                      className="card-interactive"
+                      style={{
+                        background: completed ? '#F0FDF4' : status === 'IN_PROGRESS' ? '#FEF3C7' : 'var(--paper-sunken)',
+                        border: `1px solid ${completed ? '#BBF7D0' : status === 'IN_PROGRESS' ? '#FDE68A' : 'var(--line)'}`,
+                        borderRadius: 6,
+                        padding: '6px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                      title={course.title}
+                    >
+                      <i
+                        className={`ti ${completed ? 'ti-circle-check' : status === 'IN_PROGRESS' ? 'ti-clock' : 'ti-book-2'}`}
+                        style={{ color: completed ? 'var(--sage)' : status === 'IN_PROGRESS' ? 'var(--amber)' : 'var(--ink-soft)' }}
+                      />
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{course.code}</span>
+                      <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {course.title}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -192,36 +233,61 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
 
       {activeTab === 'RECOMMENDED' && (
         <div>
-          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, marginBottom: 16 }}>
-            <i className="ti ti-sparkles" style={{ marginRight: 6 }} />
-            {language === 'en'
-              ? 'Recommendations based on current job level, operational department, and uncompleted courses.'
-              : 'Gợi ý dựa trên cấp bậc, khối công tác hiện tại và các khóa học chưa hoàn thành.'}
+          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="ti ti-sparkles" style={{ fontSize: 18, color: 'var(--amber)' }} />
+              <span>
+                {language === 'en'
+                  ? 'Smart AI recommendations matched with your Department, Job Position, and Target Level.'
+                  : `Gợi ý thông minh phù hợp theo Khối ${user?.branchName || ''}, Phòng ${user?.departmentName || user?.departmentCode || 'Ban'} và Vị trí ${user?.position || ''}.`}
+              </span>
+            </div>
+            <Badge tone="amber">{roadmap.recommended.length} Khóa Phù Hợp</Badge>
           </div>
+
           {roadmap.recommended.length === 0 ? (
             <div className="card empty-state">
               <i className="ti ti-mood-empty" />
-              <p>{language === 'en' ? 'No new recommendations — you have completed most relevant courses.' : 'Không có gợi ý mới — đã hoàn thành phần lớn nội dung phù hợp.'}</p>
+              <p>{language === 'en' ? 'No new recommendations — you have completed most relevant courses.' : 'Không có gợi ý mới — bạn đã hoàn thành hầu hết các khóa phù hợp.'}</p>
             </div>
           ) : (
-            <div className="grid grid-3" style={{ gap: 14 }}>
+            <div className="grid grid-3" style={{ gap: 16 }}>
               {roadmap.recommended.map((course) => (
-                <div key={course.id} className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div style={{ height: 100, width: '100%', background: 'var(--paper-sunken)' }}>
+                <div key={course.id} className="card card-interactive" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--line)' }}>
+                  <div style={{ position: 'relative', height: 110, width: '100%', background: 'var(--paper-sunken)' }}>
                     <img
                       src={getCourseImage(course)}
                       alt={course.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                  </div>
-                  <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginBottom: 2 }}>{course.code}</div>
-                      <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.35, minHeight: 34 }}>{course.title}</div>
-                      <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 10 }}>{course.domain} &middot; Level {course.targetLevel}</div>
+                    <div style={{ position: 'absolute', top: 6, left: 6 }}>
+                      <Badge tone="rail" size="sm">Level {course.targetLevel}</Badge>
                     </div>
-                    <Button size="sm" variant="outline" icon="ti-player-play" block onClick={() => openCourse(course)}>
-                      {language === 'en' ? 'View Course' : 'Xem Khóa Học'}
+                    {course.recommendationReason && (
+                      <div style={{ position: 'absolute', bottom: 6, left: 6, right: 6 }}>
+                        <span style={{ background: 'rgba(15, 23, 42, 0.85)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 4, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <i className="ti ti-sparkles" style={{ color: '#FBBF24', marginRight: 4 }} />
+                          {course.recommendationReason}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginBottom: 4 }}>
+                        <span>{course.code}</span>
+                        <span>{course.duration || '2-4h'} &middot; +100 XP</span>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.35, minHeight: 36 }}>
+                        {course.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 12 }}>
+                        <i className="ti ti-category" style={{ marginRight: 4 }} />
+                        {course.domain} &middot; {course.modality === 'IN_PERSON_CLASSROOM' ? 'Lớp Trực Tiếp' : 'E-Learning'}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="primary" icon="ti-player-play" block onClick={() => openCourse(course)}>
+                      {language === 'en' ? 'Start Course' : 'Bắt Đầu Học Ngay'}
                     </Button>
                   </div>
                 </div>
