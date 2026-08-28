@@ -888,6 +888,56 @@ console.log('\n=== Section 22: Personal Learning Calendar — date math ===');
   check('formatMonthLabel en', formatMonthLabel('2026-08-01', 'en') === 'August 2026', formatMonthLabel('2026-08-01', 'en'));
 }
 
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 23: Personal Learning Calendar — event aggregation ===');
+{
+  const { buildCalendarEvents } = await import('../src/utils/calendarEvents');
+
+  const fixtureCourses = [
+    { id: 'CRS-TEST-001', title: 'Completed Course' },
+    { id: 'CRS-TEST-002', title: 'Overdue Course' },
+    { id: 'CRS-TEST-003', title: 'Elective No Deadline' },
+  ];
+  const fixtureEnrollments = {
+    'CRS-TEST-001': { status: 'COMPLETED', completedAt: '2026-08-10', dueDate: '2026-08-30', lastActivityAt: '2026-08-10' },
+    'CRS-TEST-002': { status: 'OVERDUE', completedAt: null, dueDate: '2026-08-15', lastActivityAt: '2026-08-05' },
+    'CRS-TEST-003': { status: 'NOT_STARTED', completedAt: null, dueDate: null, lastActivityAt: '2026-08-20' },
+    'CRS-TEST-MISSING': { status: 'IN_PROGRESS', completedAt: null, dueDate: '2026-08-22', lastActivityAt: '2026-08-01' },
+  };
+  const fixtureClassrooms = [
+    { id: 'ilt-fixture-1', title: 'Fixture Session', date: '2026-08-15', time: '09:00', venue: 'Room A', isEnrolled: true, attendanceStatus: 'PENDING_CHECKIN' },
+    { id: 'ilt-fixture-2', title: 'Not My Session', date: '2026-08-16', time: '09:00', venue: 'Room B', isEnrolled: false, attendanceStatus: 'NOT_REGISTERED' },
+  ];
+
+  const evMap = buildCalendarEvents({ courses: fixtureCourses, myEnrollments: fixtureEnrollments, classrooms: fixtureClassrooms });
+  const allFixtureEvents = Array.from(evMap.values()).flat();
+
+  check('completed course dated at completedAt, not dueDate',
+    (evMap.get('2026-08-10') || []).some((e) => e.courseId === 'CRS-TEST-001'));
+  check('completed-course tone is sage',
+    (evMap.get('2026-08-10') || []).find((e) => e.courseId === 'CRS-TEST-001')?.tone === 'sage');
+  check('overdue course dated at dueDate, tone rust',
+    (evMap.get('2026-08-15') || []).some((e) => e.courseId === 'CRS-TEST-002' && e.tone === 'rust'));
+  check('elective with no dueDate falls back to lastActivityAt',
+    (evMap.get('2026-08-20') || []).some((e) => e.courseId === 'CRS-TEST-003'));
+  check('enrollment referencing a missing course is skipped, no crash',
+    !allFixtureEvents.some((e) => e.courseId === 'CRS-TEST-MISSING'));
+  check('enrolled live session appears on its date',
+    (evMap.get('2026-08-15') || []).some((e) => e.sessionId === 'ilt-fixture-1'));
+  check('non-enrolled live session is excluded',
+    !allFixtureEvents.some((e) => e.sessionId === 'ilt-fixture-2'));
+
+  // Real seed-data smoke check — Minh Tran's actual default enrollments +
+  // classroom sessions must build without throwing, using the exact same
+  // enrollmentsForUser() helper CourseStore.jsx uses.
+  const minhEnrollments = mock.enrollmentsForUser(mock.currentUser);
+  const realMap = buildCalendarEvents({ courses: mock.courses, myEnrollments: minhEnrollments, classrooms: mock.classroomSessions });
+  const allRealEvents = Array.from(realMap.values()).flat();
+  check('real seed data builds without throwing and produces at least 1 event', allRealEvents.length > 0, String(allRealEvents.length));
+  check('ilt-001 (Minh Tran enrolled live session, 2026-08-28) appears on its date',
+    (realMap.get('2026-08-28') || []).some((e) => e.sessionId === 'ilt-001'));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
 
