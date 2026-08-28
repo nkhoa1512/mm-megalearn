@@ -40,6 +40,7 @@ const LearnerCertificates = (await import('../src/pages/learner/LearnerCertifica
 const LearnerHistory = (await import('../src/pages/learner/LearnerHistory')).default;
 const LearnerClassrooms = (await import('../src/pages/learner/LearnerClassrooms')).default;
 const LearnerLearningPaths = (await import('../src/pages/learner/LearnerLearningPaths')).default;
+const LearnerCalendar = (await import('../src/pages/learner/LearnerCalendar')).default;
 const AiLearningHub = (await import('../src/pages/learner/AiLearningHub')).default;
 const ManagerDashboard = (await import('../src/pages/manager/ManagerDashboard')).default;
 const ManagerTeam = (await import('../src/pages/manager/ManagerTeam')).default;
@@ -229,6 +230,7 @@ const PAGES = [
   ['LearnerClassrooms', <LearnerClassrooms />, '/learner/classrooms', '/learner/classrooms'],
   ['LearnerLearningPaths/CURRENT', <LearnerLearningPaths initialTab="CURRENT" />, '/learner/paths', '/learner/paths'],
   ['SharedLearningPath', <LearnerLearningPaths />, '/my-learning-path', '/my-learning-path'],
+  ['SharedLearningCalendar', <LearnerCalendar />, '/my-learning-calendar', '/my-learning-calendar'],
   ['LearnerLearningPaths/SUCCESSION', <LearnerLearningPaths initialTab="SUCCESSION" />, '/learner/paths', '/learner/paths'],
   ['LearnerLearningPaths/SELF_PROPOSED', <LearnerLearningPaths initialTab="SELF_PROPOSED" />, '/learner/paths', '/learner/paths'],
   ['LearnerLearningPaths/RECOMMENDED', <LearnerLearningPaths initialTab="RECOMMENDED" />, '/learner/paths', '/learner/paths'],
@@ -882,6 +884,15 @@ console.log('\n=== Section 22: Personal Learning Calendar — date math ===');
 
   const inMonthCount = flatDays.filter((d) => d.inMonth).length;
   check('August 2026 has 31 in-month cells', inMonthCount === 31, String(inMonthCount));
+
+  const feb2024Weeks = getMonthGridWeeks('2024-02-01');
+  const feb2024InMonthCount = feb2024Weeks.flat().filter((d) => d.inMonth).length;
+  check('February 2024 (leap year) has 29 in-month cells', feb2024InMonthCount === 29, String(feb2024InMonthCount));
+
+  const feb2026Weeks = getMonthGridWeeks('2026-02-01');
+  const feb2026InMonthCount = feb2026Weeks.flat().filter((d) => d.inMonth).length;
+  check('February 2026 (non-leap year) has 28 in-month cells', feb2026InMonthCount === 28, String(feb2026InMonthCount));
+
   check('August 1st 2026 is flagged inMonth', flatDays.find((d) => d.date === '2026-08-01')?.inMonth === true);
 
   check('formatMonthLabel vi', formatMonthLabel('2026-08-01', 'vi') === 'Tháng 8, 2026', formatMonthLabel('2026-08-01', 'vi'));
@@ -1012,6 +1023,18 @@ console.log('\n=== Section 26: Learning Calendar nav entry — all 6 roles ===')
   );
   check('learner header links to its own /learner/calendar (not the shared /my-learning-calendar)',
     Boolean(learnerHeaderHtml && learnerHeaderHtml.includes('/learner/calendar') && !learnerHeaderHtml.includes('my-learning-calendar')));
+}
+
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 27: SharedLearningCalendar renders for all 6 roles (fixes final-review gap: was only ever rendered under the learner persona) ===');
+{
+  for (const role of ROLE_ORDER) {
+    const html = byRole[role]['SharedLearningCalendar'];
+    check(`${role} renders /my-learning-calendar with the calendar page title`,
+      Boolean(html && html.includes('Lịch Học Tập')));
+    check(`${role} renders /my-learning-calendar with the month grid`,
+      Boolean(html && html.includes('cal-grid-card')));
+  }
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
