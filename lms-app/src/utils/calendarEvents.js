@@ -469,11 +469,11 @@ export function buildCalendarEvents({
     byDate.get(event.date).push(event);
   }
 
-  return {
-    allEvents,
-    personalEvents,
-    operationalEvents,
-    byDate,
-  };
+  byDate.allEvents = allEvents;
+  byDate.personalEvents = personalEvents;
+  byDate.operationalEvents = operationalEvents;
+  byDate.byDate = byDate;
+
+  return byDate;
 }
 

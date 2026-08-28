@@ -145,6 +145,14 @@ export const TRANSLATIONS = {
     theme_dark: 'Dark Mode',
     switch_theme: 'Toggle Dark/Light Mode',
     switch_lang: 'Switch Language (EN / VI)',
+    all_notifications: 'All',
+    unread_notifications: 'Unread',
+    notifications_empty: 'No notifications',
+    notifications_all_caught_up: "You're all caught up!",
+    notifications_empty_sub: 'No new notifications to process at this time.',
+    view_calendar_tasks: 'View Learning Calendar & Tasks',
+    select_role_view: 'Select Platform Role View (6 Roles Demo):',
+    active_tag: 'Active',
   },
 
   vi: {
@@ -289,6 +297,14 @@ export const TRANSLATIONS = {
     theme_dark: 'Giao Diện Tối',
     switch_theme: 'Chuyển Chế Độ Tối / Sáng',
     switch_lang: 'Chuyển Ngôn Ngữ (Anh / Việt)',
+    all_notifications: 'Tất cả',
+    unread_notifications: 'Chưa đọc',
+    notifications_empty: 'Không có thông báo',
+    notifications_all_caught_up: 'Bạn đã đọc hết thông báo!',
+    notifications_empty_sub: 'Không có thông báo mới nào cần xử lý.',
+    view_calendar_tasks: 'Xem Lịch Học Tập & Nhiệm Vụ',
+    select_role_view: 'Chọn Góc Nhìn Role (Demo 6 Phân Quyền):',
+    active_tag: 'Đang chọn',
   },
 };
 

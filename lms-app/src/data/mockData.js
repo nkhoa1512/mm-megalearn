@@ -1681,14 +1681,59 @@ export function weeklyStudyHours(user) {
 
 export const notifications = {
   learnerInbox: [
-    { id: 1, type: 'COURSE_ASSIGNED', title: 'New mandatory course assigned', message: 'Risk Management Awareness has been assigned to your Division, due Sep 15.', time: '2h ago', unread: true },
-    { id: 2, type: 'DEADLINE_REMINDER', title: 'Due in 12 days', message: 'Information Security Awareness is due Sep 30.', time: '1d ago', unread: true },
-    { id: 3, type: 'COURSE_UNFINISHED', title: 'Continue learning', message: 'You have not continued Corporate Orientation in 6 days.', time: '5d ago', unread: false },
+    { 
+      id: 1, 
+      type: 'COURSE_ASSIGNED', 
+      title: 'New mandatory course assigned',
+      titleVi: 'Khóa học bắt buộc mới được phân bổ',
+      titleEn: 'New mandatory course assigned',
+      message: 'Risk Management Awareness has been assigned to your Division, due Sep 15.', 
+      messageVi: 'Khóa Quản Trị Rủi Ro & Tuân Thủ đã được gán cho đơn vị của bạn, hạn chót 15/09.',
+      messageEn: 'Risk Management Awareness has been assigned to your Division, due Sep 15.',
+      time: '2h ago',
+      timeVi: '2 giờ trước',
+      timeEn: '2h ago',
+      tagVi: 'Bắt buộc',
+      tagEn: 'Mandatory',
+      unread: true 
+    },
+    { 
+      id: 2, 
+      type: 'DEADLINE_REMINDER', 
+      title: 'Due in 12 days', 
+      titleVi: 'Sắp đến hạn trong 12 ngày',
+      titleEn: 'Due in 12 days',
+      message: 'Information Security Awareness is due Sep 30.', 
+      messageVi: 'Khóa Nhận Thức An Toàn Thông Tin cần hoàn thành trước ngày 30/09.',
+      messageEn: 'Information Security Awareness is due Sep 30.',
+      time: '1d ago',
+      timeVi: '1 ngày trước',
+      timeEn: '1d ago',
+      tagVi: 'Hạn chót',
+      tagEn: 'Deadline',
+      unread: true 
+    },
+    { 
+      id: 3, 
+      type: 'COURSE_UNFINISHED', 
+      title: 'Continue learning', 
+      titleVi: 'Nhắc nhở tiếp tục học tập',
+      titleEn: 'Continue learning reminder',
+      message: 'You have not continued Corporate Orientation in 6 days.', 
+      messageVi: 'Bạn chưa tiếp tục học khóa Hội Nhập Doanh Nghiệp trong 6 ngày qua.',
+      messageEn: 'You have not continued Corporate Orientation in 6 days.',
+      time: '5d ago',
+      timeVi: '5 ngày trước',
+      timeEn: '5d ago',
+      tagVi: 'Tiến độ',
+      tagEn: 'Progress',
+      unread: false 
+    },
   ],
   managerAlerts: [
-    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', time: '3h ago' },
-    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', time: '1d ago' },
-    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', time: '2d ago' },
+    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', messageVi: 'Lisa Wang chưa hoàn thành khóa Quản Trị Rủi Ro đúng hạn.', time: '3h ago', timeVi: '3 giờ trước' },
+    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', messageVi: 'John Doe không có hoạt động học tập trong 15 ngày.', time: '1d ago', timeVi: '1 ngày trước' },
+    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', messageVi: 'Mike Chen chưa đạt bài kiểm tra An Toàn Thông Tin sau 3 lần thi.', time: '2d ago', timeVi: '2 ngày trước' },
   ],
 };
 

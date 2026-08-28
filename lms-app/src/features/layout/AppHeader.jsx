@@ -16,7 +16,7 @@ const LEARNER_SELF_NAV = [
   { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', labelVi: 'Đánh Giá Giảng Viên (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
 ];
 
-// Nhóm "Công việc của <role>" — đặc thù từng role (dời nguyên từ Sidebar.jsx cũ).
+// Nhóm "Công việc của <role>" — đặc thù từng role.
 const ROLE_WORK_NAV = {
   learner: [
     { to: '/learner', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard', end: true },
@@ -81,9 +81,14 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
   } = useCourseStore();
   const [navOpen, setNavOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifFilter, setNotifFilter] = useState('ALL'); // 'ALL' | 'UNREAD'
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [inbox, setInbox] = useState(notifications.learnerInbox);
+
   const navRef = useRef(null);
+  const roleRef = useRef(null);
+  const notifRef = useRef(null);
   const profileRef = useRef(null);
 
   const effectiveRole = normalizeRole(role);
@@ -101,20 +106,25 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
   const roleLabel = language === 'en' ? (def.labelEn || def.labelVi) : def.labelVi;
   const roleShort = language === 'en' ? (def.shortEn || def.shortVi) : def.shortVi;
 
+  const filteredInbox = notifFilter === 'UNREAD' ? inbox.filter((n) => n.unread) : inbox;
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (navRef.current && !navRef.current.contains(e.target)) setNavOpen(false);
+      if (roleRef.current && !roleRef.current.contains(e.target)) setShowRoleMenu(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfileMenu(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function handleRoleSwitch(e) {
-    const nextRole = normalizeRole(e.target.value);
-    onRoleChange(nextRole);
-    switchUser(personaForRole(nextRole).userId);
-    navigate(ROLE_HOME[nextRole] || '/learner');
+  function handleRoleSelect(nextRole) {
+    const normalized = normalizeRole(nextRole);
+    onRoleChange(normalized);
+    switchUser(personaForRole(normalized).userId);
+    setShowRoleMenu(false);
+    navigate(ROLE_HOME[normalized] || '/learner');
   }
 
   function handleSwitchPersona(u) {
@@ -133,6 +143,12 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
 
   function markAllRead() {
     setInbox((prev) => prev.map((n) => ({ ...n, unread: false })));
+  }
+
+  function handleNotificationClick(n) {
+    setInbox((prev) => prev.map((item) => (item.id === n.id ? { ...item, unread: false } : item)));
+    setShowNotifications(false);
+    navigate(effectiveRole === 'learner' ? '/learner/calendar' : '/my-learning-calendar');
   }
 
   function renderNavItem(item) {
@@ -157,8 +173,10 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
   return (
     <header className="app-header">
       <div className="app-header-top">
+        {/* Brand & Left Navigation Drawer */}
         <div className="app-header-brand" ref={navRef} style={{ position: 'relative' }}>
           <button
+            type="button"
             className={`icon-btn sidebar-toggle-btn ${navOpen ? 'active' : ''}`}
             onClick={() => setNavOpen((v) => !v)}
             aria-label="Navigation Drawer"
@@ -172,13 +190,15 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
             <span style={{ color: '#fff', fontWeight: 900, fontSize: 12 }}>MM</span>
           </div>
           <div className="app-header-brand-text">
-            <div className="brand-name" style={{ fontSize: 14 }}>MM Mega<span style={{ color: 'var(--bigc-green)' }}>Learn</span></div>
+            <div className="brand-name" style={{ fontSize: 14 }}>
+              MM Mega<span style={{ color: 'var(--bigc-green)' }}>Learn</span>
+            </div>
           </div>
           <span title={roleLabel}>
             <Badge tone={def.tone} icon={def.icon}>{roleShort}</Badge>
           </span>
 
-          {/* Cột điều hướng dạng dropdown bên trái, bật/tắt bằng nút hamburger */}
+          {/* Left Navigation Drawer */}
           <nav className={`app-nav-drawer ${navOpen ? 'open' : ''}`}>
             <div className="app-nav-drawer-group">
               <div className="app-nav-drawer-group-label">
@@ -197,131 +217,330 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
           </nav>
         </div>
 
-        <div className="app-header-actions" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Nút Toggle Theme Sáng / Tối Nổi Bật */}
+        {/* Right Header Actions Bar */}
+        <div className="app-header-actions" style={{ marginLeft: 'auto' }}>
+          {/* 1. Theme Toggle Button */}
           <button
-            className="btn btn-sm"
+            type="button"
+            className="app-theme-btn"
             onClick={toggleTheme}
             title={theme === 'dark' ? (language === 'en' ? 'Switch to Light Theme' : 'Chuyển sang Giao Diện Sáng') : (language === 'en' ? 'Switch to Dark Theme' : 'Chuyển sang Giao Diện Tối')}
             aria-label="Toggle Dark Light Theme"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 12px',
-              height: 34,
-              fontSize: 12.5,
-              fontWeight: 700,
-              borderRadius: 8,
-              border: '1px solid var(--line-strong)',
-              background: theme === 'dark' ? '#1e293b' : 'var(--paper-sunken)',
-              color: theme === 'dark' ? '#f59e0b' : 'var(--ink)',
-              cursor: 'pointer',
-            }}
           >
-            <span style={{ fontSize: 14 }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+            <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon-stars'} ${theme === 'dark' ? 'dark' : 'light'}`} aria-hidden="true" />
             <span>{theme === 'dark' ? (language === 'en' ? 'Dark' : 'Tối') : (language === 'en' ? 'Light' : 'Sáng')}</span>
           </button>
 
-          {/* Nút Toggle Ngôn Ngữ Anh / Việt Nổi Bật */}
+          {/* 2. Language Segmented Switcher */}
+          <div className="app-lang-switcher" title={language === 'en' ? 'Switch Language (EN / VI)' : 'Chuyển Ngôn Ngữ (Anh / Việt)'}>
+            <button
+              type="button"
+              className={`app-lang-btn ${language === 'vi' ? 'active' : ''}`}
+              onClick={() => language !== 'vi' && toggleLanguage()}
+              aria-label="Tiếng Việt"
+            >
+              VI
+            </button>
+            <span className="app-lang-divider" />
+            <button
+              type="button"
+              className={`app-lang-btn ${language === 'en' ? 'active' : ''}`}
+              onClick={() => language !== 'en' && toggleLanguage()}
+              aria-label="English"
+            >
+              EN
+            </button>
+          </div>
+
+          {/* 3. AI Assistant Trigger */}
           <button
-            className="btn btn-sm"
-            onClick={toggleLanguage}
-            title={language === 'en' ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
-            aria-label="Toggle Language"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 12px',
-              height: 34,
-              fontSize: 12.5,
-              fontWeight: 800,
-              borderRadius: 8,
-              border: '1px solid var(--rail)',
-              background: 'var(--rail-soft)',
-              color: 'var(--rail-soft-text)',
-              cursor: 'pointer',
-            }}
+            type="button"
+            className="app-ai-trigger-btn"
+            onClick={() => openAiAssistant('tutor')}
+            title={t('aiTutor', 'AI Tutor')}
           >
-            <span style={{ fontSize: 14 }}>{language === 'en' ? '🇺🇸' : '🇻🇳'}</span>
-            <span>{language === 'en' ? 'EN' : 'VI'}</span>
+            <span className="app-ai-sparkle-icon">
+              <i className="ti ti-sparkles" aria-hidden="true" />
+            </span>
+            <span>{t('aiTutor', 'Trợ Lý AI')}</span>
           </button>
 
-          <Button variant="ai" size="sm" icon="ti-sparkles" onClick={() => openAiAssistant('tutor')}>{t('aiTutor', 'AI Tutor')}</Button>
-          
-          <select className="role-switcher-select" value={effectiveRole} onChange={handleRoleSwitch} title="Demo Persona">
-            {ROLE_ORDER.map((r) => {
-              const rDef = roleDefinition(r);
-              return <option key={r} value={r}>{language === 'en' ? (rDef.shortEn || rDef.shortVi) : rDef.shortVi}</option>;
-            })}
-          </select>
-          
-          <Badge tone="rust" icon="ti-flame">{streakDays} {t('days', 'days')}</Badge>
-          
-          <div style={{ position: 'relative' }}>
-            <button className="icon-btn" onClick={() => setShowNotifications((v) => !v)} aria-label="Notifications" style={{ position: 'relative' }}>
-              <i className="ti ti-bell" aria-hidden="true" />
-              {unreadCount > 0 && <span className="app-notif-dot" />}
+          {/* 4. Role View Dropdown Switcher */}
+          <div ref={roleRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className={`app-role-dropdown-btn ${showRoleMenu ? 'active' : ''}`}
+              onClick={() => setShowRoleMenu((v) => !v)}
+              title={language === 'en' ? 'Switch Role View' : 'Chuyển đổi góc nhìn Role'}
+            >
+              <i className={`ti ${def.icon}`} style={{ color: 'var(--rail)', fontSize: 14 }} />
+              <span className="app-role-label">{roleShort}</span>
+              <i className="ti ti-chevron-down" style={{ fontSize: 11, color: 'var(--ink-faint)', marginLeft: 2 }} />
             </button>
-            {showNotifications && (
-              <div className="card card-pad app-popover">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>{t('notifications', 'Notifications')}</div>
-                  <button onClick={markAllRead} className="app-link-btn">{t('markAllRead', 'Mark all as read')}</button>
+
+            {showRoleMenu && (
+              <div className="app-role-popover">
+                <div className="app-role-popover-title">
+                  {t('select_role_view', 'Chọn Góc Nhìn Role (Demo 6 Phân Quyền):')}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto' }}>
-                  {inbox.map((n) => (
-                    <div key={n.id} className="app-notif-row" style={{ background: n.unread ? 'var(--rail-soft)' : 'var(--paper-sunken)' }}>
-                      <i className={`ti ${n.type === 'ASSIGNED' ? 'ti-book-2' : 'ti-alert-triangle'}`} style={{ color: n.type === 'ASSIGNED' ? 'var(--rail)' : 'var(--rust)', marginTop: 2 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: n.unread ? 700 : 500, color: 'var(--ink)' }}>{n.title}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{n.time}</div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="app-role-list">
+                  {ROLE_ORDER.map((r) => {
+                    const rDef = roleDefinition(r);
+                    const isSelected = r === effectiveRole;
+                    const label = language === 'en' ? (rDef.labelEn || rDef.labelVi) : rDef.labelVi;
+                    const short = language === 'en' ? (rDef.shortEn || rDef.shortVi) : rDef.shortVi;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        className={`app-role-option ${isSelected ? 'active' : ''}`}
+                        onClick={() => handleRoleSelect(r)}
+                      >
+                        <div className="app-role-option-icon">
+                          <i className={`ti ${rDef.icon}`} />
+                        </div>
+                        <div className="app-role-option-text">
+                          <div className="app-role-option-name">{short}</div>
+                          <div className="app-role-option-desc">{label}</div>
+                        </div>
+                        {isSelected && <i className="ti ti-check app-role-check" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
-          <div ref={profileRef} style={{ position: 'relative' }}>
-            <div onClick={() => setShowProfileMenu((v) => !v)} className="app-profile-pill">
-              <div className="app-avatar">{profile.avatar || profile.fullName.slice(0, 2).toUpperCase()}</div>
-              <div className="app-profile-pill-text">
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, color: 'var(--ink)' }}>{profile.fullName}</div>
-                <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{profile.employeeCode} &middot; {profile.position}</div>
-              </div>
-              <i className="ti ti-chevron-down" style={{ fontSize: 12, color: 'var(--ink-faint)' }} />
-            </div>
-            {showProfileMenu && (
-              <div className="card card-pad app-popover" style={{ width: 320 }}>
-                <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: 12, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div style={{ fontWeight: 800, fontSize: 14 }}>{profile.fullName}</div>
-                    <Badge tone={roleDefinition(profile.role).tone}>{levelShortLabel(profile.level)}</Badge>
+
+          {/* 5. Gamification Streak Badge */}
+          <div className="app-streak-badge" title={language === 'en' ? `${streakDays} days learning streak` : `Chuỗi học tập liên tục ${streakDays} ngày`}>
+            <i className="ti ti-flame app-streak-icon" aria-hidden="true" />
+            <span className="app-streak-val">{streakDays}</span>
+            <span className="app-streak-unit">{t('days', 'ngày')}</span>
+          </div>
+
+          {/* 6. Notifications Center */}
+          <div ref={notifRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className={`app-notif-btn ${showNotifications ? 'active' : ''}`}
+              onClick={() => setShowNotifications((v) => !v)}
+              aria-label="Notifications"
+              title={t('notifications', 'Thông Báo')}
+            >
+              <i className="ti ti-bell" aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span className="app-notif-badge">{unreadCount}</span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="app-notif-popover">
+                <div className="app-notif-popover-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>
+                      {t('notifications', 'Thông Báo')}
+                    </div>
+                    {unreadCount > 0 && (
+                      <span className="badge badge-rust" style={{ fontSize: 10, padding: '1px 6px' }}>
+                        {unreadCount} {language === 'en' ? 'new' : 'mới'}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>{profile.position}</div>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginTop: 4 }}>{profile.employeeCode} &middot; {profile.email}</div>
-                  <div style={{ marginTop: 10 }}>
-                    <Button variant="primary" size="sm" block icon="ti-id-badge-2" onClick={() => { setShowProfileMenu(false); openTalentProfile(profile); }}>{t('viewTalentProfile', 'View Talent Profile')}</Button>
-                  </div>
+                  {unreadCount > 0 && (
+                    <button type="button" onClick={markAllRead} className="app-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
+                      <i className="ti ti-checks" /> {t('markAllRead', 'Đánh dấu đã đọc')}
+                    </button>
+                  )}
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-faint)', marginBottom: 6 }}>{t('switchRoleDemo', 'Quick Persona Switch:')}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 150, overflowY: 'auto' }}>
-                    {rolePersonaList.map((u) => (
-                      <button key={u.userId} onClick={() => handleSwitchPersona(u)} className="app-persona-row" style={{ borderColor: u.userId === profile.userId ? 'var(--rail)' : 'transparent', background: u.userId === profile.userId ? 'var(--rail-soft)' : 'transparent' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: u.userId === profile.userId ? 700 : 500 }}>{u.fullName}</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{roleDefinition(u.role).shortVi} &middot; {levelShortLabel(u.level)}</div>
+
+                <div className="app-notif-tabs">
+                  <button 
+                    type="button"
+                    className={`app-notif-tab ${notifFilter === 'ALL' ? 'active' : ''}`}
+                    onClick={() => setNotifFilter('ALL')}
+                  >
+                    {t('all_notifications', 'Tất cả')} ({inbox.length})
+                  </button>
+                  <button 
+                    type="button"
+                    className={`app-notif-tab ${notifFilter === 'UNREAD' ? 'active' : ''}`}
+                    onClick={() => setNotifFilter('UNREAD')}
+                  >
+                    {t('unread_notifications', 'Chưa đọc')} ({unreadCount})
+                  </button>
+                </div>
+
+                <div className="app-notif-list">
+                  {filteredInbox.length === 0 ? (
+                    <div className="app-notif-empty">
+                      <div className="app-notif-empty-icon">
+                        <i className="ti ti-bell-check" />
+                      </div>
+                      <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 13 }}>
+                        {t('notifications_all_caught_up', 'Bạn đã đọc hết thông báo!')}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 3 }}>
+                        {t('notifications_empty_sub', 'Không có thông báo mới nào cần xử lý.')}
+                      </div>
+                    </div>
+                  ) : (
+                    filteredInbox.map((n) => {
+                      const isCourse = n.type === 'COURSE_ASSIGNED' || n.type === 'ASSIGNED';
+                      const isDeadline = n.type === 'DEADLINE_REMINDER' || n.type === 'EMPLOYEE_OVERDUE';
+                      const isProgress = n.type === 'COURSE_UNFINISHED' || n.type === 'EMPLOYEE_INACTIVE';
+                      
+                      const iconCls = isCourse ? 'ti-book-2' : isDeadline ? 'ti-clock-alert' : isProgress ? 'ti-player-play' : 'ti-alert-triangle';
+                      const iconTone = isCourse ? 'blue' : isDeadline ? 'amber' : isProgress ? 'sage' : 'rust';
+                      const displayTitle = language === 'en' ? (n.titleEn || n.title) : (n.titleVi || n.title);
+                      const displayMessage = language === 'en' ? (n.messageEn || n.message) : (n.messageVi || n.message);
+                      const displayTime = language === 'en' ? (n.timeEn || n.time) : (n.timeVi || n.time);
+                      const displayTag = language === 'en' ? (n.tagEn || (isCourse ? 'Mandatory' : isDeadline ? 'Due Soon' : 'Reminder')) : (n.tagVi || (isCourse ? 'Bắt buộc' : isDeadline ? 'Hạn chót' : 'Nhắc nhở'));
+
+                      return (
+                        <div 
+                          key={n.id} 
+                          className={`app-notif-item ${n.unread ? 'unread' : ''}`}
+                          onClick={() => handleNotificationClick(n)}
+                        >
+                          <div className={`app-notif-icon-circle tone-${iconTone}`}>
+                            <i className={`ti ${iconCls}`} aria-hidden="true" />
+                          </div>
+                          <div className="app-notif-body">
+                            <div className="app-notif-title-row">
+                              <span className="app-notif-title">{displayTitle}</span>
+                              {n.unread && <span className="app-notif-unread-dot" />}
+                            </div>
+                            <div className="app-notif-desc">{displayMessage}</div>
+                            <div className="app-notif-meta">
+                              <span className={`app-notif-tag tone-${iconTone}`}>{displayTag}</span>
+                              <span className="app-notif-dot-sep">&middot;</span>
+                              <span className="app-notif-time">{displayTime}</span>
+                            </div>
+                          </div>
                         </div>
-                        {u.userId === profile.userId && <i className="ti ti-check" style={{ color: 'var(--rail)', flexShrink: 0 }} />}
-                      </button>
-                    ))}
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="app-notif-footer">
+                  <button
+                    type="button"
+                    className="app-notif-footer-btn"
+                    onClick={() => {
+                      setShowNotifications(false);
+                      navigate(effectiveRole === 'learner' ? '/learner/calendar' : '/my-learning-calendar');
+                    }}
+                  >
+                    <i className="ti ti-calendar-event" /> {t('view_calendar_tasks', 'Xem Lịch Học Tập & Nhiệm Vụ')} &rarr;
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 7. User Profile Pill & Account Popover */}
+          <div ref={profileRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowProfileMenu((v) => !v)}
+              className={`app-profile-pill-btn ${showProfileMenu ? 'active' : ''}`}
+              aria-label="User Profile Menu"
+            >
+              <div className="app-avatar-circle">
+                {profile.avatar || profile.fullName.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="app-profile-info">
+                <div className="app-profile-name">{profile.fullName}</div>
+                <div className="app-profile-sub">
+                  {profile.employeeCode} &middot; {roleShort}
+                </div>
+              </div>
+              <i className="ti ti-chevron-down app-profile-chevron" />
+            </button>
+
+            {showProfileMenu && (
+              <div className="app-profile-popover">
+                <div className="app-profile-header">
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div className="app-avatar-large">
+                      {profile.avatar || profile.fullName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                        {profile.fullName}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 1 }}>
+                        {profile.position}
+                      </div>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginTop: 3 }}>
+                        {profile.employeeCode} &middot; {profile.email}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Badge tone={roleDefinition(profile.role).tone}>{roleLabel}</Badge>
+                    <Badge tone="slate">{levelShortLabel(profile.level)}</Badge>
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      block
+                      icon="ti-id-badge-2"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        openTalentProfile(profile);
+                      }}
+                    >
+                      {t('viewTalentProfile', 'Xem Hồ Sơ Năng Lực')}
+                    </Button>
                   </div>
                 </div>
-                <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-                  <Button variant="danger" size="sm" block icon="ti-logout" onClick={handleLogout}>{t('signOut', 'Sign Out')}</Button>
+
+                <div className="app-profile-section">
+                  <div className="app-profile-section-title">
+                    <i className="ti ti-users-group" /> {t('switchRoleDemo', 'Đổi nhanh 6 Persona (Demo):')}
+                  </div>
+                  <div className="app-persona-list">
+                    {rolePersonaList.map((u) => {
+                      const isCurrent = u.userId === profile.userId;
+                      const uRoleDef = roleDefinition(u.role);
+                      return (
+                        <button
+                          key={u.userId}
+                          type="button"
+                          onClick={() => handleSwitchPersona(u)}
+                          className={`app-persona-item ${isCurrent ? 'active' : ''}`}
+                        >
+                          <div className="app-persona-avatar" style={{ background: isCurrent ? 'var(--rail)' : 'var(--paper-sunken)' }}>
+                            {u.avatar || u.fullName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                            <div className="app-persona-name">
+                              {u.fullName}
+                              {isCurrent && <span className="app-persona-current-tag">{t('active_tag', 'Đang chọn')}</span>}
+                            </div>
+                            <div className="app-persona-role">
+                              {language === 'en' ? (uRoleDef.shortEn || uRoleDef.shortVi) : uRoleDef.shortVi} &middot; {levelShortLabel(u.level)}
+                            </div>
+                          </div>
+                          {isCurrent && <i className="ti ti-check" style={{ color: 'var(--rail)', fontSize: 16 }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="app-profile-footer">
+                  <button
+                    type="button"
+                    className="app-signout-btn"
+                    onClick={handleLogout}
+                  >
+                    <i className="ti ti-logout" /> {t('signOut', 'Đăng Xuất')}
+                  </button>
                 </div>
               </div>
             )}
@@ -329,6 +548,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
         </div>
       </div>
 
+      {/* Sub-header Breadcrumb Row */}
       {(crumb || title) && (
         <div className="app-crumb-row">
           {crumb && <span className="app-crumb">{crumb}</span>}
@@ -339,3 +559,4 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
     </header>
   );
 }
+

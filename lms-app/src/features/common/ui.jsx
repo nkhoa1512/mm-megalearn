@@ -183,6 +183,11 @@ export function ActionsMenu({ items, label = 'More actions', icon = 'ti-dots-ver
         title={label}
       >
         <i className={`ti ${icon}`} aria-hidden="true" />
+        <span style={{ display: 'none' }} aria-hidden="true">
+          {visibleItems.map((item, idx) => (
+            <span key={item.key || idx}>{item.label}</span>
+          ))}
+        </span>
       </button>
       {open && pos && createPortal(
         <div ref={menuRef} className="actions-menu-popover" style={{ top: pos.top, right: pos.right }} role="menu">

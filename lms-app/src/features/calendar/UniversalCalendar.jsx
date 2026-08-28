@@ -389,7 +389,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
       {/* 5. MAIN CONTENT LAYOUT: 70% CALENDAR CANVAS | 30% RIGHT DETAIL PANEL */}
       <div className="cal-main-grid">
         {/* LEFT COLUMN: THE ACTIVE CALENDAR VIEW */}
-        <div className="cal-canvas-card">
+        <div className="cal-canvas-card cal-grid-card">
           {/* VIEW A: MONTH VIEW */}
           {viewMode === 'MONTH' && (
             <div className="cal-month-view">
