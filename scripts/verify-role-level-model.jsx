@@ -967,6 +967,28 @@ console.log('\n=== Section 24: MonthCalendarGrid — standalone render ===');
   check('MonthCalendarGrid renders 42 day cells', Boolean(gridHtml && (gridHtml.match(/cal-cell-daynum/g) || []).length === 42));
 }
 
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 25: LearnerCalendar page renders at both routes ===');
+{
+  const LearnerCalendar = (await import('../src/pages/learner/LearnerCalendar')).default;
+  actAs('learner');
+
+  const learnerRouteHtml = render(
+    'LearnerCalendar renders at /learner/calendar',
+    <LearnerCalendar basePath="/learner/courses" />,
+    '/learner/calendar', '/learner/calendar'
+  );
+  check('LearnerCalendar (/learner/calendar) renders the page title', Boolean(learnerRouteHtml && learnerRouteHtml.includes('Lịch Học Tập')));
+  check('LearnerCalendar (/learner/calendar) renders the month grid', Boolean(learnerRouteHtml && learnerRouteHtml.includes('cal-grid-card')));
+
+  const sharedRouteHtml = render(
+    'LearnerCalendar renders at /my-learning-calendar',
+    <LearnerCalendar />,
+    '/my-learning-calendar', '/my-learning-calendar'
+  );
+  check('LearnerCalendar (/my-learning-calendar) renders without crashing', Boolean(sharedRouteHtml));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
 

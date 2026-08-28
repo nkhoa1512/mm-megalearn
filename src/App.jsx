@@ -17,6 +17,7 @@ import LearnerHistory from './pages/learner/LearnerHistory';
 import LearnerClassrooms from './pages/learner/LearnerClassrooms';
 import LearnerLearningPaths from './pages/learner/LearnerLearningPaths';
 import AiLearningHub from './pages/learner/AiLearningHub';
+import LearnerCalendar from './pages/learner/LearnerCalendar';
 
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ManagerTeam from './pages/manager/ManagerTeam';
@@ -54,8 +55,10 @@ const PAGE_META = {
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
   '/learner/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Learner (Store & HO)' },
+  '/learner/calendar': { title: 'Lịch Học Tập Cá Nhân', crumb: 'Learner (Store & HO)' },
 
   '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
+  '/my-learning-calendar': { title: 'Lịch Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-learning-dashboard': { title: 'Bảng Điều Khiển Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-learning-path': { title: 'Lộ Trình Học Tập Của Tôi — Mọi Role', crumb: 'Học tập của tôi' },
   '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
@@ -180,6 +183,7 @@ function Shell({ role, setRole }) {
               <Route path="/learner/certificates" element={<LearnerCertificates />} />
               <Route path="/learner/history" element={<LearnerHistory />} />
               <Route path="/learner/catalog" element={<AdminCourses />} />
+              <Route path="/learner/calendar" element={<LearnerCalendar basePath="/learner/courses" />} />
 
               {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
               <Route path="/my-learning" element={<MyLearning />} />
@@ -189,6 +193,7 @@ function Shell({ role, setRole }) {
               <Route path="/my-learning/assessment/:assessmentId" element={<AssessmentPlayer basePath="/my-learning" />} />
               <Route path="/my-learning-dashboard" element={<LearnerDashboard />} />
               <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
+              <Route path="/my-learning-calendar" element={<LearnerCalendar />} />
               <Route path="/my-certificates" element={<MyCertificates />} />
               <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
 
