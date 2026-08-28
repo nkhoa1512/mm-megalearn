@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   currentUser,
@@ -9,7 +9,7 @@ import {
   weeklyStudyHours,
   getCourseImage,
 } from '../../data/mockData';
-import { Badge, ProgressBar, Button, BarChart } from '../../features/common/ui';
+import { Badge, ProgressBar, Button, BarChart, DonutChart, LineChart } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
 import { levelDefinition } from '../../data/levelSystem';
 import { normalizeRole, roleDefinition, ROLE_HOME } from '../../data/roles';
@@ -20,6 +20,7 @@ export default function LearnerDashboard() {
   const navigate = useNavigate();
   const { courses: allCourses, currentUser: authUser, enrollments, classrooms } = useCourseStore();
   const user = authUser || currentUser;
+  const [activeChartType, setActiveChartType] = useState('BAR'); // 'BAR' | 'DONUT' | 'LINE'
 
   const userRole = normalizeRole(user.role);
   const isNonLearner = userRole !== 'learner';
@@ -50,6 +51,21 @@ export default function LearnerDashboard() {
 
   // Tính toán phân bổ năng lực đào tạo theo nhóm chuyên môn
   const categoryStats = computeCategoryDistribution(courses);
+
+  // Dữ liệu cho Donut Chart (Biểu đồ tròn)
+  const donutChartData = categoryStats.map((c) => ({
+    label: c.name,
+    value: Math.max(1, c.completedCount),
+    tone: c.tone,
+  }));
+
+  // Dữ liệu cho Line Chart (Biểu đồ đường)
+  const lineTrendData = [
+    { label: 'Tuần 1', value: Math.max(1, Math.round(learningHours * 0.2)) },
+    { label: 'Tuần 2', value: Math.max(2, Math.round(learningHours * 0.45)) },
+    { label: 'Tuần 3', value: Math.max(3, Math.round(learningHours * 0.75)) },
+    { label: 'Tuần 4', value: Math.max(4, Math.round(learningHours)) },
+  ];
 
   // Chỉ số sẵn sàng năng lực (Competency Readiness Score)
   const competencyScore = courses.length > 0
@@ -171,7 +187,7 @@ export default function LearnerDashboard() {
       {/* 2. FOUR HERO METRIC TILES */}
       <div className="grid grid-4" style={{ marginBottom: 24, gap: 16 }}>
         <StatTile
-          label="Tổng Giờ Học"
+          label="Giờ Học"
           value={`${learningHours.toFixed(1)}h`}
           subtext="+2.5h trong 7 ngày qua"
           tone="blue"
@@ -180,24 +196,24 @@ export default function LearnerDashboard() {
         />
         <StatTile
           label="Khóa Đã Hoàn Thành"
-          value={`${completedCount}/${courses.length}`}
+          value={completedCount}
           subtext={`${Math.round((completedCount / Math.max(1, courses.length)) * 100)}% tổng số khóa`}
           tone="sage"
           icon="ti-circle-check"
           onClick={() => navigate('/learner/courses')}
         />
         <StatTile
-          label="Khóa Bắt Buộc Cần Học"
-          value={`${mandatoryOutstanding} khóa`}
-          subtext="100% đúng hạn quy định"
+          label="Khóa Bắt Buộc"
+          value={mandatoryCount}
+          subtext={`${mandatoryOutstanding} khóa chưa hoàn thành`}
           tone="amber"
           icon="ti-alert-triangle"
           onClick={() => navigate('/learner/courses')}
         />
         <StatTile
-          label="Chỉ Số Chuẩn Năng Lực"
+          label="Chỉ Số Năng Lực"
           value={`${competencyScore}%`}
-          subtext={`Đáp ứng khung Level ${user.level}`}
+          subtext={`Khung chuẩn Level ${user.level}`}
           tone="rail"
           icon="ti-shield-check"
           onClick={() => navigate('/learner/paths')}
@@ -209,10 +225,10 @@ export default function LearnerDashboard() {
         <div>
           <div className="section-label" style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
             <i className="ti ti-route" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Trục Lộ Trình Đào Tạo Đa Tầng &amp; Kế Cận
+            Trục Lộ Trình Đào Tạo &amp; Định Biên
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-            Khung chuẩn chức danh theo cấp bậc, lộ trình thăng cấp kế cận, chuyên đề tự chọn và khóa học gợi ý thông minh.
+            Khung chuẩn chức danh theo cấp bậc, đề xuất thăng cấp, chuyên đề tự chọn và khóa học gợi ý thông minh.
           </div>
         </div>
         <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/paths')}>
@@ -224,7 +240,7 @@ export default function LearnerDashboard() {
         <RoadmapTabsPanel user={user} />
       </div>
 
-      {/* 4. LEARNING ANALYTICS & COMPETENCY INSIGHTS (DUAL CHARTS) */}
+      {/* 4. MULTI-CHART ANALYTICS (BAR, DONUT, LINE) */}
       <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
         {/* CHART 1: COMPETENCY & DOMAIN DISTRIBUTION */}
         <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
@@ -235,13 +251,13 @@ export default function LearnerDashboard() {
                 Phân Bổ Năng Lực Theo Khối Nghiệp Vụ
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Tỷ trọng hoàn thành theo các nhóm kỹ năng cốt lõi
+                Tiến độ hoàn thành theo 5 nhóm kỹ năng trọng tâm
               </div>
             </div>
             <Badge tone="blue">5 Nhóm Kỹ Năng</Badge>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {categoryStats.map((cat, idx) => (
               <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -260,36 +276,101 @@ export default function LearnerDashboard() {
           </div>
         </div>
 
-        {/* CHART 2: WEEKLY STUDY RHYTHM & ACTIVITY */}
+        {/* CHART 2: MULTI-VIEW LEARNING ACTIVITY (BAR / DONUT / LINE SWITCHER) */}
         <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-chart-bar" style={{ marginRight: 6, color: 'var(--sage)' }} />
-                Nhịp Độ Học Tập Trong Tuần
+                Thời Lượng Học Tập &amp; Tiến Độ
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Thời lượng học theo thứ &middot; Mục tiêu: 4.0h/tuần
+                Phân tích trực quan theo Biểu Đồ Cột, Tròn và Đường
               </div>
             </div>
-            <Button size="sm" variant="ghost" icon="ti-history" onClick={() => navigate('/learner/history')}>
-              Lịch Sử
-            </Button>
+
+            {/* CHART TYPE SWITCHER CONTROLS */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)' }}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveChartType('BAR')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 8px',
+                  background: activeChartType === 'BAR' ? 'var(--sage)' : 'transparent',
+                  color: activeChartType === 'BAR' ? '#fff' : 'var(--ink-soft)',
+                  border: 'none',
+                }}
+                title="Biểu đồ cột theo thứ"
+              >
+                📊 Cột
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveChartType('DONUT')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 8px',
+                  background: activeChartType === 'DONUT' ? 'var(--blue)' : 'transparent',
+                  color: activeChartType === 'DONUT' ? '#fff' : 'var(--ink-soft)',
+                  border: 'none',
+                }}
+                title="Biểu đồ tròn phân bổ"
+              >
+                🍩 Tròn
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveChartType('LINE')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 8px',
+                  background: activeChartType === 'LINE' ? 'var(--rail)' : 'transparent',
+                  color: activeChartType === 'LINE' ? '#fff' : 'var(--ink-soft)',
+                  border: 'none',
+                }}
+                title="Biểu đồ đường xu hướng tuần"
+              >
+                📈 Đường
+              </button>
+            </div>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <BarChart data={chartData} valueSuffix="h" tone="sage" />
+          <div style={{ marginBottom: 16, minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {activeChartType === 'BAR' && (
+              <div style={{ width: '100%' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
+                  Thời Lượng Học Tập Theo Thứ (Giờ)
+                </div>
+                <BarChart data={chartData} valueSuffix="h" tone="sage" />
+              </div>
+            )}
+            {activeChartType === 'DONUT' && (
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <DonutChart data={donutChartData} valueSuffix=" khóa" />
+              </div>
+            )}
+            {activeChartType === 'LINE' && (
+              <div style={{ width: '100%' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
+                  Xu Hướng Tích Lũy Giờ Học Qua 4 Tuần Gần Nhất
+                </div>
+                <LineChart data={lineTrendData} valueSuffix="h" tone="rail" />
+              </div>
+            )}
           </div>
 
-          <div style={{ background: 'var(--sage-soft)', borderRadius: 8, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ background: 'var(--sage-soft)', borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="ti ti-flame" style={{ color: 'var(--amber)', fontSize: 20 }} />
-              <div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>Thói quen học tập tích cực!</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Bạn đã duy trì học đều đặn {streakDays} ngày liên tiếp.</div>
+              <i className="ti ti-flame" style={{ color: 'var(--amber)', fontSize: 18 }} />
+              <div style={{ fontSize: 12, color: 'var(--ink)' }}>
+                Duy trì <strong>{streakDays} ngày học liên tiếp</strong> &middot; Hoàn thành 88% mục tiêu tháng.
               </div>
             </div>
-            <Badge tone="sage">+15% vs tuần trước</Badge>
+            <Badge tone="sage">+15%</Badge>
           </div>
         </div>
       </div>

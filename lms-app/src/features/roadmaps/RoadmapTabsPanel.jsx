@@ -180,7 +180,7 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                     </Badge>
                   ) : (
                     <Button size="sm" variant="primary" icon="ti-plus" onClick={() => joinTrack(track)}>
-                      {language === 'en' ? 'Enroll This Track' : 'Bắt Đầu Lộ Trình Này'}
+                      {language === 'en' ? 'Start This Track' : 'Bắt Đầu Track Này'}
                     </Button>
                   )}
                 </div>
@@ -237,9 +237,8 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="ti ti-sparkles" style={{ fontSize: 18, color: 'var(--amber)' }} />
               <span>
-                {language === 'en'
-                  ? 'Smart AI recommendations matched with your Department, Job Position, and Target Level.'
-                  : `Gợi ý thông minh phù hợp theo Khối ${user?.branchName || ''}, Phòng ${user?.departmentName || user?.departmentCode || 'Ban'} và Vị trí ${user?.position || ''}.`}
+                Gợi ý dựa trên cấp bậc, khối công tác hiện tại và các khóa học chưa hoàn thành.
+                {language === 'en' && ' (Recommendations based on job level & department)'}
               </span>
             </div>
             <Badge tone="amber">{roadmap.recommended.length} Khóa Phù Hợp</Badge>
