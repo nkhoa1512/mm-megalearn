@@ -392,6 +392,61 @@
 .actions-menu-item.danger:hover:not(:disabled) { background: var(--rust-soft); color: var(--rust-soft-text); }
 .actions-menu-item i, .actions-menu-item .ti { font-size: 15px; width: 16px; text-align: center; flex-shrink: 0; }
 
+/* ---------- Personal Learning Calendar (Month Grid) ---------- */
+.cal-grid-card { display: flex; flex-direction: column; gap: 8px; }
+.cal-grid-header { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.cal-grid-month-label { flex: 1; text-align: center; font-weight: 700; font-size: 14px; color: var(--ink); }
+.cal-weekday-row, .cal-week-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-weekday-cell { text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; padding: 4px 0; }
+.cal-cell {
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 120ms var(--ease), border-color 120ms var(--ease);
+}
+.cal-cell:hover { background: var(--paper-sunken); }
+.cal-cell.other-month { opacity: 0.4; cursor: default; pointer-events: none; }
+.cal-cell.today { border-color: var(--rail); border-width: 1.5px; }
+.cal-cell.selected { background: var(--rail-soft); border-color: var(--rail); }
+.cal-cell-daynum { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.cal-event-chip { max-width: 100%; overflow: hidden; }
+.cal-event-chip .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.cal-event-chip-overflow { font-size: 10.5px; color: var(--ink-faint); font-weight: 700; padding: 0 2px; }
+.cal-day-tooltip {
+  position: fixed;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  animation: fadeIn 0.12s ease;
+}
+.cal-day-tooltip-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.cal-day-tooltip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; color: var(--ink); }
+.cal-day-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+}
+.cal-day-panel-row:hover { background: var(--paper-sunken); }
+.cal-day-panel-row i { font-size: 18px; color: var(--ink-soft); flex-shrink: 0; }
 
 /* ---------- Progress ---------- */
 .progress-track {

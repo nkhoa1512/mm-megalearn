@@ -938,6 +938,35 @@ console.log('\n=== Section 23: Personal Learning Calendar — event aggregation 
     (realMap.get('2026-08-28') || []).some((e) => e.sessionId === 'ilt-001'));
 }
 
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 24: MonthCalendarGrid — standalone render ===');
+{
+  const { MonthCalendarGrid } = await import('../src/components/ui');
+
+  const fixtureEventsByDate = new Map([
+    ['2026-08-15', [
+      { id: 'deadline-CRS-X', date: '2026-08-15', kind: 'DEADLINE', title: 'Sample Course Title', subtitle: 'Hạn hoàn thành', statusLabel: 'Đang Học', tone: 'blue', courseId: 'CRS-X' },
+    ]],
+  ]);
+
+  const gridHtml = render(
+    'MonthCalendarGrid renders August 2026 with a fixture event chip',
+    <MonthCalendarGrid
+      viewMonth="2026-08-01"
+      selectedDate="2026-08-15"
+      eventsByDate={fixtureEventsByDate}
+      onSelectDate={() => {}}
+      onMonthChange={() => {}}
+      language="vi"
+    />,
+    '/x', '/x'
+  );
+  check('MonthCalendarGrid output contains the month label', Boolean(gridHtml && gridHtml.includes('Tháng 8, 2026')));
+  check('MonthCalendarGrid output contains the fixture event chip title', Boolean(gridHtml && gridHtml.includes('Sample Course Title')));
+  check('MonthCalendarGrid marks the selected day', Boolean(gridHtml && gridHtml.includes('selected')));
+  check('MonthCalendarGrid renders 42 day cells', Boolean(gridHtml && (gridHtml.match(/cal-cell-daynum/g) || []).length === 42));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
 

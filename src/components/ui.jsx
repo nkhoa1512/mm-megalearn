@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { levelDefinition, ACCESS_STATE } from '../data/levelSystem';
+import { todayDateString, addMonths, firstOfMonth, getMonthGridWeeks, formatMonthLabel } from '../utils/calendarDate';
 
 /**
  * Huy hiệu cấp bậc trên thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất.
@@ -203,6 +204,97 @@ export function ActionsMenu({ items, label = 'More actions', icon = 'ti-dots-ver
         document.body
       )}
     </>
+  );
+}
+
+/**
+ * Lịch dạng lưới tháng dùng cho Lịch Học Tập cá nhân (mọi role). Hover 1 ô
+ * ngày có sự kiện hiện tooltip xem nhanh (chỉ đọc, không click được); bấm
+ * vào ô ngày mới thực sự chọn ngày đó (điều khiển bởi component cha qua
+ * onSelectDate) để hiện panel chi tiết đầy đủ. Tooltip portal ra
+ * document.body giống ActionsMenu ở trên, để không bị cắt bởi container cha
+ * có overflow.
+ */
+export function MonthCalendarGrid({ viewMonth, selectedDate, eventsByDate, onSelectDate, onMonthChange, language = 'vi' }) {
+  const [hoverCell, setHoverCell] = useState(null); // { date, top, left } | null
+
+  const weeks = getMonthGridWeeks(viewMonth);
+  const weekdayLabels = language === 'en'
+    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const today = todayDateString();
+
+  function handleMouseEnter(date, evt) {
+    if (!(eventsByDate.get(date) || []).length) return;
+    const rect = evt.currentTarget.getBoundingClientRect();
+    setHoverCell({ date, top: rect.bottom + 4, left: rect.left });
+  }
+
+  function handleMouseLeave() {
+    setHoverCell(null);
+  }
+
+  return (
+    <div className="card card-pad cal-grid-card">
+      <div className="cal-grid-header">
+        <button type="button" className="icon-btn" onClick={() => onMonthChange(addMonths(viewMonth, -1))} aria-label="Previous month">
+          <i className="ti ti-chevron-left" aria-hidden="true" />
+        </button>
+        <div className="cal-grid-month-label">{formatMonthLabel(viewMonth, language)}</div>
+        <button type="button" className="icon-btn" onClick={() => onMonthChange(addMonths(viewMonth, 1))} aria-label="Next month">
+          <i className="ti ti-chevron-right" aria-hidden="true" />
+        </button>
+        <Button size="sm" variant="outline" onClick={() => onMonthChange(firstOfMonth(today))}>
+          {language === 'en' ? 'Today' : 'Hôm nay'}
+        </Button>
+      </div>
+
+      <div className="cal-weekday-row">
+        {weekdayLabels.map((wd) => <div key={wd} className="cal-weekday-cell">{wd}</div>)}
+      </div>
+
+      {weeks.map((week, weekIdx) => (
+        <div className="cal-week-row" key={weekIdx}>
+          {week.map((cell) => {
+            const dayEvents = eventsByDate.get(cell.date) || [];
+            const visibleEvents = dayEvents.slice(0, 2);
+            const overflowCount = dayEvents.length - visibleEvents.length;
+            const cellClasses = ['cal-cell'];
+            if (!cell.inMonth) cellClasses.push('other-month');
+            if (cell.date === today) cellClasses.push('today');
+            if (cell.date === selectedDate) cellClasses.push('selected');
+
+            return (
+              <div
+                key={cell.date}
+                className={cellClasses.join(' ')}
+                onClick={() => cell.inMonth && onSelectDate(cell.date)}
+                onMouseEnter={(e) => cell.inMonth && handleMouseEnter(cell.date, e)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div className="cal-cell-daynum">{Number(cell.date.slice(8, 10))}</div>
+                {visibleEvents.map((ev) => (
+                  <div key={ev.id} className="cal-event-chip"><Badge tone={ev.tone} size="sm">{ev.title}</Badge></div>
+                ))}
+                {overflowCount > 0 && <div className="cal-event-chip-overflow">+{overflowCount}</div>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {hoverCell && createPortal(
+        <div className="cal-day-tooltip" style={{ top: hoverCell.top, left: hoverCell.left }}>
+          {(eventsByDate.get(hoverCell.date) || []).map((ev) => (
+            <div key={ev.id} className="cal-day-tooltip-row">
+              <span className="cal-day-tooltip-title">{ev.title}</span>
+              <Badge tone={ev.tone} size="sm">{ev.statusLabel}</Badge>
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 
