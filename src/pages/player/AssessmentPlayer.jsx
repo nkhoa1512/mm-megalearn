@@ -5,6 +5,8 @@ import { useCourseStore } from '../../state/CourseStore';
 import { QUESTION_TYPES, DELIVERY_FORMATS } from '../../data/assessmentData';
 import { getAssessmentAccess } from '../../utils/assessmentCatalog';
 import { applyAssessmentAttempt, drawAssessmentQuestions, resolveCourseView, deriveLessonStatuses, deriveAssessmentAttempts } from '../../data/mockData';
+import { computeValidUntilDate } from '../../utils/recertification';
+
 
 function isAnswerCorrect(question, answerValue) {
   if (!question || !answerValue) return false;
@@ -295,9 +297,21 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     recordAssessmentAttempt(attemptRecord);
 
     if (course) {
+      const nowStr = new Date().toISOString().slice(0, 10);
+      const validityMonths = course.configuration?.validityPeriodMonths !== undefined ? parseInt(course.configuration.validityPeriodMonths, 10) : 12;
+      const validUntilStr = computeValidUntilDate(nowStr, validityMonths);
       const updatedCourse = applyAssessmentAttempt(course, { score: scorePercent, passed, answered: Object.keys(answers).length });
+      if (passed) {
+        if (!updatedCourse.enrollment) updatedCourse.enrollment = {};
+        updatedCourse.enrollment.status = 'COMPLETED';
+        updatedCourse.enrollment.progressPercent = 100;
+        updatedCourse.enrollment.completedAt = nowStr;
+        updatedCourse.enrollment.validUntil = validUntilStr;
+      }
       saveCourseProgress(course.id, updatedCourse);
     }
+
+
 
     setResult({
       score: scorePercent,
@@ -596,12 +610,19 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           {result?.score}%
         </div>
         <Badge tone={result?.passed ? 'sage' : 'rust'} size="lg">
-          {result?.passed ? '🎉 CHÚC MỪNG: BẠN ĐÃ ĐẠT' : '⚠️ CHƯA ĐẠT ĐIỂM CHUẨN'}
+          {result?.passed ? '🎉 CHÚC MỪNG: BẠN ĐÃ ĐẠT BÀI THI SÁT HẠCH' : '⚠️ CHƯA ĐẠT ĐIỂM CHUẨN'}
         </Badge>
         <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 10 }}>
           Điểm số đạt được: <strong>{result?.earnedScore} / {result?.totalScore} điểm</strong> &middot; Vi phạm: {tabSwitchViolations} lần
         </div>
+        {result?.passed && (
+          <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'var(--bigc-green-soft)', border: '1px solid rgba(0,158,73,0.2)', fontSize: 13, color: 'var(--bigc-green-soft-text)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <i className="ti ti-certificate" style={{ fontSize: 18 }} />
+            <span>Chứng chỉ số đã được gia hạn hiệu lực thêm 12 tháng tiếp theo!</span>
+          </div>
+        )}
       </div>
+
 
       {/* Competency Gap Result Section */}
       {result?.competencyResults && result.competencyResults.length > 0 && (
@@ -660,10 +681,16 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
-        <Button variant="primary" onClick={() => navigate(basePath)}>
-          Hoàn Tất &amp; Về Danh Mục
+        {result?.passed && (
+          <Button variant="primary" tone="success" icon="ti-certificate" onClick={() => navigate('/learner/certificates')}>
+            Xem Chứng Chỉ Số Mới
+          </Button>
+        )}
+        <Button variant={result?.passed ? 'outline' : 'primary'} onClick={() => navigate(basePath)}>
+          Hoàn Tất &amp; Về Danh Mục Khóa Học
         </Button>
       </div>
+
     </div>
   );
 }

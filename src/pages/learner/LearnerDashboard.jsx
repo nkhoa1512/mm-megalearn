@@ -12,25 +12,35 @@ import { Badge, ProgressBar, Button, BarChart } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 import { levelDefinition } from '../../data/levelSystem';
 import { normalizeRole, roleDefinition, ROLE_HOME } from '../../data/roles';
+import { computeCourseRecertification } from '../../utils/recertification';
 import RoadmapTabsPanel from '../../components/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
-  const { courses: allCourses, currentUser: authUser } = useCourseStore();
+  const { courses: allCourses, currentUser: authUser, enrollments } = useCourseStore();
   const user = authUser || currentUser;
   // Learner không có Cockpit riêng (đây chính là trang chủ của họ) — 5 role
   // còn lại bấm "Xem Giao Diện Học Tập Cá Nhân" từ Cockpit của mình sang đây,
   // nên cần 1 nút đối xứng để quay lại đúng Cockpit của role đó.
   const userRole = normalizeRole(user.role);
   const isNonLearner = userRole !== 'learner';
-  const courses = myLearningCourses(allCourses, user);
-  const certificates = deriveCertificates(allCourses, user);
+  const courses = myLearningCourses(allCourses, user, enrollments);
+  const certificates = deriveCertificates(allCourses, user, enrollments);
+
+  const recertAlerts = courses
+    .map((c) => {
+      const cert = certificates.find((cert) => cert.courseId === c.id);
+      const recert = computeCourseRecertification(c, c.enrollment, cert);
+      return { course: c, recert };
+    })
+    .filter((item) => item.recert.needsRecertification);
+
   const mandatoryCourses = courses.filter((c) => c.courseType === 'MANDATORY');
   const mandatoryCount = mandatoryCourses.length;
   const mandatoryOutstanding = mandatoryCourses.filter((c) => c.enrollment.status !== 'COMPLETED').length;
   const inProgressCourses = courses.filter((c) => c.enrollment.status === 'IN_PROGRESS');
   const completedCount = courses.filter((c) => c.enrollment.status === 'COMPLETED').length;
-  const learningHours = totalLearningHours(allCourses, user);
+  const learningHours = totalLearningHours(allCourses, user, enrollments);
   const levelDef = levelDefinition(user.level);
   const chartData = weeklyStudyHours(user);
   const unreadCount = (notifications.learnerInbox || []).filter((n) => n.unread).length;
@@ -61,6 +71,47 @@ export default function LearnerDashboard() {
           </div>
         </div>
       </div>
+
+      {recertAlerts.length > 0 && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 20,
+            borderLeft: `4px solid ${recertAlerts.some((a) => a.recert.isExpired) ? 'var(--rust)' : 'var(--amber)'}`,
+            background: recertAlerts.some((a) => a.recert.isExpired) ? 'var(--rust-soft)' : 'var(--amber-soft)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <i
+              className={`ti ${recertAlerts.some((a) => a.recert.isExpired) ? 'ti-alert-circle' : 'ti-clock'}`}
+              style={{ fontSize: 24, color: recertAlerts.some((a) => a.recert.isExpired) ? 'var(--rust)' : 'var(--amber)' }}
+            />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: recertAlerts.some((a) => a.recert.isExpired) ? 'var(--rust-soft-text)' : 'var(--amber-soft-text)' }}>
+                Bạn có {recertAlerts.length} khóa học cần hoàn thành sát hạch tái cấp chứng chỉ!
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                {recertAlerts.map((a) => `${a.course.title} (${a.recert.statusLabel})`).join(' · ')}
+              </div>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            tone={recertAlerts.some((a) => a.recert.isExpired) ? 'danger' : 'primary'}
+            icon="ti-refresh"
+            onClick={() => navigate('/learner/certificates')}
+          >
+            Xem Chứng Chỉ &amp; Thi Tái Cấp
+          </Button>
+        </div>
+      )}
+
 
       {/* Chỉ 3 thẻ tóm tắt real-data ở đây — "Lộ Trình Kế Cận" đã bỏ vì phía
           dưới đã có đủ 4 tab Lộ trình (trong đó có tab Kế Cận), để 1 thẻ cố

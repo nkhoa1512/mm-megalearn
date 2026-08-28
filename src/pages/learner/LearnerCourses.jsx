@@ -29,6 +29,9 @@ const GROUP_BY_OPTIONS = [
   { id: 'DOMAIN', label: 'Chuyên Ngành', icon: 'ti-category' },
 ];
 
+import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
+import { deriveCertificates } from '../../data/mockData';
+
 // Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
 export { JobLevelBadge };
 
@@ -42,6 +45,7 @@ const statusMap = {
   FAILED: { tone: 'rust', label: 'Cần Thi Lại' },
   OVERDUE: { tone: 'rust', label: 'Quá Hạn' },
 };
+
 
 export default function LearnerCourses({ user: propUser, basePath = '/learner/courses' }) {
   const navigate = useNavigate();
@@ -115,6 +119,16 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const activeCourseList = enrolledCourses;
 
+  const userCertificates = React.useMemo(() => deriveCertificates(allCourses, user, myEnrollments), [allCourses, user, myEnrollments]);
+  const recertByCourseId = React.useMemo(() => {
+    const map = {};
+    enrolledCourses.forEach((c) => {
+      const cert = userCertificates.find((cert) => cert.courseId === c.id);
+      map[c.id] = computeCourseRecertification(c, c.enrollment, cert);
+    });
+    return map;
+  }, [enrolledCourses, userCertificates]);
+
   // Bảng tra cứu trạng thái truy cập theo cấp bậc cho danh sách đang hiển thị.
   const accessById = {};
   activeCourseList.forEach((c) => { accessById[c.id] = accessFor(c, user); });
@@ -124,6 +138,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     const access = accessById[c.id];
     const matchStatus =
       statusFilter === 'ALL' ||
+      (statusFilter === 'RECERTIFICATION' && recertByCourseId[c.id]?.needsRecertification) ||
       (statusFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
       (statusFilter === 'CURRICULUM' && (c.isCurriculum || Boolean(c.curriculumTitle))) ||
       (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
@@ -160,6 +175,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const inProgressCount = enrolledCourses.filter((c) => c.enrollment?.status === 'IN_PROGRESS').length;
   const overdueCount = enrolledCourses.filter((c) => c.enrollment?.status === 'OVERDUE').length;
   const mandatoryCount = enrolledCourses.filter((c) => c.courseType === 'MANDATORY').length;
+  const recertCount = enrolledCourses.filter((c) => recertByCourseId[c.id]?.needsRecertification).length;
+
 
   // Thống kê toàn thư viện theo quy tắc cấp bậc
   const catalogAccess = allCourses.map((c) => accessFor(c, user));
@@ -206,6 +223,21 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         break;
     }
 
+    const recert = recertByCourseId[c.id];
+    if (recert?.needsRecertification) {
+      return (
+        <Button
+          size={size}
+          variant="primary"
+          tone={recert.isExpired ? 'danger' : 'primary'}
+          icon="ti-refresh"
+          onClick={() => navigate(`${basePath}/${c.id}`)}
+        >
+          {recert.actionLabel}
+        </Button>
+      );
+    }
+
     if (isInPerson) {
       return (
         <Button size={size} variant="primary" icon="ti-calendar-event" onClick={() => navigate('/learner/classrooms')}>
@@ -236,6 +268,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       </Button>
     );
   }
+
 
   return (
     <>
@@ -377,6 +410,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[
               { id: 'ALL', label: 'Tất Cả Khóa Đã Gán', count: enrolledCourses.length },
+              ...(recertCount > 0 ? [{ id: 'RECERTIFICATION', label: '🔴 Cần Tái Cấp Chứng Chỉ', count: recertCount, highlight: true }] : []),
               { id: 'IN_PROGRESS', label: 'Đang Học', count: inProgressCount },
               { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: completedCount },
               { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
@@ -391,21 +425,23 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 className={`btn btn-sm ${statusFilter === tab.id ? 'btn-primary' : 'btn-outline'}`}
                 style={{
                   fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
-                  borderColor: statusFilter === tab.id ? 'var(--blue)' : 'var(--line)',
-                  background: statusFilter === tab.id ? 'var(--blue)' : 'transparent',
-                  color: statusFilter === tab.id ? '#fff' : 'var(--ink)',
+                  borderColor: statusFilter === tab.id ? 'var(--blue)' : tab.highlight ? 'var(--rust)' : 'var(--line)',
+                  background: statusFilter === tab.id ? (tab.highlight ? 'var(--rust)' : 'var(--blue)') : tab.highlight ? 'var(--rust-soft)' : 'transparent',
+                  color: statusFilter === tab.id ? '#fff' : tab.highlight ? 'var(--rust-soft-text)' : 'var(--ink)',
+                  fontWeight: tab.highlight ? 700 : 600,
                 }}
               >
                 {tab.label}
                 <span style={{
-                  background: statusFilter === tab.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
-                  color: statusFilter === tab.id ? '#fff' : 'var(--ink-soft)',
+                  background: statusFilter === tab.id ? 'rgba(255,255,255,0.3)' : tab.highlight ? 'var(--rust)' : 'var(--paper-sunken)',
+                  color: statusFilter === tab.id || tab.highlight ? '#fff' : 'var(--ink-soft)',
                   padding: '1px 6px', borderRadius: 10, fontSize: 10.5, fontWeight: 700,
                 }}>
                   {tab.count}
                 </span>
               </button>
             ))}
+
           </div>
         </div>
 
@@ -551,13 +587,23 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                       </td>
 
                       <td>
-                        {enr ? (
-                          <Badge tone={stConfig.tone} icon={isCompleted ? 'ti-circle-check' : isFailed ? 'ti-alert-circle' : undefined}>
-                            {stConfig.label}
-                          </Badge>
-                        ) : (
-                          <Badge tone="slate">Chưa Ghi Danh</Badge>
-                        )}
+                        {(() => {
+                          const recert = recertByCourseId[c.id];
+                          if (recert?.needsRecertification) {
+                            return (
+                              <Badge tone={recert.badgeTone} icon={recert.isExpired ? 'ti-alert-circle' : 'ti-clock'}>
+                                {recert.statusLabel}
+                              </Badge>
+                            );
+                          }
+                          return enr ? (
+                            <Badge tone={stConfig.tone} icon={isCompleted ? 'ti-circle-check' : isFailed ? 'ti-alert-circle' : undefined}>
+                              {stConfig.label}
+                            </Badge>
+                          ) : (
+                            <Badge tone="slate">Chưa Ghi Danh</Badge>
+                          );
+                        })()}
                       </td>
 
                       <td style={{ textAlign: 'right' }}>{renderAction(c, access)}</td>
@@ -636,12 +682,23 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 10, gap: 8 }}>
-                      <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>
+                      {(() => {
+                        const recert = recertByCourseId[c.id];
+                        if (recert?.needsRecertification) {
+                          return (
+                            <Badge tone={recert.badgeTone} icon={recert.isExpired ? 'ti-alert-circle' : 'ti-clock'} size="sm">
+                              {recert.statusLabel}
+                            </Badge>
+                          );
+                        }
+                        return <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>;
+                      })()}
                       {renderAction(c, access)}
                     </div>
                   </div>
                 </div>
               </div>
+
             );
               })}
             </div>

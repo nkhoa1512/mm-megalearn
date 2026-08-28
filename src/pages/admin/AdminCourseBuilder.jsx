@@ -2465,19 +2465,135 @@ export default function AdminCourseBuilder() {
             </div>
           </div>
 
-          <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '14px', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 4 }}>
               <input
                 type="checkbox"
                 checked={cfg.certificateEnabled}
-                onChange={(e) => patchConfig({ certificateEnabled: e.target.checked })}
+                onChange={(e) => patchConfig({
+                  certificateEnabled: e.target.checked,
+                  validityPeriodMonths: cfg.validityPeriodMonths ?? 12,
+                  recertificationWarningDays: cfg.recertificationWarningDays ?? 30,
+                  recertificationMethod: cfg.recertificationMethod ?? 'RETAKE_FULL_COURSE',
+                })}
               />
-              <span>Cấp chứng chỉ tốt nghiệp khi hoàn thành (Issue Certificate)</span>
+              <span style={{ fontSize: 13.5 }}>Cấp chứng chỉ tốt nghiệp có thời hạn &amp; Tái cấp (Digital Certificate &amp; Recertification)</span>
             </label>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4, marginLeft: 24 }}>
-              Học viên sau khi đạt tiêu chuẩn hoàn thành sẽ được tải chứng chỉ PDF và ghi nhận vào hồ sơ năng lực.
+            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: cfg.certificateEnabled ? 12 : 0, marginLeft: 24 }}>
+              Học viên đạt tiêu chuẩn sẽ nhận chứng chỉ số có mã QR xác thực và được theo dõi chu kỳ tái đào tạo định kỳ.
             </div>
+
+            {cfg.certificateEnabled && (
+              <div style={{ marginLeft: 24, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* 1. THỜI HẠN HIỆU LỰC & SỐ NGÀY BÁO TRƯỚC */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 3 }}>
+                      <i className="ti ti-calendar-time" style={{ marginRight: 4, color: 'var(--blue)' }} />
+                      Thời hạn hiệu lực chứng chỉ:
+                    </label>
+                    <select
+                      className="field-input"
+                      style={{ height: 32, fontSize: 12 }}
+                      value={cfg.validityPeriodMonths ?? 12}
+                      onChange={(e) => patchConfig({ validityPeriodMonths: parseInt(e.target.value, 10) })}
+                    >
+                      <option value={6}>6 Tháng (Đợt cao điểm/vệ sinh định kỳ)</option>
+                      <option value={12}>12 Tháng / 1 Năm (Chuẩn ATVSTP, PCCC, An toàn)</option>
+                      <option value={24}>24 Tháng / 2 Năm (Nghiệp vụ Quản lý)</option>
+                      <option value={36}>36 Tháng / 3 Năm (Kỹ năng Lãnh đạo)</option>
+                      <option value={0}>Vĩnh viễn (Không hết hạn / Lifetime)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 3 }}>
+                      <i className="ti ti-bell-ringing" style={{ marginRight: 4, color: 'var(--amber)' }} />
+                      Thông báo trước hạn tái cấp:
+                    </label>
+                    <select
+                      className="field-input"
+                      style={{ height: 32, fontSize: 12 }}
+                      disabled={cfg.validityPeriodMonths === 0}
+                      value={cfg.recertificationWarningDays ?? 30}
+                      onChange={(e) => patchConfig({ recertificationWarningDays: parseInt(e.target.value, 10) })}
+                    >
+                      <option value={15}>15 ngày trước khi hết hạn</option>
+                      <option value={30}>30 ngày trước khi hết hạn (Chuẩn)</option>
+                      <option value={45}>45 ngày trước khi hết hạn</option>
+                      <option value={60}>60 ngày trước khi hết hạn (2 tháng)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 2. HÌNH THỨC TÁI CẤP & MỞ LẠI KHÓA HỌC */}
+                {cfg.validityPeriodMonths !== 0 && (
+                  <div>
+                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>
+                      <i className="ti ti-refresh" style={{ marginRight: 4, color: 'var(--bigc-green)' }} />
+                      Hình thức mở lại khóa học cho học viên khi đến hạn tái cấp:
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
+                      {[
+                        {
+                          id: 'RETAKE_FULL_COURSE',
+                          label: 'Học lại bài học & Thi sát hạch',
+                          desc: 'Mở lại toàn bộ video/slide bài giảng để ôn tập trước khi thi.',
+                          icon: 'ti-book',
+                        },
+                        {
+                          id: 'ASSESSMENT_ONLY',
+                          label: 'Chỉ thi sát hạch (Fast-track Exam)',
+                          desc: 'Bỏ qua lý thuyết, chỉ cần thi đạt điểm chuẩn để cấp mới.',
+                          icon: 'ti-file-certificate',
+                        },
+                        {
+                          id: 'IN_PERSON_WORKSHOP',
+                          label: 'Lớp Workshop / Thực hành Offline',
+                          desc: 'Yêu cầu tham gia lớp tập huấn thực tế tại chi nhánh.',
+                          icon: 'ti-building',
+                        },
+                      ].map((m) => {
+                        const selected = (cfg.recertificationMethod || 'RETAKE_FULL_COURSE') === m.id;
+                        return (
+                          <div
+                            key={m.id}
+                            onClick={() => patchConfig({ recertificationMethod: m.id })}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 6,
+                              border: selected ? '2px solid var(--bigc-green)' : '1px solid var(--line)',
+                              background: selected ? 'var(--bigc-green-soft)' : 'var(--paper-raised)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 12, color: selected ? 'var(--bigc-green-soft-text)' : 'var(--ink)' }}>
+                              <i className={`ti ${m.icon}`} />
+                              <span>{m.label}</span>
+                            </div>
+                            <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.3 }}>
+                              {m.desc}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. TÓM TẮT TRẢI NGHIỆM HỌC VIÊN */}
+                <div style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(0,158,73,0.06)', border: '1px solid rgba(0,158,73,0.15)', fontSize: 11.5, color: 'var(--bigc-green-soft-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="ti ti-info-circle" style={{ fontSize: 16, flexShrink: 0 }} />
+                  <span>
+                    {cfg.validityPeriodMonths === 0
+                      ? 'Chứng chỉ vĩnh viễn, học viên chỉ cần hoàn thành 1 lần.'
+                      : `Chứng chỉ có hiệu lực ${cfg.validityPeriodMonths || 12} tháng. Trước khi hết hạn ${cfg.recertificationWarningDays || 30} ngày, khóa học sẽ mở khóa cho học viên với nhãn "Học & Tái Cấp Chứng Chỉ" để tham gia cấp lại.`}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Prerequisite Courses: Compact & Filterable */}

@@ -7,6 +7,8 @@ import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSyst
 import { getCourseImage } from '../../data/courseImages';
 import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
 import { computeLifecycleStatus } from '../../utils/courseCatalog';
+import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
+
 
 function statusLabel(status) {
   switch (status) {
@@ -65,8 +67,13 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   // và khóa có bật certificateEnabled (xem deriveCertificates() trong mockData.js).
   const certificate = useMemo(() => {
     if (!course) return null;
-    return deriveCertificates(courses, user).find((cert) => cert.courseId === course.id) || null;
-  }, [courses, user, course]);
+    return deriveCertificates(courses, user, myEnrollments).find((cert) => cert.courseId === course.id) || null;
+  }, [courses, user, course, myEnrollments]);
+
+  const recert = useMemo(() => {
+    return computeCourseRecertification(course, course?.enrollment, certificate);
+  }, [course, certificate]);
+
   const [showCertificate, setShowCertificate] = useState(false);
 
   if (!course) {
@@ -98,7 +105,7 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const cfg = course.configuration || {};
   const access = accessFor(course, user);
   const isLevelLocked = access.isLevelLocked;
-  const assessmentUnlocked = !isPrereqLocked && !isLevelLocked && completionPct >= 100 && cfg.assessmentEnabled;
+  const assessmentUnlocked = ((!isPrereqLocked && !isLevelLocked && completionPct >= 100) || recert.needsRecertification) && cfg.assessmentEnabled;
 
   function submitRequest() {
     const result = requestLevelAdvanceApproval(course, justification, user);
@@ -122,11 +129,11 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
             alt={course.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%)' }} />
-          <div style={{ position: 'absolute', bottom: 14, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
+          <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                <span style={{ background: 'rgba(255,255,255,0.9)', color: 'var(--ink)', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'center' }}>
+                <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
                   {course.code}
                 </span>
                 <CourseTypeBadge courseType={course.courseType} />
@@ -145,6 +152,60 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
           </div>
         </div>
       </div>
+
+      {/* RECERTIFICATION ALERT BANNER */}
+      {recert.needsRecertification && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 16,
+            borderLeft: `4px solid ${recert.isExpired ? 'var(--rust)' : 'var(--amber)'}`,
+            background: recert.isExpired ? 'var(--rust-soft)' : 'var(--amber-soft)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: recert.isExpired ? 'var(--rust)' : 'var(--amber)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                flexShrink: 0,
+              }}
+            >
+              <i className={`ti ${recert.isExpired ? 'ti-alert-circle' : 'ti-clock'}`} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: recert.isExpired ? 'var(--rust-soft-text)' : 'var(--amber-soft-text)' }}>
+                {recert.statusLabel}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                {recert.alertMessage}
+              </div>
+            </div>
+          </div>
+          {cfg.assessmentEnabled && (
+            <Button
+              variant="primary"
+              tone={recert.isExpired ? 'danger' : 'primary'}
+              icon="ti-refresh"
+              onClick={() => navigate(`${basePath}/${course.id}/assessment`)}
+            >
+              {recert.actionLabel}
+            </Button>
+          )}
+        </div>
+      )}
 
       {parentCurriculum && (
         <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--rail, #6366f1)', background: 'rgba(99,102,241,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -285,9 +346,10 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Hạn hoàn thành: {formatDate(course.enrollment.dueDate)}</div>
               )}
             </div>
-            <Badge tone={course.enrollment.status === 'COMPLETED' ? 'sage' : course.enrollment.status === 'OVERDUE' ? 'rust' : 'amber'}>
-              {statusLabel(course.enrollment.status)}
+            <Badge tone={recert.needsRecertification ? recert.badgeTone : course.enrollment.status === 'COMPLETED' ? 'sage' : course.enrollment.status === 'OVERDUE' ? 'rust' : 'amber'}>
+              {recert.needsRecertification ? recert.statusLabel : statusLabel(course.enrollment.status)}
             </Badge>
+
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
@@ -325,8 +387,13 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         <>
       {/* MODULES & LESSONS */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-pad" style={{ paddingBottom: 4 }}>
+        <div className="card-pad" style={{ paddingBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="section-label" style={{ margin: '0 0 4px' }}>Cấu trúc chương trình &amp; Các bài học</div>
+          {recert.needsRecertification && recert.isFullCourse && (
+            <Badge tone="amber" icon="ti-refresh" size="sm">
+              Đã Mở Lại Toàn Bộ Bài Học Để Ôn Tập
+            </Badge>
+          )}
         </div>
         <div className="card-pad" style={{ paddingTop: 4 }}>
           <ModuleList
@@ -342,14 +409,16 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
 
       {/* FINAL ASSESSMENT */}
       {cfg.assessmentEnabled && (
-        <div className="card card-pad" style={{ borderColor: assessmentUnlocked ? 'var(--sage)' : 'var(--line)', marginBottom: 20 }}>
+        <div className="card card-pad" style={{ borderColor: assessmentUnlocked ? (recert.needsRecertification ? (recert.isExpired ? 'var(--rust)' : 'var(--amber)') : 'var(--sage)') : 'var(--line)', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div className="activity-icon" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>
-                <i className="ti ti-writing" aria-hidden="true" />
+              <div className="activity-icon" style={{ background: recert.needsRecertification ? (recert.isExpired ? 'var(--rust-soft)' : 'var(--amber-soft)') : 'var(--blue-soft)', color: recert.needsRecertification ? (recert.isExpired ? 'var(--rust)' : 'var(--amber)') : 'var(--blue)' }}>
+                <i className={`ti ${recert.needsRecertification ? 'ti-refresh-alert' : 'ti-writing'}`} aria-hidden="true" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Bài thi đánh giá cuối khóa (Final Assessment)</div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  {recert.needsRecertification ? 'Bài Thi Tái Sát Hạch Chuẩn Hóa (Recertification Exam)' : 'Bài thi đánh giá cuối khóa (Final Assessment)'}
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                   {cfg.questionsPerAttempt || 5} câu hỏi &middot; Thời gian: {cfg.assessmentTimeLimit || 15} phút &middot; Điểm đạt: {cfg.passingScorePercent || 80}% &middot; Tối đa {cfg.maxAttempts || 3} lần thi
                 </div>
@@ -357,8 +426,13 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
             </div>
 
             {assessmentUnlocked ? (
-              <Button variant="primary" icon="ti-player-play" onClick={() => navigate(`${basePath}/${course.id}/assessment`)}>
-                Vào Làm Bài Thi
+              <Button
+                variant="primary"
+                tone={recert.needsRecertification ? (recert.isExpired ? 'danger' : 'primary') : 'primary'}
+                icon={recert.needsRecertification ? 'ti-refresh' : 'ti-player-play'}
+                onClick={() => navigate(`${basePath}/${course.id}/assessment`)}
+              >
+                {recert.needsRecertification ? recert.actionLabel : 'Vào Làm Bài Thi'}
               </Button>
             ) : (
               <Badge tone="slate" icon="ti-lock">
@@ -370,6 +444,7 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
       )}
         </>
       )}
+
 
       {/* MODAL: GỬI ĐƠN XIN HỌC VƯỢT CẤP */}
       <Modal

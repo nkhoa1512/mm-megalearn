@@ -1092,8 +1092,12 @@ export function createBlankCourse() {
       randomizeAnswers: true,
       showCorrectAnswers: 'AFTER_FINAL_ATTEMPT',
       certificateEnabled: false,
+      validityPeriodMonths: 12,
+      recertificationWarningDays: 30,
+      recertificationMethod: 'RETAKE_FULL_COURSE',
       completionRule: 'Complete all required lessons.',
     },
+
     assignment: null,
     modules: [],
     enrollment: null,
@@ -1340,16 +1344,21 @@ export function applyAssessmentAttempt(course, { score, passed, answered }) {
   return recomputeEnrollment(next);
 }
 
-export function deriveCertificates(courseList, user) {
+export function deriveCertificates(courseList, user, overlay = null) {
   if (!user) return [];
-  const list = myLearningCourses(courseList, user);
+  const list = myLearningCourses(courseList, user, overlay);
   const derived = list
     .filter((c) => c.enrollment?.status === 'COMPLETED' && c.configuration?.certificateEnabled)
     .map((c) => {
       const attempts = c.assessmentAttempts || [];
       const passingAttempt = [...attempts].reverse().find((a) => a.passed);
-      const issueDate = c.enrollment.completedAt || '2026-07-15';
-      const validUntil = new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + 1)).toISOString().slice(0, 10);
+      const issueDate = c.enrollment.completedAt || '2025-08-10';
+      // Hạn tái cấp: lấy từ enrollment (nếu vừa thi lại) hoặc tính theo chu kỳ
+      const validUntil = c.enrollment.validUntil || (
+        c.id === 'CRS-FSH-001' ? '2026-08-15' // Kịch bản mẫu: Quá hạn 13 ngày -> Trạng thái RECERTIFICATION_REQUIRED
+        : c.id === 'CRS-CS-002' ? '2026-09-10' // Kịch bản mẫu: Cận hạn 13 ngày -> Trạng thái DUE_SOON
+        : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + 1)).toISOString().slice(0, 10)
+      );
       const cleanEmpCode = (user.employeeCode || 'EMP-1042').replace('MMVN-', '');
       return {
         id: `CERT-MMVN-${(c.code || c.id).toUpperCase()}-${cleanEmpCode}`,
@@ -1372,6 +1381,7 @@ export function deriveCertificates(courseList, user) {
 
   return derived;
 }
+
 
 
 
