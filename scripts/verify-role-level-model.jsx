@@ -853,6 +853,41 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
     Boolean(editorHtml && editorHtml.includes('Chỉnh Sửa Giáo Trình') && editorHtml.includes('Danh sách khóa E-Learning')));
 }
 
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 22: Personal Learning Calendar — date math ===');
+{
+  const { todayDateString, firstOfMonth, addMonths, getMonthGridWeeks, formatMonthLabel } = await import('../src/utils/calendarDate');
+
+  check('todayDateString returns YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(todayDateString()), todayDateString());
+  check('firstOfMonth normalizes to day 01', firstOfMonth('2026-08-15') === '2026-08-01');
+  check('addMonths forward within a year', addMonths('2026-08-01', 1) === '2026-09-01');
+  check('addMonths rolls over year forward', addMonths('2026-12-01', 1) === '2027-01-01');
+  check('addMonths rolls over year backward', addMonths('2026-01-01', -1) === '2025-12-01');
+
+  const augWeeks = getMonthGridWeeks('2026-08-01');
+  check('grid has 6 weeks', augWeeks.length === 6, String(augWeeks.length));
+  check('every week has 7 days', augWeeks.every((w) => w.length === 7));
+  const flatDays = augWeeks.flat();
+  check('42 total cells', flatDays.length === 42, String(flatDays.length));
+
+  let sequential = true;
+  for (let i = 1; i < flatDays.length; i += 1) {
+    const [py, pm, pd] = flatDays[i - 1].date.split('-').map(Number);
+    const [cy, cm, cd] = flatDays[i].date.split('-').map(Number);
+    const prev = new Date(py, pm - 1, pd);
+    const cur = new Date(cy, cm - 1, cd);
+    if (cur - prev !== 86400000) { sequential = false; break; }
+  }
+  check('grid dates are consecutive days', sequential);
+
+  const inMonthCount = flatDays.filter((d) => d.inMonth).length;
+  check('August 2026 has 31 in-month cells', inMonthCount === 31, String(inMonthCount));
+  check('August 1st 2026 is flagged inMonth', flatDays.find((d) => d.date === '2026-08-01')?.inMonth === true);
+
+  check('formatMonthLabel vi', formatMonthLabel('2026-08-01', 'vi') === 'Tháng 8, 2026', formatMonthLabel('2026-08-01', 'vi'));
+  check('formatMonthLabel en', formatMonthLabel('2026-08-01', 'en') === 'August 2026', formatMonthLabel('2026-08-01', 'en'));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 process.exit(failures === 0 ? 0 : 1);
 
