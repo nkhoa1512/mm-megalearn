@@ -8,7 +8,7 @@ import {
   trainerStatsFor,
 } from '../../data/mockData';
 import { useCourseStore } from '../../store/CourseStore';
-import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
+import { Badge, Button, Modal, ProgressBar, DonutChart, BarChart, LineChart } from '../../features/common/ui';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 
@@ -20,6 +20,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED
   const [transcriptUser, setTranscriptUser] = useState(null);
+  const [activeChartTab, setActiveChartTab] = useState('BAR'); // 'BAR' | 'LINE'
 
   const authRole = normalizeRole(authUser?.role);
   const canBeAssignedToClass = hasCapability(authRole, 'canBeAssignedToClass');
@@ -288,70 +289,257 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
     );
   }
 
+  // Dữ liệu Biểu đồ Tròn: Phân bổ xếp hạng CSAT của học viên
+  const csatDonutData = [
+    { label: '5 Sao (Rất Hài Lòng)', value: 82, tone: 'sage' },
+    { label: '4 Sao (Hài Lòng)', value: 15, tone: 'blue' },
+    { label: '3 Sao (Đạt Yêu Cầu)', value: 3, tone: 'amber' },
+  ];
+
+  // Dữ liệu Biểu đồ Cột: Số lượng học viên theo từng lớp thực hành
+  const classLearnersData = myTeachingClasses.slice(0, 5).map((cls, idx) => ({
+    label: cls.title.length > 22 ? cls.title.slice(0, 22) + '...' : cls.title,
+    value: cls.enrolledCount || (idx === 0 ? 52 : idx === 1 ? 45 : 38),
+    tone: 'rail',
+  }));
+
+  // Dữ liệu Biểu đồ Đường: Xu hướng điểm CSAT qua 4 tháng
+  const csatMonthlyTrend = [
+    { label: 'Tháng 5', value: 4.75 },
+    { label: 'Tháng 6', value: 4.80 },
+    { label: 'Tháng 7', value: 4.85 },
+    { label: 'Tháng 8', value: trainerProfile.rating || 4.88 },
+  ];
+
   return (
     <>
-      {/* HEADER WITH TRAINER PROFILE */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Cổng Lớp Giảng Dạy &amp; Live QR</h1>
-            <Badge tone="blue" icon="ti-school">{roleDefinition(trainerProfile.role).labelVi}</Badge>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Đang xem lịch dạy của:</span>
-            <select
-              className="field-select"
-              style={{ height: 32, fontSize: 13, fontWeight: 700, borderColor: 'var(--blue)', background: 'var(--paper-sunken)' }}
-              value={selectedTrainerId}
-              onChange={(e) => setSelectedTrainerId(e.target.value)}
+      {/* 1. EXECUTIVE TRAINER PROFILE BANNER */}
+      <div
+        className="card card-pad"
+        style={{
+          marginBottom: 20,
+          background: 'linear-gradient(135deg, #FFFFFF 0%, var(--sage-soft, #ECFDF5) 100%)',
+          borderColor: 'var(--sage, #10B981)',
+          boxShadow: '0 4px 20px rgba(16, 185, 129, 0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #065F46 0%, var(--sage, #059669) 100%)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 20,
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                flexShrink: 0,
+              }}
             >
-              {eligibleTrainers.map((t) => (
-                <option key={t.userId} value={t.userId}>
-                  {t.fullName} &mdash; {roleDefinition(t.role).shortVi}
-                  {t.userId === authUser?.userId ? ' (bạn)' : ''}
-                </option>
-              ))}
-            </select>
+              {trainerProfile.avatar || trainerProfile.fullName.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                  Bảng Điều Khiển Giảng Dạy &amp; Lớp Học Thực Hành
+                </h1>
+                <Badge tone="sage" icon="ti-school">
+                  {roleDefinition(trainerProfile.role).labelVi}
+                </Badge>
+                <Badge tone="amber" icon="ti-star">
+                  ★ {trainerProfile.rating.toFixed(2)} / 5.0 CSAT
+                </Badge>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                  Giảng viên: <strong>{trainerProfile.fullName}</strong> &middot; {trainerProfile.position || 'Chuyên viên Đào tạo L&D'} &middot; Mã GV: <strong>{trainerProfile.employeeCode || 'MMVN-9005'}</strong>
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>|</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đổi xem lịch giảng dạy:</span>
+                <select
+                  className="field-select"
+                  style={{ height: 28, fontSize: 12, fontWeight: 700, borderColor: 'var(--sage)', background: '#fff', padding: '2px 8px' }}
+                  value={selectedTrainerId}
+                  onChange={(e) => setSelectedTrainerId(e.target.value)}
+                >
+                  {eligibleTrainers.map((t) => (
+                    <option key={t.userId} value={t.userId}>
+                      {t.fullName} &mdash; {roleDefinition(t.role).shortVi}
+                      {t.userId === authUser?.userId ? ' (bạn)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
+              Xem Giao Diện Cá Nhân
+            </Button>
+            <Button variant="primary" tone="sage" icon="ti-plus" onClick={() => navigate('/admin/courses/new')}>
+              Tạo Khóa Trực Tiếp
+            </Button>
           </div>
         </div>
-
-        <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
-          Xem Giao Diện Học Tập Cá Nhân
-        </Button>
       </div>
 
-      {/* Quick KPI stats */}
-      <div className="grid grid-3" style={{ marginBottom: 24 }}>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-star" />
+      {/* 2. FOUR HERO TEACHING METRIC TILES */}
+      <div className="grid grid-4" style={{ marginBottom: 24, gap: 16 }}>
+        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>Đánh Giá CSAT Trung Bình</div>
+            <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 36, height: 36, fontSize: 18, borderRadius: 8 }}>
+              <i className="ti ti-star" />
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Điểm CSAT<br />Trung bình</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>★ {trainerProfile.rating.toFixed(2)}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Top 5% Giảng viên xuất sắc</div>
+        </div>
+
+        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Buổi Đã Đứng Lớp</div>
+            <div className="stat-icon-badge" style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', width: 36, height: 36, fontSize: 18, borderRadius: 8 }}>
+              <i className="ti ti-school" />
+            </div>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>{trainerProfile.totalClassesTaught} Buổi</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>186.5 giờ giảng dạy tích lũy</div>
+        </div>
+
+        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>Học Viên Đã Đào Tạo</div>
+            <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 36, height: 36, fontSize: 18, borderRadius: 8 }}>
+              <i className="ti ti-users" />
+            </div>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()} Học Viên</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>96.2% đạt chuẩn sát hạch</div>
+        </div>
+
+        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>Lớp Đang Phụ Trách</div>
+            <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 36, height: 36, fontSize: 18, borderRadius: 8 }}>
+              <i className="ti ti-chalkboard" />
+            </div>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{myTeachingClasses.length} Lớp Học</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>3 Workshop · 3 Webinar Online</div>
+        </div>
+      </div>
+
+      {/* 3. DUAL-CHART TEACHING QUALITY & CSAT ANALYTICS */}
+      <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
+        {/* CHART 1: CSAT RATING DISTRIBUTION (DONUT CHART) */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-star" style={{ marginRight: 6, color: 'var(--amber)' }} />
+                Phân Bổ Đánh Giá CSAT Của Học Viên
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Tỷ lệ phiếu khảo sát theo các mức sao (142 phiếu đánh giá)
+              </div>
+            </div>
+            <Badge tone="amber">★ {trainerProfile.rating.toFixed(2)} / 5.0</Badge>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', minHeight: 180, marginBottom: 10 }}>
+            <DonutChart data={csatDonutData} valueSuffix="%" />
+          </div>
+
+          <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--line)' }}>
+            <span style={{ fontSize: 12, color: 'var(--ink)' }}>Tỷ lệ học viên hài lòng xuất sắc (&ge;4 sao):</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--sage)' }}>97.0%</span>
           </div>
         </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-school" />
+
+        {/* CHART 2: CLASS ROSTER & CSAT TREND (BAR & LINE SWITCHER) */}
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                <i className="ti ti-chart-bar" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                Quy Mô Lớp Học &amp; Xu Hướng CSAT
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Số lượng học viên gán vào lớp và chất lượng giảng dạy
+              </div>
+            </div>
+
+            {/* SWITCHER */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)' }}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveChartTab('BAR')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 8px',
+                  background: activeChartTab === 'BAR' ? 'var(--rail)' : 'transparent',
+                  color: activeChartTab === 'BAR' ? '#fff' : 'var(--ink-soft)',
+                  border: 'none',
+                }}
+                title="Biểu đồ cột theo lớp"
+              >
+                📊 Lớp Học
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveChartTab('LINE')}
+                style={{
+                  fontSize: 11,
+                  padding: '4px 8px',
+                  background: activeChartTab === 'LINE' ? 'var(--amber)' : 'transparent',
+                  color: activeChartTab === 'LINE' ? '#fff' : 'var(--ink-soft)',
+                  border: 'none',
+                }}
+                title="Biểu đồ đường xu hướng CSAT"
+              >
+                📈 Xu Hướng CSAT
+              </button>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{trainerProfile.totalClassesTaught}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Buổi đào tạo<br />Đã giảng dạy</div>
+
+          <div style={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+            {activeChartTab === 'BAR' ? (
+              <div style={{ width: '100%' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
+                  Số Lượng Học Viên Đã Đăng Ký Theo Từng Lớp (Người)
+                </div>
+                <BarChart data={classLearnersData} valueSuffix=" HV" tone="rail" />
+              </div>
+            ) : (
+              <div style={{ width: '100%' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
+                  Xu Hướng Điểm Đánh Giá CSAT Qua 4 Tháng Gần Nhất (Thang 5.0)
+                </div>
+                <LineChart data={csatMonthlyTrend} valueSuffix="★" tone="amber" />
+              </div>
+            )}
           </div>
-        </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-users" />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{trainerProfile.totalLearners.toLocaleString()}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Học viên<br />Đã hoàn thành</div>
+
+          <div style={{ background: 'var(--sage-soft)', borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--ink)' }}>
+              <i className="ti ti-trending-up" style={{ color: 'var(--sage)', fontSize: 16 }} />
+              Điểm CSAT tăng trưởng đều đặn <strong>+0.13★</strong> so với đầu quý.
+            </div>
+            <Badge tone="sage">Đạt Chuẩn Master</Badge>
           </div>
         </div>
       </div>
 
-      {/* TABS SWITCHER */}
+      {/* 4. TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
           { id: 'CLASSES', label: 'Lớp Học Tôi Phụ Trách Giảng Dạy', icon: 'ti-chalkboard', count: myTeachingClasses.length },
@@ -812,7 +1000,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
             </div>
 
             <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.45 }}>
-              Giảng viên mở màn hình này trên máy chiếu phòng đào tạo. Học viên quét mã qua ứng dụng <strong>MM MegaLearn</strong> để hoàn tất điểm danh và tự động nhận <strong>+150 XP</strong>.
+              Giảng viên mở màn hình này trên máy chiếu phòng đào tạo. Học viên quét mã qua ứng dụng <strong>MM MegaLearn</strong> để hoàn tất điểm danh và ghi nhận tham gia khóa học.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>

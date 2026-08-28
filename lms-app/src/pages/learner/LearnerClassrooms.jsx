@@ -164,8 +164,8 @@ export default function LearnerClassrooms() {
               {/* Card Action Row */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14, flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
-                  <i className="ti ti-award" style={{ marginRight: 4, color: 'var(--amber)' }} />
-                  Phần thưởng: <strong>+150 XP</strong> &amp; Chứng nhận tham gia
+                  <i className="ti ti-award" style={{ marginRight: 4, color: 'var(--sage)' }} />
+                  Chứng nhận tham gia &amp; Ghi nhận hồ sơ đào tạo
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -248,7 +248,7 @@ export default function LearnerClassrooms() {
                 <div style={{ color: '#10B981', animation: 'scaleUp 0.3s ease' }}>
                   <i className="ti ti-circle-check" style={{ fontSize: 72 }} />
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 8 }}>ĐIỂM DANH THÀNH CÔNG!</div>
-                  <div style={{ fontSize: 12, color: '#10B981' }}>+150 XP Đã Cộng Vào Hồ Sơ</div>
+                  <div style={{ fontSize: 12, color: '#10B981' }}>Đã Xác Nhận Tham Gia Khóa Học</div>
                 </div>
               ) : scanState === 'VERIFYING' ? (
                 <div style={{ color: '#fff' }}>

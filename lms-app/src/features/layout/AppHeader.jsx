@@ -38,9 +38,9 @@ const ROLE_WORK_NAV = {
     { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', labelVi: 'Báo Cáo & Tuân Thủ', labelEn: 'Compliance & Reports', icon: 'ti-chart-bar' },
   ],
   trainer: [
-    { to: '/trainer', label: 'Lớp Giảng Dạy & Hoạt Động Đào Tạo', labelVi: 'Lớp Giảng Dạy & Hoạt Động Đào Tạo', labelEn: 'Teaching Classes & Training Ops', icon: 'ti-school', end: true },
+    { to: '/trainer', label: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelVi: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },
     { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
-    { to: '/trainer/reports', label: 'Báo Cáo ROI & Kirkpatrick', labelVi: 'Báo Cáo ROI & Kirkpatrick', labelEn: 'ROI & Kirkpatrick Reports', icon: 'ti-chart-histogram' },
+    { to: '/trainer/reports', label: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelVi: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
   ],
   hrbp: [
     { to: '/hrbp', label: 'Phân Tích Nhân Tài & Tuân Thủ', labelVi: 'Phân Tích Nhân Tài & Tuân Thủ', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },

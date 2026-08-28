@@ -118,8 +118,8 @@ export default function LearnerDashboard() {
                 <Badge tone="amber" icon="ti-flame">
                   🔥 Chuỗi {streakDays} Ngày Học
                 </Badge>
-                <Badge tone="sage" icon="ti-award">
-                  ⭐ {totalXp} XP Tích Lũy
+                <Badge tone="sage" icon="ti-certificate">
+                  📜 {certificates.length} Chứng Chỉ Đạt Chuẩn
                 </Badge>
               </div>
               <p style={{ marginTop: 4, marginBottom: 0, color: 'var(--ink-soft)', fontSize: 13 }}>
@@ -518,7 +518,7 @@ export default function LearnerDashboard() {
           tone="amber"
           title="Bảng Thi Đua Học Tập"
           value={`Top 3 Phòng Ban`}
-          subtext={`Đạt ${totalXp} XP · Cấp bậc Level ${user.level}`}
+          subtext={`Cấp bậc Level ${user.level} · Đạt chuẩn vị trí`}
           onClick={() => navigate('/learner/history')}
         />
         <ResourceCard

@@ -275,7 +275,7 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginBottom: 4 }}>
                         <span>{course.code}</span>
-                        <span>{course.duration || '2-4h'} &middot; +100 XP</span>
+                        <span>{course.duration || '2-4h'}</span>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.35, minHeight: 36 }}>
                         {course.title}

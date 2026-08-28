@@ -105,7 +105,7 @@ export default function PostTrainingSurveyModal() {
             {isL1
               ? 'Your digital certificate of completion is now unlocked. Your action plan has been routed to your Line Manager.'
               : isClassroomCsat
-              ? `Ý kiến của bạn đã được chuyển trực tiếp cho Giảng viên ${course?.trainerName || ''} và Ban L&D để cải tiến các khóa học tiếp theo (+50 XP).`
+              ? `Ý kiến của bạn đã được chuyển trực tiếp cho Giảng viên ${course?.trainerName || ''} và Ban L&D để cải tiến các khóa học tiếp theo.`
               : 'Behavioral impact scores have been updated in enterprise training analytics.'}
           </p>
         </div>
