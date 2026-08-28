@@ -331,9 +331,9 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
         <div className="card-pad" style={{ paddingTop: 4 }}>
           <ModuleList
             modules={course.modules || []}
-            disabled={isLevelLocked}
+            disabled={isLevelLocked || isRegistrationClosed}
             getLessonHref={(l) => {
-              if (isPrereqLocked || isLevelLocked) return null;
+              if (isPrereqLocked || isLevelLocked || isRegistrationClosed) return null;
               return l.lessonType === 'ASSESSMENT' ? null : `${basePath}/${course.id}/lessons/${l.id}`;
             }}
           />

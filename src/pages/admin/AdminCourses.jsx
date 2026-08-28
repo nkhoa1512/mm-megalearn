@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { courseHasParticipants, userAdminUser } from '../../data/mockData';
-import { Badge, Button, CourseTypeBadge, Modal, Tabs } from '../../components/ui';
+import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
 import { getCourseImage } from '../../data/courseImages';
@@ -333,25 +333,29 @@ export default function AdminCourses() {
           </Badge>
         </td>
         <td>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            {!hideAllocationDetails && (
-              <Button
-                size="sm"
-                variant="outline"
-                icon="ti-list-details"
-                onClick={() => setViewingCourse(c)}
-              >
-                Chi Tiết &amp; Phân Bổ
-              </Button>
-            )}
+          {/* Bấm vào tên/ảnh khóa học ở cột đầu đã mở "Chi Tiết & Phân Bổ" rồi
+              (xem onClick cột COURSE PROGRAM), nên ở đây không lặp lại nút đó
+              nữa — mỗi hàng chỉ còn đúng 1 nút (hoặc 1 dropdown gọn), tránh
+              bị wrap xuống dòng và trông lộn xộn. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             {canManage ? (
-              <>
-                <Button size="sm" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
-                {c.status === 'DRAFT' && <Button size="sm" variant="primary" onClick={() => publish(c)}>Publish</Button>}
-                <span title={hasParticipants ? 'Cannot delete: employees have already started this course.' : undefined}>
-                  <Button size="sm" variant="danger" icon="ti-trash" disabled={hasParticipants} onClick={() => remove(c)}>Delete</Button>
-                </span>
-              </>
+              <ActionsMenu
+                label="Thao tác khác"
+                items={[
+                  !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Chi Tiết & Phân Bổ', onClick: () => setViewingCourse(c) },
+                  { key: 'edit', icon: 'ti-edit', label: 'Edit', onClick: () => navigate(`/admin/courses/${c.id}`) },
+                  c.status === 'DRAFT' && { key: 'publish', icon: 'ti-upload', label: 'Publish', onClick: () => publish(c) },
+                  {
+                    key: 'delete',
+                    icon: 'ti-trash',
+                    label: 'Delete',
+                    variant: 'danger',
+                    disabled: hasParticipants,
+                    title: hasParticipants ? 'Cannot delete: employees have already started this course.' : undefined,
+                    onClick: () => remove(c),
+                  },
+                ]}
+              />
             ) : (
               <Button
                 size="sm"

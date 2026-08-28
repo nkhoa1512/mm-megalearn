@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { levelDefinition, ACCESS_STATE } from '../data/levelSystem';
 
@@ -123,6 +124,85 @@ export function Button({ children, variant = 'default', size, icon, onClick, blo
       {icon && <i className={`ti ${icon}`} aria-hidden="true" />}
       {children}
     </button>
+  );
+}
+
+/**
+ * Nút "..." gom các hành động phụ của 1 hàng bảng (Edit / Publish / Delete...)
+ * vào 1 dropdown gọn thay vì bày hết ra thành dãy nút. Popover được portal ra
+ * document.body (position: fixed, toạ độ tính từ nút bấm) để không bị cắt cụt
+ * bởi các container cha có overflow (vd bảng cuộn ngang).
+ */
+export function ActionsMenu({ items, label = 'More actions', icon = 'ti-dots-vertical' }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handleClickOutside(e) {
+      if (btnRef.current?.contains(e.target)) return;
+      if (menuRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
+    function handleDismiss() {
+      setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [open]);
+
+  const visibleItems = (items || []).filter(Boolean);
+  if (visibleItems.length === 0) return null;
+
+  function toggle() {
+    if (!open) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen((v) => !v);
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className="btn btn-sm btn-outline actions-menu-trigger"
+        onClick={toggle}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={label}
+      >
+        <i className={`ti ${icon}`} aria-hidden="true" />
+      </button>
+      {open && pos && createPortal(
+        <div ref={menuRef} className="actions-menu-popover" style={{ top: pos.top, right: pos.right }} role="menu">
+          {visibleItems.map((item, i) => (
+            <button
+              key={item.key || i}
+              type="button"
+              role="menuitem"
+              className={`actions-menu-item ${item.variant === 'danger' ? 'danger' : ''}`}
+              disabled={item.disabled}
+              title={item.title}
+              onClick={() => { setOpen(false); item.onClick(); }}
+            >
+              {item.icon && <i className={`ti ${item.icon}`} aria-hidden="true" />}
+              {item.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 

@@ -178,17 +178,19 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
 
           {/* Cột điều hướng dạng dropdown bên trái, bật/tắt bằng nút hamburger */}
           <nav className={`app-nav-drawer ${navOpen ? 'open' : ''}`}>
-            <div className="app-nav-drawer-group-label">
-              {language === 'en' ? `Work · ${roleShort}` : `Công việc của ${roleShort}`}
+            <div className="app-nav-drawer-group">
+              <div className="app-nav-drawer-group-label">
+                {language === 'en' ? `Work · ${roleShort}` : `Công việc của ${roleShort}`}
+              </div>
+              {workItems.map(renderNavItem)}
             </div>
-            {workItems.map(renderNavItem)}
             {selfItems.length > 0 && (
-              <>
-                <div className="app-nav-drawer-group-label" style={{ marginTop: 10 }}>
+              <div className="app-nav-drawer-group">
+                <div className="app-nav-drawer-group-label">
                   {language === 'en' ? 'My Learning' : 'Học tập của tôi'}
                 </div>
                 {selfItems.map(renderNavItem)}
-              </>
+              </div>
             )}
           </nav>
         </div>

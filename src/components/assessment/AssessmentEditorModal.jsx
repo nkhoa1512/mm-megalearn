@@ -448,9 +448,6 @@ export default function AssessmentEditorModal({
     if (activeFormats.includes(CONTENT_FORMATS.UPLOAD_DOC)) {
       qTypes.push('File đề bài tự luận (PDF / Docx)');
     }
-    if (activeFormats.includes(CONTENT_FORMATS.SCORM_PACKAGE)) {
-      qTypes.push('Gói bài thi tương tác SCORM');
-    }
     if (activeFormats.includes(CONTENT_FORMATS.GOOGLE_FORM)) {
       qTypes.push('Biểu mẫu khảo sát Google Form');
     }
@@ -894,28 +891,7 @@ export default function AssessmentEditorModal({
                     alignItems: 'flex-start',
                     gap: 10,
                     cursor: 'pointer',
-                    background: activeFormats.includes(CONTENT_FORMATS.SCORM_PACKAGE) ? 'var(--paper-raised)' : 'transparent',
-                    borderColor: activeFormats.includes(CONTENT_FORMATS.SCORM_PACKAGE) ? 'var(--sage)' : 'var(--line)',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={activeFormats.includes(CONTENT_FORMATS.SCORM_PACKAGE)}
-                    onChange={() => toggleContentFormat(CONTENT_FORMATS.SCORM_PACKAGE)}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>📦 Gói Bài Thi Chuẩn SCORM (.zip)</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Upload gói kiểm tra tương tác SCORM 1.2 / 2004 (Articulate, Captivate, iSpring).</div>
-                  </div>
-                </label>
-
-                <label
-                  className="card card-pad"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    cursor: 'pointer',
+                    gridColumn: '1 / -1',
                     background: activeFormats.includes(CONTENT_FORMATS.GOOGLE_FORM) ? 'var(--paper-raised)' : 'transparent',
                     borderColor: activeFormats.includes(CONTENT_FORMATS.GOOGLE_FORM) ? 'var(--sage)' : 'var(--line)',
                   }}
@@ -1118,40 +1094,6 @@ export default function AssessmentEditorModal({
                     placeholder="https://storage.mmvn.com/assessments/De_Thi_Case_Study_SGM.pdf"
                     value={formData.documentUrl || ''}
                     onChange={(e) => patchForm({ documentUrl: e.target.value })}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 3. KHI CHỌN GÓI SCORM */}
-            {activeFormats.includes(CONTENT_FORMATS.SCORM_PACKAGE) && (
-              <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
-                <label className="field-label" style={{ fontWeight: 700, color: 'var(--rail)' }}>
-                  <i className="ti ti-package" style={{ marginRight: 4 }} />
-                  Tải Lên Gói SCORM Bài Thi (.zip)
-                </label>
-                <div style={{ border: '2px dashed var(--line)', padding: '20px', borderRadius: 8, textAlign: 'center', background: 'var(--paper-sunken)', marginBottom: 12 }}>
-                  <i className="ti ti-package" style={{ fontSize: 30, color: 'var(--rail)', display: 'block', marginBottom: 6 }} />
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Tải lên file nén .zip chuẩn SCORM 1.2 / 2004</div>
-                  <input
-                    type="file"
-                    accept=".zip"
-                    style={{ marginTop: 10 }}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        patchForm({ scormUrl: `https://storage.mmvn.com/scorm-assessments/${e.target.files[0].name}` });
-                      }
-                    }}
-                  />
-                </div>
-                <div className="field-group">
-                  <label className="field-label">Đường Dẫn SCORM Cloud / CDN</label>
-                  <input
-                    type="text"
-                    className="field-input"
-                    placeholder="https://storage.mmvn.com/scorm-assessments/haccp_exam.zip"
-                    value={formData.scormUrl || ''}
-                    onChange={(e) => patchForm({ scormUrl: e.target.value })}
                   />
                 </div>
               </div>

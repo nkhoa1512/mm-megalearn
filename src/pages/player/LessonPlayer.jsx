@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { applyLessonProgress, currentUser, resolveCourseView, deriveLessonStatuses } from '../../data/mockData';
 import { Badge, Button, ProgressBar, JobLevelBadge } from '../../components/ui';
 import { useCourseStore } from '../../state/CourseStore';
+import { computeLifecycleStatus } from '../../utils/courseCatalog';
 
 function flattenLessons(course) {
   return course.modules.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleId: m.id })));
@@ -87,6 +88,20 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
         </div>
         <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
         <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
+      </div>
+    );
+  }
+
+  // Khóa Đã Đóng (hết hạn ghi danh) mà chưa từng ghi danh: chặn cả truy cập
+  // trực tiếp bằng URL, không chỉ ẩn link ở trang chi tiết khóa học.
+  const isRegistrationClosed = !enrollment && computeLifecycleStatus(course) === 'CLOSED';
+  if (isRegistrationClosed) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
+        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học đã qua thời gian tham gia</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>Cửa sổ ghi danh cho khóa học này đã hết hạn và bạn chưa từng đăng ký, nên không thể vào học.</p>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Quay Lại Chi Tiết Khóa Học</Button>
       </div>
     );
   }
