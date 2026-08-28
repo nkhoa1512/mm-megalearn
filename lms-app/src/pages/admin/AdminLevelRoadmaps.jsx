@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { normalizeRole, hasCapability } from '../../data/roles';
 import { LEVEL_DEFINITIONS, levelShortLabel } from '../../data/levelSystem';
 import { divisions, departments, subDepartments } from '../../data/orgHierarchy';
@@ -12,8 +12,8 @@ import {
   getRoadmapForScope,
   listRealOrgPositions,
 } from '../../data/roadmapScopeMatrix';
-import { Button, Modal, Badge } from '../../components/ui';
-import VisualRoadmapTimeline from '../../components/VisualRoadmapTimeline';
+import { Button, Modal, Badge } from '../../features/common/ui';
+import VisualRoadmapTimeline from '../../features/roadmaps/VisualRoadmapTimeline';
 import { getCourseImage, COURSE_IMAGE_PRESETS } from '../../data/courseImages';
 
 function labelForDivision(id) {

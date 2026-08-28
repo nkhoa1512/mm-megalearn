@@ -1,6 +1,6 @@
 import React from 'react';
 import { managerUser } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import LearnerCertificates from '../learner/LearnerCertificates';
 
 export default function ManagerCertificates() {

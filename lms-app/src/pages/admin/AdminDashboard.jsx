@@ -6,8 +6,8 @@ import {
   liveSystemActivity,
   courses,
 } from '../../data/mockData';
-import { StatCard, Badge, BarChart, StatusStackedBar, LineChart, DonutChart, Button } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { StatCard, Badge, BarChart, StatusStackedBar, LineChart, DonutChart, Button } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 
 const STATUS_TONE = {
   PUBLISHED: 'sage',

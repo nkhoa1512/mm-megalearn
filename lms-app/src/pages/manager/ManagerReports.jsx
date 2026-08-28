@@ -1,6 +1,6 @@
 import React from 'react';
 import { teamMembers } from '../../data/mockData';
-import { StatCard, BarChart } from '../../components/ui';
+import { StatCard, BarChart } from '../../features/common/ui';
 
 export default function ManagerReports() {
   const avgProgress = Math.round(teamMembers.reduce((s, m) => s + m.progress, 0) / teamMembers.length);

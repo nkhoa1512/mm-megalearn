@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTeamMembersForManager, managerUser as defaultManager, notifications } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { canManage } from '../../data/roles';
-import { Badge, Button, StatCard, StatusStackedBar, Modal } from '../../components/ui';
+import { Badge, Button, StatCard, StatusStackedBar, Modal } from '../../features/common/ui';
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();

@@ -5,9 +5,9 @@ import {
   retailStores,
   allUsers,
 } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
-import UserTranscriptModal from '../../components/UserTranscriptModal';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
+import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 import HrbpCurriculumTab from './HrbpCurriculumTab';
 import {
   complianceByStore,

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser } from '../../data/mockData';
-import { Badge, ProgressBar, Button, Modal, JobLevelBadge, LevelAccessBadge } from '../../components/ui';
+import { Badge, ProgressBar, Button, Modal, JobLevelBadge, LevelAccessBadge } from '../../features/common/ui';
 import {
   ACCESS_STATE,
   levelDefinition,
@@ -9,12 +9,12 @@ import {
   nextLevelUp,
   normalizeLevel,
 } from '../../data/levelSystem';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
 import {
   courseFormatBadge, courseGroupOf, buildCourseGroups, courseMatchesCategory,
 } from '../../utils/courseCatalog';
-import CurriculumTree from '../../components/catalog/CurriculumTree';
+import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
 
 // Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo

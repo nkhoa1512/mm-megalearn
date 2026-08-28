@@ -6,7 +6,7 @@ import {
   costTrackingData,
   divisionComplianceLeague,
 } from '../../data/mockData';
-import { StatCard, Badge, Button, ProgressBar } from '../../components/ui';
+import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
 
 export default function AdminReports() {

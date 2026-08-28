@@ -20,7 +20,7 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { CourseStoreProvider } = await import('../src/state/CourseStore');
+const { CourseStoreProvider } = await import('../src/store/CourseStore');
 const { personaForRole } = await import('../src/data/mockData');
 const { ROLE_ORDER } = await import('../src/data/roles');
 
@@ -40,7 +40,7 @@ const TrainerHub = (await import('../src/pages/trainer/TrainerHub')).default;
 const HrbpDashboard = (await import('../src/pages/hrbp/HrbpDashboard')).default;
 const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal')).default;
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
-const UserTranscriptModal = (await import('../src/components/UserTranscriptModal')).default;
+const UserTranscriptModal = (await import('../src/features/common/UserTranscriptModal')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 

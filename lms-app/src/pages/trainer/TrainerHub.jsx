@@ -7,10 +7,10 @@ import {
   teachingEligibleUsers,
   trainerStatsFor,
 } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
-import UserTranscriptModal from '../../components/UserTranscriptModal';
+import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const navigate = useNavigate();

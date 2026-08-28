@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { levelValue } from '../../data/levelSystem';
 import { currentUser as defaultUser } from '../../data/mockData';
-import { Badge, Button, Tabs } from '../../components/ui';
+import { Badge, Button, Tabs } from '../../features/common/ui';
 
 export default function AiLearningHub() {
   const navigate = useNavigate();

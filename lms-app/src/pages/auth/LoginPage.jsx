@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import {
   demoUsers,
   allUsers,
@@ -12,7 +12,7 @@ import {
 } from '../../data/mockData';
 import { ROLE_ORDER, ROLE_HOME, normalizeRole, roleDefinition } from '../../data/roles';
 import { levelShortLabel } from '../../data/levelSystem';
-import { Badge, Button } from '../../components/ui';
+import { Badge, Button } from '../../features/common/ui';
 
 // Nhãn hiển thị của 6 role, xếp theo rank từ thấp lên cao.
 const ROLE_BADGE_EMOJI = {

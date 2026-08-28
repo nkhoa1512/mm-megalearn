@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge, CertificateModal } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Badge, ProgressBar, Button, ModuleList, CourseTypeBadge, Modal, JobLevelBadge, LevelAccessBadge, CertificateModal } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { currentUser, resolveCourseView, deriveCertificates, deriveLessonStatuses } from '../../data/mockData';
 import { ACCESS_STATE, levelShortLabel, nextLevelUp } from '../../data/levelSystem';
 import { getCourseImage } from '../../data/courseImages';

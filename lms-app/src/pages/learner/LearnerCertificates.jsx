@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { currentUser, deriveCertificates } from '../../data/mockData';
-import { Button, Badge, CertificateModal } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Button, Badge, CertificateModal } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
 
 export default function LearnerCertificates({ user: propUser, basePath = '/learner/courses' }) {

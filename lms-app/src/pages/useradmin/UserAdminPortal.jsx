@@ -11,12 +11,12 @@ import {
   retailStores,
   jobLevels,
 } from '../../data/mockData';
-import OrgHierarchyBrowser from '../../components/OrgHierarchyBrowser';
-import { Badge, Button, Modal, JobLevelBadge } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import OrgHierarchyBrowser from '../../features/common/OrgHierarchyBrowser';
+import { Badge, Button, Modal, JobLevelBadge } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelShortLabel, levelDefinition } from '../../data/levelSystem';
 import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from '../../data/roles';
-import UserTranscriptModal from '../../components/UserTranscriptModal';
+import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const navigate = useNavigate();

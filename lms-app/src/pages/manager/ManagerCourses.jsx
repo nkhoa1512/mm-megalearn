@@ -1,8 +1,8 @@
 import React from 'react';
 import { getTeamMembersForManager, managerUser as defaultManager } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { canManage } from '../../data/roles';
-import { Badge, BarChart, CourseTypeBadge } from '../../components/ui';
+import { Badge, BarChart, CourseTypeBadge } from '../../features/common/ui';
 
 function groupByCourse(members) {
   const map = new Map();

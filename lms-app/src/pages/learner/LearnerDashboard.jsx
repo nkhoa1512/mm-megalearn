@@ -8,12 +8,12 @@ import {
   totalLearningHours,
   weeklyStudyHours,
 } from '../../data/mockData';
-import { Badge, ProgressBar, Button, BarChart } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Badge, ProgressBar, Button, BarChart } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { levelDefinition } from '../../data/levelSystem';
 import { normalizeRole, roleDefinition, ROLE_HOME } from '../../data/roles';
 import { computeCourseRecertification } from '../../utils/recertification';
-import RoadmapTabsPanel from '../../components/RoadmapTabsPanel';
+import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
 
 export default function LearnerClassrooms() {
   const { classrooms, checkInClassroom, enrollClassroom, currentUser, openSurveyModal } = useCourseStore();

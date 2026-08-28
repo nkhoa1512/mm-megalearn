@@ -1,7 +1,7 @@
 import React from 'react';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge } from '../../components/ui';
-import RoadmapTabsPanel from '../../components/RoadmapTabsPanel';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge } from '../../features/common/ui';
+import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 import { levelDefinition } from '../../data/levelSystem';
 
 export default function LearnerLearningPaths({ initialTab = 'CURRENT' }) {

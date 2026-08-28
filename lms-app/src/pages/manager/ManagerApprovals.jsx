@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, JobLevelBadge } from '../../components/ui';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, JobLevelBadge } from '../../features/common/ui';
 import { normalizeLevel, nextLevelUp, levelShortLabel } from '../../data/levelSystem';
 import { roleDefinition, hasCapability, normalizeRole } from '../../data/roles';
 

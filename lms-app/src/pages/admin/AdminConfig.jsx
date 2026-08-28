@@ -10,9 +10,9 @@ import {
 } from '../../data/mockData';
 import { ROLE_DEFINITIONS, managedScopeLabel } from '../../data/roles';
 import { ASSIGNMENT_TYPES, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
-import OrgHierarchyBrowser from '../../components/OrgHierarchyBrowser';
-import { Button, Badge, Tabs } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import OrgHierarchyBrowser from '../../features/common/OrgHierarchyBrowser';
+import { Button, Badge, Tabs } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 
 export default function AdminConfig() {
   const [activeTab, setActiveTab] = useState('auto-rules');

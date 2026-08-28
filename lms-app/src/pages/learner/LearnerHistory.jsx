@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { currentUser, getUserLearningHistory, orgPathLabel, totalLearningHours } from '../../data/mockData';
-import { Badge, Button } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Badge, Button } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 
 const TYPE_META = {
   ASSESSMENT: { label: 'Formal Assessment', tone: 'amber', icon: 'ti-writing' },

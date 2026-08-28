@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useCourseStore } from '../../state/CourseStore';
-import { Button, ProgressBar } from '../../components/ui';
+import { useCourseStore } from '../../store/CourseStore';
+import { Button, ProgressBar } from '../../features/common/ui';
 
 export default function LearnerLeaderboard() {
   const { gamification } = useCourseStore();

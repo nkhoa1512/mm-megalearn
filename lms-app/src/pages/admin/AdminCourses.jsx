@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { courseHasParticipants, userAdminUser } from '../../data/mockData';
-import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
 import { getCourseImage } from '../../data/courseImages';
 import {
@@ -10,15 +10,15 @@ import {
   computeLifecycleStatus, LIFECYCLE_STATUS_META, buildCourseGroups,
   personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META,
 } from '../../utils/courseCatalog';
-import CurriculumTree from '../../components/catalog/CurriculumTree';
+import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { ASSIGNMENT_TYPES, assignmentTypeLabel, targetOptionsFor } from '../../data/assignmentTargets';
 import { subDepartments } from '../../data/orgHierarchy';
 import {
   assignmentTargetSummary, resolveTargetLabel,
   visibleCurriculaFor, curriculumAccessOf, CURRICULUM_ACCESS_MODE,
 } from '../../utils/curriculumAssignment';
-import AssessmentEditorModal from '../../components/assessment/AssessmentEditorModal';
-import AssessmentDetailModal from '../../components/assessment/AssessmentDetailModal';
+import AssessmentEditorModal from '../../features/assessment/AssessmentEditorModal';
+import AssessmentDetailModal from '../../features/assessment/AssessmentDetailModal';
 import {
   getAssessmentAccess, filterAssessments, buildAssessmentGroups, ASSESSMENT_GROUP_BY_OPTIONS,
 } from '../../utils/assessmentCatalog';

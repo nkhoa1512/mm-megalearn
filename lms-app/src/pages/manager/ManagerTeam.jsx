@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { getTeamMembersForManager, managerUser as defaultManager, teamSkillGapMatrix, allUsers } from '../../data/mockData';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { canManage } from '../../data/roles';
-import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../components/ui';
-import UserTranscriptModal from '../../components/UserTranscriptModal';
-import RoadmapProgressSummary from '../../components/RoadmapProgressSummary';
+import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../features/common/ui';
+import UserTranscriptModal from '../../features/common/UserTranscriptModal';
+import RoadmapProgressSummary from '../../features/roadmaps/RoadmapProgressSummary';
 
 const STATUS_META = {
   NOT_STARTED: { tone: 'slate', label: 'Not Started' },

@@ -5,13 +5,13 @@ import {
   meetingRoomsAndLabs, teachingEligibleUsers, nextMajorVersion,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
-import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../components/ui';
+import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../features/common/ui';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 import { generateCourseCode } from '../../utils/courseCatalog';
-import AssessmentEditorModal from '../../components/assessment/AssessmentEditorModal';
+import AssessmentEditorModal from '../../features/assessment/AssessmentEditorModal';
 import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/assessmentData';
 import { generateAssessmentCode } from '../../utils/assessmentCatalog';
 

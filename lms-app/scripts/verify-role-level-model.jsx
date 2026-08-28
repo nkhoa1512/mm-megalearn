@@ -12,7 +12,7 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { CourseStoreProvider } = await import('../src/state/CourseStore');
+const { CourseStoreProvider } = await import('../src/store/CourseStore');
 const { personaForRole, pendingApprovalRequests, courses: mockCourses } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
@@ -32,7 +32,7 @@ const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
   }
 }
 
-const AppHeader = (await import('../src/components/AppHeader')).default;
+const AppHeader = (await import('../src/features/layout/AppHeader')).default;
 const LearnerDashboard = (await import('../src/pages/learner/LearnerDashboard')).default;
 const LearnerCourses = (await import('../src/pages/learner/LearnerCourses')).default;
 const LearnerCourseDetail = (await import('../src/pages/learner/LearnerCourseDetail')).default;
@@ -62,8 +62,8 @@ const TrainerHub = (await import('../src/pages/trainer/TrainerHub')).default;
 const HrbpDashboard = (await import('../src/pages/hrbp/HrbpDashboard')).default;
 const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal')).default;
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
-const UserTranscriptModal = (await import('../src/components/UserTranscriptModal')).default;
-const TrainerRatingsDirectory = (await import('../src/components/TrainerRatingsDirectory')).default;
+const UserTranscriptModal = (await import('../src/features/common/UserTranscriptModal')).default;
+const TrainerRatingsDirectory = (await import('../src/features/ratings/TrainerRatingsDirectory')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
@@ -624,7 +624,7 @@ console.log('\n=== 15. End-to-end: Tab 1 + Tab 2 completion -> promotion request
   check('manager still sees the permission-denied empty state', Boolean(managerApprovalHtml && managerApprovalHtml.includes('Bạn không có quyền phê duyệt học vượt cấp')));
 
   const fs = await import('node:fs');
-  const storeSource = fs.readFileSync('src/state/CourseStore.jsx', 'utf8');
+  const storeSource = fs.readFileSync('src/store/CourseStore.jsx', 'utf8');
   check('approveRequest calls promoteUserLevel for ROADMAP_PROMOTION requests',
     /requestType === 'ROADMAP_PROMOTION'[\s\S]{0,200}promoteUserLevel\(target\.userId, target\.targetLevel/.test(storeSource));
 
@@ -660,7 +660,7 @@ console.log('\n=== 17. RoadmapTabsPanel extraction + hover-popover (non-modal) t
     && pathsHtml.includes('Lộ Trình Tự Đề Xuất') && pathsHtml.includes('Khóa Học Gợi Ý')));
 
   const fs = await import('node:fs');
-  const timelineSource = fs.readFileSync('src/components/VisualRoadmapTimeline.jsx', 'utf8');
+  const timelineSource = fs.readFileSync('src/features/roadmaps/VisualRoadmapTimeline.jsx', 'utf8');
   check('VisualRoadmapTimeline no longer imports Modal', !/import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*'\.\/ui'/.test(timelineSource));
   // Thiết kế hiện tại: hover vào 1 mốc hiện popover thông tin (portal ra
   // document.body vì thẻ cha ".card" có overflow:hidden), bấm vào mốc điều
@@ -952,7 +952,7 @@ console.log('\n=== Section 23: Personal Learning Calendar — event aggregation 
 // ---------------------------------------------------------------------------
 console.log('\n=== Section 24: MonthCalendarGrid — standalone render ===');
 {
-  const { MonthCalendarGrid } = await import('../src/components/ui');
+  const { MonthCalendarGrid } = await import('../src/features/common/ui');
 
   const fixtureEventsByDate = new Map([
     ['2026-08-15', [

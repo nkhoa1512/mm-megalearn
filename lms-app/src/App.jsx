@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import AppHeader from './components/AppHeader';
-import AppFooterBar from './components/AppFooterBar';
-import AiAssistantDrawer from './components/AiAssistantDrawer';
-import TalentProfileModal from './components/TalentProfileModal';
-import PostTrainingSurveyModal from './components/PostTrainingSurveyModal';
-import { CourseStoreProvider, useCourseStore } from './state/CourseStore';
+import Layout from './features/layout/Layout';
+import { AppProvider, useAppStore } from './store/AppProvider';
 import { normalizeRole, ROLE_HOME } from './data/roles';
 import LoginPage from './pages/auth/LoginPage';
 
@@ -39,7 +35,7 @@ import AdminLevelRoadmaps from './pages/admin/AdminLevelRoadmaps';
 import TrainerHub from './pages/trainer/TrainerHub';
 import MyLearning from './pages/shared/MyLearning';
 import MyCertificates from './pages/shared/MyCertificates';
-import TrainerRatingsDirectory from './components/TrainerRatingsDirectory';
+import TrainerRatingsDirectory from './features/ratings/TrainerRatingsDirectory';
 import ManagerApprovals from './pages/manager/ManagerApprovals';
 import HrbpDashboard from './pages/hrbp/HrbpDashboard';
 import UserAdminPortal from './pages/useradmin/UserAdminPortal';
@@ -160,125 +156,111 @@ function Shell({ role, setRole }) {
   const meta = PAGE_META[location.pathname] || { title: 'MM MegaLearn Platform', crumb: safeRole.charAt(0).toUpperCase() + safeRole.slice(1) };
 
   return (
-    <div className="app-shell">
-      <AppHeader
-        role={role}
-        onRoleChange={setRole}
-        title={meta.title}
-        crumb={meta.crumb}
-      />
-      <div className="main-scroll">
-        <div className="content">
-          <Routes>
-              {/* Learner Routes */}
-              <Route path="/learner" element={<LearnerDashboard />} />
-              <Route path="/learner/courses" element={<LearnerCourses />} />
-              <Route path="/learner/courses/:courseId" element={<LearnerCourseDetail />} />
-              <Route path="/learner/courses/:courseId/lessons/:lessonId" element={<LessonPlayer />} />
-              <Route path="/learner/courses/:courseId/assessment" element={<AssessmentPlayer />} />
-              <Route path="/learner/assessment/:assessmentId" element={<AssessmentPlayer basePath="/learner/catalog?tab=assessment" />} />
-              <Route path="/learner/classrooms" element={<LearnerClassrooms />} />
-              <Route path="/learner/paths" element={<LearnerLearningPaths />} />
-              <Route path="/learner/ai-hub" element={<AiLearningHub />} />
-              <Route path="/learner/certificates" element={<LearnerCertificates />} />
-              <Route path="/learner/history" element={<LearnerHistory />} />
-              <Route path="/learner/catalog" element={<AdminCourses />} />
-              <Route path="/learner/calendar" element={<LearnerCalendar basePath="/learner/courses" />} />
+    <Layout
+      role={role}
+      setRole={setRole}
+      title={meta.title}
+      crumb={meta.crumb}
+    >
+      <Routes>
+        {/* Learner Routes */}
+        <Route path="/learner" element={<LearnerDashboard />} />
+        <Route path="/learner/courses" element={<LearnerCourses />} />
+        <Route path="/learner/courses/:courseId" element={<LearnerCourseDetail />} />
+        <Route path="/learner/courses/:courseId/lessons/:lessonId" element={<LessonPlayer />} />
+        <Route path="/learner/courses/:courseId/assessment" element={<AssessmentPlayer />} />
+        <Route path="/learner/assessment/:assessmentId" element={<AssessmentPlayer basePath="/learner/catalog?tab=assessment" />} />
+        <Route path="/learner/classrooms" element={<LearnerClassrooms />} />
+        <Route path="/learner/paths" element={<LearnerLearningPaths />} />
+        <Route path="/learner/ai-hub" element={<AiLearningHub />} />
+        <Route path="/learner/certificates" element={<LearnerCertificates />} />
+        <Route path="/learner/history" element={<LearnerHistory />} />
+        <Route path="/learner/catalog" element={<AdminCourses />} />
+        <Route path="/learner/calendar" element={<LearnerCalendar basePath="/learner/courses" />} />
 
-              {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
-              <Route path="/my-learning" element={<MyLearning />} />
-              <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
-              <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
-              <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
-              <Route path="/my-learning/assessment/:assessmentId" element={<AssessmentPlayer basePath="/my-learning" />} />
-              <Route path="/my-learning-dashboard" element={<LearnerDashboard />} />
-              <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
-              <Route path="/my-learning-calendar" element={<LearnerCalendar />} />
-              <Route path="/my-certificates" element={<MyCertificates />} />
-              <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
+        {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
+        <Route path="/my-learning" element={<MyLearning />} />
+        <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
+        <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
+        <Route path="/my-learning/:courseId/assessment" element={<AssessmentPlayer basePath="/my-learning" />} />
+        <Route path="/my-learning/assessment/:assessmentId" element={<AssessmentPlayer basePath="/my-learning" />} />
+        <Route path="/my-learning-dashboard" element={<LearnerDashboard />} />
+        <Route path="/my-learning-path" element={<LearnerLearningPaths />} />
+        <Route path="/my-learning-calendar" element={<LearnerCalendar />} />
+        <Route path="/my-certificates" element={<MyCertificates />} />
+        <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
 
-              {/* Phê duyệt học vượt cấp: mọi role từ Manager trở lên */}
-              <Route path="/approvals" element={<ManagerApprovals />} />
+        {/* Phê duyệt học vượt cấp: mọi role từ Manager trở lên */}
+        <Route path="/approvals" element={<ManagerApprovals />} />
 
-              {/* Manager Routes */}
-              <Route path="/manager" element={<ManagerDashboard />} />
-              <Route path="/manager/team" element={<ManagerTeam />} />
-              <Route path="/manager/approvals" element={<ManagerApprovals />} />
-              <Route path="/manager/courses" element={<ManagerCourses />} />
-              <Route path="/manager/reports" element={<ManagerReports />} />
-              <Route path="/manager/learning" element={<ManagerLearning />} />
-              <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
-              <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
-              <Route path="/manager/learning/:courseId/assessment" element={<AssessmentPlayer basePath="/manager/learning" />} />
-              <Route path="/manager/assessment/:assessmentId" element={<AssessmentPlayer basePath="/manager/catalog?tab=assessment" />} />
-              <Route path="/manager/certificates" element={<ManagerCertificates />} />
-              <Route path="/manager/catalog" element={<AdminCourses />} />
+        {/* Manager Routes */}
+        <Route path="/manager" element={<ManagerDashboard />} />
+        <Route path="/manager/team" element={<ManagerTeam />} />
+        <Route path="/manager/approvals" element={<ManagerApprovals />} />
+        <Route path="/manager/courses" element={<ManagerCourses />} />
+        <Route path="/manager/reports" element={<ManagerReports />} />
+        <Route path="/manager/learning" element={<ManagerLearning />} />
+        <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
+        <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
+        <Route path="/manager/learning/:courseId/assessment" element={<AssessmentPlayer basePath="/manager/learning" />} />
+        <Route path="/manager/assessment/:assessmentId" element={<AssessmentPlayer basePath="/manager/catalog?tab=assessment" />} />
+        <Route path="/manager/certificates" element={<ManagerCertificates />} />
+        <Route path="/manager/catalog" element={<AdminCourses />} />
 
-              <Route path="/assessment/:assessmentId" element={<AssessmentPlayer basePath="/admin/courses?tab=assessment" />} />
+        <Route path="/assessment/:assessmentId" element={<AssessmentPlayer basePath="/admin/courses?tab=assessment" />} />
 
-              {/* HRBP Routes */}
-              <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />
-              <Route path="/hrbp/succession" element={<HrbpDashboard initialTab="SUCCESSION" />} />
-              <Route path="/hrbp/compliance" element={<HrbpDashboard initialTab="COMPLIANCE" />} />
-              <Route path="/hrbp/curriculum" element={<HrbpDashboard initialTab="CURRICULUM" />} />
-              <Route path="/hrbp/catalog" element={<AdminCourses />} />
+        {/* HRBP Routes */}
+        <Route path="/hrbp" element={<HrbpDashboard initialTab="SKILL_GAP" />} />
+        <Route path="/hrbp/succession" element={<HrbpDashboard initialTab="SUCCESSION" />} />
+        <Route path="/hrbp/compliance" element={<HrbpDashboard initialTab="COMPLIANCE" />} />
+        <Route path="/hrbp/curriculum" element={<HrbpDashboard initialTab="CURRICULUM" />} />
+        <Route path="/hrbp/catalog" element={<AdminCourses />} />
 
-              {/* User Admin Routes */}
-              <Route path="/user-admin" element={<UserAdminPortal initialTab="DIRECTORY" />} />
-              <Route path="/user-admin/hierarchy" element={<UserAdminPortal initialTab="HIERARCHY" />} />
-              <Route path="/user-admin/job-levels" element={<UserAdminPortal initialTab="JOB_LEVELS" />} />
-              <Route path="/user-admin/allocation" element={<UserAdminPortal initialTab="ALLOCATION" />} />
-              <Route path="/user-admin/trainers" element={<UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />} />
-              <Route path="/user-admin/roadmaps" element={<AdminLevelRoadmaps />} />
+        {/* User Admin Routes */}
+        <Route path="/user-admin" element={<UserAdminPortal initialTab="DIRECTORY" />} />
+        <Route path="/user-admin/hierarchy" element={<UserAdminPortal initialTab="HIERARCHY" />} />
+        <Route path="/user-admin/job-levels" element={<UserAdminPortal initialTab="JOB_LEVELS" />} />
+        <Route path="/user-admin/allocation" element={<UserAdminPortal initialTab="ALLOCATION" />} />
+        <Route path="/user-admin/trainers" element={<UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />} />
+        <Route path="/user-admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
-              {/* System Admin (IT) Routes */}
-              <Route path="/sysadmin" element={<SysAdminPortal initialTab="HRIS" />} />
-              <Route path="/sysadmin/audit" element={<SysAdminPortal initialTab="AUDIT_LOGS" />} />
-              <Route path="/sysadmin/policies" element={<SysAdminPortal initialTab="POLICIES" />} />
-              <Route path="/sysadmin/roles" element={<SysAdminPortal initialTab="ROLE_GOVERNANCE" />} />
-              <Route path="/sysadmin/org-config" element={<AdminConfig />} />
+        {/* System Admin (IT) Routes */}
+        <Route path="/sysadmin" element={<SysAdminPortal initialTab="HRIS" />} />
+        <Route path="/sysadmin/audit" element={<SysAdminPortal initialTab="AUDIT_LOGS" />} />
+        <Route path="/sysadmin/policies" element={<SysAdminPortal initialTab="POLICIES" />} />
+        <Route path="/sysadmin/roles" element={<SysAdminPortal initialTab="ROLE_GOVERNANCE" />} />
+        <Route path="/sysadmin/org-config" element={<AdminConfig />} />
 
-              {/* Trainer / L&D Routes */}
-              <Route path="/trainer" element={<TrainerHub initialTab="CLASSES" />} />
-              <Route path="/trainer/attendance" element={<TrainerHub initialTab="ATTENDANCE" />} />
-              <Route path="/trainer/feedback" element={<TrainerHub initialTab="FEEDBACK" />} />
-              <Route path="/trainer/labs" element={<TrainerHub initialTab="LABS" />} />
-              <Route path="/trainer/courses" element={<AdminCourses />} />
-              <Route path="/trainer/courses/new" element={<AdminCourseBuilder />} />
-              <Route path="/trainer/courses/:courseId" element={<AdminCourseBuilder />} />
-              <Route path="/trainer/training-ops" element={<AdminTrainingOps />} />
-              <Route path="/trainer/dashboard" element={<AdminDashboard />} />
-              <Route path="/trainer/reports" element={<AdminReports />} />
+        {/* Trainer / L&D Routes */}
+        <Route path="/trainer" element={<TrainerHub initialTab="CLASSES" />} />
+        <Route path="/trainer/attendance" element={<TrainerHub initialTab="ATTENDANCE" />} />
+        <Route path="/trainer/feedback" element={<TrainerHub initialTab="FEEDBACK" />} />
+        <Route path="/trainer/labs" element={<TrainerHub initialTab="LABS" />} />
+        <Route path="/trainer/courses" element={<AdminCourses />} />
+        <Route path="/trainer/courses/new" element={<AdminCourseBuilder />} />
+        <Route path="/trainer/courses/:courseId" element={<AdminCourseBuilder />} />
+        <Route path="/trainer/training-ops" element={<AdminTrainingOps />} />
+        <Route path="/trainer/dashboard" element={<AdminDashboard />} />
+        <Route path="/trainer/reports" element={<AdminReports />} />
 
-              {/* Đường dẫn /admin/* của bản cũ (role `admin` nay là `trainer`) */}
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/courses" element={<AdminCourses />} />
-              <Route path="/admin/courses/new" element={<AdminCourseBuilder />} />
-              <Route path="/admin/courses/:courseId" element={<AdminCourseBuilder />} />
-              <Route path="/admin/training-ops" element={<AdminTrainingOps />} />
-              <Route path="/admin/config" element={<AdminConfig />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
-              <Route path="/admin/roadmaps" element={<AdminLevelRoadmaps />} />
+        {/* Đường dẫn /admin/* của bản cũ (role admin nay là trainer) */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/courses" element={<AdminCourses />} />
+        <Route path="/admin/courses/new" element={<AdminCourseBuilder />} />
+        <Route path="/admin/courses/:courseId" element={<AdminCourseBuilder />} />
+        <Route path="/admin/training-ops" element={<AdminTrainingOps />} />
+        <Route path="/admin/config" element={<AdminConfig />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
-              <Route path="*" element={<Navigate to={roleHome} replace />} />
-            </Routes>
-        </div>
-      </div>
-
-      <AppFooterBar role={role} />
-
-      {/* Global AI Assistant Floating Drawer */}
-      <AiAssistantDrawer />
-
-      {/* Global Modals: Talent Profile, L1/L3 Surveys */}
-      <TalentProfileModal />
-      <PostTrainingSurveyModal />
-    </div>
+        <Route path="*" element={<Navigate to={roleHome} replace />} />
+      </Routes>
+    </Layout>
   );
 }
 
 function AppRoutes() {
-  const { isAuthenticated, currentUser } = useCourseStore();
+  const { isAuthenticated, currentUser } = useAppStore();
   const [role, setRole] = useState(() => normalizeRole(currentUser?.role));
   const location = useLocation();
 
@@ -309,11 +291,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <HashRouter>
-      <CourseStoreProvider>
+      <AppProvider>
         <ErrorBoundary>
           <AppRoutes />
         </ErrorBoundary>
-      </CourseStoreProvider>
+      </AppProvider>
     </HashRouter>
   );
 }

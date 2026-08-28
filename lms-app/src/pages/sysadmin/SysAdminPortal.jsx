@@ -7,10 +7,10 @@ import {
   allUsers,
   personaForRole,
 } from '../../data/mockData';
-import { Badge, Button, Modal, ProgressBar, JobLevelBadge } from '../../components/ui';
+import { Badge, Button, Modal, ProgressBar, JobLevelBadge } from '../../features/common/ui';
 import { ROLE_DEFINITIONS, roleDefinition, normalizeRole, managedScopeLabel, capabilitiesOf } from '../../data/roles';
 import { normalizeLevel } from '../../data/levelSystem';
-import UserTranscriptModal from '../../components/UserTranscriptModal';
+import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 
 // Các năng lực hiển thị trên ma trận phân quyền theo role.
 const CAPABILITY_ROWS = [

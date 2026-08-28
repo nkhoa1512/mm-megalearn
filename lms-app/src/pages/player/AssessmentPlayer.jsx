@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Badge, Button, JobLevelBadge } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Badge, Button, JobLevelBadge } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { QUESTION_TYPES, DELIVERY_FORMATS } from '../../data/assessmentData';
 import { getAssessmentAccess } from '../../utils/assessmentCatalog';
 import { applyAssessmentAttempt, drawAssessmentQuestions, resolveCourseView, deriveLessonStatuses, deriveAssessmentAttempts } from '../../data/mockData';

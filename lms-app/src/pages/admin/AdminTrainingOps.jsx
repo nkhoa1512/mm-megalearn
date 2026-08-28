@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { meetingRoomsAndLabs } from '../../data/mockData';
 import { initialRoomBookings } from '../../data/roomBookings';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, Modal } from '../../components/ui';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, Modal } from '../../features/common/ui';
 
 // Chỉ giữ 2 chức năng cốt lõi: Đặt phòng/xưởng thực hành & Upload danh sách
 // học viên khóa bắt buộc. Faculty Directory & CSAT chuyển sang component dùng

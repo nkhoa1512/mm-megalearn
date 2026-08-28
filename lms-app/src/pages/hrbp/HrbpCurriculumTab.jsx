@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useCourseStore } from '../../state/CourseStore';
-import { Badge, Button, Modal, ProgressBar } from '../../components/ui';
-import CurriculumTree from '../../components/catalog/CurriculumTree';
+import { useCourseStore } from '../../store/CourseStore';
+import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
+import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { targetOptionsFor } from '../../data/assignmentTargets';
 import {
   hrbpCurriculumBuckets,

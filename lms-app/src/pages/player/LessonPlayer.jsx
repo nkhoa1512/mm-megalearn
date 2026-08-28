@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { applyLessonProgress, currentUser, resolveCourseView, deriveLessonStatuses } from '../../data/mockData';
-import { Badge, Button, ProgressBar, JobLevelBadge } from '../../components/ui';
-import { useCourseStore } from '../../state/CourseStore';
+import { Badge, Button, ProgressBar, JobLevelBadge } from '../../features/common/ui';
+import { useCourseStore } from '../../store/CourseStore';
 import { computeLifecycleStatus } from '../../utils/courseCatalog';
 
 function flattenLessons(course) {

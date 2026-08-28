@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCourseStore } from '../../state/CourseStore';
+import { useCourseStore } from '../../store/CourseStore';
 import { currentUser as defaultLearner } from '../../data/mockData';
 import LearnerCertificates from '../learner/LearnerCertificates';
 
