@@ -61,44 +61,61 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       };
     });
 
+  const allLearnerCandidates = (users && users.length > 0 ? users : allUsers).filter((u) => normalizeRole(u.role) === 'learner' || normalizeRole(u.role) === 'manager');
+
   const myTeachingClasses = [
     ...classroomSessions.filter((s) => s.trainerId === trainerProfile.userId || s.trainerName === trainerProfile.fullName),
     ...inPersonCourses.filter((c) => (c.trainerId === trainerProfile.userId || c.trainerName === trainerProfile.fullName) && !classroomSessions.some((s) => s.title === c.title)),
     ...virtualClassCourses,
-  ].map((c) => ({
-    id: c.id,
-    code: c.code,
-    title: c.title,
-    category: c.category,
-    isVirtual: c.isVirtual || false,
-    meetingUrl: c.meetingUrl || null,
-    trainerName: c.trainerName || trainerProfile.fullName,
-    trainerTitle: c.trainerTitle || roleDefinition(trainerProfile.role).labelVi,
-    date: c.date || c.scheduleDate || '2026-08-28',
-    time: c.time || c.scheduleTime || '08:30 - 11:30 (3.0 hours)',
-    venue: c.venue || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
-    maxCapacity: c.maxCapacity || 25,
-    enrolledCount: c.enrolledCount || 21,
-    status: c.status || 'UPCOMING',
-    qrToken: c.qrToken || `MMVN-QR-${c.code}-LIVE`,
-    description: c.description || 'Thực hành vệ sinh, khử trùng máy trộn bột, hiệu chuẩn nhiệt độ và áp suất lò nướng công nghiệp theo chuẩn Gold HACCP.',
-    syllabus: [
-      { step: 'Phần 1: Chuẩn bị & Phổ biến Quy định An toàn Vệ sinh (30 phút)', detail: 'Quy tắc vệ sinh Gold HACCP, kiểm tra nhiệt độ lõi tủ mát bảo quản nguyên liệu tươi.' },
-      { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
-      { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
-    ],
-    materials: (c.materials && c.materials.length > 0) ? c.materials : [
-      { name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF' },
-      { name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT' },
-    ],
-    enrolledStudents: c.enrolledStudents && c.enrolledStudents.length > 0 ? c.enrolledStudents : [
-      { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
-      { id: 'MMVN-1078', name: 'Sarah Johnson', position: 'Pastry Chef Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
-      { id: 'MMVN-2041', name: 'Quoc Bao', position: 'Store Fresh Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
-      { id: 'MMVN-1111', name: 'Lisa Wang', position: 'Fresh Food Associate', store: 'MM An Phu', attendance: 'PENDING' },
-      { id: 'MMVN-1120', name: 'Carlos Reyes', position: 'Dough Prep Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
-    ],
-  }));
+  ].map((c, cIdx) => {
+    const targetCount = c.enrolledCount || (cIdx === 0 ? 52 : cIdx === 1 ? 21 : 18);
+    const capacity = c.maxCapacity || (cIdx === 0 ? 60 : cIdx === 1 ? 100 : 25);
+    
+    // Generate realistic roster matching targetCount
+    const students = (c.enrolledStudents && c.enrolledStudents.length >= targetCount)
+      ? c.enrolledStudents
+      : Array.from({ length: targetCount }, (_, i) => {
+          const baseUser = allLearnerCandidates[i % allLearnerCandidates.length] || { fullName: `Học viên ${i + 1}`, employeeCode: `MMVN-${2000 + i}`, position: 'Nhân viên Tuyến đầu', storeName: 'MM An Phú' };
+          const isPending = i % 7 === 0 || i % 11 === 0;
+          return {
+            id: baseUser.employeeCode || `MMVN-${1000 + i}`,
+            name: baseUser.fullName,
+            position: baseUser.position || 'Chuyên viên Bán hàng',
+            store: baseUser.storeName || baseUser.department || 'MM An Phú',
+            attendance: isPending ? 'PENDING' : 'CONFIRMED',
+          };
+        });
+
+    return {
+      id: c.id,
+      code: c.code || `WS-${c.id}`,
+      title: c.title,
+      category: c.category,
+      isVirtual: c.isVirtual || false,
+      meetingUrl: c.meetingUrl || (c.isVirtual ? 'https://teams.microsoft.com/l/meetup-join/mmvn-virtual-class' : null),
+      trainerName: c.trainerName || trainerProfile.fullName,
+      trainerTitle: c.trainerTitle || roleDefinition(trainerProfile.role).labelVi,
+      date: c.date || c.scheduleDate || '2026-09-05',
+      time: c.time || c.scheduleTime || '14:00 - 17:00 (3.0 hours)',
+      venue: c.venue || 'Fresh Food & Bakery Practical Lab (MM An Phú)',
+      maxCapacity: capacity,
+      enrolledCount: targetCount,
+      status: c.status || 'UPCOMING',
+      qrToken: c.qrToken || `MMVN-QR-${c.code || c.id}-LIVE`,
+      description: c.description || 'Thực hành vệ sinh, khử trùng máy trộn bột, hiệu chuẩn nhiệt độ và áp suất lò nướng công nghiệp theo chuẩn Gold HACCP.',
+      syllabus: [
+        { step: 'Phần 1: Chuẩn bị & Phổ biến Quy định An toàn Vệ sinh (30 phút)', detail: 'Quy tắc vệ sinh Gold HACCP, kiểm tra nhiệt độ lõi tủ mát bảo quản nguyên liệu tươi.' },
+        { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
+        { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
+      ],
+      materials: (c.materials && c.materials.length > 0) ? c.materials : [
+        { name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF', size: '2.4 MB' },
+        { name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT', size: '8.1 MB' },
+        { name: 'Biểu mẫu Checklist Kiểm tra Tiêu chuẩn Vệ sinh ATTP (PDF)', type: 'PDF', size: '1.1 MB' },
+      ],
+      enrolledStudents: students,
+    };
+  });
 
   const filteredClasses = myTeachingClasses.filter((cls) => {
     if (statusFilter === 'UPCOMING') return cls.status === 'UPCOMING' || cls.status === 'OPEN';
@@ -146,21 +163,29 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const [liveQrClass, setLiveQrClass] = useState(null);
   const [rosterClass, setRosterClass] = useState(null);
   const [materialsClass, setMaterialsClass] = useState(null);
+  const [previewMaterial, setPreviewMaterial] = useState(null);
   const [rosterSearch, setRosterSearch] = useState('');
+  const [rosterFilter, setRosterFilter] = useState('ALL'); // ALL | CONFIRMED | PENDING
   const [activeRoster, setActiveRoster] = useState([]);
+  const [qrTokenSuffix, setQrTokenSuffix] = useState(Date.now().toString().slice(-4));
+  const [copiedToken, setCopiedToken] = useState(false);
 
   function openLiveQrModal(cls) {
     setLiveQrClass(cls);
+    setQrTokenSuffix(Date.now().toString().slice(-4));
+    setCopiedToken(false);
   }
 
   function openRosterModal(cls) {
     setRosterClass(cls);
     setActiveRoster(cls.enrolledStudents || []);
     setRosterSearch('');
+    setRosterFilter('ALL');
   }
 
   function openMaterialsModal(cls) {
     setMaterialsClass(cls);
+    setPreviewMaterial(null);
   }
 
   function toggleAttendance(studentId) {
@@ -171,6 +196,16 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
           : s
       )
     );
+  }
+
+  function checkInAll() {
+    setActiveRoster((prev) => prev.map((s) => ({ ...s, attendance: 'CONFIRMED' })));
+  }
+
+  function handleCopyToken(token) {
+    navigator.clipboard?.writeText?.(token);
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
   }
 
   if (!canBeAssignedToClass) {
@@ -622,27 +657,31 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       {/* MODAL 1: LIVE QR ATTENDANCE DISPLAY */}
       {liveQrClass && (
         <Modal
-          title={`Mã QR Điểm danh Trực tiếp tại Lớp — ${liveQrClass.code}`}
+          isOpen={Boolean(liveQrClass)}
+          title={`Mã QR Điểm danh Trực tiếp — ${liveQrClass.code}`}
+          subtitle={`${liveQrClass.date} (${liveQrClass.time}) · ${liveQrClass.venue}`}
           onClose={() => setLiveQrClass(null)}
           size="md"
         >
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
+          <div style={{ textAlign: 'center', padding: '6px 0' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
               {liveQrClass.title}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 16 }}>
-              {liveQrClass.date} ({liveQrClass.time}) &middot; {liveQrClass.venue}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 }}>
+              <Badge tone="sage" icon="ti-broadcast">Mã QR Đang Phát Trực Tiếp</Badge>
+              <Badge tone="blue" icon="ti-user-check">Sĩ số: {liveQrClass.enrolledCount}/{liveQrClass.maxCapacity} Học Viên</Badge>
             </div>
 
             {/* High-res Interactive QR Code Display */}
             <div style={{
               background: '#fff',
-              border: '3px solid var(--rail)',
+              border: '3px solid var(--bigc-green, #007A38)',
               borderRadius: 16,
               padding: 24,
               display: 'inline-block',
-              boxShadow: '0 8px 30px rgba(0,122,56,0.15)',
+              boxShadow: '0 10px 35px rgba(0,122,56,0.18)',
               marginBottom: 16,
+              position: 'relative',
             }}>
               <div style={{
                 width: 220,
@@ -657,23 +696,68 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                 position: 'relative',
               }}>
                 <i className="ti ti-qrcode" style={{ fontSize: 140, lineHeight: 1 }} />
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 4, background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: 4 }}>
-                  SCAN WITH MEGALEARN APP
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 4, background: 'rgba(0,0,0,0.4)', padding: '3px 10px', borderRadius: 4 }}>
+                  SCAN WITH MEGALEARN
                 </div>
               </div>
             </div>
 
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--rail)', marginBottom: 6 }}>
-              <i className="ti ti-broadcast" style={{ marginRight: 6 }} /> Mã QR Đang Phát Trực Tiếp (Live Token)
+            {/* Dynamic Token display with copy & refresh */}
+            <div style={{
+              background: 'var(--paper-sunken)',
+              border: '1px dashed var(--line-strong)',
+              borderRadius: 8,
+              padding: '10px 14px',
+              maxWidth: 420,
+              margin: '0 auto 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>MÃ PHIÊN (SESSION TOKEN):</div>
+                <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 13, color: 'var(--ink)' }}>
+                  {liveQrClass.qrToken}-{qrTokenSuffix}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={copiedToken ? 'ti-check' : 'ti-copy'}
+                  onClick={() => handleCopyToken(`${liveQrClass.qrToken}-${qrTokenSuffix}`)}
+                >
+                  {copiedToken ? 'Đã Sao Chép' : 'Sao Chép'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon="ti-refresh"
+                  title="Tạo mã phiên mới"
+                  onClick={() => setQrTokenSuffix(Date.now().toString().slice(-4))}
+                />
+              </div>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 420, margin: '0 auto 16px', lineHeight: 1.45 }}>
-              Giảng viên mở màn hình này trên máy chiếu tại lớp học. Học viên mở ứng dụng MM MegaLearn trên điện thoại để quét mã điểm danh và nhận <strong>+150 XP</strong>.
+
+            <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.45 }}>
+              Giảng viên mở màn hình này trên máy chiếu phòng đào tạo. Học viên quét mã qua ứng dụng <strong>MM MegaLearn</strong> để hoàn tất điểm danh và tự động nhận <strong>+150 XP</strong>.
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <Button variant="ghost" onClick={() => setLiveQrClass(null)}>Đóng Màn Hình</Button>
-              <Button variant="primary" icon="ti-users" onClick={() => { const c = liveQrClass; setLiveQrClass(null); openRosterModal(c); }}>
-                Xem Danh Sách Đã Điểm Danh ({liveQrClass.enrolledStudents?.filter((s) => s.attendance === 'CONFIRMED').length || 18})
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <Button variant="outline" onClick={() => setLiveQrClass(null)}>
+                Đóng Màn Hình
+              </Button>
+              <Button
+                variant="primary"
+                icon="ti-users"
+                onClick={() => {
+                  const c = liveQrClass;
+                  setLiveQrClass(null);
+                  openRosterModal(c);
+                }}
+              >
+                Mở Danh Sách Học Viên ({liveQrClass.enrolledCount} Học Viên)
               </Button>
             </div>
           </div>
@@ -683,70 +767,114 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       {/* MODAL 2: STUDENT ROSTER & MANUAL ATTENDANCE TOGGLE */}
       {rosterClass && (
         <Modal
-          title={`Danh Sách Học Viên Tham Gia — ${rosterClass.title}`}
+          isOpen={Boolean(rosterClass)}
+          title={`Danh Sách Học Viên & Điểm Danh — ${rosterClass.title}`}
+          subtitle={`${rosterClass.date} · ${rosterClass.venue}`}
           onClose={() => setRosterClass(null)}
           size="lg"
         >
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-                <strong>{activeRoster.filter((s) => s.attendance === 'CONFIRMED').length}</strong> / {activeRoster.length} học viên đã có mặt
+            {/* Filter toolbar & summary stats */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {[
+                  { id: 'ALL', label: `Tất Cả (${activeRoster.length})` },
+                  { id: 'CONFIRMED', label: `Đã Có Mặt (${activeRoster.filter((s) => s.attendance === 'CONFIRMED').length})` },
+                  { id: 'PENDING', label: `Chưa Điểm Danh (${activeRoster.filter((s) => s.attendance !== 'CONFIRMED').length})` },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setRosterFilter(f.id)}
+                    className="btn btn-sm"
+                    style={{
+                      background: rosterFilter === f.id ? 'var(--blue)' : 'var(--paper-sunken)',
+                      color: rosterFilter === f.id ? '#fff' : 'var(--ink)',
+                      borderColor: rosterFilter === f.id ? 'var(--blue)' : 'var(--line)',
+                      fontSize: 12,
+                      fontWeight: rosterFilter === f.id ? 700 : 500,
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Tìm học viên theo tên hoặc mã NV..."
-                value={rosterSearch}
-                onChange={(e) => setRosterSearch(e.target.value)}
-                style={{ maxWidth: 260 }}
-              />
+
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder="Tìm học viên theo tên hoặc mã NV..."
+                  value={rosterSearch}
+                  onChange={(e) => setRosterSearch(e.target.value)}
+                  style={{ width: 240, height: 32, fontSize: 12 }}
+                />
+                <Button size="sm" variant="outline" icon="ti-checks" onClick={checkInAll}>
+                  Tất Cả Có Mặt
+                </Button>
+              </div>
             </div>
 
-            <table className="table" style={{ width: '100%', marginBottom: 16 }}>
-              <thead>
-                <tr>
-                  <th>Mã Nhân Viên</th>
-                  <th>Họ và Tên</th>
-                  <th>Chức Danh &amp; Bộ Phận</th>
-                  <th>Siêu Thị / Chi Nhánh</th>
-                  <th style={{ textAlign: 'center' }}>Trạng Thái Điểm Danh</th>
-                  <th style={{ textAlign: 'right' }}>Thao Tác Thủ Công</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeRoster
-                  .filter((s) => !rosterSearch || s.name.toLowerCase().includes(rosterSearch.toLowerCase()) || s.id.toLowerCase().includes(rosterSearch.toLowerCase()))
-                  .map((student) => {
-                    const isAttended = student.attendance === 'CONFIRMED';
-                    return (
-                      <tr key={student.id}>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{student.id}</td>
-                        <td style={{ fontWeight: 700 }}>{student.name}</td>
-                        <td style={{ color: 'var(--ink-soft)' }}>{student.position}</td>
-                        <td>{student.store}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <Badge tone={isAttended ? 'sage' : 'amber'} icon={isAttended ? 'ti-check' : 'ti-clock'}>
-                            {isAttended ? 'Đã Điểm Danh' : 'Chưa Có Mặt'}
-                          </Badge>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <Button
-                            size="sm"
-                            variant={isAttended ? 'ghost' : 'primary'}
-                            icon={isAttended ? 'ti-x' : 'ti-check'}
-                            onClick={() => toggleAttendance(student.id)}
-                          >
-                            {isAttended ? 'Hủy Điểm Danh' : 'Tích Có Mặt'}
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
+            {/* Roster table */}
+            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 16 }}>
+              <table className="table" style={{ width: '100%', margin: 0 }}>
+                <thead style={{ position: 'sticky', top: 0, background: 'var(--paper-raised)', zIndex: 2 }}>
+                  <tr>
+                    <th style={{ width: 110 }}>Mã NV</th>
+                    <th>Họ và Tên</th>
+                    <th>Chức Danh &amp; Bộ Phận</th>
+                    <th>Chi Nhánh Siêu Thị</th>
+                    <th style={{ textAlign: 'center', width: 140 }}>Trạng Thái</th>
+                    <th style={{ textAlign: 'right', width: 140 }}>Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeRoster
+                    .filter((s) => {
+                      if (rosterFilter === 'CONFIRMED') return s.attendance === 'CONFIRMED';
+                      if (rosterFilter === 'PENDING') return s.attendance !== 'CONFIRMED';
+                      return true;
+                    })
+                    .filter((s) => !rosterSearch || s.name.toLowerCase().includes(rosterSearch.toLowerCase()) || s.id.toLowerCase().includes(rosterSearch.toLowerCase()) || s.position?.toLowerCase().includes(rosterSearch.toLowerCase()))
+                    .map((student) => {
+                      const isAttended = student.attendance === 'CONFIRMED';
+                      return (
+                        <tr key={student.id}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{student.id}</td>
+                          <td style={{ fontWeight: 700 }}>{student.name}</td>
+                          <td style={{ color: 'var(--ink-soft)' }}>{student.position}</td>
+                          <td>{student.store}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <Badge tone={isAttended ? 'sage' : 'amber'} icon={isAttended ? 'ti-check' : 'ti-clock'}>
+                              {isAttended ? 'Đã Điểm Danh' : 'Chưa Có Mặt'}
+                            </Badge>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <Button
+                              size="sm"
+                              variant={isAttended ? 'ghost' : 'primary'}
+                              icon={isAttended ? 'ti-x' : 'ti-check'}
+                              onClick={() => toggleAttendance(student.id)}
+                            >
+                              {isAttended ? 'Hủy Điểm Danh' : 'Tích Có Mặt'}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="primary" onClick={() => setRosterClass(null)}>Hoàn Tất Điểm Danh</Button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Đã điểm danh: <strong>{activeRoster.filter((s) => s.attendance === 'CONFIRMED').length}</strong> / {activeRoster.length} học viên ({Math.round((activeRoster.filter((s) => s.attendance === 'CONFIRMED').length / (activeRoster.length || 1)) * 100)}%)
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button variant="ghost" onClick={() => setRosterClass(null)}>Đóng</Button>
+                <Button variant="primary" icon="ti-device-floppy" onClick={() => setRosterClass(null)}>
+                  Lưu &amp; Hoàn Tất Điểm Danh
+                </Button>
+              </div>
             </div>
           </div>
         </Modal>
@@ -755,40 +883,95 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       {/* MODAL 3: SYLLABUS & CLASS MATERIALS */}
       {materialsClass && (
         <Modal
+          isOpen={Boolean(materialsClass)}
           title={`Giáo Trình & Tài Liệu Giảng Dạy — ${materialsClass.title}`}
-          onClose={() => setMaterialsClass(null)}
-          size="md"
+          subtitle={`Mã: ${materialsClass.code} · Giảng viên: ${materialsClass.trainerName}`}
+          onClose={() => { setMaterialsClass(null); setPreviewMaterial(null); }}
+          size="lg"
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 8 }}>
-              <i className="ti ti-list-check" style={{ marginRight: 6 }} /> Khung Chương Trình Buổi Học (Session Agenda)
+            {/* Section 1: Session Agenda */}
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-list-check" /> Khung Chương Trình Buổi Học (Session Agenda &amp; Syllabus)
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {materialsClass.syllabus?.map((item, idx) => (
-                <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)' }}>{item.step}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>{item.detail}</div>
+                <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)' }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ background: 'var(--blue)', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
+                      {idx + 1}
+                    </span>
+                    {item.step}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4, marginLeft: 28 }}>
+                    {item.detail}
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--rail)', marginBottom: 8 }}>
-              <i className="ti ti-paperclip" style={{ marginRight: 6 }} /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments)
+            {/* Section 2: Attachments */}
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--bigc-green, #007A38)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-paperclip" /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments)
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {materialsClass.materials?.map((mat, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 12px' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
-                    <i className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : 'ti ti-file-type-ppt'} style={{ color: mat.type === 'PDF' ? 'var(--rust)' : 'var(--amber)', marginRight: 6 }} />
-                    {mat.name}
-                  </span>
-                  <Badge tone="slate">{mat.type}</Badge>
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <i
+                      className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : 'ti ti-link'}
+                      style={{ fontSize: 24, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{mat.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Định dạng: {mat.type} · Dung lượng: {mat.size || '2.5 MB'}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon="ti-eye"
+                      onClick={() => setPreviewMaterial(mat)}
+                    >
+                      Xem Trực Tuyến
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="ti-download"
+                      onClick={() => alert(`Đang tải về tài liệu: ${mat.name}`)}
+                    >
+                      Tải Về
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
+
+            {/* Document preview box if a material is selected */}
+            {previewMaterial && (
+              <div style={{ background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
+                    <i className="ti ti-file-description" style={{ marginRight: 6 }} /> Xem Trước Tài Liệu: {previewMaterial.name}
+                  </div>
+                  <Button size="sm" variant="ghost" icon="ti-x" onClick={() => setPreviewMaterial(null)}>
+                    Đóng Xem Trước
+                  </Button>
+                </div>
+                <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 6, padding: 20, minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                  <i className="ti ti-file-search" style={{ fontSize: 44, color: 'var(--blue)', marginBottom: 8 }} />
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>Trình Xem Tài Liệu MM MegaLearn Embedded Viewer</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 440, marginTop: 4 }}>
+                    Tài liệu <strong>{previewMaterial.name}</strong> đã được nạp thành công từ kho lưu trữ SOP &amp; Học liệu MMVN.
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="primary" onClick={() => setMaterialsClass(null)}>Đóng</Button>
+              <Button variant="primary" onClick={() => { setMaterialsClass(null); setPreviewMaterial(null); }}>Đóng</Button>
             </div>
           </div>
         </Modal>

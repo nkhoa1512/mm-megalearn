@@ -311,7 +311,7 @@ export function CourseTypeBadge({ courseType }) {
 
 
 // Modal Component
-export function Modal({ isOpen, onClose, title, subtitle, children, footer, size = 'md' }) {
+export function Modal({ isOpen = true, onClose, title, subtitle, children, footer, size = 'md' }) {
   if (!isOpen) return null;
 
   return (
