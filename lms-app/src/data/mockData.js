@@ -1081,6 +1081,15 @@ export function createBlankCourse() {
     maxCapacity: 25,
     enrolledStudents: [],
     prerequisites: [],
+    syllabus: [
+      { step: 'Phần 1: Giới thiệu & Chuẩn bị An toàn (30 phút)', detail: 'Phổ biến quy tắc an toàn, mục tiêu khóa học và kiểm tra trang thiết bị.' },
+      { step: 'Phần 2: Hướng dẫn Thao tác & Thực hành Trực tiếp (90 phút)', detail: 'Thực hành thao tác chuẩn theo quy trình vận hành SOP.' },
+      { step: 'Phần 3: Đánh giá Kết quả & Giải đáp Thắc mắc (60 phút)', detail: 'Tổng kết bài học, kiểm tra kỹ năng và hoàn tất bảng điểm danh.' },
+    ],
+    materials: [
+      { id: 'mat-1', name: 'Tài Liệu Hướng Dẫn Vận Hành Chuẩn (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-2', name: 'Slide Bài Giảng Thực Hành & Tình Huống (PPT)', type: 'PPT', size: '6.8 MB', url: '#' },
+    ],
     configuration: {
       assessmentEnabled: false,
       questionBankSize: 0,
@@ -2004,6 +2013,16 @@ export const classroomSessions = [
     description: 'Hands-on sanitation and sterilization of dough mixers, oven pressure calibration, and mechanical jam handling compliant with Gold HACCP standards.',
     prerequisiteCourse: 'Food Safety & Hygiene Standards (HACCP)',
     prerequisiteCourseId: 'CRS-FSH-001',
+    syllabus: [
+      { step: 'Phần 1: Chuẩn bị & Phổ biến Quy định An toàn Vệ sinh (30 phút)', detail: 'Quy tắc vệ sinh Gold HACCP, kiểm tra nhiệt độ lõi tủ mát bảo quản nguyên liệu tươi.' },
+      { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
+      { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
+    ],
+    materials: [
+      { id: 'mat-fsh-1', name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-fsh-2', name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT', size: '8.1 MB', url: '#' },
+      { id: 'mat-fsh-3', name: 'Biểu mẫu Checklist Kiểm tra Tiêu chuẩn Vệ sinh ATTP (PDF)', type: 'PDF', size: '1.1 MB', url: '#' },
+    ],
     enrolledStudents: [
       { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
       { id: 'MMVN-1078', name: 'Sarah Johnson', position: 'Pastry Chef Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -2033,6 +2052,16 @@ export const classroomSessions = [
     description: 'Hands-on gas fire suppression, fire blanket deployment, and peak-hour customer evacuation protocols in hypermarkets.',
     prerequisiteCourse: 'Workplace Health, Safety & Environment (HSE)',
     prerequisiteCourseId: 'CRS-HSE-019',
+    syllabus: [
+      { step: 'Phần 1: Nhận diện Nguồn nhiệt & Các cấp độ Báo cháy (45 phút)', detail: 'Nhận biết 4 loại đám cháy (A, B, C, F), phân biệt bình chữa cháy CO2 và Bột ABC.' },
+      { step: 'Phần 2: Diễn tập Dập lửa & Vận hành Vòi cứu hỏa tại Bãi tập (75 phút)', detail: 'Thực hành rút chốt an toàn, hướng vòi dập tắt khay xăng cháy và rải cuộn vòi nước áp lực.' },
+      { step: 'Phần 3: Sơ tán Khách hàng & Kỹ thuật Sơ cấp cứu Căn bản (60 phút)', detail: 'Quy trình dẫn đường thoát hiểm khu vực đông người, ép tim ngoài lồng ngực CPR và băng bó vết thương.' },
+    ],
+    materials: [
+      { id: 'mat-hse-1', name: 'Sổ Tay An Toàn PCCC & Kế Hoạch Thoát Hiểm Siêu Thị 2026 (PDF)', type: 'PDF', size: '3.5 MB', url: '#' },
+      { id: 'mat-hse-2', name: 'Slide Bài Giảng: Kỹ Thuật Sử Dụng Bình Khí CO2 & Vòi Cứu Hỏa (PPT)', type: 'PPT', size: '12.0 MB', url: '#' },
+      { id: 'mat-hse-3', name: 'Sơ Đồ Lối Thoát Nạn & Vị Trí Hộp Cứu Hỏa Từng Chi Nhánh (PDF)', type: 'PDF', size: '4.2 MB', url: '#' },
+    ],
     enrolledStudents: [],
   },
   {
@@ -2060,6 +2089,15 @@ export const classroomSessions = [
     description: 'Case analysis of 5 phishing incidents identified in Q3/2026 and immediate POS workstation isolation protocols.',
     prerequisiteCourse: 'Information Security & Data Protection Awareness',
     prerequisiteCourseId: 'CRS-ISA-011',
+    syllabus: [
+      { step: 'Phần 1: Xu hướng Tấn công Lừa đảo & Giả mạo Email Đối tác (30 phút)', detail: 'Phân tích các email mạo danh nhà cung cấp yêu cầu thay đổi tài khoản ngân hàng thụ hưởng.' },
+      { step: 'Phần 2: Quy trình Cách ly Khẩn cấp Máy POS Khi Bị Mã Độc (30 phút)', detail: 'Thao tác rút cáp mạng LAN, cô lập máy trạm POS và báo cáo sự cố lên SOC IT Security qua hotline.' },
+      { step: 'Phần 3: Hỏi đáp Trực tuyến & Bài tập Tình huống Trắc nghiệm (30 phút)', detail: 'Học viên làm bài quiz tương tác trên MS Teams và giải đáp thắc mắc bảo mật dữ liệu khách hàng.' },
+    ],
+    materials: [
+      { id: 'mat-sec-1', name: 'Hướng Dẫn Phòng Chống Phishing & Lừa Đảo Chuyển Tiền (PDF)', type: 'PDF', size: '1.8 MB', url: '#' },
+      { id: 'mat-sec-2', name: 'Slide Webinar: Bảo Mật Đầu Cuối Hệ Thống Thanh Toán POS (PPT)', type: 'PPT', size: '9.4 MB', url: '#' },
+    ],
     enrolledStudents: [],
   },
   {
@@ -2087,6 +2125,16 @@ export const classroomSessions = [
     description: 'High-speed barcode scanning on physical POS units, digital voucher processing, and L.A.S.T customer complaint resolution.',
     prerequisiteCourse: 'Store Operations Excellence & Planogram Compliance',
     prerequisiteCourseId: 'CRS-STOPS-037',
+    syllabus: [
+      { step: 'Phần 1: Kỹ thuật Quét Mã Barcode Tốc Độ Cao & Xử lý Voucher (60 phút)', detail: 'Tư thế đứng chuẩn công thái học, góc quét tia laser và thao tác áp voucher giảm giá trên POS.' },
+      { step: 'Phần 2: Ứng dụng Nguyên tắc L.A.S.T Xử lý Phàn nàn Khách hàng (75 phút)', detail: 'Lắng nghe (Listen) - Đồng cảm (Apologize) - Giải quyết (Solve) - Cảm ơn (Thank). Thực hành đóng vai khách hàng khó tính.' },
+      { step: 'Phần 3: Thi đua Tính giờ Quét 20 Món Hàng Giả Lập & Tổng kết (45 phút)', detail: 'Thử thách quét hàng chuẩn không lỗi trong 90 giây và trao huy hiệu Thu Ngân Siêu Tốc.' },
+    ],
+    materials: [
+      { id: 'mat-pos-1', name: 'SOP-CAS-01: Quy Trình Thao Tác Chuẩn Quầy Thu Ngân POS (PDF)', type: 'PDF', size: '2.9 MB', url: '#' },
+      { id: 'mat-pos-2', name: 'Slide Kỹ Năng Giao Tiếp & Xử Lý Tình Huống Khách Hàng (PPT)', type: 'PPT', size: '7.8 MB', url: '#' },
+      { id: 'mat-pos-3', name: 'Bảng Tra Cứu Mã PLU Rau Củ Quả & Hàng Cân Tươi Sống (PDF)', type: 'PDF', size: '1.5 MB', url: '#' },
+    ],
     enrolledStudents: [],
   },
 ];

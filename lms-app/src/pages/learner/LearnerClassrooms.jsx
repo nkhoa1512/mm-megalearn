@@ -10,6 +10,10 @@ export default function LearnerClassrooms() {
   const [scanningSession, setScanningSession] = useState(null);
   const [scanState, setScanState] = useState('SCANNING'); // SCANNING, VERIFYING, SUCCESS
 
+  // Syllabus & Materials Modal state
+  const [viewingMaterialsSession, setViewingMaterialsSession] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
+
   const filteredSessions = classrooms.filter((s) => {
     if (filter === 'UPCOMING') return s.status === 'UPCOMING' || s.status === 'OPEN';
     if (filter === 'MY_SESSIONS') return s.isEnrolled;
@@ -165,6 +169,16 @@ export default function LearnerClassrooms() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {/* PRE-CLASS MATERIALS & SYLLABUS BUTTON */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon="ti-file-description"
+                    onClick={() => setViewingMaterialsSession(session)}
+                  >
+                    Giáo Trình &amp; Slide
+                  </Button>
+
                   {/* CASE 1: Learner is enrolled and needs to scan Trainer's QR */}
                   {session.isEnrolled && !isCheckedIn && session.status !== 'COMPLETED' && (
                     <Button variant="primary" size="sm" icon="ti-camera" onClick={() => handleOpenScanner(session)}>
@@ -292,6 +306,117 @@ export default function LearnerClassrooms() {
         </Modal>
       )}
 
+      {/* MODAL 2: SESSION SYLLABUS & PRE-CLASS MATERIALS */}
+      {viewingMaterialsSession && (
+        <Modal
+          isOpen={Boolean(viewingMaterialsSession)}
+          onClose={() => { setViewingMaterialsSession(null); setPreviewDoc(null); }}
+          title={`Giáo Trình & Tài Liệu — ${viewingMaterialsSession.title}`}
+          subtitle={`Mã Lớp: ${viewingMaterialsSession.code} · Giảng viên: ${viewingMaterialsSession.trainerName}`}
+          size="lg"
+        >
+          <div>
+            {/* Section 1: Syllabus Agenda */}
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--blue)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-list-check" /> Khung Chương Trình Buổi Học (Session Agenda)
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {(viewingMaterialsSession.syllabus || []).length === 0 ? (
+                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
+                  Khung bài giảng đang được Giảng viên cập nhật.
+                </div>
+              ) : (
+                viewingMaterialsSession.syllabus.map((step, idx) => (
+                  <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ background: 'var(--blue)', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
+                        {idx + 1}
+                      </span>
+                      {step.step}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4, marginLeft: 28 }}>
+                      {step.detail}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Section 2: Attachments */}
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--bigc-green, #007A38)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-paperclip" /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments)
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {(viewingMaterialsSession.materials || []).length === 0 ? (
+                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
+                  Chưa có tài liệu đính kèm.
+                </div>
+              ) : (
+                viewingMaterialsSession.materials.map((mat, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 14px', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <i
+                        className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
+                        style={{ fontSize: 24, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{mat.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Định dạng: {mat.type} &middot; Dung lượng: {mat.size || '2.5 MB'}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon="ti-eye"
+                        onClick={() => setPreviewDoc(mat)}
+                      >
+                        Xem Trực Tuyến
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon="ti-download"
+                        onClick={() => alert(`Đang tải về máy: ${mat.name}`)}
+                      >
+                        Tải Về Máy
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Embedded Document Previewer */}
+            {previewDoc && (
+              <div style={{ background: '#475569', borderRadius: 8, padding: 20, marginBottom: 20, textAlign: 'center' }}>
+                <div style={{ background: '#fff', borderRadius: 6, padding: '24px 20px', maxWidth: 480, margin: '0 auto', textAlign: 'left' }}>
+                  <div style={{ borderBottom: '2px solid #007A38', paddingBottom: 8, marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#007A38' }}>MM MEGAMARKET VIETNAM</span>
+                    <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{previewDoc.type} &middot; {previewDoc.size}</span>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 6 }}>{previewDoc.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5, marginBottom: 12 }}>
+                    Tài liệu đào tạo chuẩn hóa nội bộ ban hành cho các khóa học thực hành tại siêu thị và lớp webinar trực tuyến.
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <Button size="sm" variant="ghost" onClick={() => setPreviewDoc(null)}>Đóng Xem Trước</Button>
+                    <Button size="sm" variant="primary" icon="ti-download" onClick={() => alert(`Đang tải về máy: ${previewDoc.name}`)}>
+                      Tải File Về Máy
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="primary" onClick={() => { setViewingMaterialsSession(null); setPreviewDoc(null); }}>
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

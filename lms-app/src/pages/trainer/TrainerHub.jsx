@@ -170,6 +170,16 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const [qrTokenSuffix, setQrTokenSuffix] = useState(Date.now().toString().slice(-4));
   const [copiedToken, setCopiedToken] = useState(false);
 
+  // Trainer Custom Materials & Syllabus State
+  const [classMaterialsMap, setClassMaterialsMap] = useState({});
+  const [classSyllabusMap, setClassSyllabusMap] = useState({});
+  const [trainerNewMatName, setTrainerNewMatName] = useState('');
+  const [trainerNewMatType, setTrainerNewMatType] = useState('PDF');
+  const [trainerNewMatSize, setTrainerNewMatSize] = useState('2.4 MB');
+  const [trainerAddingStep, setTrainerAddingStep] = useState(false);
+  const [trainerNewStepTitle, setTrainerNewStepTitle] = useState('');
+  const [trainerNewStepDetail, setTrainerNewStepDetail] = useState('');
+
   function openLiveQrModal(cls) {
     setLiveQrClass(cls);
     setQrTokenSuffix(Date.now().toString().slice(-4));
@@ -186,6 +196,67 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   function openMaterialsModal(cls) {
     setMaterialsClass(cls);
     setPreviewMaterial(null);
+    setTrainerAddingStep(false);
+    setTrainerNewMatName('');
+    setTrainerNewStepTitle('');
+    setTrainerNewStepDetail('');
+  }
+
+  function getSyllabusForClass(cls) {
+    if (!cls) return [];
+    return classSyllabusMap[cls.id] || cls.syllabus || [];
+  }
+
+  function getMaterialsForClass(cls) {
+    if (!cls) return [];
+    return classMaterialsMap[cls.id] || cls.materials || [];
+  }
+
+  function handleTrainerAddMaterial(clsId) {
+    if (!trainerNewMatName.trim()) return;
+    const newMat = {
+      id: `mat-tr-${Date.now()}`,
+      name: trainerNewMatName.trim(),
+      type: trainerNewMatType,
+      size: trainerNewMatSize || '2.0 MB',
+      url: '#',
+      uploadedBy: authUser?.fullName || 'Giảng Viên',
+      uploadedAt: new Date().toISOString().slice(0, 10),
+    };
+    setClassMaterialsMap((prev) => {
+      const currentList = prev[clsId] || (materialsClass?.materials || []);
+      return { ...prev, [clsId]: [...currentList, newMat] };
+    });
+    setTrainerNewMatName('');
+  }
+
+  function handleTrainerRemoveMaterial(clsId, matId) {
+    setClassMaterialsMap((prev) => {
+      const currentList = prev[clsId] || (materialsClass?.materials || []);
+      return { ...prev, [clsId]: currentList.filter((m) => m.id !== matId) };
+    });
+  }
+
+  function handleTrainerAddSyllabusStep(clsId) {
+    if (!trainerNewStepTitle.trim()) return;
+    const newStep = {
+      step: trainerNewStepTitle.trim(),
+      detail: trainerNewStepDetail.trim() || 'Nội dung thực hành và chỉ tiêu đánh giá.',
+    };
+    setClassSyllabusMap((prev) => {
+      const currentList = prev[clsId] || (materialsClass?.syllabus || []);
+      return { ...prev, [clsId]: [...currentList, newStep] };
+    });
+    setTrainerNewStepTitle('');
+    setTrainerNewStepDetail('');
+    setTrainerAddingStep(false);
+  }
+
+  function handleTrainerRemoveSyllabusStep(clsId, stepIndex) {
+    setClassSyllabusMap((prev) => {
+      const currentList = prev[clsId] || (materialsClass?.syllabus || []);
+      return { ...prev, [clsId]: currentList.filter((_, idx) => idx !== stepIndex) };
+    });
   }
 
   function toggleAttendance(studentId) {
@@ -880,28 +951,80 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
         </Modal>
       )}
 
-      {/* MODAL 3: SYLLABUS & CLASS MATERIALS */}
+      {/* MODAL 3: SYLLABUS & CLASS MATERIALS (WITH TRAINER AUTHORING & UPLOADS) */}
       {materialsClass && (
         <Modal
           isOpen={Boolean(materialsClass)}
           title={`Giáo Trình & Tài Liệu Giảng Dạy — ${materialsClass.title}`}
-          subtitle={`Mã: ${materialsClass.code} · Giảng viên: ${materialsClass.trainerName}`}
-          onClose={() => { setMaterialsClass(null); setPreviewMaterial(null); }}
+          subtitle={`Mã Lớp: ${materialsClass.code} · Giảng viên Phụ trách: ${materialsClass.trainerName}`}
+          onClose={() => { setMaterialsClass(null); setPreviewMaterial(null); setTrainerAddingStep(false); }}
           size="lg"
         >
           <div>
             {/* Section 1: Session Agenda */}
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-list-check" /> Khung Chương Trình Buổi Học (Session Agenda &amp; Syllabus)
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-list-check" /> Khung Chương Trình Buổi Học (Session Agenda &amp; Syllabus)
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                icon="ti-plus"
+                onClick={() => setTrainerAddingStep(!trainerAddingStep)}
+              >
+                {trainerAddingStep ? 'Hủy Thêm' : 'Thêm Phần Giảng Dạy'}
+              </Button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              {materialsClass.syllabus?.map((item, idx) => (
+
+            {/* Inline Add Syllabus Step Form */}
+            {trainerAddingStep && (
+              <div style={{ background: '#EFF6FF', border: '1px solid var(--blue)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 12.5, color: '#1E40AF', marginBottom: 6 }}>
+                  Bổ sung phần bài giảng / thực hành mới:
+                </div>
+                <input
+                  className="field-input"
+                  style={{ height: 32, fontSize: 12, marginBottom: 8 }}
+                  placeholder="Tên phần học (VD: Phần 4: Thực hành tình huống phát sinh...)"
+                  value={trainerNewStepTitle}
+                  onChange={(e) => setTrainerNewStepTitle(e.target.value)}
+                />
+                <textarea
+                  className="field-input"
+                  rows={2}
+                  style={{ fontSize: 12, marginBottom: 8, resize: 'vertical' }}
+                  placeholder="Chi tiết nội dung đào tạo và yêu cầu kết quả..."
+                  value={trainerNewStepDetail}
+                  onChange={(e) => setTrainerNewStepDetail(e.target.value)}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <Button size="sm" variant="ghost" onClick={() => setTrainerAddingStep(false)}>Hủy</Button>
+                  <Button size="sm" variant="primary" icon="ti-check" onClick={() => handleTrainerAddSyllabusStep(materialsClass.id)}>
+                    Lưu Phần Học
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20, maxHeight: 240, overflowY: 'auto' }}>
+              {getSyllabusForClass(materialsClass).map((item, idx) => (
                 <div key={idx} style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ background: 'var(--blue)', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
-                      {idx + 1}
-                    </span>
-                    {item.step}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ background: 'var(--blue)', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
+                        {idx + 1}
+                      </span>
+                      {item.step}
+                    </div>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      style={{ color: 'var(--rust)', opacity: 0.7 }}
+                      title="Xóa phần này"
+                      onClick={() => handleTrainerRemoveSyllabusStep(materialsClass.id, idx)}
+                    >
+                      <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                    </button>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4, marginLeft: 28 }}>
                     {item.detail}
@@ -911,23 +1034,50 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
             </div>
 
             {/* Section 2: Attachments */}
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--bigc-green, #007A38)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-paperclip" /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments)
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--bigc-green, #007A38)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-paperclip" /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments &amp; Uploads)
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              {materialsClass.materials?.map((mat, idx) => (
+
+            {/* Trainer Upload / Add Material Row */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px dashed #CBD5E1', flexWrap: 'wrap' }}>
+              <input
+                className="field-input"
+                style={{ flex: 1, minWidth: 200, height: 32, fontSize: 12 }}
+                placeholder="Nhập tên file tài liệu / Slide mới muốn tải lên..."
+                value={trainerNewMatName}
+                onChange={(e) => setTrainerNewMatName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleTrainerAddMaterial(materialsClass.id); } }}
+              />
+              <select
+                className="field-select"
+                style={{ width: 80, height: 32, fontSize: 12 }}
+                value={trainerNewMatType}
+                onChange={(e) => setTrainerNewMatType(e.target.value)}
+              >
+                <option value="PDF">PDF</option>
+                <option value="PPT">PPT</option>
+                <option value="DOC">DOC</option>
+                <option value="LINK">LINK</option>
+              </select>
+              <Button size="sm" variant="primary" icon="ti-upload" onClick={() => handleTrainerAddMaterial(materialsClass.id)}>
+                Tải Lên / Thêm
+              </Button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20, maxHeight: 260, overflowY: 'auto' }}>
+              {getMaterialsForClass(materialsClass).map((mat, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
                     <i
-                      className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : 'ti ti-link'}
-                      style={{ fontSize: 24, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)' }}
+                      className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
+                      style={{ fontSize: 24, color: mat.type === 'PDF' ? 'var(--rust)' : mat.type === 'PPT' ? 'var(--amber)' : 'var(--blue)', flexShrink: 0 }}
                     />
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{mat.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Định dạng: {mat.type} · Dung lượng: {mat.size || '2.5 MB'}</div>
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{mat.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Định dạng: {mat.type} · Dung lượng: {mat.size || '2.5 MB'} · {mat.uploadedBy || 'Giảng viên'}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <Button
                       size="sm"
                       variant="outline"
@@ -944,6 +1094,15 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                     >
                       Tải Về
                     </Button>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      style={{ color: 'var(--rust)' }}
+                      title="Xóa file này"
+                      onClick={() => handleTrainerRemoveMaterial(materialsClass.id, mat.id)}
+                    >
+                      <i className="ti ti-x" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -964,14 +1123,16 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                   <i className="ti ti-file-search" style={{ fontSize: 44, color: 'var(--blue)', marginBottom: 8 }} />
                   <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>Trình Xem Tài Liệu MM MegaLearn Embedded Viewer</div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 440, marginTop: 4 }}>
-                    Tài liệu <strong>{previewMaterial.name}</strong> đã được nạp thành công từ kho lưu trữ SOP &amp; Học liệu MMVN.
+                    Tài liệu <strong>{previewMaterial.name}</strong> ({previewMaterial.type} - {previewMaterial.size}) đã được nạp thành công từ kho lưu trữ SOP &amp; Học liệu MMVN.
                   </div>
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="primary" onClick={() => { setMaterialsClass(null); setPreviewMaterial(null); }}>Đóng</Button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <Button variant="primary" onClick={() => { setMaterialsClass(null); setPreviewMaterial(null); }}>
+                Đóng &amp; Hoàn Tất
+              </Button>
             </div>
           </div>
         </Modal>

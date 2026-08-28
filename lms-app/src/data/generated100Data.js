@@ -786,6 +786,20 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       maxCapacity: isClassroom ? 25 : 500,
       description: `Comprehensive MMVN standard training module for ${title}. Aligned with retail excellence and regulatory compliance.`,
       prerequisites: idx > 0 && idx % 3 === 0 ? [`CRS-${tpl.codePrefix}-${String(courseCounter - 1).padStart(3, '0')}`] : [],
+      syllabus: isClassroom ? [
+        { step: `Phần 1: Chuẩn bị & Phổ biến Quy định (${title}) (30 phút)`, detail: 'Kiểm tra điều kiện thực hành, tiêu chuẩn an toàn Gold HACCP/SOP và phổ biến mục tiêu buổi học.' },
+        { step: `Phần 2: Thao tác Vận hành & Hướng dẫn Thực tế tại Xưởng (90 phút)`, detail: 'Giảng viên thị phạm thao tác, học viên thực hành trực tiếp trên thiết bị/công cụ thực tế.' },
+        { step: `Phần 3: Đánh giá Kết quả & Điểm danh Live QR (60 phút)`, detail: 'Kiểm tra sản phẩm thực hành, tổng kết bài học, giải đáp thắc mắc và quét QR điểm danh.' },
+      ] : [
+        { step: 'Phần 1: Kiến thức Nền tảng & Khung Tiêu chuẩn MMVN', detail: 'Tìm hiểu tổng quan quy định, nguyên tắc cốt lõi và các chỉ số tuân thủ nghiệp vụ.' },
+        { step: 'Phần 2: Quy trình Thao tác Chuẩn (SOP) & Xử lý Tình huống', detail: 'Hướng dẫn từng bước thực thi nghiệp vụ và các lưu ý phòng ngừa rủi ro sai sót.' },
+        { step: 'Phần 3: Bài Thi Đánh Giá Năng Lực Cuối Khóa', detail: 'Thực hiện bài kiểm tra trắc nghiệm để hoàn tất khóa học và nhận chứng chỉ/XP.' },
+      ],
+      materials: [
+        { id: `mat-doc-${courseId}`, name: `SOP-MMVN-${tpl.codePrefix}: Hướng Dẫn Vận Hành & Tiêu Chuẩn Nghiệp Vụ (PDF)`, type: 'PDF', size: '2.8 MB', url: '#' },
+        { id: `mat-ppt-${courseId}`, name: `Slide Bài Giảng Đào Tạo & Tình Huống: ${title} (PPT)`, type: 'PPT', size: '7.5 MB', url: '#' },
+        { id: `mat-chk-${courseId}`, name: `Biểu Mẫu Checklist Đánh Giá Thực Hành (PDF)`, type: 'PDF', size: '1.2 MB', url: '#' },
+      ],
       configuration: {
         assessmentEnabled: true,
         maxAttempts: 3,
