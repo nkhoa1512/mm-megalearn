@@ -22,7 +22,7 @@ function formatDate(iso) {
   }
 }
 
-export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdit }) {
+export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdit, onDelete }) {
   const { courses, currentUser, promoteUserLevel, myCourses, getUserRoadmapTabs } = useCourseStore();
 
   const [activeTab, setActiveTab] = useState('transcript'); // transcript | roadmap
@@ -153,7 +153,7 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
             </div>
 
             {/* Mọi thao tác trên nhân sự gom về đây, thay vì rải rác ngoài bảng danh mục. */}
-            {(onEdit || canPromote) && (
+            {(onEdit || canPromote || onDelete) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {onEdit && (
                   <Button
@@ -179,6 +179,18 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                     }}
                   >
                     ⭐ Thăng Cấp Bậc (Promote Level)
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    icon="ti-trash"
+                    size="sm"
+                    onClick={() => onDelete(targetUser)}
+                    title="Xóa hồ sơ nhân sự"
+                    style={{ color: 'var(--rose, #E11D48)' }}
+                  >
+                    Xóa Nhân Sự
                   </Button>
                 )}
               </div>

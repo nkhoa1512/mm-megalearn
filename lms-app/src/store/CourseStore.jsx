@@ -12,6 +12,11 @@ import {
   myLearningCourses,
   enrollmentsForUser,
   nextMajorVersion,
+  businessUnits as initialBusinessUnits,
+  divisions as initialDivisions,
+  departments as initialDepartments,
+  subDepartments as initialSubDepartments,
+  jobLevels as initialJobLevels,
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
@@ -32,7 +37,7 @@ const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
-const USERS_KEY = 'mm-megalearn-users-v6';
+const USERS_KEY = 'mm-megalearn-users-v7';
 // v7: cấu hình lộ trình chuyển từ ma trận Level x Branch phẳng sang Scope Key
 // đa tầng (BU -> Division -> Department -> Sub-Department x Level). Bump key
 // để không nạp nhầm shape cũ từ localStorage.
@@ -49,6 +54,11 @@ const INTERVENTION_KEY = 'mm-megalearn-interventions-v2';
 const SUCCESSION_KEY = 'mm-megalearn-succession-v2';
 const ALIGNMENT_KEY = 'mm-megalearn-alignment-v1';
 const COMPLIANCE_NUDGES_KEY = 'mm-megalearn-nudges-v2';
+const BU_KEY = 'mm-megalearn-bu-v3';
+const DIV_KEY = 'mm-megalearn-div-v4';
+const DEPT_KEY = 'mm-megalearn-dept-v4';
+const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
+const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v3';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -273,6 +283,13 @@ export function CourseStoreProvider({ children }) {
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
   const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
 
+  // Enterprise Org Hierarchy & Job Levels States (BU, Division, Department, Sub-Department, Job Levels)
+  const [businessUnits, setBusinessUnits] = useState(() => loadItem(BU_KEY, initialBusinessUnits));
+  const [divisions, setDivisions] = useState(() => loadItem(DIV_KEY, initialDivisions));
+  const [departments, setDepartments] = useState(() => loadItem(DEPT_KEY, initialDepartments));
+  const [subDepartments, setSubDepartments] = useState(() => loadItem(SUBDEPT_KEY, initialSubDepartments));
+  const [jobLevels, setJobLevels] = useState(() => loadItem(JOBLEVELS_KEY, initialJobLevels));
+
   // HRBP Strategic Operations states (Interventions, Succession, 1-on-1 Alignments, Compliance Nudges)
   const [interventions, setInterventions] = useState(() => loadItem(INTERVENTION_KEY, DEFAULT_INTERVENTIONS));
   const [successionTalents, setSuccessionTalents] = useState(() => loadItem(SUCCESSION_KEY, DEFAULT_SUCCESSION_TALENTS));
@@ -321,6 +338,11 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
+      localStorage.setItem(BU_KEY, JSON.stringify(businessUnits));
+      localStorage.setItem(DIV_KEY, JSON.stringify(divisions));
+      localStorage.setItem(DEPT_KEY, JSON.stringify(departments));
+      localStorage.setItem(SUBDEPT_KEY, JSON.stringify(subDepartments));
+      localStorage.setItem(JOBLEVELS_KEY, JSON.stringify(jobLevels));
       localStorage.setItem(INTERVENTION_KEY, JSON.stringify(interventions));
       localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
       localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
@@ -424,6 +446,242 @@ export function CourseStoreProvider({ children }) {
     },
     [currentUser]
   );
+
+  /** Thêm nhân viên mới */
+  const addUser = useCallback((newUser) => {
+    const rawNum = Math.floor(1000 + Math.random() * 9000);
+    const id = newUser.userId || `USR-${rawNum}`;
+    const empCode = newUser.employeeCode || `MMVN-${rawNum}`;
+    const created = {
+      userId: id,
+      employeeCode: empCode,
+      fullName: newUser.fullName || 'Nhân Viên Mới',
+      email: newUser.email || `employee_${rawNum}@mmvietnam.com`,
+      position: newUser.position || newUser.title || 'Store Associate',
+      title: newUser.title || newUser.position || 'Store Associate',
+      level: normalizeLevel(newUser.level || '7'),
+      levelTitle: levelTitle(normalizeLevel(newUser.level || '7')),
+      role: normalizeRole(newUser.role || 'learner'),
+      branch: newUser.branch || 'SUPPORTING',
+      branchName: newUser.branchName || (newUser.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+      businessUnitId: newUser.businessUnitId || 'bu-mmvn',
+      businessUnitCode: newUser.businessUnitCode || 'MMVN',
+      divisionId: newUser.divisionId || null,
+      divisionCode: newUser.divisionCode || null,
+      divisionName: newUser.divisionName || null,
+      departmentId: newUser.departmentId || null,
+      departmentCode: newUser.departmentCode || null,
+      departmentName: newUser.departmentName || null,
+      subDepartmentId: newUser.subDepartmentId || null,
+      subDepartmentCode: newUser.subDepartmentCode || null,
+      subDepartmentName: newUser.subDepartmentName || null,
+      storeId: newUser.storeId || null,
+      storeName: newUser.storeName || null,
+      status: 'ACTIVE',
+      yearsOfService: newUser.yearsOfService || 1.0,
+      avatar: (newUser.fullName || 'NV').slice(0, 2).toUpperCase(),
+      badgeTone: 'blue',
+      description: newUser.description || 'Hồ sơ nhân sự MM Mega Market.',
+      ...newUser,
+    };
+    setUsers((prev) => [created, ...prev]);
+    return created;
+  }, []);
+
+  /** Xóa nhân sự khỏi danh mục */
+  const deleteUser = useCallback((userId) => {
+    setUsers((prev) => prev.filter((u) => u.userId !== userId && u.employeeCode !== userId));
+    return { ok: true };
+  }, []);
+
+  /** Import hàng loạt nhân sự từ file CSV / JSON */
+  const importUsers = useCallback((importedUserList) => {
+    if (!Array.isArray(importedUserList) || importedUserList.length === 0) return { addedCount: 0, updatedCount: 0, total: 0 };
+    let added = 0;
+    let updated = 0;
+    setUsers((prev) => {
+      const currentList = [...prev];
+      const newItems = [];
+      importedUserList.forEach((incoming) => {
+        const id = incoming.userId || incoming.employeeCode;
+        const idx = currentList.findIndex((u) => u.userId === id || (u.employeeCode && u.employeeCode === id));
+        const standardized = {
+          userId: id,
+          employeeCode: incoming.employeeCode || id,
+          fullName: incoming.fullName || 'Nhân Viên Mới',
+          email: incoming.email || `${id.toLowerCase()}@mmvietnam.com`,
+          position: incoming.position || incoming.title || 'Specialist',
+          title: incoming.title || incoming.position || 'Specialist',
+          level: normalizeLevel(incoming.level || '7'),
+          levelTitle: levelTitle(normalizeLevel(incoming.level || '7')),
+          role: normalizeRole(incoming.role || 'learner'),
+          branch: incoming.branch || 'SUPPORTING',
+          branchName: incoming.branchName || (incoming.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+          businessUnitId: incoming.businessUnitId || 'bu-mmvn',
+          businessUnitCode: incoming.businessUnitCode || 'MMVN',
+          businessUnitName: incoming.businessUnitName || 'MM Mega Market Vietnam',
+          divisionId: incoming.divisionId || null,
+          divisionCode: incoming.divisionCode || null,
+          divisionName: incoming.divisionName || null,
+          departmentId: incoming.departmentId || null,
+          departmentCode: incoming.departmentCode || null,
+          departmentName: incoming.departmentName || null,
+          subDepartmentId: incoming.subDepartmentId || null,
+          subDepartmentCode: incoming.subDepartmentCode || null,
+          subDepartmentName: incoming.subDepartmentName || null,
+          storeName: incoming.storeName || (incoming.branch === 'OPERATIONS' ? incoming.divisionName || 'Siêu thị MM' : 'Head Office (An Phú)'),
+          status: incoming.status || 'ACTIVE',
+          yearsOfService: incoming.yearsOfService || 1.0,
+          avatar: (incoming.fullName || 'NV').slice(0, 2).toUpperCase(),
+          badgeTone: 'blue',
+          ...incoming,
+        };
+        if (idx >= 0) {
+          currentList[idx] = { ...currentList[idx], ...standardized };
+          updated++;
+        } else {
+          newItems.push(standardized);
+          added++;
+        }
+      });
+      return [...newItems, ...currentList];
+    });
+    return { addedCount: added, updatedCount: updated, total: importedUserList.length };
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Business Units, Divisions, Departments, Sub-Departments CRUD
+  // -------------------------------------------------------------------------
+
+  const addBusinessUnit = useCallback((bu) => {
+    const id = bu.id || `bu-${Date.now()}`;
+    const newBu = { id, code: (bu.code || 'BU').toUpperCase(), name: bu.name || 'New Business Unit', ...bu };
+    setBusinessUnits((prev) => [...prev, newBu]);
+    return newBu;
+  }, []);
+
+  const updateBusinessUnit = useCallback((id, patch) => {
+    setBusinessUnits((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    return { ok: true };
+  }, []);
+
+  const deleteBusinessUnit = useCallback((id) => {
+    setBusinessUnits((prev) => prev.filter((b) => b.id !== id));
+    setDivisions((prev) => prev.filter((d) => d.businessUnitId !== id));
+    return { ok: true };
+  }, []);
+
+  const addDivision = useCallback((div) => {
+    const id = div.id || `div-${Date.now()}`;
+    const newDiv = {
+      id,
+      businessUnitId: div.businessUnitId || 'bu-mmvn',
+      branch: div.branch || 'SUPPORTING',
+      code: div.code || 'DIV',
+      name: div.name || 'New Division',
+      ...div,
+    };
+    setDivisions((prev) => [...prev, newDiv]);
+    return newDiv;
+  }, []);
+
+  const updateDivision = useCallback((id, patch) => {
+    setDivisions((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    return { ok: true };
+  }, []);
+
+  const deleteDivision = useCallback((id) => {
+    setDivisions((prev) => prev.filter((d) => d.id !== id));
+    setDepartments((prev) => prev.filter((dept) => dept.divisionId !== id));
+    return { ok: true };
+  }, []);
+
+  const addDepartment = useCallback((dept) => {
+    const id = dept.id || `dept-${Date.now()}`;
+    const newDept = {
+      id,
+      divisionId: dept.divisionId,
+      code: dept.code || 'DEPT',
+      name: dept.name || 'New Department',
+      ...dept,
+    };
+    setDepartments((prev) => [...prev, newDept]);
+    return newDept;
+  }, []);
+
+  const updateDepartment = useCallback((id, patch) => {
+    setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    return { ok: true };
+  }, []);
+
+  const deleteDepartment = useCallback((id) => {
+    setDepartments((prev) => prev.filter((d) => d.id !== id));
+    setSubDepartments((prev) => prev.filter((sub) => sub.departmentId !== id));
+    return { ok: true };
+  }, []);
+
+  const addSubDepartment = useCallback((subDept) => {
+    const id = subDept.id || `sub-${Date.now()}`;
+    const newSub = {
+      id,
+      departmentId: subDept.departmentId,
+      code: subDept.code || 'SUB',
+      name: subDept.name || 'New Sub-Department',
+      ...subDept,
+    };
+    setSubDepartments((prev) => [...prev, newSub]);
+    return newSub;
+  }, []);
+
+  const updateSubDepartment = useCallback((id, patch) => {
+    setSubDepartments((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    return { ok: true };
+  }, []);
+
+  const deleteSubDepartment = useCallback((id) => {
+    setSubDepartments((prev) => prev.filter((s) => s.id !== id));
+    return { ok: true };
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Job Levels CRUD
+  // -------------------------------------------------------------------------
+
+  const addJobLevel = useCallback((levelObj) => {
+    const lvlStr = String(levelObj.level || '').trim();
+    const newLvl = {
+      id: `lvl-${lvlStr || Date.now()}`,
+      level: lvlStr,
+      rank: Number(lvlStr) || 1,
+      code: levelObj.code || `LVL-${lvlStr}`,
+      emoji: levelObj.emoji || '⭐',
+      title: levelObj.title || `Level ${lvlStr}`,
+      viTitle: levelObj.viTitle || levelObj.title || `Level ${lvlStr}`,
+      shortVi: levelObj.shortVi || levelObj.titleVi || `Level ${lvlStr}`,
+      band: levelObj.band || 'GENERAL',
+      authority: levelObj.authority || 'STANDARD',
+      typicalRoles: levelObj.typicalRoles || ['learner'],
+      descVi: levelObj.descVi || 'Cấp bậc trong hệ thống MM Mega Market.',
+      headcount: levelObj.headcount || 0,
+      colors: levelObj.colors || { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
+      ...levelObj,
+    };
+    setJobLevels((prev) => {
+      const filtered = prev.filter((l) => String(l.level) !== String(newLvl.level));
+      return [...filtered, newLvl].sort((a, b) => Number(a.level) - Number(b.level));
+    });
+    return newLvl;
+  }, []);
+
+  const updateJobLevel = useCallback((levelKey, patch) => {
+    setJobLevels((prev) => prev.map((l) => (l.level === levelKey || l.id === levelKey ? { ...l, ...patch } : l)));
+    return { ok: true };
+  }, []);
+
+  const deleteJobLevel = useCallback((levelKey) => {
+    setJobLevels((prev) => prev.filter((l) => l.level !== levelKey && l.id !== levelKey));
+    return { ok: true };
+  }, []);
 
   const addCourse = useCallback((course) => {
     setCourses((prev) => [...prev, course]);
@@ -1278,8 +1536,36 @@ export function CourseStoreProvider({ children }) {
         demoUsers,
         users,
         setUsers,
+        addUser,
         updateUser,
+        deleteUser,
+        importUsers,
         promoteUserLevel,
+        businessUnits,
+        setBusinessUnits,
+        addBusinessUnit,
+        updateBusinessUnit,
+        deleteBusinessUnit,
+        divisions,
+        setDivisions,
+        addDivision,
+        updateDivision,
+        deleteDivision,
+        departments,
+        setDepartments,
+        addDepartment,
+        updateDepartment,
+        deleteDepartment,
+        subDepartments,
+        setSubDepartments,
+        addSubDepartment,
+        updateSubDepartment,
+        deleteSubDepartment,
+        jobLevels,
+        setJobLevels,
+        addJobLevel,
+        updateJobLevel,
+        deleteJobLevel,
         courses,
         addCourse,
         updateCourse,
