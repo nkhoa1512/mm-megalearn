@@ -1,0 +1,385 @@
+// ===========================================================================
+// MM MegaLearn - Từ Điển & Hệ Thống Đa Ngôn Ngữ Song Ngữ (English / Tiếng Việt)
+// ===========================================================================
+
+export const TRANSLATIONS = {
+  en: {
+    // Brand & App
+    appName: 'MM MegaLearn',
+    brandTagline: 'Corporate Learning & Development',
+    aiTutor: 'AI Tutor',
+    streak: 'streak',
+    days: 'days',
+    notifications: 'Notifications',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications',
+    viewTalentProfile: 'View Talent Profile',
+    switchRoleDemo: 'Quick Persona Switch:',
+    signOut: 'Sign Out',
+    close: 'Close',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    back: 'Back',
+    search: 'Search...',
+    all: 'All',
+
+    // Roles & Levels
+    role_learner: 'Learner',
+    role_manager: 'Store Dept Manager',
+    role_trainer: 'L&D Faculty / Master Trainer',
+    role_hrbp: 'HR Business Partner',
+    role_useradmin: 'User Admin / L&OD Specialist',
+    role_sysadmin: 'System Admin & Security',
+
+    level_7: 'Level 7 · Entry Level',
+    level_6: 'Level 6 · Associate',
+    level_5: 'Level 5 · Senior Associate',
+    level_4: 'Level 4 · Supervisor / Dept Lead',
+    level_3: 'Level 3 · Manager / Master Trainer',
+    level_2: 'Level 2 · Division Head / Director',
+    level_1: 'Level 1 · Executive / C-Suite',
+
+    // Navigation
+    nav_my_learning: 'My Courses',
+    nav_my_dashboard: 'Learning Dashboard',
+    nav_my_paths: 'Learning Roadmap',
+    nav_my_certificates: 'My Certificates',
+    nav_csat_ratings: 'Trainer Ratings (CSAT)',
+    nav_classrooms: 'Live Classrooms & QR Check-in',
+    nav_ai_hub: 'AI Learning Hub',
+    nav_history: 'Learning History',
+    nav_team_dashboard: 'Team Dashboard',
+    nav_team_gap: 'Team Skills & Competencies',
+    nav_dept_courses: 'Department Courses',
+    nav_reports_compliance: 'Compliance & Reports',
+    nav_teaching_classes: 'Teaching Classes & Live QR',
+    nav_attendance_mgmt: 'Attendance Management',
+    nav_feedback_csat: 'Learner CSAT Feedback',
+    nav_course_mgmt: 'Create & Manage Courses',
+    nav_training_ops: 'Class Schedules & Practical Labs',
+    nav_roi_reports: 'ROI & Kirkpatrick Evaluation',
+    nav_talent_analytics: 'Talent & Compliance Analytics',
+    nav_user_directory: '100+ Enterprise Staff Directory',
+    nav_org_hierarchy: 'Dual Organizational Hierarchy',
+    nav_job_levels: '7-Level Framework Governance',
+    nav_roadmaps_mgmt: 'Level Roadmaps Management',
+    nav_course_allocation: 'Course Program Allocation',
+    nav_faculty_assignment: 'Faculty Assignment',
+    nav_level_approvals: 'Level Advance Approvals',
+    nav_it_pipeline: 'IT Infrastructure & Pipeline',
+    nav_audit_logs: 'Security & Audit Logs',
+    nav_anti_cheat: 'Integrity & Anti-Cheat Policies',
+    nav_role_governance: '6 Roles Governance',
+    nav_hris_config: 'HRIS & Org Hierarchy Config',
+
+    // Roadmap Tabs
+    tab_current: 'Current Level Roadmap',
+    tab_succession: 'Succession Roadmap',
+    tab_self_proposed: 'Self-Proposed Tracks',
+    tab_recommended: 'Recommended Courses',
+
+    // Timeline Visuals
+    timeline_start: 'START',
+    timeline_start_label: 'Starting Point',
+    timeline_finish: 'FINISH',
+    timeline_finish_label: 'Goal',
+    timeline_stage: 'STAGE',
+    timeline_progress: 'Progress',
+    timeline_stages: 'stages',
+    timeline_start_learning: 'Start Learning',
+    timeline_review_lesson: 'Review Lesson',
+    timeline_completed: 'Completed',
+    timeline_in_progress: 'In Progress',
+    timeline_not_started: 'Not Started',
+    timeline_locked: 'Locked',
+    timeline_empty: 'No courses configured for this roadmap yet.',
+    timeline_all_done: 'Congratulations! You have completed the entire roadmap.',
+    timeline_succession_locked: 'You must complete 100% of your Current Level Roadmap to unlock this track.',
+    timeline_succession_unlocked: 'Current level completed! Succession roadmap unlocked.',
+    timeline_request_promotion: 'Submit Promotion & Succession Review Request',
+    timeline_request_pending: 'Promotion review request is pending Admin approval',
+
+    // Course Catalog & Cards
+    course_catalog: 'Enterprise Course Catalog',
+    my_assigned_courses: 'My Enrolled Courses',
+    full_catalog_label: 'Full Enterprise Catalog (Level 7 → 1)',
+    filter_all_status: 'All Statuses',
+    filter_in_progress: 'In Progress',
+    filter_completed: 'Completed',
+    filter_overdue: 'Overdue',
+    filter_mandatory: 'Mandatory Compliance',
+    filter_in_person: 'In-Person Workshop',
+    course_type_mandatory: 'Mandatory',
+    course_type_optional: 'Optional',
+    duration: 'Duration',
+    passing_score: 'Passing Score',
+    target_level: 'Target Level',
+    prerequisites: 'Prerequisites',
+    modules: 'Modules',
+    actions: 'Actions',
+    view_course: 'View Course',
+    enroll_now: 'Enroll Now',
+    continue_learning: 'Continue',
+    request_advance: 'Request Level Skip',
+    access_granted: 'Accessible',
+    access_locked: 'Level Locked',
+
+    // Admin & Builder
+    create_new_course: 'Create New Course',
+    save_changes: 'Save Changes',
+    course_thumbnail_section: 'Course Thumbnail & Roadmap Milestone Image',
+    image_url_label: 'Image URL',
+    preset_gallery_label: 'Or pick from MMVN Image Presets Gallery:',
+    live_preview_label: 'Live Component Preview:',
+    card_preview: 'Card Preview',
+    milestone_preview: 'Milestone Node Preview',
+    manage_level_roadmaps: 'Level Roadmaps Management',
+    add_course_to_roadmap: 'Add Course To Roadmap',
+    change_milestone_image: 'Change Image',
+    preview_roadmap_title: 'Interactive Roadmap Timeline Preview',
+
+    // Theme & Language
+    theme_light: 'Light Mode',
+    theme_dark: 'Dark Mode',
+    switch_theme: 'Toggle Dark/Light Mode',
+    switch_lang: 'Switch Language (EN / VI)',
+  },
+
+  vi: {
+    // Brand & App
+    appName: 'MM MegaLearn',
+    brandTagline: 'Đào Tạo & Phát Triển Nguồn Nhân Lực',
+    aiTutor: 'Trợ Lý AI',
+    streak: 'chuỗi học',
+    days: 'ngày',
+    notifications: 'Thông Báo',
+    markAllRead: 'Đánh dấu đã đọc',
+    noNotifications: 'Không có thông báo mới',
+    viewTalentProfile: 'Xem Hồ Sơ Năng Lực',
+    switchRoleDemo: 'Đổi nhanh 6 Persona:',
+    signOut: 'Đăng Xuất',
+    close: 'Đóng',
+    save: 'Lưu',
+    cancel: 'Hủy',
+    delete: 'Xóa',
+    edit: 'Chỉnh Sửa',
+    back: 'Quay Lại',
+    search: 'Tìm kiếm...',
+    all: 'Tất Cả',
+
+    // Roles & Levels
+    role_learner: 'Học Viên Tuyến Đầu',
+    role_manager: 'Trưởng Bộ Phận Siêu Thị',
+    role_trainer: 'Giảng Viên L&D / Master Trainer',
+    role_hrbp: 'HR Business Partner',
+    role_useradmin: 'User Admin / Quản Trị Đào Tạo',
+    role_sysadmin: 'Quản Trị Hệ Thống & Bảo Mật',
+
+    level_7: 'Level 7 · Khởi đầu / Tuyến đầu',
+    level_6: 'Level 6 · Chuyên viên',
+    level_5: 'Level 5 · Chuyên viên cấp cao',
+    level_4: 'Level 4 · Giám sát / Trưởng ca',
+    level_3: 'Level 3 · Trưởng ngành hàng',
+    level_2: 'Level 2 · Trưởng phòng ban / Giám đốc',
+    level_1: 'Level 1 · Ban Điều Hành (BOM / C-Level)',
+
+    // Navigation
+    nav_my_learning: 'Khóa Học Của Tôi',
+    nav_my_dashboard: 'Bảng Điều Khiển Học Tập',
+    nav_my_paths: 'Lộ Trình Học Tập',
+    nav_my_certificates: 'Chứng Chỉ Của Tôi',
+    nav_csat_ratings: 'Đánh Giá Giảng Viên (CSAT)',
+    nav_classrooms: 'Lớp Trực Tiếp & QR Check-in',
+    nav_ai_hub: 'AI Learning Hub',
+    nav_history: 'Lịch Sử Học Tập',
+    nav_team_dashboard: 'Bảng Điều Khiển Đội Ngũ',
+    nav_team_gap: 'Nhân Viên & Khoảng Cách Năng Lực',
+    nav_dept_courses: 'Khóa Học Của Phòng Ban',
+    nav_reports_compliance: 'Báo Cáo & Tuân Thủ',
+    nav_teaching_classes: 'Lớp Giảng Dạy & Live QR',
+    nav_attendance_mgmt: 'Quản Lý Điểm Danh Học Viên',
+    nav_feedback_csat: 'Báo Cáo CSAT Từ Học Viên',
+    nav_course_mgmt: 'Tạo & Quản Lý Khóa Học',
+    nav_training_ops: 'Lịch Giảng & Xưởng Thực Hành',
+    nav_roi_reports: 'Báo Cáo ROI & Kirkpatrick',
+    nav_talent_analytics: 'Phân Tích Nhân Tài & Tuân Thủ',
+    nav_user_directory: 'Danh Mục 100+ Nhân Sự',
+    nav_org_hierarchy: 'Cây Cơ Cấu Tổ Chức 2 Nhánh',
+    nav_job_levels: 'Khung 7 Cấp Bậc Định Biên',
+    nav_roadmaps_mgmt: 'Quản Lý Lộ Trình Cấp Bậc',
+    nav_course_allocation: 'Phân Bổ Khóa Học',
+    nav_faculty_assignment: 'Phân Công Giảng Viên Đứng Lớp',
+    nav_level_approvals: 'Duyệt Đơn Học Vượt Cấp',
+    nav_it_pipeline: 'Hạ Tầng IT & API Pipeline',
+    nav_audit_logs: 'Nhật Ký Bảo Mật (Audit Logs)',
+    nav_anti_cheat: 'Chính Sách Chống Gian Lận',
+    nav_role_governance: 'Quản Trị Toàn Bộ 6 Role',
+    nav_hris_config: 'Cấu Hình HRIS & Cây Tổ Chức',
+
+    // Roadmap Tabs
+    tab_current: 'Lộ Trình Hiện Tại',
+    tab_succession: 'Lộ Trình Kế Cận',
+    tab_self_proposed: 'Lộ Trình Tự Đề Xuất',
+    tab_recommended: 'Khóa Học Gợi Ý',
+
+    // Timeline Visuals
+    timeline_start: 'XUẤT PHÁT',
+    timeline_start_label: 'Khởi đầu',
+    timeline_finish: 'VỀ ĐÍCH',
+    timeline_finish_label: 'Đích đến',
+    timeline_stage: 'CHẶNG',
+    timeline_progress: 'Tiến độ',
+    timeline_stages: 'chặng',
+    timeline_start_learning: 'Vào Học Ngay',
+    timeline_review_lesson: 'Xem Lại Bài Giảng',
+    timeline_completed: 'Đã Hoàn Thành',
+    timeline_in_progress: 'Đang Học',
+    timeline_not_started: 'Chưa Bắt Đầu',
+    timeline_locked: 'Đang Khóa',
+    timeline_empty: 'Chưa có khóa học nào được cấu hình cho lộ trình này.',
+    timeline_all_done: 'Chúc mừng! Đã hoàn thành toàn bộ lộ trình học tập.',
+    timeline_succession_locked: 'Bạn phải hoàn thành 100% Lộ trình hiện tại để mở khóa lộ trình này.',
+    timeline_succession_unlocked: 'Đã hoàn thành định biên hiện tại! Lộ trình kế cận đã được mở khóa.',
+    timeline_request_promotion: 'Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp',
+    timeline_request_pending: 'Hồ sơ đề xuất đang chờ User Admin / System Admin duyệt',
+
+    // Course Catalog & Cards
+    course_catalog: 'Danh Mục Khóa Học Toàn Doanh Nghiệp',
+    my_assigned_courses: 'Khóa Học Của Tôi',
+    full_catalog_label: 'Toàn Bộ Thư Viện Doanh Nghiệp (Level 7 → 1)',
+    filter_all_status: 'Tất Cả Khóa Đã Gán',
+    filter_in_progress: 'Đang Học',
+    filter_completed: 'Đã Hoàn Thành',
+    filter_overdue: 'Quá Hạn',
+    filter_mandatory: 'Bắt Buộc Tuân Thủ',
+    filter_in_person: 'Đào Tạo Trực Tiếp (In-Person)',
+    course_type_mandatory: 'Bắt Buộc',
+    course_type_optional: 'Tự Chọn',
+    duration: 'Thời lượng',
+    passing_score: 'Điểm đạt',
+    target_level: 'Cấp bậc mục tiêu',
+    prerequisites: 'Điều kiện tiên quyết',
+    modules: 'Học phần',
+    actions: 'Thao tác',
+    view_course: 'Xem Khóa Học',
+    enroll_now: 'Vào Học Ngay',
+    continue_learning: 'Học Tiếp',
+    request_advance: 'Xin Học Vượt Cấp',
+    access_granted: 'Được Học',
+    access_locked: 'Chặn Cấp Bậc',
+
+    // Admin & Builder
+    create_new_course: 'Tạo Khóa Học Mới',
+    save_changes: 'Lưu Thay Đổi',
+    course_thumbnail_section: 'Hình Ảnh Đại Diện Khóa Học & Mốc Lộ Trình',
+    image_url_label: 'Đường dẫn ảnh (Image URL)',
+    preset_gallery_label: 'Hoặc chọn nhanh từ thư viện ảnh mẫu MMVN:',
+    live_preview_label: 'Xem trước hiển thị thực tế:',
+    card_preview: 'Xem Trước Thẻ Khóa Học',
+    milestone_preview: 'Xem Trước Mốc Lộ Trình',
+    manage_level_roadmaps: 'Quản Lý Lộ Trình Cấp Bậc',
+    add_course_to_roadmap: 'Thêm Khóa Học Vào Lộ Trình',
+    change_milestone_image: 'Đổi Ảnh',
+    preview_roadmap_title: 'Xem Trước Trục Lộ Trình Trực Quan',
+
+    // Theme & Language
+    theme_light: 'Giao Diện Sáng',
+    theme_dark: 'Giao Diện Tối',
+    switch_theme: 'Chuyển Chế Độ Tối / Sáng',
+    switch_lang: 'Chuyển Ngôn Ngữ (Anh / Việt)',
+  },
+};
+
+/**
+ * Tra cứu văn bản dịch theo key và ngôn ngữ hiện tại.
+ */
+export function translate(key, lang = 'vi', fallback = '') {
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+  if (dict && dict[key] !== undefined) {
+    return dict[key];
+  }
+  const fallbackDict = TRANSLATIONS.en || {};
+  if (fallbackDict[key] !== undefined) {
+    return fallbackDict[key];
+  }
+  return fallback || key;
+}
+
+export const DOMAIN_TRANSLATIONS = {
+  'Food Safety & Hygiene': { vi: 'Vệ Sinh & An Toàn Thực Phẩm', en: 'Food Safety & Hygiene' },
+  'Information Security': { vi: 'An Toàn Thông Tin & Bảo Mật', en: 'Information Security' },
+  'Health & Safety': { vi: 'An Toàn Lao Động & PCCC', en: 'Health & Safety' },
+  'Cold Chain': { vi: 'Chuỗi Cung Ứng Lạnh (Cold Chain)', en: 'Cold Chain Logistics' },
+  'Store Operations': { vi: 'Vận Hành & Khai Thác Siêu Thị', en: 'Store Operations' },
+  'Leadership & Management': { vi: 'Kỹ Năng Lãnh Đạo & Quản Lý', en: 'Leadership & Management' },
+  'Leadership': { vi: 'Kỹ Năng Lãnh Đạo & Quản Lý', en: 'Leadership & Management' },
+  'Supply Chain & Logistics': { vi: 'Chuỗi Cung Ứng & Kho Vận', en: 'Supply Chain & Logistics' },
+  'Supply Chain': { vi: 'Chuỗi Cung Ứng & Kho Vận', en: 'Supply Chain & Logistics' },
+  'Merchandising & Sales': { vi: 'Trưng Bày Hàng Hóa & Bán Hàng', en: 'Merchandising & Sales' },
+  'Merchandising': { vi: 'Trưng Bày Hàng Hóa & Bán Hàng', en: 'Merchandising & Sales' },
+  'Digital & E-Commerce': { vi: 'Thương Mại Điện Tử & Số Hóa', en: 'Digital & E-Commerce' },
+  'E-Commerce': { vi: 'Thương Mại Điện Tử & Số Hóa', en: 'Digital & E-Commerce' },
+  'Customer Service': { vi: 'Dịch Vụ Khách Hàng Chuẩn Mực', en: 'Customer Service Excellence' },
+  'Loss Prevention & QA': { vi: 'Kiểm Soát Thất Thoát & QA', en: 'Loss Prevention & QA' },
+  'Finance & Accounting': { vi: 'Tài Chính & Kế Toán Quản Trị', en: 'Finance & Accounting' },
+  'Corporate Governance': { vi: 'Quản Trị Doanh Nghiệp & Tuân Thủ', en: 'Corporate Governance' },
+};
+
+export const STATUS_TRANSLATIONS = {
+  COMPLETED: { vi: 'Đã Hoàn Thành', en: 'Completed' },
+  IN_PROGRESS: { vi: 'Đang Học', en: 'In Progress' },
+  NOT_STARTED: { vi: 'Chưa Bắt Đầu', en: 'Not Started' },
+  OVERDUE: { vi: 'Quá Hạn', en: 'Overdue' },
+  FAILED: { vi: 'Cần Thi Lại', en: 'Needs Retake' },
+  PUBLISHED: { vi: 'Đã Xuất Bản', en: 'Published' },
+  DRAFT: { vi: 'Bản Thảo', en: 'Draft' },
+  ARCHIVED: { vi: 'Lưu Trữ', en: 'Archived' },
+};
+
+export const DELIVERY_TRANSLATIONS = {
+  ONLINE_ELEARNING: { vi: 'Trực Tuyến E-learning', en: 'Online E-learning' },
+  IN_PERSON_CLASSROOM: { vi: 'Đào Tạo Trực Tiếp (ILT)', en: 'In-Person Workshop (ILT)' },
+  CLASSROOM_LAB: { vi: 'Thực Hành Xưởng (ILT)', en: 'Classroom Lab (ILT)' },
+  SCORM_PACKAGE: { vi: 'Gói Chuẩn SCORM', en: 'SCORM Package' },
+  VIDEO: { vi: 'Video Tương Tác', en: 'Interactive Video' },
+  PPT: { vi: 'Slide Bài Giảng PPT', en: 'Interactive PPT' },
+  EXTERNAL_PLATFORM: { vi: 'Nền Tảng Liên Kết', en: 'External Platform' },
+};
+
+export function translateDomain(domain, lang = 'vi') {
+  if (!domain) return '';
+  const match = DOMAIN_TRANSLATIONS[domain];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return domain;
+}
+
+export function translateStatus(status, lang = 'vi') {
+  if (!status) return '';
+  const match = STATUS_TRANSLATIONS[status];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return status;
+}
+
+export function translateDelivery(delivery, lang = 'vi') {
+  if (!delivery) return '';
+  const match = DELIVERY_TRANSLATIONS[delivery];
+  if (match) return lang === 'vi' ? match.vi : match.en;
+  return delivery;
+}
+
+/**
+ * Trả về thông tin hiển thị đã được bản địa hóa cho một đối tượng Course
+ */
+export function getLocalizedCourse(course, lang = 'vi') {
+  if (!course) return null;
+  return {
+    ...course,
+    displayTitle: lang === 'vi' ? (course.titleVi || course.title) : (course.titleEn || course.title),
+    displayCategory: translateDomain(course.category || course.domain, lang),
+    displayDomain: translateDomain(course.domain || course.category, lang),
+    displayDescription: lang === 'vi' ? (course.descriptionVi || course.description) : (course.descriptionEn || course.description),
+    displayFormat: translateDelivery(course.format || course.modality, lang),
+  };
+}
