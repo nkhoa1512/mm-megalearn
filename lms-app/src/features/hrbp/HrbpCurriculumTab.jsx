@@ -4,6 +4,11 @@ import { Badge, Button, Modal, ProgressBar } from '../common/ui';
 import CurriculumTree from '../catalog/CurriculumTree';
 import { targetOptionsFor } from '../../data/assignmentTargets';
 import {
+  getCourseTargetLevels,
+  evaluateUserEligibilityForCourse,
+  evaluateGroupEligibilityForCourse,
+} from '../../data/levelSystem';
+import {
   hrbpCurriculumBuckets,
   getCurriculumProgress,
 } from '../../utils/curriculumAssignment';

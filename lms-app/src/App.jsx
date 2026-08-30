@@ -290,12 +290,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <HashRouter>
-      <AppProvider>
-        <ErrorBoundary>
-          <AppRoutes />
-        </ErrorBoundary>
-      </AppProvider>
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <AppProvider>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+        </AppProvider>
+      </HashRouter>
+    </ErrorBoundary>
   );
 }

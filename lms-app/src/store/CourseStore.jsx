@@ -18,7 +18,7 @@ import {
   subDepartments as initialSubDepartments,
   jobLevels as initialJobLevels,
 } from '../data/mockData';
-import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
+import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel, evaluateUserEligibilityForCourse } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
 import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadmapMatrix';
 import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
@@ -1008,9 +1008,31 @@ export function CourseStoreProvider({ children }) {
   const accessFor = useCallback(
     (course, user = currentUser) => {
       const buckets = user === currentUser ? myRequestBuckets : requestBuckets(user);
-      return checkCourseAccessRule(course, user, buckets);
+      const isDirectlyAssigned = Boolean(
+        course?.assignments?.some((a) => {
+          if (a.assignmentType === 'USER' && (a.targetId === user?.userId || a.targetId === user?.employeeCode)) return true;
+          if (a.assignmentType === 'GROUP') {
+            const grp = customGroups.find((g) => g.id === a.targetId);
+            if (grp) {
+              if (a.groupPolicy === 'ELIGIBLE_ONLY') {
+                const evalRes = evaluateUserEligibilityForCourse(user, course);
+                if (!evalRes.isEligible && evalRes.matchType !== 'GAP_ONE_STEP') return false;
+              }
+              return isUserInCustomGroup(user, grp, users);
+            }
+          }
+          if (a.assignmentType === 'SUBDEPARTMENT' && (user?.subDepartmentId === a.targetId || user?.subDepartmentCode === a.targetId)) return true;
+          if (a.assignmentType === 'DEPARTMENT' && (user?.departmentId === a.targetId || user?.departmentCode === a.targetId)) return true;
+          if (a.assignmentType === 'DIVISION' && (user?.divisionId === a.targetId || user?.divisionCode === a.targetId)) return true;
+          if (a.assignmentType === 'STORE' && (user?.storeId === a.targetId || user?.storeCode === a.targetId)) return true;
+          if (a.assignmentType === 'BUSINESS_UNIT' && (user?.businessUnitId === a.targetId || user?.businessUnitCode === a.targetId)) return true;
+          if (a.assignmentType === 'LEVEL' && String(user?.level) === String(a.targetId)) return true;
+          return false;
+        })
+      );
+      return checkCourseAccessRule(course, user, { ...buckets, isDirectlyAssigned });
     },
-    [currentUser, myRequestBuckets, requestBuckets]
+    [currentUser, myRequestBuckets, requestBuckets, customGroups, users]
   );
 
   /** Ghi danh khóa học cho người đang đăng nhập (chỉ khi quy tắc cấp bậc cho phép). */
@@ -1395,7 +1417,7 @@ export function CourseStoreProvider({ children }) {
     [approvals, currentUser]
   );
 
-  /** "Khóa học của tôi" đã gộp cả ghi danh phát sinh trong phiên & các khóa thuộc Giáo Trình được gán. */
+  /** "Khóa học của tôi" đã gộp ghi danh, khóa thuộc Giáo Trình & các khóa được Admin/HRBP phân bổ trực tiếp / theo nhóm. */
   const myCourses = useCallback(
     (courseList = courses, user = currentUser) => {
       const base = myLearningCourses(courseList, user, enrollments);
@@ -1413,30 +1435,66 @@ export function CourseStoreProvider({ children }) {
         });
       });
 
-      // Bổ sung thông tin Giáo trình cho các khóa đã có trong danh sách
+      // Quét tất cả các khóa có phân bổ theo Custom Group
+      const groupAssignmentMap = {};
+      (courseList || []).forEach((c) => {
+        const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+        for (const a of asgList) {
+          if (a.assignmentType === 'GROUP') {
+            const grp = customGroups.find((g) => g.id === a.targetId);
+            if (grp) {
+              let eligible = true;
+              if (a.groupPolicy === 'ELIGIBLE_ONLY') {
+                const evalRes = evaluateUserEligibilityForCourse(user, c);
+                if (!evalRes.isEligible && evalRes.matchType !== 'GAP_ONE_STEP') {
+                  eligible = false;
+                }
+              }
+              if (eligible && isUserInCustomGroup(user, grp, users)) {
+                groupAssignmentMap[c.id] = {
+                  assignment: a,
+                  dueDate: a.dueDate,
+                  assignedAt: a.assignedAt,
+                };
+                break;
+              }
+            }
+          }
+        }
+      });
+
+      // Bổ sung thông tin Giáo trình & Phân bổ nhóm cho các khóa đã có trong base
       const enrichedBase = base.map((c) => {
-        if (curriculumMap[c.id]) {
+        const curMeta = curriculumMap[c.id];
+        const grpMeta = groupAssignmentMap[c.id];
+
+        if (curMeta || grpMeta) {
+          const effectiveDueDate = grpMeta?.dueDate || curMeta?.curriculumDueDate || c.enrollment?.dueDate;
           return {
             ...c,
             courseType: 'MANDATORY',
-            isCurriculum: true,
-            curriculumId: curriculumMap[c.id].curriculumId,
-            curriculumTitle: curriculumMap[c.id].curriculumTitle,
-            curriculumDueDate: curriculumMap[c.id].curriculumDueDate,
+            isCurriculum: Boolean(curMeta),
+            curriculumId: curMeta?.curriculumId,
+            curriculumTitle: curMeta?.curriculumTitle,
+            curriculumDueDate: curMeta?.curriculumDueDate,
+            isDirectlyAssigned: Boolean(grpMeta) || c.isDirectlyAssigned,
+            assignment: grpMeta?.assignment || c.assignment,
             enrollment: {
               ...(c.enrollment || {}),
               isMandatory: true,
-              dueDate: curriculumMap[c.id].curriculumDueDate || c.enrollment?.dueDate,
+              dueDate: effectiveDueDate,
             },
           };
         }
         return c;
       });
 
-      // Tự động gán thêm các khóa học thuộc Giáo trình nếu học viên chưa có ghi danh
+      // Tự động gán thêm các khóa học thuộc Giáo trình & Phân bổ nhóm nếu chưa có trong base
       const extraCourses = [];
+
+      // Từ Giáo trình
       Object.entries(curriculumMap).forEach(([cId, meta]) => {
-        if (!baseIds.has(cId)) {
+        if (!baseIds.has(cId) && !groupAssignmentMap[cId]) {
           const raw = courseList.find((c) => c.id === cId);
           if (raw) {
             extraCourses.push({
@@ -1454,15 +1512,43 @@ export function CourseStoreProvider({ children }) {
                 dueDate: meta.curriculumDueDate,
                 enrolledAt: new Date().toISOString().slice(0, 10),
                 enrolledVersion: raw.currentVersion || 'v1.0',
+                enrolledVia: 'MANDATORY_ASSIGNMENT',
               },
             });
+            baseIds.add(cId);
+          }
+        }
+      });
+
+      // Từ Phân bổ nhóm (Custom Group)
+      Object.entries(groupAssignmentMap).forEach(([cId, meta]) => {
+        if (!baseIds.has(cId)) {
+          const raw = courseList.find((c) => c.id === cId);
+          if (raw) {
+            extraCourses.push({
+              ...raw,
+              courseType: 'MANDATORY',
+              isDirectlyAssigned: true,
+              assignment: meta.assignment,
+              enrollment: {
+                status: 'NOT_STARTED',
+                progressPercent: 0,
+                score: null,
+                isMandatory: true,
+                dueDate: meta.dueDate || null,
+                enrolledAt: meta.assignedAt || new Date().toISOString().slice(0, 10),
+                enrolledVersion: raw.currentVersion || 'v1.0',
+                enrolledVia: 'MANDATORY_ASSIGNMENT',
+              },
+            });
+            baseIds.add(cId);
           }
         }
       });
 
       return [...enrichedBase, ...extraCourses];
     },
-    [courses, currentUser, enrollments, curricula]
+    [courses, currentUser, enrollments, curricula, customGroups, users]
   );
 
   const myEnrollments = useMemo(() => enrollmentsForUser(currentUser, enrollments), [currentUser, enrollments]);

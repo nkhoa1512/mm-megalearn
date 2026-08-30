@@ -77,8 +77,6 @@ export default function CustomGroupsManager() {
 
   // Manual Tab Search & Selection
   const [manualSearch, setManualSearch] = useState('');
-  const [manualLevelFilter, setManualLevelFilter] = useState('ALL');
-  const [manualDeptFilter, setManualDeptFilter] = useState('ALL');
 
   // File Import Tab
   const [importText, setImportText] = useState('');
@@ -150,18 +148,22 @@ export default function CustomGroupsManager() {
   // Filtered list for Manual Picker Tab
   const manualAvailableUsers = useMemo(() => {
     return users.filter((u) => {
-      const matchLvl = manualLevelFilter === 'ALL' || String(u.level) === String(manualLevelFilter);
-      const matchDept = manualDeptFilter === 'ALL' || u.departmentId === manualDeptFilter || u.divisionId === manualDeptFilter;
-      const q = manualSearch.toLowerCase();
-      const matchSearch =
-        !manualSearch.trim() ||
+      if (!manualSearch.trim()) return true;
+      const q = manualSearch.toLowerCase().trim();
+      return (
         (u.fullName && u.fullName.toLowerCase().includes(q)) ||
         (u.employeeCode && u.employeeCode.toLowerCase().includes(q)) ||
         (u.email && u.email.toLowerCase().includes(q)) ||
-        (u.departmentName && u.departmentName.toLowerCase().includes(q));
-      return matchLvl && matchDept && matchSearch;
+        (u.departmentName && u.departmentName.toLowerCase().includes(q)) ||
+        (u.departmentCode && u.departmentCode.toLowerCase().includes(q)) ||
+        (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(q)) ||
+        (u.subDepartmentCode && u.subDepartmentCode.toLowerCase().includes(q)) ||
+        (u.position && u.position.toLowerCase().includes(q)) ||
+        (u.title && u.title.toLowerCase().includes(q)) ||
+        (u.level && `level ${u.level}`.includes(q))
+      );
     });
-  }, [users, manualLevelFilter, manualDeptFilter, manualSearch]);
+  }, [users, manualSearch]);
 
   // Open Create Modal
   function handleOpenAdd() {
@@ -979,37 +981,26 @@ export default function CustomGroupsManager() {
                   </div>
                 </div>
 
-                <div className="grid grid-3" style={{ gap: 8, marginBottom: 8 }}>
+                <div style={{ marginBottom: 8, position: 'relative' }}>
+                  <i
+                    className="ti ti-search"
+                    style={{
+                      position: 'absolute',
+                      left: 10,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--ink-faint)',
+                      fontSize: 13,
+                    }}
+                  />
                   <input
                     type="text"
                     className="field-input"
-                    placeholder="Tìm tên, mã NV, email..."
+                    placeholder="Tìm kiếm nhân sự theo Tên, Mã NV, Email, Phòng ban, Chức danh..."
                     value={manualSearch}
                     onChange={(e) => setManualSearch(e.target.value)}
-                    style={{ fontSize: 12 }}
+                    style={{ fontSize: 12, paddingLeft: 30, width: '100%', height: 34 }}
                   />
-                  <select
-                    className="field-select"
-                    style={{ fontSize: 12 }}
-                    value={manualLevelFilter}
-                    onChange={(e) => setManualLevelFilter(e.target.value)}
-                  >
-                    <option value="ALL">-- Cấp bậc --</option>
-                    {jobLevels.map((lvl) => (
-                      <option key={lvl.level} value={lvl.level}>Level {lvl.level}</option>
-                    ))}
-                  </select>
-                  <select
-                    className="field-select"
-                    style={{ fontSize: 12 }}
-                    value={manualDeptFilter}
-                    onChange={(e) => setManualDeptFilter(e.target.value)}
-                  >
-                    <option value="ALL">-- Phòng ban --</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>{d.code}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6, background: '#fff' }}>

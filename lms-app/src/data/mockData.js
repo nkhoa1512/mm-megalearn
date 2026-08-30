@@ -976,18 +976,57 @@ export function isCourseAssignedToUser(course, user, overlay = null) {
   return Boolean(enrollmentsForUser(user, overlay)[course.id]);
 }
 
-// "My Learning" list for a given user: dynamically merges user-specific enrollments
+// "My Learning" list for a given user: dynamically merges user-specific enrollments and direct assignments
 export function myLearningCourses(courseList, user, overlay = null) {
   if (!user) return [];
   const enrollments = enrollmentsForUser(user, overlay);
   return (courseList || [])
-    .filter((c) => Boolean(enrollments[c.id]))
+    .filter((c) => {
+      if (enrollments[c.id]) return true;
+      const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+      return asgList.some((a) => {
+        if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+        if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+        if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+        if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+        if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+        return false;
+      });
+    })
     .map((c) => {
       const userEnrollment = enrollments[c.id];
+      const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+      const matchedAsg = asgList.find((a) => {
+        if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+        if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+        if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+        if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+        if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+        return false;
+      });
+
+      const fallbackEnrollment = matchedAsg ? {
+        status: 'NOT_STARTED',
+        progressPercent: 0,
+        score: null,
+        isMandatory: true,
+        dueDate: matchedAsg.dueDate || null,
+        enrolledAt: matchedAsg.assignedAt || new Date().toISOString().slice(0, 10),
+        enrolledVersion: c.currentVersion || 'v1.0',
+        enrolledVia: 'MANDATORY_ASSIGNMENT',
+      } : {};
+
       return {
         ...c,
+        courseType: matchedAsg ? 'MANDATORY' : c.courseType,
+        isDirectlyAssigned: Boolean(matchedAsg),
         enrollment: {
           ...(c.enrollment || {}),
+          ...fallbackEnrollment,
           ...userEnrollment,
         },
       };
