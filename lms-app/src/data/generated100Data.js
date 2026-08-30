@@ -532,6 +532,22 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
     const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
 
+    // Phân bổ từ 2 đến 3 Giảng viên Đồng giảng & Trợ giảng (Tổng ban giảng huấn 3 - 4 người)
+    const coTrainerCount = (idx % 2 === 0) ? 2 : 3;
+    const coTrainers = isClassroom ? Array.from({ length: coTrainerCount }, (_, cIdx) => {
+      const p = TEACHING_POOL[(idx + courseCounter + 1 + cIdx) % TEACHING_POOL.length];
+      return {
+        id: p.id,
+        userId: p.id,
+        name: p.name,
+        fullName: p.name,
+        role: 'trainer',
+        title: 'Giảng Viên / Trợ Giảng',
+      };
+    }) : [];
+    const coTrainerIds = isClassroom ? coTrainers.map((t) => t.id) : [];
+    const coTrainerNames = isClassroom ? coTrainers.map((t) => t.name) : [];
+
     const targetLevel = resolveCourseTargetLevel(tpl.codePrefix, idx);
     const targetLevelTitle = `Level ${targetLevel}: ${levelTitle(targetLevel)}`;
 
@@ -591,6 +607,9 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       published: true,
       trainerId,
       trainerName,
+      coTrainerIds,
+      coTrainerNames,
+      coTrainers,
       venue,
       venueId,
       scheduleDate,

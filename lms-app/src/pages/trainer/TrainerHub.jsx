@@ -45,6 +45,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   // dùng nguyên cơ chế "Lớp Học Phụ Trách"/Điểm Danh bên dưới, chỉ khác nút
   // hành động (Host Meeting thay vì QR) vì không có mã QR vật lý từ xa.
   const virtualClassCourses = courses
+
     .filter((c) => c.deliveryType === 'ONLINE_ELEARNING' && c.onlineClassType === 'VIRTUAL_CLASS')
     .filter((c) => c.virtualMeeting?.instructorId === trainerProfile.userId || c.trainerName === trainerProfile.fullName)
     .map((c) => {
@@ -65,10 +66,22 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const allLearnerCandidates = (users && users.length > 0 ? users : allUsers).filter((u) => normalizeRole(u.role) === 'learner' || normalizeRole(u.role) === 'manager');
 
   const myTeachingClasses = [
-    ...classroomSessions.filter((s) => s.trainerId === trainerProfile.userId || s.trainerName === trainerProfile.fullName),
-    ...inPersonCourses.filter((c) => (c.trainerId === trainerProfile.userId || c.trainerName === trainerProfile.fullName) && !classroomSessions.some((s) => s.title === c.title)),
+    ...classroomSessions.filter((s) =>
+      s.trainerId === trainerProfile.userId ||
+      s.trainerName === trainerProfile.fullName ||
+      (s.coTrainerIds && s.coTrainerIds.includes(trainerProfile.userId)) ||
+      (s.coTrainers && s.coTrainers.some((ct) => (ct.userId || ct.id) === trainerProfile.userId))
+    ),
+    ...inPersonCourses.filter((c) =>
+      (c.trainerId === trainerProfile.userId ||
+      c.trainerName === trainerProfile.fullName ||
+      (c.coTrainerIds && c.coTrainerIds.includes(trainerProfile.userId)) ||
+      (c.coTrainers && c.coTrainers.some((ct) => (ct.userId || ct.id) === trainerProfile.userId))) &&
+      !classroomSessions.some((s) => s.title === c.title)
+    ),
     ...virtualClassCourses,
   ].map((c, cIdx) => {
+    const isLead = (c.trainerId === trainerProfile.userId || c.trainerName === trainerProfile.fullName);
     const targetCount = c.enrolledCount || (cIdx === 0 ? 52 : cIdx === 1 ? 21 : 18);
     const capacity = c.maxCapacity || (cIdx === 0 ? 60 : cIdx === 1 ? 100 : 25);
     
@@ -94,10 +107,13 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       category: c.category,
       isVirtual: c.isVirtual || false,
       meetingUrl: c.meetingUrl || (c.isVirtual ? 'https://teams.microsoft.com/l/meetup-join/mmvn-virtual-class' : null),
+      isLeadTrainer: isLead,
+      coTrainers: c.coTrainers || [],
+      coTrainerNames: c.coTrainerNames || [],
       trainerName: c.trainerName || trainerProfile.fullName,
       trainerTitle: c.trainerTitle || roleDefinition(trainerProfile.role).labelVi,
       date: c.date || c.scheduleDate || '2026-09-05',
-      time: c.time || c.scheduleTime || '14:00 - 17:00 (3.0 hours)',
+      time: c.time || c.scheduleTime || '08:30 - 11:30 (3.0 hours)',
       venue: c.venue || 'Fresh Food & Bakery Practical Lab (MM An Phú)',
       maxCapacity: capacity,
       enrolledCount: targetCount,

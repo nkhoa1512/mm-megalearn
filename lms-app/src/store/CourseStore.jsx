@@ -31,8 +31,8 @@ import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
 const AUTH_KEY = 'mm-megalearn-auth-v6';
-const STORAGE_KEY = 'mm-megalearn-courses-v8';
-const CLASSROOM_KEY = 'mm-megalearn-classrooms-v8';
+const STORAGE_KEY = 'mm-megalearn-courses-v11';
+const CLASSROOM_KEY = 'mm-megalearn-classrooms-v11';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
@@ -229,6 +229,55 @@ function hydrateUser(user) {
     departmentName: user.departmentName || canonical?.departmentName || null,
     departmentId: user.departmentId || canonical?.departmentId || null,
   };
+}
+
+function hydrateCourses(courseList) {
+  if (!Array.isArray(courseList)) return courseList;
+  const TEACHING_POOL = [
+    { id: 'USR-9003', name: 'Nguyễn Văn Hùng', role: 'trainer', title: 'Master Trainer (L&OD)' },
+    { id: 'USR-9005', name: 'Vũ Đức Thành', role: 'trainer', title: 'Loss Prevention & HSE Director' },
+    { id: 'USR-9006', name: 'Trần Minh Quang', role: 'trainer', title: 'Senior SGM & Mentor' },
+    { id: 'USR-9002', name: 'Phạm Thanh Thảo', role: 'useradmin', title: 'HR Master Data & User Admin' },
+    { id: 'USR-9004', name: 'Lê Thị Mai', role: 'hrbp', title: 'HR Business Partner Lead' },
+    { id: 'USR-9001', name: 'Trần Hoàng Long', role: 'sysadmin', title: 'Lead IT Systems Administrator' },
+  ];
+
+  return courseList.map((c, idx) => {
+    if (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB') {
+      const lead = TEACHING_POOL[idx % TEACHING_POOL.length];
+      const trainerId = c.trainerId || lead.id;
+      const trainerName = c.trainerName || c.instructor || lead.name;
+
+      let coTrainers = c.coTrainers && c.coTrainers.length > 0 ? c.coTrainers : [];
+      if (coTrainers.length === 0) {
+        const coCount = (idx % 2 === 0) ? 2 : 3;
+        coTrainers = Array.from({ length: coCount }, (_, cIdx) => {
+          const p = TEACHING_POOL[(idx + 1 + cIdx) % TEACHING_POOL.length];
+          return {
+            id: p.id,
+            userId: p.id,
+            name: p.name,
+            fullName: p.name,
+            role: p.role,
+            title: p.title,
+          };
+        });
+      }
+      const coTrainerIds = coTrainers.map((t) => t.userId || t.id);
+      const coTrainerNames = coTrainers.map((t) => t.fullName || t.name);
+
+      return {
+        ...c,
+        trainerId,
+        trainerName,
+        instructor: trainerName,
+        coTrainers,
+        coTrainerIds,
+        coTrainerNames,
+      };
+    }
+    return c;
+  });
 }
 
 function todayIso() {

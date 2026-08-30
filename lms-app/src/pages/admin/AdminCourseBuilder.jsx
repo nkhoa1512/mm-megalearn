@@ -854,12 +854,49 @@ export default function AdminCourseBuilder() {
     if (raw.deliveryType === 'IN_PERSON_CLASSROOM' || raw.modality === 'CLASSROOM_LAB') {
       const matchTr = eligibleTrainers.find((t) => t.userId === raw.trainerId) ||
         eligibleTrainers.find((t) => t.fullName?.toLowerCase() === (raw.trainerName || raw.instructor || '').toLowerCase()) ||
-        eligibleTrainers.find((t) => (raw.trainerName || raw.instructor || '').toLowerCase().includes(t.fullName?.toLowerCase()));
+        eligibleTrainers.find((t) => (raw.trainerName || raw.instructor || '').toLowerCase().includes(t.fullName?.toLowerCase())) ||
+        eligibleTrainers[0];
       if (matchTr) {
         raw.trainerId = matchTr.userId;
         raw.trainerName = matchTr.fullName;
         raw.instructor = matchTr.fullName;
       }
+
+      // Hydrate coTrainers if missing or empty (Chỉ áp dụng cho Admin, Trainer chỉ đứng lớp độc lập)
+      let currentCoTrainers = raw.coTrainers && Array.isArray(raw.coTrainers) && raw.coTrainers.length > 0 ? raw.coTrainers : [];
+      if (isTrainerOnly) {
+        currentCoTrainers = [];
+      } else {
+        if (currentCoTrainers.length === 0 && raw.coTrainerIds && raw.coTrainerIds.length > 0) {
+          currentCoTrainers = raw.coTrainerIds.map((id) => {
+            const tr = eligibleTrainers.find((t) => t.userId === id);
+            return tr ? {
+              id: tr.userId,
+              userId: tr.userId,
+              fullName: tr.fullName,
+              name: tr.fullName,
+              role: tr.role,
+              title: roleDefinition(tr.role).labelVi,
+            } : null;
+          }).filter(Boolean);
+        }
+        // If still empty on existing classroom course, supply 2 co-trainers
+        if (currentCoTrainers.length === 0 && !isNew) {
+          const others = eligibleTrainers.filter((t) => t.userId !== raw.trainerId);
+          currentCoTrainers = others.slice(0, 2).map((tr) => ({
+            id: tr.userId,
+            userId: tr.userId,
+            fullName: tr.fullName,
+            name: tr.fullName,
+            role: tr.role,
+            title: roleDefinition(tr.role).labelVi,
+          }));
+        }
+      }
+
+      raw.coTrainers = currentCoTrainers;
+      raw.coTrainerIds = currentCoTrainers.map((t) => t.userId || t.id);
+      raw.coTrainerNames = currentCoTrainers.map((t) => t.fullName || t.name);
     }
     return raw;
   });
@@ -2109,7 +2146,7 @@ export default function AdminCourseBuilder() {
 
           <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Giảng viên Đứng lớp (Assigned Trainer / Faculty)</label>
+              <label className="field-label">⭐ Giảng viên Chính (Lead Trainer / Faculty) *</label>
               {isTrainerOnly ? (
                 <div className="field-input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)' }}>
                   <i className="ti ti-user-check" style={{ color: 'var(--blue)' }} />
@@ -2118,7 +2155,7 @@ export default function AdminCourseBuilder() {
               ) : (
                 <select
                   className="field-select"
-                                    value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
+                  value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
                   onChange={(e) => {
                     const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
                     setDraft((prev) => ({
@@ -2137,7 +2174,7 @@ export default function AdminCourseBuilder() {
                   ))}
                 </select>
               )}
-              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong Cổng Giảng Dạy và mở mã QR Điểm danh tại lớp.</div>
+              <div className="field-hint">Giảng viên chính chịu trách nhiệm giáo trình và điều phối buổi đào tạo.</div>
             </div>
 
             <div>
@@ -2159,6 +2196,109 @@ export default function AdminCourseBuilder() {
               <div className="field-hint">Phòng học / Xưởng thực hành tổ chức buổi đào tạo thực tế.</div>
             </div>
           </div>
+
+          {/* CO-TRAINERS / FACULTY PANEL SECTION - Chỉ User Admin & SysAdmin mới có quyền phân công Giảng viên đồng giảng */}
+          {!isTrainerOnly && (
+            <div style={{ marginBottom: 16, padding: '12px 14px', background: '#F8FAFC', border: '1px solid var(--line)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <label className="field-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="ti ti-users" style={{ color: 'var(--blue)' }} />
+                    🤝 Giảng Viên Đồng Giảng &amp; Trợ Giảng (Co-Trainers / Assistants)
+                  </label>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                    Cho phép thêm 1 hoặc nhiều giảng viên cùng đứng lớp, mở QR điểm danh và quản lý học viên.
+                  </div>
+                </div>
+
+                {/* Add co-trainer dropdown */}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <select
+                    className="field-select"
+                    style={{ width: 240, fontSize: 12, height: 34, padding: '2px 8px' }}
+                    value=""
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      if (!selId) return;
+                      const tr = eligibleTrainers.find((t) => t.userId === selId);
+                      if (!tr) return;
+                      const curList = draft.coTrainers || [];
+                      if (curList.some((c) => c.userId === selId || c.id === selId) || selId === draft.trainerId) return;
+                      
+                      const nextList = [...curList, {
+                        id: tr.userId,
+                        userId: tr.userId,
+                        fullName: tr.fullName,
+                        name: tr.fullName,
+                        role: tr.role,
+                        title: roleDefinition(tr.role).labelVi,
+                      }];
+                      setDraft((prev) => ({
+                        ...prev,
+                        coTrainers: nextList,
+                        coTrainerIds: nextList.map((x) => x.userId),
+                        coTrainerNames: nextList.map((x) => x.fullName),
+                      }));
+                    }}
+                  >
+                    <option value="">+ Thêm Giảng Viên Đồng Giảng...</option>
+                    {eligibleTrainers
+                      .filter((t) => t.userId !== draft.trainerId && !(draft.coTrainers || []).some((c) => c.userId === t.userId || c.id === t.userId))
+                      .map((t) => (
+                        <option key={t.userId} value={t.userId}>
+                          + {t.fullName} ({roleDefinition(t.role).shortVi})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* List of active co-trainers */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {(!draft.coTrainers || draft.coTrainers.length === 0) ? (
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>
+                    Chưa có giảng viên đồng giảng. Lớp học do 1 Giảng viên chính phụ trách.
+                  </div>
+                ) : (
+                  draft.coTrainers.map((ct) => (
+                    <div
+                      key={ct.userId || ct.id}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        background: '#fff',
+                        border: '1px solid var(--blue)',
+                        borderRadius: 20,
+                        padding: '3px 10px',
+                        gap: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      <i className="ti ti-user-check" style={{ color: 'var(--blue)', fontSize: 13 }} />
+                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{ct.fullName || ct.name}</span>
+                      <Badge tone="blue" size="sm">{roleDefinition(ct.role || 'trainer').shortVi}</Badge>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextList = (draft.coTrainers || []).filter((x) => (x.userId || x.id) !== (ct.userId || ct.id));
+                          setDraft((prev) => ({
+                            ...prev,
+                            coTrainers: nextList,
+                            coTrainerIds: nextList.map((x) => x.userId),
+                            coTrainerNames: nextList.map((x) => x.fullName),
+                          }));
+                        }}
+                        title="Xóa giảng viên này khỏi lớp"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: '0 2px', display: 'flex', alignItems: 'center' }}
+                      >
+                        <i className="ti ti-x" style={{ fontSize: 12 }} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-3" style={{ marginBottom: 14 }}>
             <div>

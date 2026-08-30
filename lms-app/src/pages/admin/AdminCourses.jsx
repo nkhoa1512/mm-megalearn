@@ -1711,7 +1711,13 @@ function CourseDetailModal({
                 <i className="ti ti-school" /> Thông Tin Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành
               </div>
               <div className="grid grid-2" style={{ gap: 10, fontSize: 12.5 }}>
-                <div><strong>Giảng viên:</strong> {liveCourse.trainerName || liveCourse.instructor || 'Chưa phân công'}</div>
+                <div><strong>Giảng viên chính:</strong> {liveCourse.trainerName || liveCourse.instructor || 'Chưa phân công'}</div>
+                {((liveCourse.coTrainers && liveCourse.coTrainers.length > 0) || (liveCourse.coTrainerNames && liveCourse.coTrainerNames.length > 0)) && (
+                  <div style={{ gridColumn: '1 / -1', background: '#DBEAFE', padding: '6px 10px', borderRadius: 6, color: '#1E40AF' }}>
+                    <i className="ti ti-users" style={{ marginRight: 6 }} />
+                    <strong>Đồng giảng viên / Trợ giảng:</strong> {liveCourse.coTrainerNames?.join(', ') || liveCourse.coTrainers.map(t => t.fullName || t.name).join(', ')}
+                  </div>
+                )}
                 <div><strong>Địa điểm / Xưởng:</strong> {liveCourse.venue || 'Fresh Food & Bakery Lab'}</div>
                 <div><strong>Lịch đào tạo:</strong> {liveCourse.scheduleDate || '2026-08-28'} ({liveCourse.scheduleTime || '08:30 - 11:30'})</div>
                 <div><strong>Sức chứa:</strong> {liveCourse.maxCapacity || 25} học viên &middot; Live QR Attendance</div>
