@@ -37,6 +37,7 @@ import {
   getCourseEligibleLevels,
   evaluateUserEligibilityForCourse,
   evaluateGroupEligibilityForCourse,
+  ACCESS_STATE,
 } from '../../data/levelSystem';
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
@@ -73,6 +74,7 @@ export default function AdminCourses() {
     assessments, addAssessment, updateAssessment, deleteAssessment,
     assignAssessmentTarget, removeAssessmentTarget,
     questionBanks, addQuestionToBank, assessmentAttempts,
+    accessFor,
   } = useCourseStore();
   const role = normalizeRole(currentUser?.role);
   const isAdmin = canAuthorAnyCourse(role);
@@ -298,6 +300,8 @@ export default function AdminCourses() {
         : LIFECYCLE_STATUS_META[lifecycle])
       : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
     const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
+    const myAccess = accessFor ? accessFor(c, currentUser) : { canAccess: true, state: ACCESS_STATE.OPEN };
+
     return (
       <tr key={c.id}>
         <td>
@@ -348,16 +352,29 @@ export default function AdminCourses() {
           </Badge>
         </td>
         <td>
-          {/* Bấm vào tên/ảnh khóa học ở cột đầu đã mở "Chi Tiết & Phân Bổ" rồi
-              (xem onClick cột COURSE PROGRAM), nên ở đây không lặp lại nút đó
-              nữa — mỗi hàng chỉ còn đúng 1 nút (hoặc 1 dropdown gọn), tránh
-              bị wrap xuống dòng và trông lộn xộn. */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, alignItems: 'center' }}>
             {canManage ? (
               <ActionsMenu
                 label="Thao tác khác"
                 items={[
                   !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Chi Tiết & Phân Bổ', onClick: () => setViewingCourse(c) },
+                  myAccess.canAccess ? {
+                    key: 'learn',
+                    icon: 'ti-player-play',
+                    label: '🚀 Vào Học Bài (Cá Nhân)',
+                    onClick: () => navigate(`/learner/courses/${c.id}`),
+                  } : myAccess.state === ACCESS_STATE.REQUESTABLE ? {
+                    key: 'request_learn',
+                    icon: 'ti-send',
+                    label: '⚠️ Xin Học Vượt Cấp',
+                    onClick: () => navigate(`/learner/courses/${c.id}`),
+                  } : {
+                    key: 'locked_learn',
+                    icon: 'ti-lock',
+                    label: '🔒 Khóa học vượt cấp',
+                    disabled: true,
+                    title: myAccess.reason,
+                  },
                   { key: 'edit', icon: 'ti-edit', label: 'Edit', onClick: () => navigate(`/admin/courses/${c.id}`) },
                   c.status === 'DRAFT' && { key: 'publish', icon: 'ti-upload', label: 'Publish', onClick: () => publish(c) },
                   {
@@ -369,17 +386,18 @@ export default function AdminCourses() {
                     title: hasParticipants ? 'Cannot delete: employees have already started this course.' : undefined,
                     onClick: () => remove(c),
                   },
-                ]}
+                ].filter(Boolean)}
               />
             ) : (
               <Button
                 size="sm"
-                variant="outline"
-                icon="ti-eye"
+                variant={myAccess.canAccess ? "primary" : "outline"}
+                icon={myAccess.canAccess ? "ti-player-play" : myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? "ti-lock" : "ti-eye"}
+                disabled={myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP}
                 onClick={() => navigate(`/learner/courses/${c.id}`)}
-                title={isAdmin ? 'Khóa này không do bạn tạo — chỉ xem, không sửa/xóa được.' : undefined}
+                title={myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? myAccess.reason : (isAdmin ? 'Khóa này không do bạn tạo — chỉ xem, không sửa/xóa được.' : undefined)}
               >
-                View Course
+                {myAccess.canAccess ? 'Vào Học' : myAccess.state === ACCESS_STATE.REQUESTABLE ? 'Xin Học' : 'Khóa Bị Chặn'}
               </Button>
             )}
           </div>
@@ -2084,10 +2102,12 @@ function CourseDetailModal({
   isAdmin,
   currentUser,
 }) {
+  const navigate = useNavigate();
   const {
     courses: storeCourses,
     assignCourse,
     removeCourseAssignment,
+    accessFor,
   } = useCourseStore();
 
   const liveCourse = (storeCourses || courses || []).find((c) => c.id === initialCourse.id) || initialCourse;
@@ -2101,6 +2121,12 @@ function CourseDetailModal({
   const targetLevels = liveCourse.targetLevels && liveCourse.targetLevels.length > 0
     ? liveCourse.targetLevels
     : liveCourse.targetLevel ? [liveCourse.targetLevel] : ['7'];
+
+  // Personal Learner Access for currentUser
+  const myAccess = useMemo(() => {
+    if (!accessFor || !currentUser) return { canAccess: true, state: ACCESS_STATE.OPEN };
+    return accessFor(liveCourse, currentUser);
+  }, [accessFor, liveCourse, currentUser]);
 
   function handleSaveAssignment({ assignmentType, targets, dueDate, justification, groupPolicy, assignedLevelEligibility }) {
     const toAdd = targets.map((t) => ({
@@ -2126,15 +2152,50 @@ function CourseDetailModal({
       onClose={onClose}
       size="lg"
       footer={(
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <Badge tone={formatBadge.tone}>{formatBadge.icon} {formatBadge.label}</Badge>
             <Badge tone={STATUS_TONE[liveCourse.status]}>{liveCourse.status || 'PUBLISHED'}</Badge>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {myAccess.canAccess ? (
+              <Button
+                size="sm"
+                variant="primary"
+                icon="ti-player-play"
+                onClick={() => {
+                  onClose();
+                  navigate(`/learner/courses/${liveCourse.id}`);
+                }}
+              >
+                🚀 Vào Học Bài (Learner Mode)
+              </Button>
+            ) : myAccess.state === ACCESS_STATE.REQUESTABLE ? (
+              <Button
+                size="sm"
+                variant="outline"
+                icon="ti-send"
+                onClick={() => {
+                  onClose();
+                  navigate(`/learner/courses/${liveCourse.id}`);
+                }}
+              >
+                ⚠️ Xin Học Vượt Cấp
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled
+                icon="ti-lock"
+                title={myAccess.reason}
+              >
+                🔒 Khóa Học Vượt Cấp
+              </Button>
+            )}
             {isAdmin && (
               <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(liveCourse)}>
-                Chỉnh Sửa (Course Builder)
+                Chỉnh Sửa (Builder)
               </Button>
             )}
             <Button variant="ghost" onClick={onClose}>Đóng</Button>
@@ -2184,6 +2245,113 @@ function CourseDetailModal({
               </div>
             </div>
           </div>
+
+          {/* Personal Learning Status Banner for Current User */}
+          {myAccess.canAccess ? (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                border: '1px solid #86EFAC',
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="ti ti-circle-check" /> Bạn Đủ Điều Kiện Tham Gia Khóa Học Này
+                </div>
+                <div style={{ fontSize: 12, color: '#166534', marginTop: 2 }}>
+                  {myAccess.reason || `Định biên: Level ${targetLevels.join(', ')} · Cấp bậc hiện tại của bạn: Level ${currentUser?.level || 7} (${Number(currentUser?.level || 7) <= Math.max(...targetLevels.map(Number)) ? 'Đúng cấp / Cấp cao hơn' : 'Được gán trực tiếp'})`}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="primary"
+                icon="ti-player-play"
+                onClick={() => {
+                  onClose();
+                  navigate(`/learner/courses/${liveCourse.id}`);
+                }}
+              >
+                🚀 Vào Học Ngay (Learner Mode)
+              </Button>
+            </div>
+          ) : myAccess.state === ACCESS_STATE.REQUESTABLE ? (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 8,
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="ti ti-lock" /> Khóa Học Vượt 1 Cấp (Cần Gửi Đơn Xin Học)
+                </div>
+                <div style={{ fontSize: 12, color: '#1E40AF', marginTop: 2 }}>
+                  {myAccess.reason}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                icon="ti-send"
+                onClick={() => {
+                  onClose();
+                  navigate(`/learner/courses/${liveCourse.id}`);
+                }}
+              >
+                ⚠️ Gửi Đơn Xin Học Vượt Cấp
+              </Button>
+            </div>
+          ) : myAccess.state === ACCESS_STATE.PENDING_APPROVAL ? (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 8,
+                background: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#92400E', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-clock" /> Đơn Xin Học Vượt Cấp Đang Chờ Phê Duyệt
+              </div>
+              <div style={{ fontSize: 12, color: '#B45309', marginTop: 2 }}>
+                {myAccess.reason}
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 8,
+                background: '#FEF2F2',
+                border: '1px solid #FECACA',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#B91C1C', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-ban" /> Khóa Học Vượt Cấp — Bị Khóa Truy Cập
+              </div>
+              <div style={{ fontSize: 12, color: '#991B1B', marginTop: 2 }}>
+                {myAccess.reason || `Khóa học định biên Level ${targetLevels.join(', ')} — Bạn đang ở Level ${currentUser?.level || 7} (Chênh ${myAccess.gap || 2} cấp bậc). Bắt buộc phải hoàn thành lộ trình cấp bậc trước.`}
+              </div>
+            </div>
+          )}
 
           {/* Module / Logistics Content */}
           {liveCourse.onlineClassType === 'VIRTUAL_CLASS' ? (
