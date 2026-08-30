@@ -31,8 +31,8 @@ import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
 const AUTH_KEY = 'mm-megalearn-auth-v6';
-const STORAGE_KEY = 'mm-megalearn-courses-v6';
-const CLASSROOM_KEY = 'mm-megalearn-classrooms-v6';
+const STORAGE_KEY = 'mm-megalearn-courses-v8';
+const CLASSROOM_KEY = 'mm-megalearn-classrooms-v8';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';

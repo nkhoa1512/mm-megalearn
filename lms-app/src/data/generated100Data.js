@@ -514,10 +514,21 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
 
     const isClassroom = tpl.modality === 'CLASSROOM_LAB';
     const deliveryType = isClassroom ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING';
-    const trainerId = isClassroom ? (idx % 2 === 0 ? 'tr-01' : 'tr-03') : null;
-    const trainerName = isClassroom ? (idx % 2 === 0 ? 'Nguyen Van Hung' : 'Vu Duc Thanh') : null;
-    const venue = isClassroom ? (idx % 2 === 0 ? 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' : 'HSE Fire & Emergency Drill Grounds (MM Thang Long)') : null;
-    const venueId = isClassroom ? (idx % 2 === 0 ? 'lab-ap-fresh' : 'lab-tl-fire') : null;
+    
+    // Phân bổ giảng viên đủ chuẩn đứng lớp: L&D, HSE, SGM, User Admin, HRBP, SysAdmin
+    const TEACHING_POOL = [
+      { id: 'USR-9003', name: 'Nguyễn Văn Hùng', venueId: 'lab-ap-fresh', venue: 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' },
+      { id: 'USR-9005', name: 'Vũ Đức Thành', venueId: 'lab-tl-fire', venue: 'HSE Fire & Emergency Drill Grounds - MM Mega Market Thang Long' },
+      { id: 'USR-9006', name: 'Trần Minh Quang', venueId: 'room-ho-pla', venue: 'Platinum Executive Conference Room - MM Head Office' },
+      { id: 'USR-9002', name: 'Phạm Thanh Thảo', venueId: 'room-ho-dia', venue: 'Diamond Training Hall - MM Mega Market Head Office' },
+      { id: 'USR-9004', name: 'Lê Thị Mai', venueId: 'lab-ap-pos', venue: 'Cashier & Frontline Service Lab - MM Mega Market An Phu' },
+      { id: 'USR-9001', name: 'Trần Hoàng Long', venueId: 'room-ho-dia', venue: 'Microsoft Teams Live Studio (An Phu Head Office)' },
+    ];
+    const assignedPersona = TEACHING_POOL[(idx + courseCounter) % TEACHING_POOL.length];
+    const trainerId = isClassroom ? assignedPersona.id : null;
+    const trainerName = isClassroom ? assignedPersona.name : null;
+    const venue = isClassroom ? assignedPersona.venue : null;
+    const venueId = isClassroom ? assignedPersona.venueId : null;
     const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
     const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
 

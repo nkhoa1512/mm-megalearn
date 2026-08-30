@@ -581,7 +581,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              Danh sách các lớp học đào tạo trực tiếp <strong>do L&amp;D phân công Thầy Nguyễn Văn Hùng giảng dạy</strong>:
+              Danh sách các lớp học đào tạo trực tiếp <strong>do L&amp;D phân công Giảng viên {trainerProfile.fullName} giảng dạy</strong>:
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {['ALL', 'UPCOMING', 'COMPLETED'].map((st) => (

@@ -849,7 +849,20 @@ export default function AdminCourseBuilder() {
     };
   }
 
-  const [draft, setDraft] = useState(() => withLevelDefaults(withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse()))))));
+  const [draft, setDraft] = useState(() => {
+    const raw = withLevelDefaults(withCategoryDefaults(withRoleDefaults(withVersionDefaults(cloneCourse(existing || createBlankCourse())))));
+    if (raw.deliveryType === 'IN_PERSON_CLASSROOM' || raw.modality === 'CLASSROOM_LAB') {
+      const matchTr = eligibleTrainers.find((t) => t.userId === raw.trainerId) ||
+        eligibleTrainers.find((t) => t.fullName?.toLowerCase() === (raw.trainerName || raw.instructor || '').toLowerCase()) ||
+        eligibleTrainers.find((t) => (raw.trainerName || raw.instructor || '').toLowerCase().includes(t.fullName?.toLowerCase()));
+      if (matchTr) {
+        raw.trainerId = matchTr.userId;
+        raw.trainerName = matchTr.fullName;
+        raw.instructor = matchTr.fullName;
+      }
+    }
+    return raw;
+  });
   const [activeModuleId, setActiveModuleId] = useState(draft.modules[0]?.id);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -2105,10 +2118,15 @@ export default function AdminCourseBuilder() {
               ) : (
                 <select
                   className="field-select"
-                  value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
+                                    value={draft.trainerId || eligibleTrainers[0]?.userId || ''}
                   onChange={(e) => {
                     const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
-                    patch({ trainerId: tr?.userId, trainerName: tr?.fullName });
+                    setDraft((prev) => ({
+                      ...prev,
+                      trainerId: tr?.userId || e.target.value,
+                      trainerName: tr?.fullName || tr?.name || 'Giảng Viên / L&D',
+                      instructor: tr?.fullName || tr?.name || 'Giảng Viên / L&D',
+                    }));
                   }}
                 >
                   {eligibleTrainers.map((t) => (

@@ -1,24 +1,27 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   allUsers,
   userAdminUser,
-  teachingEligibleUsers,
 } from '../../data/mockData';
 import OrgHierarchyBrowser from '../../features/common/OrgHierarchyBrowser';
 import { Badge, Button, Modal, JobLevelBadge } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
-import { LEVEL_DEFINITIONS, normalizeLevel, levelShortLabel, levelDefinition } from '../../data/levelSystem';
+import { LEVEL_DEFINITIONS, normalizeLevel, levelDefinition } from '../../data/levelSystem';
 import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from '../../data/roles';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(initialTab);
-  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
+  // 3 Core Tabs: DIRECTORY | HIERARCHY | JOB_LEVELS
+  const [activeTab, setActiveTab] = useState(initialTab === 'ALLOCATION' || initialTab === 'TRAINER_ASSIGNMENT' ? 'DIRECTORY' : initialTab);
+  useEffect(() => {
+    if (initialTab !== 'ALLOCATION' && initialTab !== 'TRAINER_ASSIGNMENT') {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const {
-    courses,
     users = [],
     addUser,
     updateUser,
@@ -32,25 +35,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     departments = [],
     subDepartments = [],
     businessUnits = [],
-    promoteUserLevel,
-    assignTrainerToCourse,
     language,
     t,
   } = useCourseStore();
-
-  const eligibleTrainers = teachingEligibleUsers();
-
-  // Allocation state
-  const [allocationCourseId, setAllocationCourseId] = useState('');
-  const [allocationTargetType, setAllocationTargetType] = useState('DIVISION');
-  const [allocationTargetId, setAllocationTargetId] = useState('');
-  const [allocationLog, setAllocationLog] = useState([]);
-
-  // Assignment state
-  const [assignCourseId, setAssignCourseId] = useState('');
-  const [assignTrainerId, setAssignTrainerId] = useState('');
-  const [assignDate, setAssignDate] = useState('2026-09-15');
-  const [assignFeedback, setAssignFeedback] = useState(null);
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -438,15 +425,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
   const TABS = [
     { id: 'DIRECTORY', labelVi: 'Danh Mục Nhân Sự', labelEn: 'Staff Directory', icon: 'ti-address-book', count: userList.length },
-    { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu Tổ Chức', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
+    { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu Tổ Chức (42 Khối)', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
     { id: 'JOB_LEVELS', labelVi: 'Khung Cấp Bậc (7 Cấp)', labelEn: 'Job Level Framework', icon: 'ti-id-badge-2', count: jobLevels.length },
-    { id: 'ALLOCATION', labelVi: 'Phân Bổ Khóa Học', labelEn: 'Course Allocation', icon: 'ti-stack-2' },
-    { id: 'TRAINER_ASSIGNMENT', labelVi: 'Phân Công Giảng Viên', labelEn: 'Faculty Assignment', icon: 'ti-school' },
   ];
 
   return (
     <>
-      {/* HEADER */}
+      {/* HEADER & QUICK ACTION LINKS */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -467,7 +452,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
       </div>
 
-      {/* 5 TABS NAVIGATION BAR */}
+      {/* 3 CORE TABS NAVIGATION BAR */}
       <div
         style={{
           display: 'flex',
@@ -475,10 +460,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
           background: '#fff',
           padding: '6px',
           borderRadius: 12,
-          border: '1px solid #E2E8F0',
+          border: '1px solid var(--line)',
           marginBottom: 20,
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-          overflowX: 'auto',
         }}
       >
         {TABS.map((tab) => {
@@ -490,14 +474,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               onClick={() => setActiveTab(tab.id)}
               type="button"
               style={{
-                padding: '8px 16px',
+                padding: '9px 18px',
                 borderRadius: 8,
-                fontSize: 13,
+                fontSize: 13.5,
                 fontWeight: isActive ? 700 : 500,
                 cursor: 'pointer',
                 border: 'none',
-                background: isActive ? 'var(--blue)' : 'transparent',
-                color: isActive ? '#fff' : '#475569',
+                background: isActive ? 'var(--blue, #005BAA)' : 'transparent',
+                color: isActive ? '#fff' : 'var(--ink)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
@@ -505,14 +489,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 transition: 'all 0.15s ease',
               }}
             >
-              <i className={`ti ${tab.icon}`} style={{ fontSize: 15 }} />
+              <i className={`ti ${tab.icon}`} style={{ fontSize: 16 }} />
               <span>{tabLabel}</span>
               {tab.count !== undefined && (
                 <span
                   style={{
-                    background: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9',
-                    color: isActive ? '#fff' : '#64748B',
-                    padding: '1px 7px',
+                    background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--paper-sunken, #F1F5F9)',
+                    color: isActive ? '#fff' : 'var(--ink-soft)',
+                    padding: '1px 8px',
                     borderRadius: 12,
                     fontSize: 11,
                     fontWeight: 700,
@@ -529,10 +513,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {/* TAB 1: DIRECTORY */}
       {activeTab === 'DIRECTORY' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
               <div style={{ position: 'relative', minWidth: 200, flex: 1 }}>
-                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: 14 }} />
+                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 14 }} />
                 <input
                   type="text"
                   className="field-input"
@@ -631,7 +615,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </div>
           </div>
 
-          <div className="card" style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid #E2E8F0', background: '#fff' }}>
+          <div className="card" style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--line)', background: '#fff' }}>
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
@@ -758,13 +742,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {/* TAB 3: KHUNG CẤP BẬC */}
       {activeTab === 'JOB_LEVELS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--line)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
                   Khung Cấp Bậc Định Biên — Thang ĐẢO NGƯỢC (7 → 1)
                 </div>
-                <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
                   <strong>Level 7 là cấp THẤP NHẤT</strong> (nhân viên mới vào) và <strong>Level 1 là cấp CAO NHẤT</strong> (Ban điều hành).
                 </p>
               </div>
@@ -827,157 +811,6 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: ALLOCATION */}
-      {activeTab === 'ALLOCATION' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Phân Bổ Khóa Học Cho Khối / Phòng Ban</div>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '0 0 14px' }}>
-              Gán một khóa học vào toàn bộ một Khối (Division), Phòng ban (Department) hoặc Chi nhánh siêu thị.
-            </p>
-            <div className="grid grid-3" style={{ gap: 12 }}>
-              <div>
-                <label className="field-label">Khóa Học Cần Phân Bổ</label>
-                <select
-                  className="field-select"
-                  value={allocationCourseId}
-                  onChange={(e) => setAllocationCourseId(e.target.value)}
-                >
-                  <option value="">-- Chọn khóa học --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label">Cấp Độ Phân Bổ</label>
-                <select
-                  className="field-select"
-                  value={allocationTargetType}
-                  onChange={(e) => {
-                    setAllocationTargetType(e.target.value);
-                    setAllocationTargetId('');
-                  }}
-                >
-                  <option value="DIVISION">Theo Khối (Division)</option>
-                  <option value="DEPARTMENT">Theo Phòng Ban (Department)</option>
-                </select>
-              </div>
-              <div>
-                <label className="field-label">Đơn Vị Nhận Khóa Học</label>
-                <select
-                  className="field-select"
-                  value={allocationTargetId}
-                  onChange={(e) => setAllocationTargetId(e.target.value)}
-                >
-                  <option value="">-- Chọn đơn vị --</option>
-                  {allocationTargetType === 'DIVISION' &&
-                    divisions.map((div) => (
-                      <option key={div.id} value={div.id}>{div.code} — {div.name}</option>
-                    ))}
-                  {allocationTargetType === 'DEPARTMENT' &&
-                    departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>{dept.code} — {dept.name}</option>
-                    ))}
-                </select>
-              </div>
-            </div>
-            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                variant="primary"
-                icon="ti-send"
-                disabled={!allocationCourseId || !allocationTargetId}
-                onClick={() => {
-                  const course = courses.find((c) => c.id === allocationCourseId);
-                  const targetName = allocationTargetType === 'DIVISION'
-                    ? divisions.find((d) => d.id === allocationTargetId)?.name
-                    : departments.find((d) => d.id === allocationTargetId)?.name;
-                  setAllocationLog((p) => [
-                    {
-                      id: Date.now(),
-                      courseTitle: course?.title,
-                      targetType: allocationTargetType,
-                      targetName,
-                      timestamp: new Date().toLocaleTimeString(),
-                    },
-                    ...p,
-                  ]);
-                  setAllocationCourseId('');
-                  setAllocationTargetId('');
-                }}
-              >
-                Tiến Hành Phân Bổ
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: TRAINER ASSIGNMENT */}
-      {activeTab === 'TRAINER_ASSIGNMENT' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Phân Công Giảng Viên Đứng Lớp</div>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '0 0 14px' }}>
-              Gán giảng viên phụ trách cho các lớp học trực tiếp (Offline Classroom / Workshop).
-            </p>
-            <div className="grid grid-3" style={{ gap: 12 }}>
-              <div>
-                <label className="field-label">Khóa Học Trực Tiếp</label>
-                <select className="field-select" value={assignCourseId} onChange={(e) => setAssignCourseId(e.target.value)}>
-                  <option value="">-- Chọn khóa học --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label">Giảng Viên Đủ Điều Kiện</label>
-                <select className="field-select" value={assignTrainerId} onChange={(e) => setAssignTrainerId(e.target.value)}>
-                  <option value="">-- Chọn giảng viên --</option>
-                  {eligibleTrainers.map((t) => (
-                    <option key={t.userId} value={t.userId}>{t.fullName} ({t.departmentName || t.department})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label">Ngày Giảng Dạy</label>
-                <input
-                  type="date"
-                  className="field-input"
-                  value={assignDate}
-                  onChange={(e) => setAssignDate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                variant="primary"
-                icon="ti-check"
-                disabled={!assignCourseId || !assignTrainerId}
-                onClick={() => {
-                  const trainer = eligibleTrainers.find((t) => t.userId === assignTrainerId);
-                  if (assignTrainerToCourse && trainer) {
-                    assignTrainerToCourse(assignCourseId, trainer, { scheduleDate: assignDate });
-                  }
-                  setAssignFeedback('Đã phân công giảng viên thành công!');
-                  setTimeout(() => setAssignFeedback(null), 3000);
-                  setAssignCourseId('');
-                  setAssignTrainerId('');
-                }}
-              >
-                Xác Nhận Phân Công
-              </Button>
-            </div>
-            {assignFeedback && (
-              <div style={{ marginTop: 10, padding: '8px 12px', background: '#ECFDF5', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
-                <i className="ti ti-check" style={{ marginRight: 6 }} />{assignFeedback}
-              </div>
-            )}
           </div>
         </div>
       )}
