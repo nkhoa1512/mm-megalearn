@@ -39,7 +39,7 @@ function BottomTabs() {
           borderColor: '#E2E8F0',
         },
         tabBarLabelStyle: {
-          fontSize: 10.5,
+          fontSize: 9.5,
           fontWeight: '700',
         },
         tabBarIcon: ({ focused, color, size }) => {
