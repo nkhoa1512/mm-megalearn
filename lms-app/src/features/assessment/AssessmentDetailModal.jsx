@@ -17,7 +17,9 @@ export default function AssessmentDetailModal({
   if (!isOpen || !assessment) return null;
 
   const relevantAttempts = attempts.filter((a) => a.assessmentId === assessment.id);
-  const questions = questionBanks.filter((q) => (assessment.questionIds || []).includes(q.id));
+  const questions = (assessment.questions && assessment.questions.length > 0)
+    ? assessment.questions
+    : questionBanks.filter((q) => (assessment.questionIds || []).includes(q.id));
   const linkedCourse = assessment.deliveryFormat === DELIVERY_FORMATS.COURSE_LINKED
     ? courses.find((c) => c.id === assessment.courseId)
     : null;
@@ -270,7 +272,47 @@ export default function AssessmentDetailModal({
                       <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 6 }}>
                         Loại: <strong>{q.questionType}</strong> &middot; Năng lực: <em>{q.competency}</em> &middot; Độ khó: {q.difficulty}
                       </div>
-                      {q.options && q.options.length > 0 && (
+                      {q.scenarioContext && (
+                        <div style={{ fontSize: 11.5, padding: '6px 10px', background: 'var(--paper-raised)', borderRadius: 4, marginBottom: 6, fontStyle: 'italic', borderLeft: '3px solid var(--rail)' }}>
+                          📖 Tình huống: {q.scenarioContext}
+                        </div>
+                      )}
+
+                      {q.imageUrl && (
+                        <div style={{ maxHeight: 120, overflow: 'hidden', borderRadius: 4, marginBottom: 6 }}>
+                          <img src={q.imageUrl} alt="Ảnh câu hỏi" style={{ maxHeight: 120, objectFit: 'contain' }} />
+                        </div>
+                      )}
+
+                      {q.pairs && q.pairs.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                          {q.pairs.map((p, pIdx) => (
+                            <div key={p.id || pIdx} style={{ fontSize: 12, padding: '4px 8px', borderRadius: 4, background: 'rgba(0,122,56,0.08)', border: '1px solid var(--sage)', color: 'var(--sage)' }}>
+                              <i className="ti ti-link" style={{ marginRight: 4 }} />
+                              <strong>{p.left}</strong> ➔ {p.right}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {q.sequenceItems && q.sequenceItems.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                          {q.sequenceItems.map((s, sIdx) => (
+                            <div key={s.id || sIdx} style={{ fontSize: 12, padding: '4px 8px', borderRadius: 4, background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
+                              <span style={{ fontWeight: 700, marginRight: 6 }}>Bước {s.correctOrder || sIdx + 1}:</span> {s.text}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {q.correctKeywords && q.correctKeywords.length > 0 && (
+                        <div style={{ fontSize: 12, padding: '4px 8px', borderRadius: 4, background: 'rgba(0,122,56,0.08)', border: '1px solid var(--sage)', color: 'var(--sage)', marginTop: 4 }}>
+                          <i className="ti ti-key" style={{ marginRight: 4 }} />
+                          Từ khóa đúng: <strong>{q.correctKeywords.join(', ')}</strong>
+                        </div>
+                      )}
+
+                      {q.options && q.options.length > 0 && !q.pairs && !q.sequenceItems && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
                           {q.options.map((opt) => (
                             <div
@@ -285,14 +327,14 @@ export default function AssessmentDetailModal({
                               }}
                             >
                               {opt.isCorrect && <i className="ti ti-check" style={{ marginRight: 4 }} />}
-                              {opt.text || opt.left ? `${opt.left} ➔ ${opt.right}` : ''}
+                              {opt.text || opt.left ? (opt.left ? `${opt.left} ➔ ${opt.right}` : opt.text) : ''}
                             </div>
                           ))}
                         </div>
                       )}
                       {q.explanation && (
                         <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 6, fontStyle: 'italic' }}>
-                          Giải thích: {q.explanation}
+                          💡 Giải thích: {q.explanation}
                         </div>
                       )}
                     </div>

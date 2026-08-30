@@ -9,27 +9,41 @@ import { computeValidUntilDate } from '../../utils/recertification';
 
 
 function isAnswerCorrect(question, answerValue) {
-  if (!question || !answerValue) return false;
+  if (!question || answerValue === undefined || answerValue === null) return false;
 
-  if (question.questionType === QUESTION_TYPES.ESSAY || question.type === 'SHORT_ANSWER') {
+  const type = question.questionType || question.type;
+
+  if (type === QUESTION_TYPES.RATING_SCALE) {
+    return true; // Khảo sát luôn ghi nhận hoàn thành
+  }
+
+  if (type === QUESTION_TYPES.ESSAY) {
     const text = Array.isArray(answerValue) ? (answerValue[0] || '') : String(answerValue);
-    if (!text.trim()) return false;
-    if (question.options && question.options.length > 0) {
-      return question.options.some((o) => o.text.trim().toLowerCase() === text.trim().toLowerCase());
-    }
-    return text.trim().length >= 10; // Essay passes if reasonable response is provided
+    return text.trim().length >= 5;
   }
 
-  if (question.questionType === QUESTION_TYPES.MATCHING) {
+  if (type === QUESTION_TYPES.FILL_IN_BLANK || type === QUESTION_TYPES.SHORT_ANSWER) {
+    const text = (Array.isArray(answerValue) ? (answerValue[0] || '') : String(answerValue)).trim().toLowerCase();
+    if (!text) return false;
+    const keywords = (question.correctKeywords || []).map((k) => k.trim().toLowerCase());
+    const optTexts = (question.options || []).map((o) => (o.text || '').trim().toLowerCase());
+    return keywords.includes(text) || optTexts.includes(text);
+  }
+
+  if (type === QUESTION_TYPES.MATCHING) {
     if (typeof answerValue !== 'object') return false;
-    const pairs = question.options || [];
-    return pairs.every((p) => answerValue[p.id] === p.right);
+    const pairs = question.options || question.pairs || [];
+    return pairs.length > 0 && pairs.every((p) => answerValue[p.id] === p.right);
   }
 
-  if (question.questionType === QUESTION_TYPES.RATING_SCALE) {
-    return true; // Khảo sát luôn hợp lệ
+  if (type === QUESTION_TYPES.ORDERING) {
+    if (!Array.isArray(answerValue)) return false;
+    const items = question.options || question.sequenceItems || [];
+    const sortedTarget = [...items].sort((a, b) => (a.correctOrder || 0) - (b.correctOrder || 0)).map((s) => s.id);
+    return JSON.stringify(answerValue) === JSON.stringify(sortedTarget);
   }
 
+  // Choices based: SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE, YES_NO, SCENARIO_BASED, CASE_STUDY, HOTSPOT, IMAGE_BASED, VIDEO_BASED, SIMULATION
   const selectedIds = Array.isArray(answerValue) ? answerValue : [answerValue];
   const correctIds = (question.options || []).filter((o) => o.isCorrect).map((o) => o.id).sort();
   const chosen = [...selectedIds].sort();
@@ -183,8 +197,16 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     submittedRef.current = false;
     let drawn = [];
 
-    if (standaloneAssessment && standaloneAssessment.questionIds) {
-      const pool = (questionBanks || []).filter((q) => standaloneAssessment.questionIds.includes(q.id));
+    if (standaloneAssessment) {
+      let pool = [];
+      if (standaloneAssessment.questions && standaloneAssessment.questions.length > 0) {
+        pool = [...standaloneAssessment.questions];
+      } else if (standaloneAssessment.questionIds && standaloneAssessment.questionIds.length > 0) {
+        pool = (questionBanks || []).filter((q) => standaloneAssessment.questionIds.includes(q.id));
+      } else {
+        pool = (questionBanks || []).slice(0, 4);
+      }
+
       drawn = standaloneAssessment.antiCheatSettings?.randomizeQuestions
         ? [...pool].sort(() => 0.5 - Math.random())
         : [...pool];
@@ -196,8 +218,17 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
       }));
     }
 
+    const initialAnswers = {};
+    drawn.forEach((q) => {
+      if (q.questionType === QUESTION_TYPES.ORDERING) {
+        const items = q.options || q.sequenceItems || [];
+        // Xáo trộn ban đầu cho câu hỏi thứ tự để học viên tự sắp xếp
+        initialAnswers[q.id] = [...items].sort(() => 0.5 - Math.random()).map((x) => x.id);
+      }
+    });
+
     setQuestions(drawn);
-    setAnswers({});
+    setAnswers(initialAnswers);
     setTabSwitchViolations(0);
     setSecondsLeft((activeAssessment.timeLimitMinutes || 15) * 60);
     setResult(null);
@@ -221,6 +252,22 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
       const current = prev[question.id] || {};
       return { ...prev, [question.id]: { ...current, [pairId]: selectedRight } };
     });
+  }
+
+  function handleMoveOrderItem(question, fromIndex, toIndex) {
+    setAnswers((prev) => {
+      const items = qItems(question);
+      const currentOrder = prev[question.id] || items.map((x) => x.id);
+      if (toIndex < 0 || toIndex >= currentOrder.length) return prev;
+      const next = [...currentOrder];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return { ...prev, [question.id]: next };
+    });
+  }
+
+  function qItems(question) {
+    return question.options || question.sequenceItems || [];
   }
 
   function handleSubmit() {
@@ -455,8 +502,10 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                   <Badge tone="slate" size="sm">{q.score || 10} điểm</Badge>
                 </div>
 
-                {/* 1. SINGLE CHOICE & TRUE/FALSE */}
-                {(q.questionType === QUESTION_TYPES.SINGLE_CHOICE || q.questionType === QUESTION_TYPES.TRUE_FALSE) && (
+                {/* 1. SINGLE CHOICE, TRUE/FALSE, YES/NO */}
+                {(q.questionType === QUESTION_TYPES.SINGLE_CHOICE ||
+                  q.questionType === QUESTION_TYPES.TRUE_FALSE ||
+                  q.questionType === QUESTION_TYPES.YES_NO) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {(q.options || []).map((opt) => (
                       <label
@@ -468,7 +517,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                           padding: '8px 12px',
                           borderRadius: 6,
                           background: currentAnswer === opt.id ? 'var(--paper-sunken)' : 'transparent',
-                          border: currentAnswer === opt.id ? '1px solid var(--rail)' : '1px solid var(--line)',
+                          border: currentAnswer === opt.id ? '1.5px solid var(--rail)' : '1px solid var(--line)',
                           cursor: 'pointer',
                           fontSize: 13,
                         }}
@@ -479,7 +528,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                           checked={currentAnswer === opt.id}
                           onChange={() => handleAnswer(q, opt.id)}
                         />
-                        {opt.text}
+                        <span>{opt.text}</span>
                       </label>
                     ))}
                   </div>
@@ -500,7 +549,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                             padding: '8px 12px',
                             borderRadius: 6,
                             background: isSelected ? 'var(--paper-sunken)' : 'transparent',
-                            border: isSelected ? '1px solid var(--rail)' : '1px solid var(--line)',
+                            border: isSelected ? '1.5px solid var(--rail)' : '1px solid var(--line)',
                             cursor: 'pointer',
                             fontSize: 13,
                           }}
@@ -510,46 +559,17 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                             checked={isSelected}
                             onChange={() => handleToggleMulti(q, opt.id)}
                           />
-                          {opt.text}
+                          <span>{opt.text}</span>
                         </label>
                       );
                     })}
                   </div>
                 )}
 
-                {/* 3. ESSAY */}
-                {q.questionType === QUESTION_TYPES.ESSAY && (
-                  <div>
-                    <textarea
-                      className="field-input"
-                      rows={4}
-                      placeholder="Nhập câu trả lời hoặc trình bày phương án của bạn tại đây..."
-                      value={currentAnswer || ''}
-                      onChange={(e) => handleAnswer(q, e.target.value)}
-                    />
-                  </div>
-                )}
-
-                {/* 4. RATING SCALE */}
-                {q.questionType === QUESTION_TYPES.RATING_SCALE && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {(q.options || []).map((opt) => (
-                      <Button
-                        key={opt.id}
-                        type="button"
-                        variant={currentAnswer === opt.id ? 'primary' : 'outline'}
-                        onClick={() => handleAnswer(q, opt.id)}
-                      >
-                        {opt.text}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-
-                {/* 5. MATCHING */}
+                {/* 3. MATCHING */}
                 {q.questionType === QUESTION_TYPES.MATCHING && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {(q.options || []).map((pair) => (
+                    {(q.options || q.pairs || []).map((pair) => (
                       <div
                         key={pair.id}
                         style={{
@@ -569,12 +589,229 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                           value={(currentAnswer && currentAnswer[pair.id]) || ''}
                           onChange={(e) => handleMatchingPair(q, pair.id, e.target.value)}
                         >
-                          <option value="">-- Chọn đáp án ghép đôi --</option>
-                          {(q.options || []).map((o) => (
+                          <option value="">-- Chọn vế tương ứng --</option>
+                          {(q.options || q.pairs || []).map((o) => (
                             <option key={o.id} value={o.right}>{o.right}</option>
                           ))}
                         </select>
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 4. ORDERING / SEQUENCE */}
+                {q.questionType === QUESTION_TYPES.ORDERING && (
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8 }}>
+                      Dùng các nút mũi tên lên/xuống để sắp xếp các bước theo đúng trình tự thực hiện:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(() => {
+                        const items = q.options || q.sequenceItems || [];
+                        const orderIds = Array.isArray(currentAnswer) && currentAnswer.length === items.length
+                          ? currentAnswer
+                          : items.map((x) => x.id);
+
+                        return orderIds.map((itemId, itemIdx) => {
+                          const itemObj = items.find((x) => x.id === itemId) || {};
+                          return (
+                            <div
+                              key={itemId}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '8px 12px',
+                                background: 'var(--paper-sunken)',
+                                border: '1px solid var(--line)',
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Badge tone="slate" size="sm">Bước {itemIdx + 1}</Badge>
+                              <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{itemObj.text}</div>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={itemIdx === 0}
+                                  onClick={() => handleMoveOrderItem(q, itemIdx, itemIdx - 1)}
+                                  style={{ padding: '2px 6px' }}
+                                >
+                                  ▲ Lên
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={itemIdx === orderIds.length - 1}
+                                  onClick={() => handleMoveOrderItem(q, itemIdx, itemIdx + 1)}
+                                  style={{ padding: '2px 6px' }}
+                                >
+                                  ▼ Xuống
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. FILL IN BLANK & SHORT ANSWER */}
+                {(q.questionType === QUESTION_TYPES.FILL_IN_BLANK || q.questionType === QUESTION_TYPES.SHORT_ANSWER) && (
+                  <div>
+                    <input
+                      type="text"
+                      className="field-input"
+                      style={{ fontSize: 13 }}
+                      placeholder={q.placeholderTemplate || 'Nhập câu trả lời hoặc từ khóa của bạn...'}
+                      value={currentAnswer || ''}
+                      onChange={(e) => handleAnswer(q, e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {/* 6. SCENARIO BASED, CASE STUDY, SIMULATION */}
+                {(q.questionType === QUESTION_TYPES.SCENARIO_BASED ||
+                  q.questionType === QUESTION_TYPES.CASE_STUDY ||
+                  q.questionType === QUESTION_TYPES.SIMULATION) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.scenarioContext && (
+                      <div style={{ padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 6, borderLeft: '4px solid var(--rail)', fontSize: 12.5, lineHeight: 1.5, color: 'var(--ink)' }}>
+                        <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--rail)' }}>📖 Tình Huống Thực Tế:</div>
+                        {q.scenarioContext}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(q.options || []).map((opt) => (
+                        <label
+                          key={opt.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 12px',
+                            borderRadius: 6,
+                            background: currentAnswer === opt.id ? 'var(--paper-sunken)' : 'transparent',
+                            border: currentAnswer === opt.id ? '1.5px solid var(--rail)' : '1px solid var(--line)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={q.id}
+                            checked={currentAnswer === opt.id}
+                            onChange={() => handleAnswer(q, opt.id)}
+                          />
+                          <span>{opt.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. HOTSPOT & IMAGE BASED */}
+                {(q.questionType === QUESTION_TYPES.HOTSPOT || q.questionType === QUESTION_TYPES.IMAGE_BASED) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.imageUrl && (
+                      <div style={{ maxHeight: 240, overflow: 'hidden', borderRadius: 8, border: '1px solid var(--line)', textAlign: 'center', background: '#000' }}>
+                        <img src={q.imageUrl} alt="Tình huống trực quan" style={{ maxHeight: 240, maxWidth: '100%', objectFit: 'contain' }} />
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(q.options || []).map((opt) => (
+                        <label
+                          key={opt.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 12px',
+                            borderRadius: 6,
+                            background: currentAnswer === opt.id ? 'var(--paper-sunken)' : 'transparent',
+                            border: currentAnswer === opt.id ? '1.5px solid var(--rail)' : '1px solid var(--line)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={q.id}
+                            checked={currentAnswer === opt.id}
+                            onChange={() => handleAnswer(q, opt.id)}
+                          />
+                          <span>{opt.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 8. VIDEO BASED */}
+                {q.questionType === QUESTION_TYPES.VIDEO_BASED && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.videoUrl && (
+                      <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line)', background: '#000' }}>
+                        <video controls src={q.videoUrl} style={{ width: '100%', maxHeight: 260 }} />
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(q.options || []).map((opt) => (
+                        <label
+                          key={opt.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 12px',
+                            borderRadius: 6,
+                            background: currentAnswer === opt.id ? 'var(--paper-sunken)' : 'transparent',
+                            border: currentAnswer === opt.id ? '1.5px solid var(--rail)' : '1px solid var(--line)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={q.id}
+                            checked={currentAnswer === opt.id}
+                            onChange={() => handleAnswer(q, opt.id)}
+                          />
+                          <span>{opt.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 9. ESSAY */}
+                {q.questionType === QUESTION_TYPES.ESSAY && (
+                  <div>
+                    <textarea
+                      className="field-input"
+                      rows={4}
+                      placeholder="Nhập câu trả lời hoặc trình bày phương án của bạn tại đây..."
+                      value={currentAnswer || ''}
+                      onChange={(e) => handleAnswer(q, e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {/* 10. RATING SCALE */}
+                {q.questionType === QUESTION_TYPES.RATING_SCALE && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {(q.options || []).map((opt) => (
+                      <Button
+                        key={opt.id}
+                        type="button"
+                        variant={currentAnswer === opt.id ? 'primary' : 'outline'}
+                        onClick={() => handleAnswer(q, opt.id)}
+                      >
+                        {opt.text}
+                      </Button>
                     ))}
                   </div>
                 )}
