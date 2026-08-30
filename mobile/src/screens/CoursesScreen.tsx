@@ -47,6 +47,7 @@ export default function CoursesScreen() {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [selectedCurriculum, setSelectedCurriculum] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'LEVEL_GATE' | 'CURRICULA' | 'COURSES'>('COURSES');
 
   // Modal xin học vượt cấp
   const [requestModal, setRequestModal] = useState<{ open: boolean; course: any }>({
@@ -162,8 +163,34 @@ export default function CoursesScreen() {
         </View>
       </View>
 
+      {/* Tabs */}
+      <View style={{ flexDirection: 'row', backgroundColor: '#FFFFFF', paddingHorizontal: 16, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
+        {[
+          { id: 'LEVEL_GATE', label: 'Vượt Cấp' },
+          { id: 'CURRICULA', label: 'Giáo Trình' },
+          { id: 'COURSES', label: 'Khóa Học' },
+        ].map(tab => (
+          <TouchableOpacity
+            key={tab.id}
+            onPress={() => setActiveTab(tab.id as any)}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: 'center',
+              borderBottomWidth: 2,
+              borderColor: activeTab === tab.id ? '#009E49' : 'transparent',
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: activeTab === tab.id ? '700' : '500', color: activeTab === tab.id ? '#009E49' : '#64748B' }}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* 1. LỘ TRÌNH HỌC VƯỢT CẤP TUẦN TỰ (LEVEL GATE BANNER) */}
+        {activeTab === 'LEVEL_GATE' && (
         <View style={{ padding: 16, paddingBottom: 8 }}>
           <View style={{ backgroundColor: '#EFF6FF', borderRadius: 14, borderWidth: 1, borderColor: '#BFDBFE', padding: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
@@ -187,10 +214,11 @@ export default function CoursesScreen() {
             </Text>
           </View>
         </View>
+        )}
 
         {/* 2. GIÁO TRÌNH BẮT BUỘC (ASSIGNED CURRICULA) */}
-        {assignedCurricula.length > 0 && (
-          <View style={{ paddingBottom: 12 }}>
+        {activeTab === 'CURRICULA' && assignedCurricula.length > 0 && (
+          <View style={{ paddingBottom: 12, paddingTop: 16 }}>
             <View style={{ paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <Ionicons name="bookmarks" size={16} color="#009E49" style={{ marginRight: 6 }} />
               <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B' }}>
@@ -198,12 +226,12 @@ export default function CoursesScreen() {
               </Text>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+            <View style={{ paddingHorizontal: 16, gap: 12 }}>
               {assignedCurricula.map((curr: any) => (
                 <View
                   key={curr.id}
                   style={{
-                    width: 280,
+                    width: '100%',
                     backgroundColor: '#FFFFFF',
                     borderRadius: 14,
                     borderWidth: 1,
@@ -246,12 +274,14 @@ export default function CoursesScreen() {
                   </Button>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
-        {/* 3. FILTER TABS */}
-        <View style={{ backgroundColor: '#FFFFFF', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#E2E8F0', paddingVertical: 10, marginBottom: 12 }}>
+        {/* 3. FILTER TABS & 4. COURSE CARDS LIST */}
+        {activeTab === 'COURSES' && (
+          <>
+        <View style={{ backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingVertical: 10, marginBottom: 12 }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
             {filters.map((f) => {
               const isActive = activeFilter === f.id;
@@ -441,6 +471,8 @@ export default function CoursesScreen() {
             })
           )}
         </View>
+        </>
+        )}
       </ScrollView>
 
       {/* MODAL: CURRICULUM SYLLABUS */}
