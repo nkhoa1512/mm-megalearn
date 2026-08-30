@@ -19,6 +19,7 @@ export default function HrbpCurriculumTab() {
     myCurriculumProposals,
     successionTalents,
     updateSuccessionTalent,
+    customGroups = [],
     language,
   } = useCourseStore();
 
@@ -30,7 +31,7 @@ export default function HrbpCurriculumTab() {
 
   // Form states for propose modal
   const [selectedCurriculumId, setSelectedCurriculumId] = useState('');
-  const [candidateSource, setCandidateSource] = useState('SUCCESSION'); // 'SUCCESSION' | 'ALL_USERS'
+  const [candidateSource, setCandidateSource] = useState('SUCCESSION'); // 'SUCCESSION' | 'ALL_USERS' | 'CUSTOM_GROUP'
   const [selectedTalentId, setSelectedTalentId] = useState('');
   const [dueDate, setDueDate] = useState('2026-12-31');
   const [justification, setJustification] = useState('');
@@ -99,6 +100,7 @@ export default function HrbpCurriculumTab() {
 
     let targetId = selectedTalentId;
     let targetLabel = selectedTalentId;
+    let targetType = 'USER';
     let matchedTalent = null;
 
     if (candidateSource === 'SUCCESSION') {
@@ -106,6 +108,13 @@ export default function HrbpCurriculumTab() {
       if (matchedTalent) {
         targetId = matchedTalent.userId || matchedTalent.id;
         targetLabel = `${matchedTalent.name} (${matchedTalent.currentRole} · ${matchedTalent.store})`;
+      }
+    } else if (candidateSource === 'CUSTOM_GROUP') {
+      targetType = 'GROUP';
+      const grp = customGroups.find((g) => g.id === selectedTalentId);
+      if (grp) {
+        targetId = grp.id;
+        targetLabel = `👥 ${grp.title || grp.name} (${grp.memberCount || grp.memberUserIds?.length || 0} thành viên)`;
       }
     } else {
       const u = allUserOptions.find((opt) => opt.id === selectedTalentId);
@@ -120,13 +129,13 @@ export default function HrbpCurriculumTab() {
     const result = proposeCurriculumAssignment(
       selectedCurriculumId,
       {
-        assignmentType: 'USER',
+        assignmentType: targetType,
         targetId,
         targetLabel,
         dueDate,
       },
       justification ||
-        `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} đề xuất phân bổ Giáo trình "${cur?.title}" cho ứng viên ${targetLabel} nhằm phát triển năng lực định biên.`
+        `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} đề xuất phân bổ Giáo trình "${cur?.title}" cho đối tượng ${targetLabel} nhằm phát triển năng lực định biên.`
     );
 
     if (result && result.ok) {
@@ -532,8 +541,8 @@ export default function HrbpCurriculumTab() {
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label className="field-label">Nguồn Ứng Viên</label>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+            <label className="field-label">Nguồn Đối Tượng / Ứng Viên</label>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
                   type="radio"
@@ -550,13 +559,25 @@ export default function HrbpCurriculumTab() {
                 <input
                   type="radio"
                   name="candidateSrc"
+                  checked={candidateSource === 'CUSTOM_GROUP'}
+                  onChange={() => {
+                    setCandidateSource('CUSTOM_GROUP');
+                    setSelectedTalentId(customGroups[0]?.id || '');
+                  }}
+                />
+                👥 Nhóm Tùy Chỉnh ({customGroups.length} nhóm)
+              </label>
+              <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="candidateSrc"
                   checked={candidateSource === 'ALL_USERS'}
                   onChange={() => {
                     setCandidateSource('ALL_USERS');
                     setSelectedTalentId(allUserOptions[0]?.id || '');
                   }}
                 />
-                Toàn bộ Nhân sự Doanh nghiệp
+                Từng Nhân sự Cá nhân
               </label>
             </div>
 
@@ -571,6 +592,20 @@ export default function HrbpCurriculumTab() {
                 {successionTalents.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name} — {t.currentRole} ({t.store}) &rarr; {t.targetRole}
+                  </option>
+                ))}
+              </select>
+            ) : candidateSource === 'CUSTOM_GROUP' ? (
+              <select
+                className="field-select"
+                style={{ width: '100%', height: 36, fontSize: 12.5 }}
+                value={selectedTalentId}
+                onChange={(e) => setSelectedTalentId(e.target.value)}
+                required
+              >
+                {customGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    👥 {g.title || g.name} ({g.memberCount || g.memberUserIds?.length || 0} thành viên · {g.code})
                   </option>
                 ))}
               </select>

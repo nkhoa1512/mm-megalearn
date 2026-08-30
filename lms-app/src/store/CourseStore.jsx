@@ -27,6 +27,7 @@ import { curricula as initialCurricula } from '../data/mockData';
 import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
+import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -59,6 +60,7 @@ const DIV_KEY = 'mm-megalearn-div-v4';
 const DEPT_KEY = 'mm-megalearn-dept-v4';
 const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
 const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v3';
+const GROUP_KEY = 'mm-megalearn-groups-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -338,6 +340,7 @@ export function CourseStoreProvider({ children }) {
   const [departments, setDepartments] = useState(() => loadItem(DEPT_KEY, initialDepartments));
   const [subDepartments, setSubDepartments] = useState(() => loadItem(SUBDEPT_KEY, initialSubDepartments));
   const [jobLevels, setJobLevels] = useState(() => loadItem(JOBLEVELS_KEY, initialJobLevels));
+  const [customGroups, setCustomGroups] = useState(() => loadItem(GROUP_KEY, DEFAULT_CUSTOM_GROUPS));
 
   // HRBP Strategic Operations states (Interventions, Succession, 1-on-1 Alignments, Compliance Nudges)
   const [interventions, setInterventions] = useState(() => loadItem(INTERVENTION_KEY, DEFAULT_INTERVENTIONS));
@@ -392,6 +395,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(DEPT_KEY, JSON.stringify(departments));
       localStorage.setItem(SUBDEPT_KEY, JSON.stringify(subDepartments));
       localStorage.setItem(JOBLEVELS_KEY, JSON.stringify(jobLevels));
+      localStorage.setItem(GROUP_KEY, JSON.stringify(customGroups));
       localStorage.setItem(INTERVENTION_KEY, JSON.stringify(interventions));
       localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
       localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
@@ -1545,6 +1549,78 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
+  // Customized User Groups Methods
+  const addCustomGroup = useCallback((group) => {
+    const newId = group.id || `grp-${Date.now()}`;
+    const code = group.code || `GRP-${Date.now().toString().slice(-4)}`;
+    const newGroup = {
+      ...group,
+      id: newId,
+      code,
+      title: group.title || group.name || 'Nhóm Mới',
+      name: group.name || group.title || 'Nhóm Mới',
+      description: group.description || '',
+      type: group.type || 'DYNAMIC',
+      criteria: group.criteria || {},
+      memberUserIds: group.memberUserIds || [],
+      memberCount: group.memberUserIds ? group.memberUserIds.length : (group.memberCount || 0),
+      createdAt: new Date().toISOString(),
+      lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+      createdBy: currentUser ? `${currentUser.userId} (${currentUser.fullName})` : 'User Admin',
+      badgeColor: group.badgeColor || '#0EA5E9',
+    };
+    setCustomGroups((prev) => [newGroup, ...prev]);
+    return newGroup;
+  }, [currentUser]);
+
+  const updateCustomGroup = useCallback((groupId, patch) => {
+    setCustomGroups((prev) => prev.map((g) => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          ...patch,
+          memberCount: patch.memberUserIds ? patch.memberUserIds.length : (patch.memberCount !== undefined ? patch.memberCount : g.memberCount),
+          lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+        };
+      }
+      return g;
+    }));
+  }, []);
+
+  const deleteCustomGroup = useCallback((groupId) => {
+    setCustomGroups((prev) => prev.filter((g) => g.id !== groupId));
+  }, []);
+
+  const duplicateCustomGroup = useCallback((groupId) => {
+    const existing = customGroups.find((g) => g.id === groupId);
+    if (!existing) return null;
+    const dup = {
+      ...existing,
+      id: `grp-${Date.now()}`,
+      code: `${existing.code}_COPY`,
+      title: `${existing.title} (Bản Sao)`,
+      name: `${existing.name || existing.title} (Bản Sao)`,
+      createdAt: new Date().toISOString(),
+      lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+      createdBy: currentUser ? `${currentUser.userId} (${currentUser.fullName})` : 'User Admin',
+    };
+    setCustomGroups((prev) => [dup, ...prev]);
+    return dup;
+  }, [customGroups, currentUser]);
+
+  const getGroupMembers = useCallback((groupId) => {
+    const group = customGroups.find((g) => g.id === groupId);
+    if (!group) return [];
+    return resolveGroupMembers(group, users);
+  }, [customGroups, users]);
+
+  const isUserInGroup = useCallback((userId, groupId) => {
+    const user = users.find((u) => u.userId === userId || u.employeeCode === userId);
+    const group = customGroups.find((g) => g.id === groupId);
+    if (!user || !group) return false;
+    return isUserInCustomGroup(user, group, users);
+  }, [users, customGroups]);
+
   // Talent Profile Modal
   const openTalentProfile = useCallback((user) => {
     setTalentProfileUser(user || currentUser);
@@ -1615,6 +1691,14 @@ export function CourseStoreProvider({ children }) {
         addJobLevel,
         updateJobLevel,
         deleteJobLevel,
+        customGroups,
+        setCustomGroups,
+        addCustomGroup,
+        updateCustomGroup,
+        deleteCustomGroup,
+        duplicateCustomGroup,
+        getGroupMembers,
+        isUserInGroup,
         courses,
         addCourse,
         updateCourse,

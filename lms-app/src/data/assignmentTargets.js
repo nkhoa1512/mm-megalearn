@@ -4,14 +4,17 @@ import {
   demoUsers, allUsers,
 } from './mockData';
 import { ROLE_DEFINITIONS } from './roles';
+import { DEFAULT_CUSTOM_GROUPS } from './customGroupsData';
 
 export const ASSIGNMENT_TYPES = [
+  'GROUP',
   'BUSINESS_UNIT', 'DIVISION', 'DEPARTMENT', 'SUBDEPARTMENT',
   'AREA', 'STORE_TYPE', 'CLUSTER', 'STORE',
   'LEVEL', 'ROLE', 'USER',
 ];
 
 export const TARGET_ID_FIELD = {
+  GROUP: 'targetGroupId',
   BUSINESS_UNIT: 'targetBusinessUnitId',
   DIVISION: 'targetDivisionId',
   DEPARTMENT: 'targetDepartmentId',
@@ -25,8 +28,20 @@ export const TARGET_ID_FIELD = {
   USER: 'targetUserId',
 };
 
-export function targetOptionsFor(assignmentType) {
+export function targetOptionsFor(assignmentType, customGroupsList = null) {
   switch (assignmentType) {
+    case 'GROUP': {
+      const groups = (customGroupsList && customGroupsList.length > 0) ? customGroupsList : DEFAULT_CUSTOM_GROUPS;
+      return groups.map((g) => ({
+        id: g.id,
+        code: g.code,
+        title: g.title || g.name,
+        label: `👥 ${g.title || g.name} (${g.memberCount || g.memberUserIds?.length || 0} thành viên)`,
+        memberCount: g.memberCount || g.memberUserIds?.length || 0,
+        memberUserIds: g.memberUserIds || [],
+        type: g.type,
+      }));
+    }
     case 'BUSINESS_UNIT': return businessUnits.map((b) => ({ id: b.id, label: b.name }));
     case 'DIVISION': return divisions.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
     case 'DEPARTMENT': return departments.map((d) => ({ id: d.id, label: `${d.code} - ${d.name}` }));
@@ -70,16 +85,17 @@ export function targetOptionsFor(assignmentType) {
 
 export function assignmentTypeLabel(t) {
   return {
-    BUSINESS_UNIT: 'Business Unit',
-    DIVISION: 'Division (Head Office)',
-    DEPARTMENT: 'Department (Head Office)',
+    GROUP: 'Nhóm Người Dùng Tùy Chỉnh (Custom Group)',
+    BUSINESS_UNIT: 'Business Unit (Khối Toàn Quốc)',
+    DIVISION: 'Division (Head Office / Khối)',
+    DEPARTMENT: 'Department (Phòng Ban)',
     SUBDEPARTMENT: 'Sub-Department (Bộ phận trực thuộc)',
     AREA: 'Operations Area (North/Central/South)',
     STORE_TYPE: 'Store Type (C&C / Super Center / Food Service / Depot)',
     CLUSTER: 'Store Cluster',
-    STORE: 'Specific Store',
-    LEVEL: 'Job Level',
-    ROLE: 'Role',
-    USER: 'Individual User',
+    STORE: 'Specific Store (Siêu thị cụ thể)',
+    LEVEL: 'Job Level (Cấp bậc 1-7)',
+    ROLE: 'Role (Vai trò)',
+    USER: 'Individual User (Từng nhân sự)',
   }[t] || t;
 }

@@ -1063,7 +1063,8 @@ function MultiTargetAssigner({ onSave, onCancel, isHrbp = false, initialAssignTy
   const [userSubDeptFilter, setUserSubDeptFilter] = useState('ALL');
   const [search, setSearch] = useState('');
 
-  const targetOptions = targetOptionsFor(assignType) || [];
+  const { customGroups = [] } = useCourseStore();
+  const targetOptions = targetOptionsFor(assignType, customGroups) || [];
 
   const visibleOptions = useMemo(() => {
     if (assignType === 'USER') {

@@ -10,6 +10,7 @@ import { useCourseStore } from '../../store/CourseStore';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelDefinition } from '../../data/levelSystem';
 import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from '../../data/roles';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
+import CustomGroupsManager from '../../features/useradmin/CustomGroupsManager';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     departments = [],
     subDepartments = [],
     businessUnits = [],
+    customGroups = [],
     language,
     t,
   } = useCourseStore();
@@ -425,6 +427,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
   const TABS = [
     { id: 'DIRECTORY', labelVi: 'Danh Mục Nhân Sự', labelEn: 'Staff Directory', icon: 'ti-address-book', count: userList.length },
+    { id: 'GROUPS', labelVi: 'Nhóm Tùy Chỉnh (Custom Groups)', labelEn: 'Custom Groups', icon: 'ti-users-group', count: customGroups.length },
     { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu Tổ Chức (42 Khối)', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
     { id: 'JOB_LEVELS', labelVi: 'Khung Cấp Bậc (7 Cấp)', labelEn: 'Job Level Framework', icon: 'ti-id-badge-2', count: jobLevels.length },
   ];
@@ -732,14 +735,19 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
       )}
 
-      {/* TAB 2: ORG HIERARCHY TREE */}
+      {/* TAB 2: CUSTOMIZED USER GROUPS */}
+      {activeTab === 'GROUPS' && (
+        <CustomGroupsManager />
+      )}
+
+      {/* TAB 3: ORG HIERARCHY TREE */}
       {activeTab === 'HIERARCHY' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <OrgHierarchyBrowser />
         </div>
       )}
 
-      {/* TAB 3: KHUNG CẤP BẬC */}
+      {/* TAB 4: KHUNG CẤP BẬC */}
       {activeTab === 'JOB_LEVELS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--line)' }}>
