@@ -430,7 +430,7 @@ export default function CustomGroupsManager() {
           >
             <option value="ALL">-- Tất cả loại nhóm --</option>
             <option value="DYNAMIC">🏢 Nhóm Theo Cơ Cấu (Dynamic)</option>
-            <option value="MANUAL">👤 Nhóm Chọn Thủ Công (Manual)</option>
+            <option value="MANUAL">👤 Nhóm Chọn User</option>
             <option value="FILE_IMPORT">📄 Nhóm Import Từ File (Template)</option>
           </select>
         </div>
@@ -532,7 +532,7 @@ export default function CustomGroupsManager() {
                         ) : grp.type === 'FILE_IMPORT' ? (
                           <Badge tone="amber" icon="ti-file-spreadsheet">Import File</Badge>
                         ) : (
-                          <Badge tone="blue" icon="ti-user-check">Thủ Công</Badge>
+                          <Badge tone="blue" icon="ti-user-check">Chọn User</Badge>
                         )}
                       </td>
 
@@ -817,7 +817,7 @@ export default function CustomGroupsManager() {
                     boxShadow: formTab === 'MANUAL' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <i className="ti ti-user-check" /> 👤 Chọn Thủ Công
+                  <i className="ti ti-user-check" /> Chọn User
                 </button>
                 <button
                   type="button"
