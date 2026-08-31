@@ -503,12 +503,12 @@ export function getFullOrgChainForUser(subDeptId) {
 }
 
 export const meetingRoomsAndLabs = [
-  { id: 'lab-ap-fresh', name: 'Fresh Food & Bakery Practical Lab (MM An Phú)', capacity: 25, type: 'LAB', location: 'MM An Phú, TP. Thủ Đức' },
-  { id: 'lab-bp-dry', name: 'FMCG & Dry Grocery Storage Lab (MM Bình Phú)', capacity: 30, type: 'LAB', location: 'MM Bình Phú, Q.6, TP.HCM' },
-  { id: 'lab-hp-gr', name: 'Goods Receiving & Cold-Chain Lab (MM Hiệp Phú)', capacity: 20, type: 'LAB', location: 'MM Hiệp Phú, Q.12, TP.HCM' },
-  { id: 'lab-tl-frontline', name: 'Cashier & Customer Service POS Lab (MM Thăng Long)', capacity: 35, type: 'LAB', location: 'MM Thăng Long, Hà Nội' },
-  { id: 'room-ho-auditorium', name: 'Grand Auditorium & Training Hall (Head Office)', capacity: 100, type: 'AUDITORIUM', location: 'Head Office, An Phú' },
-  { id: 'room-ho-innovation', name: 'Digital Innovation & E-Learning Lab (Head Office)', capacity: 40, type: 'LAB', location: 'Head Office, An Phú' },
+  { id: 'lab-ap-fresh', name: 'Fresh Food & Bakery Practical Lab (MM An Phú)', capacity: 25, type: 'LAB', location: 'MM An Phú, TP. Thủ Đức', equipment: ['Bếp nướng công nghiệp', 'Tủ ủ bánh mì', 'Bàn thao tác inox HACCP', 'Máy đo nhiệt độ thực phẩm'] },
+  { id: 'lab-bp-dry', name: 'FMCG & Dry Grocery Storage Lab (MM Bình Phú)', capacity: 30, type: 'LAB', location: 'MM Bình Phú, Q.6, TP.HCM', equipment: ['Xe nâng Reach Truck mô phỏng', 'Giá kệ pallet tiêu chuẩn', 'Máy quét mã vạch không dây', 'Màn hình hướng dẫn SOP'] },
+  { id: 'lab-hp-gr', name: 'Goods Receiving & Cold-Chain Lab (MM Hiệp Phú)', capacity: 20, type: 'LAB', location: 'MM Hiệp Phú, Q.12, TP.HCM', equipment: ['Cảm biến nhiệt độ kho lạnh', 'Cân điện tử công nghiệp', 'Bộ dụng cụ kiểm tra chất lượng nhập hàng'] },
+  { id: 'lab-tl-frontline', name: 'Cashier & Customer Service POS Lab (MM Thăng Long)', capacity: 35, type: 'LAB', location: 'MM Thăng Long, Hà Nội', equipment: ['Quầy thu ngân POS thực nghiệm', 'Máy in hóa đơn & POS thanh toán thẻ', 'Bộ đàm nội bộ', 'Bảng quy chuẩn CSAT'] },
+  { id: 'room-ho-auditorium', name: 'Grand Auditorium & Training Hall (Head Office)', capacity: 100, type: 'AUDITORIUM', location: 'Head Office, An Phú', equipment: ['Máy chiếu 4K & Màn hình LED 200 inch', 'Hệ thống âm thanh hội trường không dây', 'Bục phát biểu & Cabin phiên dịch'] },
+  { id: 'room-ho-innovation', name: 'Digital Innovation & E-Learning Lab (Head Office)', capacity: 40, type: 'LAB', location: 'Head Office, An Phú', equipment: ['30 Máy tính bảng học tập chuyên dụng', 'Màn hình cảm ứng tương tác 85 inch', 'Kính VR mô phỏng PCCC'] },
 ];
 
 export const competencyFramework = [
@@ -521,12 +521,12 @@ export const competencyFramework = [
 
 export const trainersDirectory = [
   { id: 'tr-01', userId: 'USR-9003', name: 'Nguyen Van Hung', domain: 'Food Safety & Bakery', role: 'Master Trainer' },
-  { id: 'tr-02', userId: 'USR-9005', name: 'Vu Duc Thanh', domain: 'HSE & Workplace Safety', role: 'Safety Instructor' },
+  { id: 'tr-02', userId: null, name: 'Vu Duc Thanh', domain: 'HSE & Workplace Safety', role: 'Safety Instructor' },
   { id: 'tr-03', userId: 'USR-9006', name: 'Tran Minh Quang', domain: 'Store Management & P&L', role: 'SGM Mentor' },
   { id: 'tr-04', userId: 'USR-0001', name: 'Sarah Nguyen', domain: 'Leadership & Talent Pipeline', role: 'Faculty Lead' },
 ];
 
 export function trainerUserIdFor(trainerId) {
   const t = trainersDirectory.find((tr) => tr.id === trainerId);
-  return t ? t.userId : 'USR-9003';
+  return t ? t.userId : null;
 }

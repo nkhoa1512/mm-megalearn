@@ -4,7 +4,7 @@ import {
   businessUnits, divisions, departments, jobLevels, demoUsers, allUsers, createBlankCourse,
   meetingRoomsAndLabs, teachingEligibleUsers, nextMajorVersion,
 } from '../../data/mockData';
-import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
+import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel, resolveTargetLabel } from '../../data/assignmentTargets';
 import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../features/common/ui';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
@@ -12,6 +12,7 @@ import { useCourseStore } from '../../store/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 import { generateCourseCode } from '../../utils/courseCatalog';
 import AssessmentEditorModal from '../../features/assessment/AssessmentEditorModal';
+import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
 import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/assessmentData';
 import { generateAssessmentCode } from '../../utils/assessmentCatalog';
 
@@ -1146,44 +1147,43 @@ export default function AdminCourseBuilder() {
   }
 
   function setCourseType(courseType) {
+    setDraft((d) => ({
+      ...d,
+      courseType,
+      assignments: d.assignments || (d.assignment ? [d.assignment] : []),
+    }));
+  }
+
+  function handleAddAssignments(newAssignments) {
     setDraft((d) => {
-      if (courseType === 'OPTIONAL') return { ...d, courseType, assignment: null };
-      const opts = targetOptionsFor('BUSINESS_UNIT');
+      const current = d.assignments || (d.assignment ? [d.assignment] : []);
+      const updated = [...current, ...newAssignments];
       return {
         ...d,
-        courseType,
-        assignment: d.assignment || {
-          assignmentType: 'BUSINESS_UNIT',
-          targetBusinessUnitId: opts[0]?.id,
-          targetLabel: opts[0]?.label,
-          assignedBy: 'USR-1000',
-          assignedAt: new Date().toISOString().slice(0, 10),
-          startDate: new Date().toISOString().slice(0, 10),
-          dueDate: '',
-        },
+        assignments: updated,
+        assignment: updated[0] || null,
       };
     });
   }
 
-  function setAssignmentType(assignmentType) {
-    const opts = targetOptionsFor(assignmentType);
-    const field = TARGET_ID_FIELD[assignmentType];
-    setDraft((d) => ({
-      ...d,
-      assignment: {
-        assignmentType, assignedBy: d.assignment?.assignedBy || 'USR-1000',
-        assignedAt: d.assignment?.assignedAt || new Date().toISOString().slice(0, 10),
-        startDate: d.assignment?.startDate || '', dueDate: d.assignment?.dueDate || '',
-        [field]: opts[0]?.id, targetLabel: opts[0]?.label,
-      },
-    }));
+  function handleRemoveAssignment(index) {
+    setDraft((d) => {
+      const current = d.assignments || (d.assignment ? [d.assignment] : []);
+      const updated = current.filter((_, i) => i !== index);
+      return {
+        ...d,
+        assignments: updated,
+        assignment: updated[0] || null,
+      };
+    });
   }
 
-  function setAssignmentTarget(targetId) {
-    const opts = targetOptionsFor(draft.assignment.assignmentType);
-    const label = opts.find((o) => o.id === targetId)?.label || targetId;
-    const field = TARGET_ID_FIELD[draft.assignment.assignmentType];
-    setDraft((d) => ({ ...d, assignment: { ...d.assignment, [field]: targetId, targetLabel: label } }));
+  function handleClearAllAssignments() {
+    setDraft((d) => ({
+      ...d,
+      assignments: [],
+      assignment: null,
+    }));
   }
 
   function addModule() {
@@ -1300,10 +1300,6 @@ export default function AdminCourseBuilder() {
     if (lvls.length === 0) {
       setError('Vui lòng chọn ít nhất một Cấp bậc áp dụng (Target Job Level is required).');
       document.getElementById('builder-level-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    if (nextStatus === 'PUBLISHED' && draft.courseType === 'MANDATORY' && !draft.assignment?.dueDate) {
-      setError('Mandatory courses need a due date for their target audience.');
       return;
     }
     if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
@@ -2333,120 +2329,131 @@ export default function AdminCourseBuilder() {
               />
             </div>
           </div>
-
-          {/* Quick Target Audience Presets */}
-          <div style={{ background: '#fff', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--line)' }}>
-            <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-              <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--blue)' }} />
-              Gán Nhanh Đối Tượng Học Viên Bắt Buộc Tham Gia (Target Cohort Enrollment)
-            </label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { label: '👥 Tất cả Quản lý (All Managers)', type: 'ROLE', target: 'MANAGER' },
-                { label: '🌱 Tất cả Nhân sự Mới (New Joiners)', type: 'STATUS', target: 'NEW_JOINER' },
-                { label: '🥖 Nhân viên Quầy Bánh & Tươi sống (MM An Phú)', type: 'DEPARTMENT', target: 'dept-ppf' },
-                { label: '🏢 Toàn bộ Nhân viên Siêu thị An Phú', type: 'STORE', target: 'store-an-phu' },
-              ].map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    patch({
-                      courseType: 'MANDATORY',
-                      assignedCohortNote: preset.label,
-                    });
-                    if (preset.type === 'DEPARTMENT') {
-                      setDraft((d) => ({
-                        ...d,
-                        courseType: 'MANDATORY',
-                        assignment: {
-                          assignmentType: 'DEPARTMENT',
-                          targetDepartmentId: preset.target,
-                          assignedBy: authUser?.fullName || 'L&OD Admin',
-                          startDate: draft.scheduleDate || '2026-08-28',
-                          dueDate: draft.scheduleDate || '2026-08-28',
-                        },
-                      }));
-                    } else if (preset.type === 'STORE') {
-                      setDraft((d) => ({
-                        ...d,
-                        courseType: 'MANDATORY',
-                        assignment: {
-                          assignmentType: 'STORE',
-                          targetStoreId: preset.target,
-                          assignedBy: authUser?.fullName || 'L&OD Admin',
-                          startDate: draft.scheduleDate || '2026-08-28',
-                          dueDate: draft.scheduleDate || '2026-08-28',
-                        },
-                      }));
-                    } else {
-                      setDraft((d) => ({
-                        ...d,
-                        courseType: 'MANDATORY',
-                        assignment: {
-                          assignmentType: 'ALL_ASSOCIATES',
-                          assignedBy: authUser?.fullName || 'L&OD Admin',
-                          startDate: draft.scheduleDate || '2026-08-28',
-                          dueDate: draft.scheduleDate || '2026-08-28',
-                        },
-                      }));
-                    }
-                  }}
-                  className="btn btn-sm"
-                  style={{
-                    background: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--paper-sunken)',
-                    color: draft.assignedCohortNote === preset.label ? '#fff' : 'var(--ink)',
-                    borderColor: draft.assignedCohortNote === preset.label ? 'var(--blue)' : 'var(--line)',
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
-      {draft.courseType === 'MANDATORY' && draft.assignment && (
-        <div className="card card-pad" style={{ marginBottom: 16 }}>
-          <div className="section-label" style={{ margin: '0 0 14px' }}>Target audience</div>
-          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+      {/* SECTION: PHÂN BỔ ĐỐI TƯỢNG (CASCADING DRILL-DOWN ASSIGNER) */}
+      {(draft.courseType === 'MANDATORY' || draft.courseType === 'OPTIONAL') && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 16,
+            border: draft.courseType === 'MANDATORY' ? '1.5px solid #F59E0B' : '1.5px solid var(--blue, #3B82F6)',
+            background: draft.courseType === 'MANDATORY' ? '#FFFDF5' : '#F8FAFC',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap', gap: 8 }}>
             <div>
-              <label className="field-label">Assignment type</label>
-              <select className="field-select" value={draft.assignment.assignmentType} onChange={(e) => setAssignmentType(e.target.value)}>
-                {ASSIGNMENT_TYPES.map((t) => (
-                  <option key={t} value={t}>{assignmentTypeLabel(t)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Target</label>
-              <select
-                className="field-select"
-                value={draft.assignment[TARGET_ID_FIELD[draft.assignment.assignmentType]] || ''}
-                onChange={(e) => setAssignmentTarget(e.target.value)}
+              <div
+                className="section-label"
+                style={{
+                  margin: 0,
+                  fontSize: 13.5,
+                  fontWeight: 800,
+                  color: draft.courseType === 'MANDATORY' ? '#B45309' : '#1D4ED8',
+                }}
               >
-                {targetOptionsFor(draft.assignment.assignmentType).map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-              <div className="field-hint">Head Office (Business Unit / Division / Department), Operations (Area / Store Type / Cluster / Store), Level, Role, or a specific user.</div>
+                <i className="ti ti-sitemap" style={{ marginRight: 6 }} />
+                {draft.courseType === 'MANDATORY'
+                  ? 'Phân Bổ Đối Tượng Học Viên Bắt Buộc (Target Audience Assignment)'
+                  : 'Phân Bổ Bắt Buộc Có Thời Hạn (Tùy Chọn Phân Phối Đối Tượng)'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                {draft.courseType === 'MANDATORY' ? (
+                  <>
+                    💡 <strong>Tùy chọn lúc tạo/sửa khóa:</strong> Admin có thể chọn gán đối tượng ngay bây giờ (Khối, Phòng ban, Sub-Dept, Level, Chi nhánh, Từng User, Nhóm) <em>hoặc để trống để gán sau</em>. Khóa mandatory chưa gán đối tượng sẽ tạm ẩn khỏi học viên cho đến khi được phân bổ.
+                  </>
+                ) : (
+                  <>
+                    💡 <strong>Khóa học tự chọn (Optional):</strong> Khóa học luôn hiển thị công khai trên danh mục cho mọi học viên. Nếu Admin gán thêm Khối / Phòng ban / Cá nhân tại đây, khóa học sẽ trở thành <strong>bắt buộc kèm hạn hoàn thành</strong> riêng cho các đối tượng được gán.
+                  </>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="field-label">Assigned by</label>
-              <input className="field-input" value="Admin only" disabled />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <Badge tone={(draft.assignments && draft.assignments.length) || draft.assignment ? (draft.courseType === 'MANDATORY' ? 'amber' : 'blue') : 'slate'}>
+                {((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))} Đối Tượng Đã Gán
+              </Badge>
             </div>
           </div>
-          <div className="grid grid-2">
-            <div>
-              <label className="field-label">Start date</label>
-              <input className="field-input" type="date" value={draft.assignment.startDate || ''} onChange={(e) => setDraft((d) => ({ ...d, assignment: { ...d.assignment, startDate: e.target.value } }))} />
+
+          {/* Table of Assigned Targets */}
+          {((draft.assignments && draft.assignments.length > 0) || draft.assignment) && (
+            <div style={{ marginBottom: 14, background: '#fff', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+                  Danh Sách Đối Tượng Được Gán ({((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))})
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  style={{ fontSize: 11, color: '#DC2626', padding: '2px 6px' }}
+                  onClick={handleClearAllAssignments}
+                >
+                  Xóa tất cả
+                </button>
+              </div>
+              <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+                <table className="table" style={{ margin: 0, fontSize: 12 }}>
+                  <thead>
+                    <tr>
+                      <th>Cấp Độ Phân Bổ</th>
+                      <th>Đối Tượng Mục Tiêu</th>
+                      <th>Hạn Hoàn Thành</th>
+                      <th>Ghi Chú</th>
+                      <th style={{ width: 60, textAlign: 'center' }}>Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(draft.assignments || (draft.assignment ? [draft.assignment] : [])).map((asg, idx) => (
+                      <tr key={asg.id || idx}>
+                        <td>
+                          <Badge tone="blue" size="sm">{assignmentTypeLabel(asg.assignmentType)}</Badge>
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                          {asg.targetLabel || resolveTargetLabel(asg.assignmentType, asg.targetId || asg.targetDivisionId || asg.targetDepartmentId || asg.targetStoreId || asg.targetSubDepartmentId || asg.targetBusinessUnitId || asg.targetGroupId || asg.targetUserId || asg.targetLevel)}
+                        </td>
+                        <td>{asg.dueDate || '—'}</td>
+                        <td style={{ color: 'var(--ink-soft)' }}>{asg.justification || '—'}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: '#DC2626', padding: '2px 6px' }}
+                            onClick={() => handleRemoveAssignment(idx)}
+                            title="Xóa phân bổ này"
+                          >
+                            <i className="ti ti-trash" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div>
-              <label className="field-label">Due date</label>
-              <input className="field-input" type="date" value={draft.assignment.dueDate || ''} onChange={(e) => setDraft((d) => ({ ...d, assignment: { ...d.assignment, dueDate: e.target.value } }))} />
-            </div>
-          </div>
+          )}
+
+          {/* Integrated Cascading MultiTargetAssigner Component */}
+          <MultiTargetAssigner
+            course={draft}
+            saveButtonLabel="+ Thêm Đối Tượng Phân Bổ"
+            onSave={({ assignmentType, targets, dueDate, justification, groupPolicy, assignedLevelEligibility }) => {
+              const toAdd = targets.map((t) => ({
+                id: `asg-draft-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                assignmentType,
+                targetId: t.targetId,
+                targetLabel: t.targetLabel,
+                dueDate: dueDate || '',
+                justification: justification || '',
+                groupPolicy: groupPolicy || 'ELIGIBLE_ONLY',
+                assignedLevelEligibility,
+                assignedAt: new Date().toISOString().slice(0, 10),
+                assignedBy: authUser?.fullName || 'User Admin',
+              }));
+              handleAddAssignments(toAdd);
+            }}
+          />
         </div>
       )}
 

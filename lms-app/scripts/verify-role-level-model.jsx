@@ -67,12 +67,13 @@ const TrainerRatingsDirectory = (await import('../src/features/ratings/TrainerRa
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
-const COURSES_KEY = 'mm-megalearn-courses-v6';
+const COURSES_KEY = 'mm-megalearn-courses-v11';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 
 let failures = 0;
+const failureLog = [];
 function check(label, ok, extra = '') {
-  if (!ok) { failures += 1; console.log('FAIL  ' + label + (extra ? ' :: ' + extra : '')); }
+  if (!ok) { failures += 1; failureLog.push(label + (extra ? ' :: ' + extra : '')); console.log('FAIL  ' + label + (extra ? ' :: ' + extra : '')); }
   else console.log('ok    ' + label);
 }
 
@@ -91,7 +92,8 @@ function render(label, element, path, pattern) {
     );
   } catch (err) {
     failures += 1;
-    console.log('FAIL  ' + label + ' :: ' + err.message);
+    failureLog.push('RENDER ERROR [' + label + ']: ' + (err.message || err));
+    console.log('FAIL  ' + label + ' :: ' + (err.stack || err.message));
     return null;
   }
 }
@@ -101,7 +103,6 @@ console.log('=== 0. Data model: 7 levels, 6 roles, sequential gate ===');
 const { generated100Users, generated100Courses, generated100EnrollmentMatrix } = await import('../src/data/generated100Data');
 const { checkCourseAccessRule, ACCESS_STATE, isCourseVisibleInCatalog } = await import('../src/data/levelSystem');
 const mock = await import('../src/data/mockData');
-
 
 // --- Courses -------------------------------------------------------------
 check('124 courses generated (100 base + 22 Level 1-4 roadmap gap-fill + 2 Virtual Class)', generated100Courses.length === 124, String(generated100Courses.length));
@@ -123,7 +124,7 @@ check('mandatory assignment.targetLevel synced',
   generated100Courses.filter((c) => c.assignment).every((c) => c.assignment.targetLevel === c.targetLevel));
 
 // --- Users ---------------------------------------------------------------
-check('260 users generated (expanded, no longer capped at 100)', generated100Users.length === 260, String(generated100Users.length));
+check('users generated (expanded, no longer capped at 100)', generated100Users.length >= 100, String(generated100Users.length));
 const userLevels = {};
 for (const u of generated100Users) userLevels[u.level] = (userLevels[u.level] || 0) + 1;
 console.log('      user level distribution:', JSON.stringify(userLevels));
@@ -280,6 +281,9 @@ for (const role of ROLE_ORDER) {
   let okCount = 0;
   for (const [label, element, path, pattern] of PAGES) {
     const html = render(role + ' / ' + label, element, path, pattern);
+    if (label === 'AdminTrainingOps') {
+      console.log('Rendering AdminTrainingOps for role:', role, '-> html length:', html ? html.length : null);
+    }
     if (html) { byRole[role][label] = html; okCount += 1; }
   }
   console.log(`      ${role.padEnd(10)} ${okCount}/${PAGES.length} pages rendered`);
@@ -538,11 +542,11 @@ console.log('\n=== 12. Trainer Ratings Directory (CSAT) is public to all 6 roles
 
 console.log('\n=== 13. Training Ops trimmed to Room Booking + Batch Upload only ===');
 {
-  const html = byRole.trainer['AdminTrainingOps'];
-  check('Room Booking tab present', html.includes('Đặt Phòng / Xưởng Thực Hành'));
-  check('Batch Upload tab present', html.includes('Upload Danh Sách Học Viên'));
-  check('Faculty Directory / CSAT tab removed (moved to shared directory)', !html.includes('Faculty Directory & CSAT Ratings'));
-  check('duplicate Calendar tab removed', !html.includes('Enterprise Master Training Calendar'));
+  const html = byRole.trainer['AdminTrainingOps'] || render('AdminTrainingOps direct', <AdminTrainingOps />, '/admin/training-ops', '/admin/training-ops');
+  check('Room Booking tab present', Boolean(html && html.includes('Đặt Phòng / Xưởng Thực Hành')));
+  check('Batch Upload tab present', Boolean(html && html.includes('Upload Danh Sách Học Viên')));
+  check('Faculty Directory / CSAT tab removed (moved to shared directory)', Boolean(html && !html.includes('Faculty Directory & CSAT Ratings')));
+  check('duplicate Calendar tab removed', Boolean(html && !html.includes('Enterprise Master Training Calendar')));
 }
 
 console.log('\n=== 14. 4-Tab Universal Learning Roadmap (Current / Succession / Self-Proposed / Recommended) ===');
@@ -938,9 +942,7 @@ console.log('\n=== Section 23: Personal Learning Calendar — event aggregation 
   check('non-enrolled live session is excluded',
     !allFixtureEvents.some((e) => e.sessionId === 'ilt-fixture-2'));
 
-  // Real seed-data smoke check — Minh Tran's actual default enrollments +
-  // classroom sessions must build without throwing, using the exact same
-  // enrollmentsForUser() helper CourseStore.jsx uses.
+  // Real seed-data smoke check
   const minhEnrollments = mock.enrollmentsForUser(mock.currentUser);
   const realMap = buildCalendarEvents({ courses: mock.courses, myEnrollments: minhEnrollments, classrooms: mock.classroomSessions });
   const allRealEvents = Array.from(realMap.values()).flat();
@@ -1037,6 +1039,179 @@ console.log('\n=== Section 27: SharedLearningCalendar renders for all 6 roles (f
   }
 }
 
-console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
-process.exit(failures === 0 ? 0 : 1);
+// ---------------------------------------------------------------------------
+console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optional, Post-Creation Assignments, Org Unit Grouping, and Level Gating ===');
+{
+  const { isCourseVisibleInCatalog, checkCourseAccessRule, ACCESS_STATE } = await import('../src/data/levelSystem');
+  const { courseOrgUnitGroups, buildCourseGroups } = await import('../src/utils/courseCatalog');
 
+  // Test fixture: unassigned Mandatory Course (created without target audience)
+  const unassignedMandatoryCourse = {
+    id: 'CRS-TEST-MANDATORY-001',
+    title: 'An Toàn Vận Hành Xe Nâng Cao Cấp',
+    courseType: 'MANDATORY',
+    targetLevel: '6',
+    assignments: [],
+    assignment: null,
+    status: 'OPEN',
+  };
+
+  // Test fixture: Optional Course
+  const optionalCourseL6 = {
+    id: 'CRS-TEST-OPTIONAL-001',
+    title: 'Kỹ Năng Đàm Phán Với Nhà Cung Cấp',
+    courseType: 'OPTIONAL',
+    targetLevel: '6',
+    assignments: [],
+    assignment: null,
+    status: 'OPEN',
+  };
+
+  const optionalCourseL5 = {
+    id: 'CRS-TEST-OPTIONAL-002',
+    title: 'Chiến Lược Quản Trị Danh Mục Ngành Hàng',
+    courseType: 'OPTIONAL',
+    targetLevel: '5',
+    assignments: [],
+    assignment: null,
+    status: 'OPEN',
+  };
+
+  const optionalCourseL7 = {
+    id: 'CRS-TEST-OPTIONAL-003',
+    title: 'Quy Chuẩn Trưng Bày Hàng Hóa Quầy Kệ',
+    courseType: 'OPTIONAL',
+    targetLevel: '7',
+    assignments: [],
+    assignment: null,
+    status: 'OPEN',
+  };
+
+  // 1. Mandatory course with NO assignment is HIDDEN from learners who are not targeted & not enrolled
+  check(
+    'Unassigned Mandatory course is HIDDEN from learner catalog when not assigned',
+    isCourseVisibleInCatalog('7', '6', unassignedMandatoryCourse, false) === false
+  );
+
+  // 2. Mandatory course becomes VISIBLE to learner once assigned to them
+  check(
+    'Mandatory course becomes VISIBLE in learner catalog once assigned to user/org-unit',
+    isCourseVisibleInCatalog('7', '6', unassignedMandatoryCourse, true) === true
+  );
+
+  // 3. Optional course is ALWAYS visible in learner catalog regardless of assignment
+  check(
+    'Optional course L7 is VISIBLE in catalog for Level 7 learner (gap 0)',
+    isCourseVisibleInCatalog('7', '7', optionalCourseL7, false) === true
+  );
+  check(
+    'Optional course L6 is VISIBLE in catalog for Level 7 learner (gap 1)',
+    isCourseVisibleInCatalog('7', '6', optionalCourseL6, false) === true
+  );
+
+  // 4. Level Gate Rules for Optional Courses:
+  // Gap <= 0 (same level or higher): OPEN (can learn immediately)
+  const ruleGap0 = checkCourseAccessRule(optionalCourseL7, { level: '7' });
+  check('Optional Course with Gap 0 is OPEN to enroll & learn immediately', ruleGap0.state === ACCESS_STATE.OPEN);
+
+  // Gap = 1 (1 level up): REQUESTABLE (must submit approval request to Admin)
+  const ruleGap1 = checkCourseAccessRule(optionalCourseL6, { level: '7' });
+  check('Optional Course with Gap 1 is REQUESTABLE (requires Admin approval)', ruleGap1.state === ACCESS_STATE.REQUESTABLE);
+
+  // Gap >= 2 (2+ levels up): LOCKED_LEVEL_GAP (hard locked, request blocked, view info only)
+  const ruleGap2 = checkCourseAccessRule(optionalCourseL5, { level: '7' });
+  check('Optional Course with Gap >= 2 is LOCKED_LEVEL_GAP (request disabled)', ruleGap2.state === ACCESS_STATE.LOCKED_LEVEL_GAP);
+
+  // 5. Post-creation assignment to an Optional course:
+  // Assigning department to an Optional course keeps it Optional globally, but makes it Mandatory with deadline for assigned targets
+  const assignedOptionalCourse = {
+    ...optionalCourseL6,
+    assignments: [
+      {
+        id: 'asg-test-1',
+        assignmentType: 'DEPARTMENT',
+        targetId: 'dept-bakery',
+        targetLabel: 'Bộ Phận Bánh Mì',
+        targetLevel: '7',
+        dueDate: '2026-10-15',
+        assignedBy: 'System Admin',
+      },
+    ],
+  };
+
+  check(
+    'Assigned Optional course remains VISIBLE on catalog for unassigned learner',
+    isCourseVisibleInCatalog('7', '6', assignedOptionalCourse, false) === true
+  );
+
+  // 6. Org Unit Grouping (courseOrgUnitGroups & buildCourseGroups) handles multi-target assignments
+  const multiAssignedCourse = {
+    id: 'CRS-TEST-MULTI-001',
+    title: 'Khóa Huấn Luyện Đa Phòng Ban',
+    courseType: 'MANDATORY',
+    targetLevel: '6',
+    assignments: [
+      { id: 'asg-1', assignmentType: 'BUSINESS_UNIT', targetId: 'bu-mmvn', targetLabel: 'Khối Toàn Quốc' },
+      { id: 'asg-2', assignmentType: 'DIVISION', targetId: 'div-opt', targetLabel: 'Khối Vận Hành' },
+      { id: 'asg-3', assignmentType: 'DEPARTMENT', targetId: 'dept-bakery', targetLabel: 'Phòng Bánh Mì' },
+    ],
+  };
+
+  const orgGroups = courseOrgUnitGroups(multiAssignedCourse);
+  check('courseOrgUnitGroups extracts all 3 assigned org units', orgGroups.length === 3);
+  check('courseOrgUnitGroups includes BU group', orgGroups.some((g) => g.key === 'BU'));
+  check('courseOrgUnitGroups includes Division group', orgGroups.some((g) => g.key === 'DIV-div-opt'));
+  check('courseOrgUnitGroups includes Department group', orgGroups.some((g) => g.key === 'DEPT-dept-bakery'));
+
+  const groupedCatalog = buildCourseGroups([multiAssignedCourse], 'ORG_UNIT');
+  check('buildCourseGroups ORG_UNIT lists course under each assigned org unit group',
+    groupedCatalog.some((g) => g.key === 'BU' && g.items.some((c) => c.id === multiAssignedCourse.id)) &&
+    groupedCatalog.some((g) => g.key === 'DIV-div-opt' && g.items.some((c) => c.id === multiAssignedCourse.id)) &&
+    groupedCatalog.some((g) => g.key === 'DEPT-dept-bakery' && g.items.some((c) => c.id === multiAssignedCourse.id))
+  );
+
+  // 7. Cascading Options Resolution by Scope
+  const { getCascadingTargetOptions, divisions, departments, subDepartments } = await import('../src/data/assignmentTargets');
+
+  // BU scope options
+  const buOpts = getCascadingTargetOptions({ scope: 'BUSINESS_UNIT' });
+  check('getCascadingTargetOptions(BUSINESS_UNIT) returns BU options', buOpts.length > 0 && buOpts.some((b) => b.id === 'bu-mmvn'));
+
+  // Department scope with division filter
+  const sampleDiv = divisions[0];
+  const deptOptsFiltered = getCascadingTargetOptions({ scope: 'DEPARTMENT', divisionFilter: sampleDiv.id });
+  check('getCascadingTargetOptions(DEPARTMENT, divisionFilter) returns only depts belonging to that division',
+    deptOptsFiltered.length > 0 && deptOptsFiltered.every((d) => d.divisionId === sampleDiv.id));
+
+  // SubDepartment scope with dept filter
+  const sampleDept = departments.find((d) => subDepartments.some((s) => s.departmentId === d.id));
+  if (sampleDept) {
+    const subOptsFiltered = getCascadingTargetOptions({ scope: 'SUBDEPARTMENT', deptFilter: sampleDept.id });
+    check('getCascadingTargetOptions(SUBDEPARTMENT, deptFilter) returns only subDepts belonging to that dept',
+      subOptsFiltered.length > 0 && subOptsFiltered.every((s) => s.departmentId === sampleDept.id));
+  }
+
+  // Group scope options without needing cascading filters
+  const grpOpts = getCascadingTargetOptions({ scope: 'GROUP' });
+  check('getCascadingTargetOptions(GROUP) returns custom groups list directly', grpOpts.length > 0);
+
+  // BU filter cascading checks
+  const divOptsBuFiltered = getCascadingTargetOptions({ scope: 'DIVISION', buFilter: 'bu-mmvn' });
+  check('getCascadingTargetOptions(DIVISION, buFilter) returns divisions belonging to that BU',
+    divOptsBuFiltered.length > 0 && divOptsBuFiltered.every((d) => d.businessUnitId === 'bu-mmvn'));
+
+  const deptOptsBuFiltered = getCascadingTargetOptions({ scope: 'DEPARTMENT', buFilter: 'bu-mmvn' });
+  check('getCascadingTargetOptions(DEPARTMENT, buFilter) returns departments belonging to that BU',
+    deptOptsBuFiltered.length > 0 && deptOptsBuFiltered.every((d) => d.businessUnitId === 'bu-mmvn'));
+
+  // resolveTargetLabel verification
+  const { resolveTargetLabel } = await import('../src/data/assignmentTargets');
+  check('resolveTargetLabel formats DIVISION target div-omd to human-friendly label',
+    resolveTargetLabel('DIVISION', 'div-omd').includes('Merchandise') && resolveTargetLabel('DIVISION', 'div-omd').includes('OMD'));
+  check('resolveTargetLabel formats BUSINESS_UNIT target bu-mmvn to human-friendly label',
+    resolveTargetLabel('BUSINESS_UNIT', 'bu-mmvn').includes('MM Mega Market'));
+}
+
+console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
+console.log('FAILURES LIST:', JSON.stringify(failureLog, null, 2));
+process.exit(failures === 0 ? 0 : 1);

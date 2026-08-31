@@ -9,7 +9,7 @@ import { Badge, Button, Modal } from '../../features/common/ui';
 // chung TrainerRatingsDirectory (công khai cho cả 6 role); tab Calendar bỏ vì
 // trùng lặp với lịch lớp trực tiếp đã có ở "Lớp Giảng Dạy & Live QR".
 export default function AdminTrainingOps() {
-  const { classrooms, batchEnrollStudents } = useCourseStore();
+  const { classrooms = [], batchEnrollStudents } = useCourseStore();
   const [activeTab, setActiveTab] = useState('ROOM_BOOKING'); // ROOM_BOOKING, BATCH_UPLOAD
 
   const [selectedVenue, setSelectedVenue] = useState(null);
@@ -43,7 +43,7 @@ export default function AdminTrainingOps() {
     setSelectedVenue(null);
   }
 
-  const [batchClassId, setBatchClassId] = useState(classrooms[0]?.id || 'ilt-001');
+  const [batchClassId, setBatchClassId] = useState((classrooms || [])[0]?.id || 'ilt-001');
   const [csvInput, setCsvInput] = useState(
     'MMVN-1042, Minh Tran, Bakery Specialist, MM An Phu\nMMVN-1078, Sarah Johnson, Pastry Chef Associate, MM An Phu\nMMVN-1120, Carlos Reyes, Dough Prep Associate, MM An Phu'
   );
@@ -186,7 +186,7 @@ export default function AdminTrainingOps() {
               onChange={(e) => setBatchClassId(e.target.value)}
               style={{ width: '100%', fontSize: 13 }}
             >
-              {classrooms.map((c) => (
+              {(classrooms || []).map((c) => (
                 <option key={c.id} value={c.id}>
                   [{c.code}] {c.title} ({c.date} · {c.venue})
                 </option>

@@ -4,7 +4,7 @@
 // source of truth — previously duplicated independently in AdminCourses.jsx
 // and LearnerCourses.jsx).
 
-import { divisions } from '../data/orgHierarchy';
+import { divisions, departments, subDepartments, retailStores } from '../data/assignmentTargets';
 import { levelShortLabel } from '../data/levelSystem';
 
 // ---------------------------------------------------------------------------
@@ -175,17 +175,55 @@ export const STATUS_GROUP_META = {
   NOT_ENROLLED: { label: 'Chưa Ghi Danh', icon: 'ti-bookmark-off' },
 };
 
+export function courseOrgUnitGroups(c) {
+  const asgList = c.assignments && c.assignments.length > 0
+    ? c.assignments
+    : (c.assignment ? [c.assignment] : []);
+
+  if (asgList.length === 0) {
+    return [{ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' }];
+  }
+
+  const groups = [];
+  asgList.forEach((a) => {
+    const targetId = a.targetId || a.targetDivisionId || a.targetDepartmentId || a.targetBusinessUnitId || a.targetStoreId || a.targetAreaId || a.targetClusterId;
+    if (a.assignmentType === 'BUSINESS_UNIT' || a.assignmentType === 'ALL_ASSOCIATES') {
+      groups.push({ key: 'BU', label: 'Bắt Buộc Toàn Công Ty (MMVN)', icon: 'ti-building-skyscraper' });
+    } else if (a.assignmentType === 'DIVISION') {
+      const div = divisions.find((d) => d.id === targetId || d.code === targetId);
+      const label = a.targetLabel || (div ? `Khối ${div.name}` : `Khối [${targetId}]`);
+      groups.push({ key: `DIV-${targetId}`, label: label.startsWith('Khối') ? label : `Khối ${label}`, icon: 'ti-building' });
+    } else if (a.assignmentType === 'DEPARTMENT') {
+      const dept = departments.find((d) => d.id === targetId || d.code === targetId);
+      const label = a.targetLabel || (dept ? `Phòng Ban: ${dept.name}` : `Phòng Ban: ${targetId}`);
+      groups.push({ key: `DEPT-${targetId}`, label: label.startsWith('Phòng') ? label : `Phòng Ban: ${label}`, icon: 'ti-building-community' });
+    } else if (a.assignmentType === 'SUBDEPARTMENT') {
+      const sub = subDepartments.find((s) => s.id === targetId || s.code === targetId);
+      const label = a.targetLabel || (sub ? `Bộ Phận: ${sub.name}` : `Bộ Phận: ${targetId}`);
+      groups.push({ key: `SUBDEPT-${targetId}`, label: label.startsWith('Bộ') ? label : `Bộ Phận: ${label}`, icon: 'ti-git-branch' });
+    } else if (a.assignmentType === 'STORE') {
+      const st = retailStores.find((s) => s.id === targetId || s.code === targetId);
+      const label = a.targetLabel || (st ? `Chi Nhánh: ${st.name}` : `Chi Nhánh: ${targetId}`);
+      groups.push({ key: `STORE-${targetId}`, label, icon: 'ti-map-pin' });
+    } else if (a.assignmentType === 'LEVEL') {
+      groups.push({ key: `LVLREQ-${targetId || a.targetLevel}`, label: `Bắt Buộc Level ${targetId || a.targetLevel}`, icon: 'ti-stairs-up' });
+    } else if (a.assignmentType === 'GROUP') {
+      groups.push({ key: `GRP-${targetId}`, label: `Nhóm: ${a.targetLabel || targetId}`, icon: 'ti-users-group' });
+    } else if (a.assignmentType === 'USER') {
+      groups.push({ key: `USR-${targetId}`, label: `Gán Cá Nhân: ${a.targetLabel || targetId}`, icon: 'ti-user' });
+    } else {
+      groups.push({ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' });
+    }
+  });
+
+  return groups.length ? groups : [{ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' }];
+}
+
 export function courseGroupOf(c, groupBy, opts = {}) {
   switch (groupBy) {
     case 'ORG_UNIT': {
-      const a = c.assignment;
-      if (!a) return { key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' };
-      if (a.assignmentType === 'BUSINESS_UNIT') return { key: 'BU', label: 'Bắt Buộc Toàn Công Ty (MMVN)', icon: 'ti-building-skyscraper' };
-      if (a.assignmentType === 'DIVISION') {
-        const div = divisions.find((d) => d.id === a.targetDivisionId);
-        return { key: `DIV-${a.targetDivisionId}`, label: div ? `Khối ${div.name}` : 'Khối Chuyên Trách', icon: 'ti-building' };
-      }
-      return { key: `LVLREQ-${a.targetLevel}`, label: `Bắt Buộc Level ${a.targetLevel}`, icon: 'ti-stairs-up' };
+      const groups = courseOrgUnitGroups(c);
+      return groups[0] || { key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' };
     }
     case 'LEVEL':
       return { key: String(c.targetLevel), label: `Level ${c.targetLevel} — ${levelShortLabel(c.targetLevel)}`, icon: 'ti-stairs-up' };
@@ -223,9 +261,19 @@ export function buildCourseGroups(items, groupBy, opts = {}) {
   if (groupBy === 'NONE') return null;
   const map = new Map();
   items.forEach((c) => {
-    const g = courseGroupOf(c, groupBy, opts);
-    if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
-    map.get(g.key).items.push(c);
+    if (groupBy === 'ORG_UNIT') {
+      const gList = courseOrgUnitGroups(c);
+      gList.forEach((g) => {
+        if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
+        if (!map.get(g.key).items.some((item) => item.id === c.id)) {
+          map.get(g.key).items.push(c);
+        }
+      });
+    } else {
+      const g = courseGroupOf(c, groupBy, opts);
+      if (!map.has(g.key)) map.set(g.key, { ...g, items: [] });
+      map.get(g.key).items.push(c);
+    }
   });
   const groups = Array.from(map.values()).map((g) => {
     const completed = g.items.filter((c) => c.enrollment?.status === 'COMPLETED').length;

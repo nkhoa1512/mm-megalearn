@@ -177,6 +177,7 @@ export default function AssessmentEditorModal({
 
   // State Bước 4: Cascading Drill-Down Assignment
   const [assignScope, setAssignScope] = useState('DIVISION'); // 'DIVISION' | 'DEPARTMENT' | 'SUBDEPARTMENT' | 'LEVEL' | 'STORE' | 'USER' | 'GROUP' | 'ALL'
+  const [buFilter, setBuFilter] = useState('ALL');
   const [divisionFilter, setDivisionFilter] = useState('ALL');
   const [deptFilter, setDeptFilter] = useState('ALL');
   const [subDeptFilter, setSubDeptFilter] = useState('ALL');
@@ -2321,106 +2322,210 @@ export default function AssessmentEditorModal({
                 </div>
               ) : (
                 /* Khi chọn phân tầng (Division, Dept, SubDept, Level, Store, User, Group) */
-                <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-                  {/* Cascading Filter Controls */}
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
-                    <span>Bộ Lọc Phân Tầng Liên Hoàn (Cascading Filters):</span>
-                    <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                      (Chọn cấp trên sẽ tự động giới hạn danh sách cấp dưới)
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 8 }}>
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Khối (Division)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 11.5, height: 32, width: '100%' }}
-                        value={divisionFilter}
-                        onChange={(e) => {
-                          setDivisionFilter(e.target.value);
-                          setDeptFilter('ALL');
-                          setSubDeptFilter('ALL');
-                          setSelectedTargetIds([]);
-                        }}
-                      >
-                        <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
-                        {divisions.map((d) => (
-                          <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
-                        ))}
-                      </select>
+                <div>
+                  {/* Case A: DEPARTMENT Scope Filter (Only Division Filter needed) */}
+                  {assignScope === 'DEPARTMENT' && (
+                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
+                        <span>Bộ Lọc Khối Trực Thuộc (Filter by Division):</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Chọn Khối để thu hẹp danh sách phòng ban cần gán)</span>
+                      </div>
+                      <div style={{ maxWidth: 450 }}>
+                        <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Lọc theo Khối (Division)</label>
+                        <select
+                          className="field-select"
+                          style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                          value={divisionFilter}
+                          onChange={(e) => {
+                            setDivisionFilter(e.target.value);
+                            setDeptFilter('ALL');
+                            setSubDeptFilter('ALL');
+                            setSelectedTargetIds([]);
+                          }}
+                        >
+                          <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                          {divisions.map((d) => (
+                            <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
+                  )}
 
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Phòng Ban (Department)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 11.5, height: 32, width: '100%' }}
-                        value={deptFilter}
-                        onChange={(e) => {
-                          setDeptFilter(e.target.value);
-                          setSubDeptFilter('ALL');
-                          setSelectedTargetIds([]);
-                        }}
-                      >
-                        <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
-                        {availableDepts.map((d) => (
-                          <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Case B: SUBDEPARTMENT Scope Filters (Division & Dept Filters) */}
+                  {assignScope === 'SUBDEPARTMENT' && (
+                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
+                        <span>Bộ Lọc Phân Tầng Cấp Trên (Cascading Filters):</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Chọn Khối / Phòng Ban để lọc nhanh Sub-Dept)</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Khối (Division)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={divisionFilter}
+                            onChange={(e) => {
+                              setDivisionFilter(e.target.value);
+                              setDeptFilter('ALL');
+                              setSubDeptFilter('ALL');
+                              setSelectedTargetIds([]);
+                            }}
+                          >
+                            <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                            {divisions.map((d) => (
+                              <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
+                            ))}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🌿 3. Sub-Dept (Bộ Phận)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 11.5, height: 32, width: '100%' }}
-                        value={subDeptFilter}
-                        onChange={(e) => {
-                          setSubDeptFilter(e.target.value);
-                          setSelectedTargetIds([]);
-                        }}
-                      >
-                        <option value="ALL">-- Tất Cả Sub-Dept ({availableSubDepts.length}) --</option>
-                        {availableSubDepts.map((s) => (
-                          <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
-                        ))}
-                      </select>
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Phòng Ban (Department)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={deptFilter}
+                            onChange={(e) => {
+                              const nextDept = e.target.value;
+                              setDeptFilter(nextDept);
+                              if (nextDept !== 'ALL') {
+                                const deptObj = departments.find((d) => d.id === nextDept);
+                                if (deptObj && deptObj.divisionId) setDivisionFilter(deptObj.divisionId);
+                              }
+                              setSubDeptFilter('ALL');
+                              setSelectedTargetIds([]);
+                            }}
+                          >
+                            <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                            {availableDepts.map((d) => (
+                              <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🎯 4. Cấp Bậc (Job Level)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 11.5, height: 32, width: '100%' }}
-                        value={levelFilter}
-                        onChange={(e) => { setLevelFilter(e.target.value); setSelectedTargetIds([]); }}
-                      >
-                        <option value="ALL">-- Tất Cả Cấp Bậc (Level 1 - 7) --</option>
-                        {jobLevels.map((l) => (
-                          <option key={l.level} value={String(l.level)}>Level {l.level} — {l.title}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Case C: USER Scope Filters (Full Cascading 5-Filter Matrix) */}
+                  {assignScope === 'USER' && (
+                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
+                        <span>Bộ Lọc Nhân Sự Phân Tầng Liên Hoàn (Cascading User Filters):</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
+                          (Chọn cấp trên sẽ tự động giới hạn danh sách cấp dưới)
+                        </span>
+                      </div>
 
-                    <div>
-                      <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>📍 5. Chi Nhánh / Siêu Thị (Location)</label>
-                      <select
-                        className="field-select"
-                        style={{ fontSize: 11.5, height: 32, width: '100%' }}
-                        value={storeFilter}
-                        onChange={(e) => { setStoreFilter(e.target.value); setSelectedTargetIds([]); }}
-                      >
-                        <option value="ALL">-- Tất Cả Chi Nhánh ({retailStores.length}) --</option>
-                        {retailStores.map((s) => (
-                          <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
-                        ))}
-                      </select>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 8 }}>
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Khối (Division)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={divisionFilter}
+                            onChange={(e) => {
+                              setDivisionFilter(e.target.value);
+                              setDeptFilter('ALL');
+                              setSubDeptFilter('ALL');
+                              setSelectedTargetIds([]);
+                            }}
+                          >
+                            <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                            {divisions.map((d) => (
+                              <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Phòng Ban (Department)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={deptFilter}
+                            onChange={(e) => {
+                              const nextDept = e.target.value;
+                              setDeptFilter(nextDept);
+                              if (nextDept !== 'ALL') {
+                                const deptObj = departments.find((d) => d.id === nextDept);
+                                if (deptObj && deptObj.divisionId) setDivisionFilter(deptObj.divisionId);
+                              }
+                              setSubDeptFilter('ALL');
+                              setSelectedTargetIds([]);
+                            }}
+                          >
+                            <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                            {availableDepts.map((d) => (
+                              <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🌿 3. Sub-Dept (Bộ Phận)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={subDeptFilter}
+                            onChange={(e) => {
+                              const nextSub = e.target.value;
+                              setSubDeptFilter(nextSub);
+                              if (nextSub !== 'ALL') {
+                                const subObj = subDepartments.find((s) => s.id === nextSub);
+                                if (subObj && subObj.departmentId) {
+                                  setDeptFilter(subObj.departmentId);
+                                  const deptObj = departments.find((d) => d.id === subObj.departmentId);
+                                  if (deptObj && deptObj.divisionId) setDivisionFilter(deptObj.divisionId);
+                                }
+                              }
+                              setSelectedTargetIds([]);
+                            }}
+                          >
+                            <option value="ALL">-- Tất Cả Sub-Dept ({availableSubDepts.length}) --</option>
+                            {availableSubDepts.map((s) => (
+                              <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🎯 4. Cấp Bậc (Job Level)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={levelFilter}
+                            onChange={(e) => { setLevelFilter(e.target.value); setSelectedTargetIds([]); }}
+                          >
+                            <option value="ALL">-- Tất Cả Cấp Bậc (Level 1 - 7) --</option>
+                            {jobLevels.map((l) => (
+                              <option key={l.level} value={String(l.level)}>Level {l.level} — {l.title}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>📍 5. Chi Nhánh / Siêu Thị (Location)</label>
+                          <select
+                            className="field-select"
+                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            value={storeFilter}
+                            onChange={(e) => { setStoreFilter(e.target.value); setSelectedTargetIds([]); }}
+                          >
+                            <option value="ALL">-- Tất Cả Chi Nhánh ({retailStores.length}) --</option>
+                            {retailStores.map((s) => (
+                              <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Target Items Checklist */}
                   <div style={{ padding: '8px 12px', background: 'var(--paper-sunken)', borderRadius: 6, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>

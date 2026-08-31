@@ -810,7 +810,6 @@ export function CourseStoreProvider({ children }) {
         const currentAsgs = c.assignments || (c.assignment ? [c.assignment] : []);
         return {
           ...c,
-          courseType: 'MANDATORY',
           assignments: [...currentAsgs, ...newAsgs],
           updatedAt: new Date().toISOString().slice(0, 10),
         };
@@ -1008,8 +1007,9 @@ export function CourseStoreProvider({ children }) {
   const accessFor = useCallback(
     (course, user = currentUser) => {
       const buckets = user === currentUser ? myRequestBuckets : requestBuckets(user);
+      const asgList = course?.assignments || (course?.assignment ? [course.assignment] : []);
       const isDirectlyAssigned = Boolean(
-        course?.assignments?.some((a) => {
+        asgList.some((a) => {
           if (a.assignmentType === 'USER' && (a.targetId === user?.userId || a.targetId === user?.employeeCode)) return true;
           if (a.assignmentType === 'GROUP') {
             const grp = customGroups.find((g) => g.id === a.targetId);

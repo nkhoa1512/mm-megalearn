@@ -12,7 +12,7 @@ import {
 import { useCourseStore } from '../../store/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
 import {
-  courseFormatBadge, courseGroupOf, buildCourseGroups, courseMatchesCategory,
+  courseFormatBadge, courseGroupOf, courseOrgUnitGroups, buildCourseGroups, courseMatchesCategory,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
@@ -148,7 +148,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       s === statusFilter;
 
     const matchCategory = courseMatchesCategory(c, categoryFilter);
-    const matchOrgUnit = orgUnitFilter === 'ALL' || courseGroupOf(c, 'ORG_UNIT').key === orgUnitFilter;
+    const matchOrgUnit = orgUnitFilter === 'ALL' || courseOrgUnitGroups(c).some((g) => g.key === orgUnitFilter);
     const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter
       || (formatFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS');
     const matchSearch =
@@ -164,8 +164,10 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const categoryOptions = [...new Set(allCourses.flatMap((c) => (c.categories && c.categories.length ? c.categories : [c.category])).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const orgUnitOptionsMap = new Map();
   allCourses.forEach((c) => {
-    const g = courseGroupOf(c, 'ORG_UNIT');
-    if (!orgUnitOptionsMap.has(g.key)) orgUnitOptionsMap.set(g.key, g.label);
+    const gList = courseOrgUnitGroups(c);
+    gList.forEach((g) => {
+      if (!orgUnitOptionsMap.has(g.key)) orgUnitOptionsMap.set(g.key, g.label);
+    });
   });
   const orgUnitOptions = Array.from(orgUnitOptionsMap.entries());
 

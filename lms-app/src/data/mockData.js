@@ -976,6 +976,22 @@ export function isCourseAssignedToUser(course, user, overlay = null) {
   return Boolean(enrollmentsForUser(user, overlay)[course.id]);
 }
 
+// Returns true when `user` is targeted by any assignment in `course`
+export function isUserAssignedToCourse(course, user, customGroups = []) {
+  if (!user || !course) return false;
+  const asgList = course.assignments || (course.assignment ? [course.assignment] : []);
+  return asgList.some((a) => {
+    if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+    if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+    if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+    if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+    if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+    if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+    if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+    return false;
+  });
+}
+
 // "My Learning" list for a given user: dynamically merges user-specific enrollments and direct assignments
 export function myLearningCourses(courseList, user, overlay = null) {
   if (!user) return [];
@@ -2286,7 +2302,7 @@ export const classroomSessions = [
     qrToken: 'MMVN-QR-ILT006-20260918',
     description: 'In-depth analysis of hypermarket P&L statements, margin enhancement, shrinkage mitigation, and multi-department store coordination.',
     prerequisiteCourse: 'Store General Manager P&L Governance & Budget Ownership',
-    prerequisiteCourseId: 'CRS-SUCC-001',
+    prerequisiteCourseId: 'CRS-SUCC-107',
     syllabus: [
       { step: 'Phần 1: Cấu Trúc Báo Cáo P&L Siêu Thị & Phân Tích Điểm Hòa Vốn (120 phút)', detail: 'Bóc tách chi phí vận hành (OPEX), tối ưu hóa biên lợi nhuận gộp theo từng ngành hàng.' },
       { step: 'Phần 2: Chiến Lược Kiểm Soát Thất Thoát & Giảm Hủy Hàng Tươi Sống (120 phút)', detail: 'Phân tích chỉ số Shrinkage, quy trình quản trị chuỗi cung ứng và luân chuyển hàng hóa.' },

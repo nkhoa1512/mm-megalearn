@@ -149,13 +149,16 @@ export function levelRoadmap(fromLevel, toLevel) {
 
 /**
  * Khóa học có được PHÉP HIỂN THỊ trên danh mục (catalog) của học viên không?
- * Khác với checkCourseAccessRule (quyết định có VÀO HỌC được không), hàm này
- * quyết định khóa có được LIỆT KÊ ra hay không. Học viên chỉ thấy khóa cùng
- * cấp/thấp hơn và tối đa 1 cấp liền kề phía trên; khóa nhảy cóc từ 2 cấp trở
- * lên bị ẩn hoàn toàn khỏi danh mục thay vì hiện dạng khóa bị chặn — tránh gây
- * rối vì học viên không cách nào học được những khóa đó trong tương lai gần.
+ * - Khóa MANDATORY: Chỉ hiển thị nếu học viên thuộc đối tượng được phân bổ hoặc đã có ghi danh.
+ * - Khóa OPTIONAL: Hiển thị cho toàn bộ học viên (kể cả khi lệch cấp bậc để học viên có thể xem đề cương).
  */
-export function isCourseVisibleInCatalog(userLevel, courseLevel) {
+export function isCourseVisibleInCatalog(userLevel, courseLevel, course = null, isAssigned = false) {
+  if (course) {
+    if (course.courseType === 'MANDATORY') {
+      return Boolean(isAssigned);
+    }
+    return true;
+  }
   return levelGap(userLevel, courseLevel) <= 1;
 }
 
