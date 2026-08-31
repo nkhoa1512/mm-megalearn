@@ -547,7 +547,7 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
       >
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '14px 16px', marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
-            <span style={{ color: 'var(--ink-soft)' }}>Học phí / học viên</span>
+            <span style={{ color: 'var(--ink-soft)' }}>Chi phí công ty trả / học viên</span>
             <strong style={{ fontSize: 15, color: 'var(--amber)' }}>{formatVnd(pricing.price)}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
@@ -556,12 +556,16 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
             <span style={{ color: 'var(--ink-soft)' }}>Trung tâm chi phí ghi nợ</span>
-            <span style={{ textAlign: 'right' }}>{user?.divisionName || 'Chưa gán phòng ban'}</span>
+            <span style={{ textAlign: 'right' }}>
+              {user?.divisionName || 'Chưa gán phòng ban'}
+              {user?.costCenterCode ? ` · Mã ${user.costCenterCode}` : ''}
+            </span>
           </div>
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
-          Khi bạn xác nhận, một bút toán chi được ghi vào sổ cái Trung Tâm Chi Phí và trừ vào ngân sách đào tạo năm
-          của phòng ban. Quản lý và bộ phận L&amp;D sẽ thấy khoản này trong báo cáo thu chi.
+          Khoản này do <strong>công ty chi trả</strong>, bạn không phải thanh toán. Khi bạn xác nhận, một bút toán chi
+          được ghi vào sổ cái Trung Tâm Chi Phí và trừ vào ngân sách đào tạo năm của Division bạn. Quản lý và bộ phận
+          L&amp;D sẽ thấy khoản này trong báo cáo thu chi.
         </p>
       </Modal>
 

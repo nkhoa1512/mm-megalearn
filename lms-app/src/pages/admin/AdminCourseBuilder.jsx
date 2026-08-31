@@ -186,7 +186,7 @@ function CoursePricingSection({ draft, onChange }) {
     <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <i className="ti ti-report-money" style={{ color: 'var(--amber)', fontSize: 18 }} />
-        <div style={{ fontWeight: 800, fontSize: 14 }}>Học Phí Tham Gia (Trung Tâm Chi Phí)</div>
+        <div style={{ fontWeight: 800, fontSize: 14 }}>Chi Phí Đào Tạo (Trung Tâm Chi Phí Chi Trả)</div>
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginBottom: current.isFree ? 0 : 14 }}>
@@ -201,7 +201,7 @@ function CoursePricingSection({ draft, onChange }) {
       {!current.isFree && (
         <div className="grid grid-3" style={{ gap: 14 }}>
           <div>
-            <label className="field-label">Giá tham gia / học viên (VNĐ)</label>
+            <label className="field-label">Chi phí công ty trả / học viên (VNĐ)</label>
             <input
               className="field-input"
               inputMode="numeric"
@@ -241,7 +241,8 @@ function CoursePricingSection({ draft, onChange }) {
 
       <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: current.isFree ? 8 : 14 }}>
         <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-        Mỗi lượt học viên ghi danh khóa này sẽ ghi nợ đúng số tiền trên vào trung tâm chi phí (Division) của họ.
+        Mỗi lượt học viên ghi danh khóa này, công ty sẽ chi đúng số tiền trên — ghi nợ vào mã Trung Tâm Chi Phí (5 số)
+        của Division họ, học viên không thanh toán.
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ import {
   levelValue,
 } from './levelSystem';
 import { getCourseImage } from './courseImages';
+import { withHrProfile } from './hrProfile';
 
 // ---------------------------------------------------------------------------
 // 1. GENERATE 100+ REALISTIC ENTERPRISE USERS (WITH FULL TALENT PROFILES)
@@ -250,7 +251,10 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
     avatar: `${fName[0]}${lName[0]}`,
     badgeTone: level === '2' ? 'purple' : level === '3' ? 'ai' : level === '4' ? 'teal' : level === '5' ? 'amber' : 'blue',
   };
-});
+})
+  // Bổ sung hồ sơ HR (Personnel Number, Cost center, Entry Date, Gender,
+  // Date of birth, HO/Store, Location) theo quy tắc tất định — xem hrProfile.js.
+  .map(withHrProfile);
 
 // ---------------------------------------------------------------------------
 // 2. GENERATE 100 ENTERPRISE COURSES (WITH SCORM, PPT, EXTERNAL LINKS)

@@ -2,18 +2,27 @@
 // Cost Center (Trung Tâm Chi Phí) — logic thuần, không phụ thuộc React.
 //
 // Mô hình thu/chi của MMVN L&D:
-//   • Mỗi Division là một Trung Tâm Chi Phí (Cost Center) sở hữu ngân sách đào
-//     tạo năm, cấp theo đầu người của khối (Operations / Supporting).
+//   • Mỗi Division sở hữu ĐÚNG MỘT Trung Tâm Chi Phí, định danh bằng mã HR 5
+//     số cố định (orgHierarchy.divisions[].costCenter). Nhân sự thuộc bất kỳ
+//     Department hay Sub-Department nào của Division đều quy về đúng mã đó, nên
+//     điều chuyển nội bộ trong Division không làm chi phí nhảy sang mã khác.
+//   • Ngân sách đào tạo năm cấp cho từng mã theo đầu người của khối
+//     (Operations / Supporting).
 //   • THU (INCOME)  = ngân sách được cấp đầu năm (+ hoàn phí khi hủy ghi danh).
 //   • CHI (EXPENSE) = mỗi lượt ghi danh khóa CÓ PHÍ ghi nợ vào cost center của
-//     chính học viên (theo divisionId). Khóa miễn phí vẫn ghi 1 dòng 0 đồng để
-//     báo cáo đếm được lượt học nội bộ so với lượt học tốn tiền.
+//     chính học viên (theo divisionId). Học viên KHÔNG tự trả: toàn bộ học phí
+//     do công ty chi từ ngân sách đào tạo của mã đó. Khóa miễn phí vẫn ghi 1
+//     dòng 0 đồng để báo cáo đếm được lượt học nội bộ so với lượt học tốn tiền.
+//   • Mỗi bút toán lưu kèm Division / Department / Sub-Department và mã nhân
+//     viên của học viên, đủ để kiểm toán truy ngược từng đồng chi.
 //   • Số dư = THU - CHI; tỷ lệ sử dụng ngân sách = CHI / THU.
 //
 // Giá khóa học suy ra từ hình thức tổ chức (modality) nếu khóa chưa được gán
 // giá thủ công — xem derivePricing(). Admin gán giá riêng thì `course.pricing`
 // được ưu tiên tuyệt đối (pricingOf()).
 // ===========================================================================
+
+import { hrExportRow, costCenterCodeOf } from '../data/hrProfile';
 
 export const CURRENCY = 'VND';
 export const FISCAL_YEAR = 2026;
@@ -204,15 +213,18 @@ export function priceLabel(course) {
 export const UNASSIGNED_COST_CENTER = {
   id: 'CC-UNASSIGNED',
   divisionId: null,
+  divisionCode: null,
   code: 'UNASSIGNED',
   name: 'Chưa Gán Trung Tâm Chi Phí',
   branch: 'SUPPORTING',
+  location: null,
   headcount: 0,
   budgetAnnual: 0,
 };
 
 /**
  * Dựng danh sách cost center từ cơ cấu Division + nhân sự thực tế.
+ * Mỗi Division ra đúng một cost center, `code` là mã HR 5 số của Division.
  * Ngân sách năm = đầu người × định mức khối, tối thiểu MIN_ANNUAL_BUDGET.
  */
 export function buildCostCenters(divisions = [], users = []) {
@@ -226,14 +238,18 @@ export function buildCostCenters(divisions = [], users = []) {
     const headcount = headcountByDivision[d.id] || 0;
     const allowance = ANNUAL_ALLOWANCE_PER_HEAD[d.branch] ?? ANNUAL_ALLOWANCE_PER_HEAD.SUPPORTING;
     return {
-      id: `CC-${d.code}`,
+      // Mã 5 số chính là danh tính kế toán của trung tâm chi phí.
+      id: `CC-${d.costCenter || d.code}`,
       divisionId: d.id,
-      code: d.code,
+      divisionCode: d.code,
+      code: d.costCenter || d.code,
       name: d.name,
       branch: d.branch,
       branchName: d.branch === 'OPERATIONS' ? 'Khối Vận Hành Siêu Thị' : 'Khối Chức Năng Hỗ Trợ',
+      location: d.location || null,
       headcount,
       budgetAnnual: Math.max(MIN_ANNUAL_BUDGET, headcount * allowance),
+      budgetPerHead: allowance,
     };
   });
 
@@ -244,12 +260,16 @@ export function buildCostCenters(divisions = [], users = []) {
   return centers;
 }
 
-/** Cost center chịu chi phí cho 1 học viên = cost center của Division họ thuộc. */
+/**
+ * Cost center chịu chi phí cho 1 học viên = cost center của Division họ thuộc,
+ * bất kể họ nằm ở Department hay Sub-Department nào bên trong Division đó.
+ */
 export function costCenterForUser(user, costCenters = []) {
   if (!user) return null;
   return (
     costCenters.find((c) => c.divisionId && c.divisionId === user.divisionId) ||
-    costCenters.find((c) => c.code === user.divisionCode) ||
+    costCenters.find((c) => user.costCenterCode && c.code === user.costCenterCode) ||
+    costCenters.find((c) => c.divisionCode && c.divisionCode === user.divisionCode) ||
     costCenters.find((c) => c.id === UNASSIGNED_COST_CENTER.id) ||
     null
   );
@@ -295,6 +315,12 @@ export function buildEnrollmentTransaction({ course, user, costCenters = [], dat
     costCenterCode: cc?.code || UNASSIGNED_COST_CENTER.code,
     costCenterName: cc?.name || UNASSIGNED_COST_CENTER.name,
     branch: cc?.branch || 'SUPPORTING',
+    // Chiều tổ chức của học viên tại thời điểm ghi danh — giữ trong bút toán để
+    // báo cáo sau này không phải join ngược danh bạ nhân sự (vốn có thể đã đổi).
+    divisionId: user.divisionId || cc?.divisionId || null,
+    divisionName: user.divisionName || cc?.name || null,
+    departmentName: user.departmentName || null,
+    subDepartmentName: user.subDepartmentName || null,
     courseId: course.id,
     courseCode: course.code || course.id,
     courseTitle: course.title,
@@ -303,6 +329,7 @@ export function buildEnrollmentTransaction({ course, user, costCenters = [], dat
     vendor: pricing.vendor,
     userId: user.userId,
     userName: user.fullName || user.userId,
+    personnelNumber: user.personnelNumber || null,
     amount: pricing.price,
     currency: pricing.currency,
     isFree: pricing.isFree,
@@ -325,6 +352,10 @@ export function buildBudgetTransaction(costCenter, fiscalYear = FISCAL_YEAR) {
     costCenterCode: costCenter.code,
     costCenterName: costCenter.name,
     branch: costCenter.branch,
+    divisionId: costCenter.divisionId || null,
+    divisionName: costCenter.name,
+    departmentName: null,
+    subDepartmentName: null,
     courseId: null,
     courseCode: null,
     courseTitle: null,
@@ -333,6 +364,7 @@ export function buildBudgetTransaction(costCenter, fiscalYear = FISCAL_YEAR) {
     vendor: null,
     userId: null,
     userName: null,
+    personnelNumber: null,
     amount: costCenter.budgetAnnual,
     currency: CURRENCY,
     isFree: false,
@@ -546,10 +578,116 @@ export function summarizeLedger(ledger = [], { costCenters = [], courses = [] } 
   };
 }
 
-/** Giới hạn sổ cái theo quyền xem: Manager chỉ thấy cost center của mình. */
+/**
+ * Giới hạn sổ cái theo quyền xem: Manager chỉ thấy cost center của mình.
+ * Lọc theo divisionId trước rồi mới tới mã 5 số — `divisionCode` trên hồ sơ
+ * nhân sự không phải lúc nào cũng trùng `code` của Division, nên không dùng để
+ * dựng id cost center.
+ */
 export function scopeLedgerForUser(ledger = [], user, { seeAll = true } = {}) {
   if (seeAll || !user) return ledger;
-  const code = user.divisionCode;
-  const ccId = code ? `CC-${code}` : null;
-  return ledger.filter((t) => t.costCenterId === ccId);
+  const divisionId = user.divisionId || null;
+  const code = user.costCenterCode || null;
+  if (!divisionId && !code) return [];
+  return ledger.filter(
+    (t) => (divisionId && t.divisionId === divisionId) || (code && t.costCenterCode === code)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 8. CHI PHÍ THEO TỪNG HỌC VIÊN (phục vụ kiểm toán & file HR)
+// ---------------------------------------------------------------------------
+
+/**
+ * Gộp sổ cái về mức từng nhân sự: công ty đã chi bao nhiêu cho việc học của
+ * người này, thuộc mã cost center nào. Nhân sự chưa học buổi nào vẫn xuất hiện
+ * với 0 đồng — file kiểm toán cần đủ đầu người của cost center, không chỉ những
+ * người có phát sinh.
+ */
+export function summarizeLearnerCosts(ledger = [], users = []) {
+  const rows = new Map();
+
+  users.forEach((u) => {
+    rows.set(u.userId, {
+      user: u,
+      userId: u.userId,
+      personnelNumber: u.personnelNumber || null,
+      fullName: u.fullName || u.userId,
+      // Nhân sự mới thêm qua User Admin chưa chắc đã có costCenterCode ghi sẵn —
+      // suy ra từ Division của họ để bảng không hiện UNASSIGNED một cách giả tạo.
+      costCenterCode: u.costCenterCode || costCenterCodeOf(u) || null,
+      divisionId: u.divisionId || null,
+      divisionName: u.divisionName || null,
+      departmentName: u.departmentName || null,
+      subDepartmentName: u.subDepartmentName || null,
+      position: u.position || u.title || null,
+      level: u.level || null,
+      paidEnrollments: 0,
+      freeEnrollments: 0,
+      totalEnrollments: 0,
+      companyPaid: 0,
+    });
+  });
+
+  ledger.forEach((t) => {
+    if (t.source !== TXN_SOURCE.ENROLLMENT || !t.userId) return;
+    let row = rows.get(t.userId);
+    if (!row) {
+      // Bút toán của người đã rời danh bạ vẫn phải nằm trong báo cáo, nếu không
+      // tổng cộng theo học viên sẽ nhỏ hơn tổng chi của cost center.
+      row = {
+        user: null,
+        userId: t.userId,
+        personnelNumber: t.personnelNumber || null,
+        fullName: t.userName || t.userId,
+        costCenterCode: t.costCenterCode || null,
+        divisionId: t.divisionId || null,
+        divisionName: t.divisionName || null,
+        departmentName: t.departmentName || null,
+        subDepartmentName: t.subDepartmentName || null,
+        position: null,
+        level: null,
+        paidEnrollments: 0,
+        freeEnrollments: 0,
+        totalEnrollments: 0,
+        companyPaid: 0,
+      };
+      rows.set(t.userId, row);
+    }
+    row.totalEnrollments += 1;
+    if (t.isFree) row.freeEnrollments += 1;
+    else {
+      row.paidEnrollments += 1;
+      row.companyPaid += t.amount;
+    }
+  });
+
+  return Array.from(rows.values()).sort(
+    (a, b) => b.companyPaid - a.companyPaid || b.totalEnrollments - a.totalEnrollments
+  );
+}
+
+/**
+ * File xuất cho Kế toán / Kiểm toán: 15 cột hồ sơ nhân sự chuẩn của HR, nối
+ * thêm phần chi phí đào tạo mà CÔNG TY đã chi cho chính nhân sự đó. Giữ nguyên
+ * thứ tự và tên cột HR để file ghép thẳng vào bảng lương / bảng phân bổ chi phí.
+ */
+export function buildEmployeeCostExportRows(learnerRows = [], { fiscalYear = FISCAL_YEAR } = {}) {
+  return learnerRows.map((row) => ({
+    ...hrExportRow(row.user || {
+      fullName: row.fullName,
+      personnelNumber: row.personnelNumber,
+      costCenterCode: row.costCenterCode,
+      divisionName: row.divisionName,
+      departmentName: row.departmentName,
+      subDepartmentName: row.subDepartmentName,
+      position: row.position,
+      level: row.level,
+    }),
+    'Fiscal Year': fiscalYear,
+    'Paid Enrollments': row.paidEnrollments,
+    'Free Enrollments': row.freeEnrollments,
+    'Company Paid (VND)': row.companyPaid,
+    Currency: CURRENCY,
+  }));
 }

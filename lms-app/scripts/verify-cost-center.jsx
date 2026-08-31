@@ -27,6 +27,8 @@ const {
   isPaidCourse,
   costCenterForUser,
   scopeLedgerForUser,
+  summarizeLearnerCosts,
+  buildEmployeeCostExportRows,
   formatVnd,
   formatVndShort,
   COST_TYPE,
@@ -290,8 +292,78 @@ store.set(AUTH_KEY, JSON.stringify(personaForRole('manager')));
 const managerPersona = personaForRole('manager');
 const managerLedger = scopeLedgerForUser(ledger, managerPersona, { seeAll: false });
 check('Manager chỉ thấy bút toán của Division mình',
-  managerLedger.length > 0 && managerLedger.every((t) => t.costCenterId === `CC-${managerPersona.divisionCode}`),
-  `${managerLedger.length}/${ledger.length} bút toán · ${managerPersona.divisionName}`);
+  managerLedger.length > 0 &&
+    managerLedger.every((t) => t.costCenterCode === managerPersona.costCenterCode),
+  `${managerLedger.length}/${ledger.length} bút toán · ${managerPersona.divisionName} · CC ${managerPersona.costCenterCode}`);
+
+// ===========================================================================
+
+// ===========================================================================
+// C. MÃ COST CENTER 5 SỐ & FILE XUẤT CHO HR / KIỂM TOÁN
+// ===========================================================================
+
+section('C1. Mỗi Division đúng một mã Trung Tâm Chi Phí 5 số');
+
+const ccCodes = costCenters.filter((c) => c.divisionId).map((c) => c.code);
+
+check('Mọi cost center mang mã 5 chữ số',
+  ccCodes.length > 0 && ccCodes.every((c) => /^\d{5}$/.test(c)),
+  `${ccCodes.length} mã · ví dụ ${ccCodes.slice(0, 4).join(', ')}`);
+
+check('Không có mã trùng giữa các Division',
+  new Set(ccCodes).size === ccCodes.length,
+  `${new Set(ccCodes).size} mã duy nhất / ${ccCodes.length} Division`);
+
+check('Số cost center đúng bằng số Division',
+  ccCodes.length === divisions.length,
+  `${ccCodes.length} cost center / ${divisions.length} Division`);
+
+const multiDeptDivision = divisions.find((d) =>
+  allUsers.filter((u) => u.divisionId === d.id).length > 1
+);
+const sameDivUsers = allUsers.filter((u) => u.divisionId === multiDeptDivision.id);
+
+check('Nhân sự khác Department trong cùng Division dùng chung một mã',
+  new Set(sameDivUsers.map((u) => costCenterForUser(u, costCenters)?.code)).size === 1,
+  `${multiDeptDivision.name}: ${sameDivUsers.length} người · ${new Set(sameDivUsers.map((u) => u.departmentName)).size} phòng ban · 1 mã ${costCenterForUser(sameDivUsers[0], costCenters)?.code}`);
+
+check('Bút toán ghi danh lưu đúng mã cost center của học viên',
+  ledger
+    .filter((t) => t.source === TXN_SOURCE.ENROLLMENT)
+    .every((t) => t.costCenterCode === allUsers.find((u) => u.userId === t.userId)?.costCenterCode),
+  'khớp 100% giữa sổ cái và hồ sơ nhân sự');
+
+section('C2. File xuất chi phí theo nhân sự (15 cột HR + phần chi phí)');
+
+const learnerRows = summarizeLearnerCosts(ledger, allUsers);
+const exportRows = buildEmployeeCostExportRows(learnerRows);
+
+const HR_COLUMNS = [
+  'Employee Status', 'Personnel Number', 'Cost center', 'Full Name', 'Entry Date',
+  'Gender', 'Date of birth', 'Business Email Address', 'Position', 'Level',
+  'HO/Store', 'Division', 'Department', 'Sub Department', 'Location',
+];
+
+check('Mọi nhân sự đều có dòng trong file xuất, kể cả người chưa học',
+  learnerRows.length >= allUsers.length,
+  `${learnerRows.length} dòng / ${allUsers.length} nhân sự`);
+
+check('File xuất có đủ 15 cột HR, đúng thứ tự',
+  HR_COLUMNS.every((col, i) => Object.keys(exportRows[0])[i] === col),
+  Object.keys(exportRows[0]).slice(0, 15).join(' | '));
+
+check('Không dòng nào thiếu mã Cost center hoặc Personnel Number',
+  exportRows.every((r) => /^\d{5}$/.test(r['Cost center']) && r['Personnel Number']),
+  `${exportRows.length} dòng hợp lệ`);
+
+const totalCompanyPaid = learnerRows.reduce((sum, r) => sum + r.companyPaid, 0);
+const totalEnrollmentExpense = ledger
+  .filter((t) => t.source === TXN_SOURCE.ENROLLMENT)
+  .reduce((s, t) => s + t.amount, 0);
+
+check('Tổng chi theo từng nhân sự khớp tổng chi ghi danh của toàn công ty',
+  totalCompanyPaid === totalEnrollmentExpense,
+  `${formatVnd(totalCompanyPaid)} = ${formatVnd(totalEnrollmentExpense)}`);
 
 // ===========================================================================
 

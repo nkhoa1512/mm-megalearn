@@ -33,6 +33,7 @@ import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from '.
 import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 import { canonicalizeCategory } from '../utils/courseCatalog';
+import { withHrProfile } from './hrProfile';
 
 export { UNIVERSAL_COMPLIANCE_COURSE_IDS } from './generated100Data';
 export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
@@ -93,7 +94,7 @@ export const demoUsers = generated100Users;
 export const managerUser = demoUsers[1]; // David Tran (Store Department Manager - Level 4)
 export const currentUser = demoUsers[3]; // Minh Tran (Junior Bakery Associate - Level 7)
 
-export const sysAdminUser = {
+export const sysAdminUser = withHrProfile({
   userId: 'USR-9001',
   employeeCode: 'MMVN-9001',
   fullName: 'Tran Quoc Bao (IT)',
@@ -116,9 +117,9 @@ export const sysAdminUser = {
   avatar: 'TB',
   badgeTone: 'rust',
   description: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
-};
+});
 
-export const userAdminUser = {
+export const userAdminUser = withHrProfile({
   userId: 'USR-9002',
   employeeCode: 'MMVN-9002',
   fullName: 'Pham Thanh Thao (User Admin)',
@@ -141,9 +142,9 @@ export const userAdminUser = {
   avatar: 'PT',
   badgeTone: 'blue',
   description: 'Quản trị hồ sơ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp tại các chi nhánh.',
-};
+});
 
-export const trainerHungUser = {
+export const trainerHungUser = withHrProfile({
   userId: 'USR-9003',
   employeeCode: 'MMVN-9003',
   fullName: 'Nguyen Van Hung (Master Trainer)',
@@ -166,9 +167,9 @@ export const trainerHungUser = {
   avatar: 'NH',
   badgeTone: 'sage',
   description: 'Tạo khóa học thực hành, đứng lớp tại xưởng siêu thị và chiếu Live QR cho học viên điểm danh.',
-};
+});
 
-export const trainerThanhUser = {
+export const trainerThanhUser = withHrProfile({
   userId: 'USR-9005',
   employeeCode: 'MMVN-9005',
   fullName: 'Vu Duc Thanh (HSE Trainer)',
@@ -191,9 +192,9 @@ export const trainerThanhUser = {
   avatar: 'VT',
   badgeTone: 'sage',
   description: 'Đứng lớp diễn tập PCCC, sơ cấp cứu và an toàn xe nâng tại các sân thực hành chi nhánh.',
-};
+});
 
-export const trainerQuangUser = {
+export const trainerQuangUser = withHrProfile({
   userId: 'USR-9006',
   employeeCode: 'MMVN-9006',
   fullName: 'Tran Minh Quang (SGM Mentor)',
@@ -216,12 +217,12 @@ export const trainerQuangUser = {
   avatar: 'TQ',
   badgeTone: 'sage',
   description: 'Mentor lộ trình kế nhiệm SGM và giảng dạy Quản trị P&L siêu thị (khóa Level 2).',
-};
+});
 
 export const trainerUser = trainerHungUser;
 export const allTrainers = [trainerHungUser, trainerThanhUser, trainerQuangUser];
 
-export const hrbpUser = {
+export const hrbpUser = withHrProfile({
   userId: 'USR-9004',
   employeeCode: 'MMVN-9004',
   fullName: 'Le Thi Mai (HRBP)',
@@ -244,7 +245,7 @@ export const hrbpUser = {
   avatar: 'LM',
   badgeTone: 'blue',
   description: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ đào tạo theo vùng.',
-};
+});
 
 // Sarah Nguyen (USR-0001) là L&D Director trong thang mới: role `trainer`, Level 2.
 // Giữ tên export `adminUser` để các màn hình cũ tiếp tục biên dịch được.
