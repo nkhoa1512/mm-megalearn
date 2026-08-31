@@ -15,6 +15,7 @@ import AssessmentEditorModal from '../../features/assessment/AssessmentEditorMod
 import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
 import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/assessmentData';
 import { generateAssessmentCode } from '../../utils/assessmentCatalog';
+import { pricingOf, formatVnd, COST_TYPE, COST_TYPE_META } from '../../utils/costCenter';
 
 // 5 định dạng bài giảng chuẩn hóa (thay cho DOCUMENT/SCRIPT/IMAGE/TEXT cũ và
 // việc course.modality từng ghi đè loại bài giảng ở Lesson Player):
@@ -171,6 +172,79 @@ function blankQuestion() {
     options: [{ id: genId('o'), text: '', isCorrect: true }, { id: genId('o'), text: '', isCorrect: false }],
     explanation: '',
   };
+}
+
+// Học phí tham gia — hiển thị ngay trong form tạo/sửa khóa học (không chỉ ở
+// tab "Bảng Giá" của Trung Tâm Chi Phí) để Admin chốt giá cùng lúc với các
+// thông tin khác của khóa. Giá trị ban đầu hiển thị = pricingOf(draft), tức
+// giá gợi ý suy ra theo hình thức tổ chức (modality); mọi chỉnh sửa ở đây ghi
+// thẳng vào draft.pricing và được lưu cùng khóa học khi bấm Save/Publish.
+function CoursePricingSection({ draft, onChange }) {
+  const current = pricingOf(draft);
+
+  return (
+    <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <i className="ti ti-report-money" style={{ color: 'var(--amber)', fontSize: 18 }} />
+        <div style={{ fontWeight: 800, fontSize: 14 }}>Học Phí Tham Gia (Trung Tâm Chi Phí)</div>
+      </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginBottom: current.isFree ? 0 : 14 }}>
+        <input
+          type="checkbox"
+          checked={current.isFree}
+          onChange={(e) => onChange({ isFree: e.target.checked, price: e.target.checked ? 0 : current.price || 0 })}
+        />
+        Khóa học miễn phí (không trừ ngân sách đào tạo khi học viên ghi danh)
+      </label>
+
+      {!current.isFree && (
+        <div className="grid grid-3" style={{ gap: 14 }}>
+          <div>
+            <label className="field-label">Giá tham gia / học viên (VNĐ)</label>
+            <input
+              className="field-input"
+              inputMode="numeric"
+              value={current.price}
+              onChange={(e) => {
+                const digits = Math.max(0, Number(String(e.target.value).replace(/[^\d]/g, '')) || 0);
+                onChange({ isFree: false, price: digits });
+              }}
+            />
+            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>{formatVnd(current.price)}</div>
+          </div>
+          <div>
+            <label className="field-label">Loại chi phí</label>
+            <select
+              className="field-select"
+              value={current.costType}
+              onChange={(e) => onChange({ costType: e.target.value })}
+            >
+              {Object.entries(COST_TYPE_META)
+                .filter(([id]) => id !== COST_TYPE.INTERNAL_FREE)
+                .map(([id, meta]) => (
+                  <option key={id} value={id}>{meta.labelVi}</option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Nhà cung cấp / Đơn vị tổ chức</label>
+            <input
+              className="field-input"
+              value={current.vendor || ''}
+              placeholder="VD: Coursera for Business"
+              onChange={(e) => onChange({ vendor: e.target.value })}
+            />
+          </div>
+        </div>
+      )}
+
+      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: current.isFree ? 8 : 14 }}>
+        <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
+        Mỗi lượt học viên ghi danh khóa này sẽ ghi nợ đúng số tiền trên vào trung tâm chi phí (Division) của họ.
+      </div>
+    </div>
+  );
 }
 
 function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange, hasError, errorMessage }) {
@@ -1132,6 +1206,12 @@ export default function AdminCourseBuilder() {
   function patchVirtualMeeting(fields) {
     setDraft((d) => ({ ...d, virtualMeeting: { ...(d.virtualMeeting || {}), ...fields } }));
   }
+  // Học phí ghi thẳng vào draft.pricing (Trung Tâm Chi Phí đọc field này ưu
+  // tiên hơn giá suy ra tự động theo modality) — nên giá được chốt ngay lúc
+  // tạo khóa thay vì để mặc định rồi phải vào tab Bảng Giá sửa sau.
+  function patchPricing(fields) {
+    setDraft((d) => ({ ...d, pricing: { ...pricingOf(d), ...d.pricing, ...fields } }));
+  }
   function addVirtualMaterial(name) {
     if (!name || !name.trim()) return;
     setDraft((d) => ({
@@ -1784,6 +1864,10 @@ export default function AdminCourseBuilder() {
             </select>
           </div>
         </div>
+
+        {/* Row 2.5: Học Phí Tham Gia — chốt giá ngay lúc tạo khóa, ghi thẳng vào
+            draft.pricing để Trung Tâm Chi Phí tính đúng khi học viên ghi danh. */}
+        <CoursePricingSection draft={draft} onChange={patchPricing} />
 
         {/* Row 3: 2-Column Grid for Category & Target Job Level (Multi-Select Dropdowns) */}
         <div className="grid grid-2" style={{ gap: 14, marginBottom: 16 }}>

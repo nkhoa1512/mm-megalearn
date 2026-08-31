@@ -8,6 +8,7 @@ import { getCourseImage } from '../../data/courseImages';
 import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
 import { computeLifecycleStatus } from '../../utils/courseCatalog';
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
+import { pricingOf, formatVnd, COST_TYPE_META } from '../../utils/costCenter';
 
 
 function statusLabel(status) {
@@ -39,6 +40,9 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const [requestOpen, setRequestOpen] = useState(false);
   const [justification, setJustification] = useState('');
   const [notice, setNotice] = useState(null);
+  // Khóa có phí phải xác nhận trước khi ghi nợ vào trung tâm chi phí của
+  // phòng ban học viên — khóa miễn phí ghi danh thẳng.
+  const [payConfirmOpen, setPayConfirmOpen] = useState(false);
 
   const assignedCurricula = useMemo(() => getAssignedCurriculaForUser(curricula, user), [curricula, user]);
   const parentCurriculum = useMemo(() => {
@@ -57,6 +61,11 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const course = versionedCourse
     ? { ...versionedCourse, enrollment: rawEnrollment, modules: deriveLessonStatuses(versionedCourse.modules, rawEnrollment) }
     : null;
+
+  // Học phí tham gia (Trung Tâm Chi Phí). Giá lấy từ khóa gốc, không lấy từ
+  // snapshot phiên bản — giá là thuộc tính thương mại, không đóng băng theo
+  // phiên bản nội dung.
+  const pricing = pricingOf(rawCourse);
 
   const allRequiredLessons = useMemo(() => {
     if (!course || !course.modules) return [];
@@ -138,6 +147,11 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                   {course.code}
                 </span>
                 <CourseTypeBadge courseType={course.courseType} />
+                {pricing.isFree ? (
+                  <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+                ) : (
+                  <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(pricing.price)}</Badge>
+                )}
               </div>
               <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
                 {course.title}
@@ -331,9 +345,27 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                   ? 'Bạn đã được phê duyệt riêng cho khóa học này. Bấm để ghi danh và bắt đầu.'
                   : 'Khóa học ở cấp bậc hiện tại hoặc thấp hơn của bạn nên mở tự do. Bấm để ghi danh và bắt đầu học.'}
               </p>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {pricing.isFree ? (
+                  <Badge tone="sage" icon="ti-gift">Miễn Phí</Badge>
+                ) : (
+                  <Badge tone="amber" icon="ti-coin">Học phí {formatVnd(pricing.price)} / học viên</Badge>
+                )}
+                <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  {pricing.isFree
+                    ? 'Nội dung nội bộ MMVN — không trừ ngân sách đào tạo phòng ban.'
+                    : `Ghi nợ vào ngân sách đào tạo của ${user?.divisionName || 'phòng ban bạn'}.`}
+                </span>
+              </div>
             </div>
-            <Button variant="primary" icon="ti-plus" onClick={() => enrollCourse(course.id, user)}>
-              {access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay' : 'Đăng Ký Học Ngay'}
+            <Button
+              variant="primary"
+              icon={pricing.isFree ? 'ti-plus' : 'ti-coin'}
+              onClick={() => (pricing.isFree ? enrollCourse(course.id, user) : setPayConfirmOpen(true))}
+            >
+              {pricing.isFree
+                ? (access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay' : 'Đăng Ký Học Ngay')
+                : `Đăng Ký · ${formatVnd(pricing.price)}`}
             </Button>
           </div>
         </div>
@@ -358,6 +390,13 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
             </div>
             <span style={{ fontSize: 13, fontWeight: 800 }}>{course.enrollment.progressPercent}%</span>
           </div>
+
+          {!pricing.isFree && (
+            <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-coin" style={{ color: 'var(--amber)' }} />
+              Khóa có phí — đã ghi nợ <strong>{formatVnd(pricing.price)}</strong> vào ngân sách đào tạo của {user?.divisionName || 'phòng ban bạn'}.
+            </div>
+          )}
 
           {course.enrollment.status === 'COMPLETED' && certificate && (
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -484,6 +523,46 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
             <Button variant="primary" icon="ti-send" onClick={submitRequest}>Gửi Đơn Cho Quản Lý</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* MODAL: XÁC NHẬN HỌC PHÍ TRƯỚC KHI GHI DANH KHÓA CÓ PHÍ */}
+      <Modal
+        isOpen={payConfirmOpen}
+        onClose={() => setPayConfirmOpen(false)}
+        title="Xác Nhận Đăng Ký Khóa Học Có Phí"
+        subtitle={course.title}
+        size="sm"
+        footer={
+          <Button
+            variant="primary"
+            icon="ti-check"
+            onClick={() => {
+              enrollCourse(course.id, user);
+              setPayConfirmOpen(false);
+            }}
+          >
+            Xác Nhận Đăng Ký
+          </Button>
+        }
+      >
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '14px 16px', marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Học phí / học viên</span>
+            <strong style={{ fontSize: 15, color: 'var(--amber)' }}>{formatVnd(pricing.price)}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Loại chi phí</span>
+            <span>{COST_TYPE_META[pricing.costType]?.labelVi || pricing.costType}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Trung tâm chi phí ghi nợ</span>
+            <span style={{ textAlign: 'right' }}>{user?.divisionName || 'Chưa gán phòng ban'}</span>
+          </div>
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
+          Khi bạn xác nhận, một bút toán chi được ghi vào sổ cái Trung Tâm Chi Phí và trừ vào ngân sách đào tạo năm
+          của phòng ban. Quản lý và bộ phận L&amp;D sẽ thấy khoản này trong báo cáo thu chi.
+        </p>
       </Modal>
 
       {/* MODAL: XEM CHỨNG CHỈ */}

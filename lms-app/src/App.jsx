@@ -31,6 +31,7 @@ import AdminCourseBuilder from './pages/admin/AdminCourseBuilder';
 import AdminConfig from './pages/admin/AdminConfig';
 import AdminReports from './pages/admin/AdminReports';
 import AdminTrainingOps from './pages/admin/AdminTrainingOps';
+import AdminCostCenter from './pages/admin/AdminCostCenter';
 import AdminLevelRoadmaps from './pages/admin/AdminLevelRoadmaps';
 import TrainerHub from './pages/trainer/TrainerHub';
 import MyLearning from './pages/shared/MyLearning';
@@ -199,6 +200,7 @@ function Shell({ role, setRole }) {
         <Route path="/manager/approvals" element={<ManagerApprovals />} />
         <Route path="/manager/courses" element={<ManagerCourses />} />
         <Route path="/manager/reports" element={<ManagerReports />} />
+        <Route path="/manager/cost-center" element={<AdminCostCenter />} />
         <Route path="/manager/learning" element={<ManagerLearning />} />
         <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
         <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
@@ -251,6 +253,7 @@ function Shell({ role, setRole }) {
         <Route path="/admin/training-ops" element={<AdminTrainingOps />} />
         <Route path="/admin/config" element={<AdminConfig />} />
         <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/cost-center" element={<AdminCostCenter />} />
         <Route path="/admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
         <Route path="*" element={<Navigate to={roleHome} replace />} />

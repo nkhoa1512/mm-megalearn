@@ -34,7 +34,9 @@ export const ROLE_DEFINITIONS = [
     summaryVi: 'Quản lý nhân viên phòng ban và theo dõi tiến độ học tập của đội ngũ.',
     // Duyệt đơn học vượt cấp KHÔNG còn ở Manager — chỉ User Admin/SysAdmin
     // mới thấy và duyệt (xem roles useradmin/sysadmin bên dưới).
-    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat'],
+    // Manager xem được Trung Tâm Chi Phí NHƯNG chỉ phần chi phí đào tạo của
+    // chính Division mình (không có canViewAllCostCenters).
+    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat', 'canViewCostCenter'],
   },
   {
     id: 'trainer',
@@ -53,6 +55,9 @@ export const ROLE_DEFINITIONS = [
       // canAuthorOnlineCourses, không có canAssignTrainers (chỉ tự đứng lớp).
       // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
       'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance', 'canViewCsat',
+      // L&D theo dõi toàn bộ chi phí đào tạo để lập kế hoạch khóa, nhưng không
+      // được sửa bảng giá (quyền tài chính thuộc User Admin/SysAdmin).
+      'canViewCostCenter', 'canViewAllCostCenters',
     ],
   },
   {
@@ -76,6 +81,7 @@ export const ROLE_DEFINITIONS = [
       // Giáo trình: HRBP CHỈ được xem (không sửa/xóa) và đề xuất ứng viên nhân
       // tài vào học — đề xuất phải qua User Admin/SysAdmin duyệt mới có hiệu lực.
       'canProposeCurriculum',
+      'canViewCostCenter', 'canViewAllCostCenters',
     ],
   },
   {
@@ -100,6 +106,9 @@ export const ROLE_DEFINITIONS = [
       // Chỉ User Admin & SysAdmin được tạo/sửa/xóa Giáo trình và phân bổ trực
       // tiếp cho đối tượng học — các role khác chỉ xem phần được phân bổ.
       'canManageCurriculum',
+      // Toàn quyền Trung Tâm Chi Phí: xem báo cáo thu/chi toàn công ty và gán
+      // giá tham gia cho khóa học.
+      'canViewCostCenter', 'canViewAllCostCenters', 'canManageCostCenter',
       // User Admin & SysAdmin đều toàn quyền tạo cả 3 hình thức khóa học
       // (E-Learning, Virtual Class Zoom/Teams, In-Person ILT) và chỉ định
       // Giảng viên chủ trì — Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy).
@@ -124,6 +133,7 @@ export const ROLE_DEFINITIONS = [
       'canManageAllRoles', 'canDevelopPlatform', 'canViewCsat',
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
       'canManageLevelRoadmaps', 'canManageCurriculum',
+      'canViewCostCenter', 'canViewAllCostCenters', 'canManageCostCenter',
       // Toàn quyền tạo cả 3 hình thức khóa học (E-Learning, Virtual Class
       // Zoom/Teams, In-Person ILT) và chỉ định Giảng viên chủ trì — như User Admin.
       'canCreateVirtualClass',

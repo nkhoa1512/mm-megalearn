@@ -11,6 +11,7 @@ import {
   personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../features/catalog/CurriculumTree';
+import { pricingOf, formatVnd } from '../../utils/costCenter';
 import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
 import {
   ASSIGNMENT_TYPES,
@@ -294,6 +295,7 @@ export default function AdminCourses() {
       : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
     const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
     const myAccess = accessFor ? accessFor(c, currentUser) : { canAccess: true, state: ACCESS_STATE.OPEN };
+    const rowPricing = pricingOf(c);
 
     return (
       <tr key={c.id}>
@@ -339,6 +341,13 @@ export default function AdminCourses() {
         )}
         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.modules?.length || 2}</td>
         <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.estimatedDuration || c.estimatedHours || '2h'}</td>
+        <td>
+          {rowPricing.isFree ? (
+            <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+          ) : (
+            <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(rowPricing.price)}</Badge>
+          )}
+        </td>
         <td>
           <Badge tone={STATUS_TONE[c.status]}>
             {c.status === 'PUBLISHED' ? 'Published' : c.status === 'DRAFT' ? 'Draft' : 'Archived'}
@@ -412,6 +421,7 @@ export default function AdminCourses() {
               {isFullAdmin && <th>Assigned Target Scope</th>}
               <th style={{ width: 90 }}>Modules</th>
               <th style={{ width: 90 }}>Duration</th>
+              <th style={{ width: 120 }}>Học Phí</th>
               <th style={{ width: 110 }}>Status</th>
               <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
             </tr>
@@ -1361,6 +1371,7 @@ function CourseDetailModal({
   const [feedbackMsg, setFeedbackMsg] = useState(null);
 
   const formatBadge = courseFormatBadge(liveCourse);
+  const coursePricing = pricingOf(liveCourse);
   const targetLevels = liveCourse.targetLevels && liveCourse.targetLevels.length > 0
     ? liveCourse.targetLevels
     : liveCourse.targetLevel ? [liveCourse.targetLevel] : ['7'];
@@ -1485,6 +1496,15 @@ function CourseDetailModal({
                 <span><strong>Cấp bậc mục tiêu:</strong> {targetLevels.map((l) => `Level ${l}`).join(', ')}</span>
                 <span>&middot;</span>
                 <span><strong>Loại khóa:</strong> <CourseTypeBadge courseType={liveCourse.courseType} /></span>
+                <span>&middot;</span>
+                <span>
+                  <strong>Học phí:</strong>{' '}
+                  {coursePricing.isFree ? (
+                    <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+                  ) : (
+                    <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(coursePricing.price)} / học viên</Badge>
+                  )}
+                </span>
               </div>
             </div>
           </div>

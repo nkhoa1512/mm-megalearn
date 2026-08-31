@@ -17,6 +17,7 @@ import {
   departments as initialDepartments,
   subDepartments as initialSubDepartments,
   jobLevels as initialJobLevels,
+  userEnrollmentsMap,
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel, evaluateUserEligibilityForCourse } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
@@ -28,6 +29,16 @@ import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
 import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
+import {
+  buildCostCenters,
+  buildEnrollmentTransaction,
+  seedOpeningLedger,
+  summarizeLedger,
+  pricingOf,
+  CURRENCY,
+  TXN_TYPE,
+  TXN_SOURCE,
+} from '../utils/costCenter';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -61,6 +72,11 @@ const DEPT_KEY = 'mm-megalearn-dept-v4';
 const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
 const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v3';
 const GROUP_KEY = 'mm-megalearn-groups-v1';
+// Cost Center: chỉ lưu các bút toán PHÁT SINH trong phiên. Sổ cái mở đầu (ngân
+// sách năm + ghi danh lịch sử HRIS) được suy ra lại mỗi lần khởi động từ dữ
+// liệu tĩnh — cùng mô hình overlay với `enrollments`, tránh nhồi vài nghìn
+// dòng giao dịch vào hạn mức localStorage.
+const COST_LEDGER_KEY = 'mm-megalearn-cost-ledger-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -321,6 +337,10 @@ export function CourseStoreProvider({ children }) {
   // Chồng lên ma trận ghi danh tĩnh của HRIS.
   const [enrollments, setEnrollments] = useState(() => loadItem(ENROLLMENT_KEY, {}));
 
+  // Sổ cái Trung Tâm Chi Phí phát sinh trong phiên (ghi danh mới có/không phí,
+  // điều chỉnh thủ công). Chồng lên sổ cái mở đầu suy ra từ dữ liệu tĩnh.
+  const [costLedgerSession, setCostLedgerSession] = useState(() => loadItem(COST_LEDGER_KEY, []));
+
   // Cấu hình Lộ trình Cấp bậc (Tab 1 "Hiện tại" / Tab 2 "Kế cận" tra cứu chéo
   // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
   const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, SCOPE_ROADMAP_MATRIX));
@@ -387,6 +407,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(gamification));
       localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
       localStorage.setItem(ENROLLMENT_KEY, JSON.stringify(enrollments));
+      localStorage.setItem(COST_LEDGER_KEY, JSON.stringify(costLedgerSession));
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
@@ -411,7 +432,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -1035,6 +1056,83 @@ export function CourseStoreProvider({ children }) {
     [currentUser, myRequestBuckets, requestBuckets, customGroups, users]
   );
 
+  // -------------------------------------------------------------------------
+  // TRUNG TÂM CHI PHÍ (COST CENTER)
+  // -------------------------------------------------------------------------
+
+  /** 42 Division = 42 cost center, ngân sách năm tính theo đầu người thực tế. */
+  const costCenters = useMemo(() => buildCostCenters(divisions, users), [divisions, users]);
+
+  /** Sổ cái mở đầu: cấp ngân sách năm + toàn bộ ghi danh lịch sử từ HRIS. */
+  const openingLedger = useMemo(
+    () => seedOpeningLedger({ costCenters, courses, users, enrollmentMatrix: userEnrollmentsMap }),
+    [costCenters, courses, users]
+  );
+
+  /** Sổ cái hiệu lực = sổ mở đầu + phát sinh trong phiên (trùng id thì phiên thắng). */
+  const costLedger = useMemo(() => {
+    const merged = new Map(openingLedger.map((t) => [t.id, t]));
+    costLedgerSession.forEach((t) => merged.set(t.id, t));
+    return Array.from(merged.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }, [openingLedger, costLedgerSession]);
+
+  const costReport = useMemo(
+    () => summarizeLedger(costLedger, { costCenters, courses }),
+    [costLedger, costCenters, courses]
+  );
+
+  /**
+   * Gán / sửa giá tham gia của khóa học. Ghi thẳng vào `course.pricing` nên tự
+   * động được lưu cùng danh mục khóa học; các bút toán đã ghi vẫn giữ nguyên
+   * giá tại thời điểm ghi danh (không hồi tố).
+   */
+  const updateCoursePricing = useCallback((courseId, pricing) => {
+    setCourses((prev) =>
+      prev.map((c) => {
+        if (c.id !== courseId) return c;
+        const isFree = Boolean(pricing?.isFree);
+        const price = isFree ? 0 : Math.max(0, Number(pricing?.price) || 0);
+        return {
+          ...c,
+          pricing: {
+            isFree: isFree || price === 0,
+            price,
+            currency: pricing?.currency || CURRENCY,
+            costType: pricing?.costType || pricingOf(c).costType,
+            vendor: pricing?.vendor ?? pricingOf(c).vendor,
+            updatedAt: todayIso(),
+          },
+        };
+      })
+    );
+  }, []);
+
+  /** Bút toán thủ công (điều chỉnh ngân sách, hoàn phí, chi phí ngoài hệ thống). */
+  const recordCostTransaction = useCallback(
+    (txn) => {
+      const date = txn.date || todayIso();
+      const center = costCenters.find((c) => c.id === txn.costCenterId);
+      const entry = {
+        ...txn,
+        id: txn.id || `TXN-MAN-${Date.now()}`,
+        date,
+        fiscalYear: Number(date.slice(0, 4)),
+        type: txn.type === TXN_TYPE.INCOME ? TXN_TYPE.INCOME : TXN_TYPE.EXPENSE,
+        source: txn.source || TXN_SOURCE.MANUAL,
+        amount: Math.max(0, Number(txn.amount) || 0),
+        currency: txn.currency || CURRENCY,
+        isFree: false,
+        costCenterId: center?.id || txn.costCenterId || null,
+        costCenterCode: center?.code || txn.costCenterCode || null,
+        costCenterName: center?.name || txn.costCenterName || null,
+        branch: center?.branch || txn.branch || null,
+      };
+      setCostLedgerSession((prev) => [...prev, entry]);
+      return entry;
+    },
+    [costCenters]
+  );
+
   /** Ghi danh khóa học cho người đang đăng nhập (chỉ khi quy tắc cấp bậc cho phép). */
   const enrollCourse = useCallback(
     (courseId, user = currentUser) => {
@@ -1074,9 +1172,24 @@ export function CourseStoreProvider({ children }) {
           },
         };
       });
-      return { ok: true, access };
+
+      // Ghi bút toán chi vào Trung Tâm Chi Phí của học viên. Khóa miễn phí vẫn
+      // ghi 1 dòng 0 đồng để báo cáo đếm được lượt học nội bộ. Bút toán dùng id
+      // tất định theo (user, course) nên ghi danh lại không tính phí hai lần.
+      const txn = buildEnrollmentTransaction({
+        course,
+        user,
+        costCenters,
+        date: todayIso(),
+        enrolledVia: access.state === ACCESS_STATE.APPROVED ? 'LEVEL_ADVANCE_APPROVAL' : 'SELF_ENROLL',
+      });
+      if (txn) {
+        setCostLedgerSession((prev) => (prev.some((t) => t.id === txn.id) ? prev : [...prev, txn]));
+      }
+
+      return { ok: true, access, transaction: txn };
     },
-    [courses, currentUser, accessFor]
+    [courses, currentUser, accessFor, costCenters]
   );
 
   /**
@@ -1829,6 +1942,12 @@ export function CourseStoreProvider({ children }) {
         addCompanyCategory,
         accessFor,
         enrollCourse,
+        // Trung Tâm Chi Phí (Cost Center)
+        costCenters,
+        costLedger,
+        costReport,
+        updateCoursePricing,
+        recordCostTransaction,
         enrollments,
         myEnrollments,
         myCourses,
