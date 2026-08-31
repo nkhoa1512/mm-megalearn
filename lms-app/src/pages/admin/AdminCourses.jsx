@@ -44,13 +44,20 @@ import {
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
+// "Learning Objects" (E-Learning tự học) và "Online Class" (Lớp Live) đã gộp
+// làm 1 tab duy nhất — cả 2 đều là khóa online, chỉ khác nhau ở badge định
+// dạng (🌐 E-Learning / 💻 Live) đã có sẵn trên mỗi dòng, không cần tách tab
+// riêng nữa. "Library Course" đưa lên đầu & đổi tên "All Class" (giữ nguyên
+// hành vi: xem toàn bộ khóa, không lọc theo section). "Library" mới ở cuối là
+// góc nhìn tổng hợp khóa học theo Lĩnh Vực (kỹ năng cứng) — chỉ User Admin &
+// System Admin thấy (adminOnly, lọc khi build danh sách tab hiển thị).
 const CATALOG_TABS = [
-  { id: 'learning-objects', label: 'Learning Objects', icon: 'ti-device-laptop', section: CATALOG_SECTIONS.LEARNING_OBJECTS },
-  { id: 'online-class', label: 'Online Class', icon: 'ti-broadcast', section: CATALOG_SECTIONS.ONLINE_CLASS },
+  { id: 'library', label: 'All Class', icon: 'ti-database' },
+  { id: 'online-class', label: 'Online Class', icon: 'ti-broadcast', includeSections: [CATALOG_SECTIONS.LEARNING_OBJECTS, CATALOG_SECTIONS.ONLINE_CLASS] },
   { id: 'classroom', label: 'Classroom / In-Person', icon: 'ti-chalkboard', section: CATALOG_SECTIONS.CLASSROOM },
   { id: 'curriculum', label: 'Curriculum', icon: 'ti-books' },
-  { id: 'library', label: 'Library Course', icon: 'ti-database' },
   { id: 'assessment', label: 'Assessment', icon: 'ti-writing' },
+  { id: 'domain-library', label: 'Library', icon: 'ti-folders', adminOnly: true },
 ];
 
 const COURSE_GROUP_BY_OPTIONS = [
@@ -66,11 +73,16 @@ function emptyCurriculumDraft(defaultCat = 'Food Safety & Hygiene') {
   return { id: `CUR-${Date.now()}`, title: '', description: '', category: defaultCat, courseIds: [], status: 'PUBLISHED', assignments: [] };
 }
 
+function emptyLibraryDraft() {
+  return { id: `LIB-${Date.now()}`, name: '', description: '', domains: [] };
+}
+
 export default function AdminCourses() {
   const navigate = useNavigate();
   const {
     courses, updateCourse, removeCourse, currentUser, language, t,
     companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
+    libraries, addLibrary, updateLibrary, deleteLibrary,
     assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
     approvals, myEnrollments,
     assessments, addAssessment, updateAssessment, deleteAssessment,
@@ -111,14 +123,22 @@ export default function AdminCourses() {
     });
   }
   const activeTabDef = CATALOG_TABS.find((tb) => tb.id === activeTab) || CATALOG_TABS[0];
+  // "Library" (domain-library) chỉ dành cho User Admin/SysAdmin — nếu ai đó
+  // vào thẳng bằng URL ?tab=domain-library mà không đủ quyền thì đẩy về lại
+  // "All Class" thay vì hiện 1 view rỗng/không đúng đối tượng.
+  useEffect(() => {
+    if (activeTab === 'domain-library' && !isFullAdmin) {
+      setActiveTab('library');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isFullAdmin]);
   // Trainer/L&D chỉ được tạo khóa Lớp Trực Tiếp (Classroom/In-Person) — nút
   // "Create New Course" luôn tạo IN_PERSON_CLASSROOM bất kể đang ở tab nào
-  // (xem onClick bên dưới), nên hiện nút đó ở tab Learning Objects / Online
-  // Class dễ gây hiểu lầm là tạo được khóa E-Learning/Lớp Online. Chỉ ẩn cho
-  // đúng Trainer trên 2 tab này; các role khác (User Admin, SysAdmin) và các
-  // tab khác của Trainer không đổi.
-  const hideCreateForTrainerTab = isAdmin && !isFullAdmin
-    && (activeTabDef.section === CATALOG_SECTIONS.LEARNING_OBJECTS || activeTabDef.section === CATALOG_SECTIONS.ONLINE_CLASS);
+  // (xem onClick bên dưới), nên hiện nút đó ở tab Online Class (gộp Learning
+  // Objects + Live) dễ gây hiểu lầm là tạo được khóa E-Learning/Lớp Online.
+  // Chỉ ẩn cho đúng Trainer trên tab này; các role khác (User Admin, SysAdmin)
+  // và các tab khác của Trainer không đổi.
+  const hideCreateForTrainerTab = isAdmin && !isFullAdmin && activeTabDef.id === 'online-class';
 
   // User Learner, Manager & HRBP không có bất kỳ quyền tạo/sửa/xóa/phát hành
   // hay xem chi tiết phân bổ nào cả — họ chỉ được duyệt danh mục (đủ 5+ cột dữ
@@ -167,6 +187,18 @@ export default function AdminCourses() {
   const [editingCurriculum, setEditingCurriculum] = useState(null);
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
   const [viewingCourse, setViewingCourse] = useState(null);
+  const [editingLibrary, setEditingLibrary] = useState(null);
+
+  function saveLibrary(draft) {
+    const now = new Date().toISOString().slice(0, 10);
+    const exists = libraries.some((l) => l.id === draft.id);
+    if (exists) {
+      updateLibrary(draft.id, { ...draft, updatedAt: now });
+    } else {
+      addLibrary({ ...draft, createdBy: currentUser?.userId, createdAt: now, updatedAt: now });
+    }
+    setEditingLibrary(null);
+  }
 
   function publish(course) {
     publishNewCourseVersion(course.id, null, 'Phát hành phiên bản mới.');
@@ -191,6 +223,10 @@ export default function AdminCourses() {
   const isLibrary = activeTabDef.id === 'library';
   const isCurriculum = activeTabDef.id === 'curriculum';
   const isAssessment = activeTabDef.id === 'assessment';
+  // "Library" (domain-library) không còn là 1 view gộp-nhóm tự động — nó là
+  // 1 CRUD riêng: admin tự tạo Library, thêm Lĩnh Vực & gán khóa học thủ công
+  // (xem khối JSX riêng bên dưới, không dùng chung layout bảng khóa học).
+  const isLibraryManager = activeTabDef.id === 'domain-library' && isFullAdmin;
 
   // Assessment management & catalog state
   const [editingAssessment, setEditingAssessment] = useState(null);
@@ -256,10 +292,18 @@ export default function AdminCourses() {
   // còn 3 tab kia lọc thêm theo đúng section của tab đang mở. Với role KHÔNG
   // PHẢI Full Admin, bộ trạng thái đổi sang góc nhìn cá nhân hóa (xem
   // personalLifecycleStatusOf) thay vì Nháp/Chưa Mở/Đang Mở/Đã Đóng của Admin.
-  const filtered = isCurriculum || isAssessment
+  const filtered = isCurriculum || isAssessment || isLibraryManager
     ? []
     : bySearchCategoryType.filter((c) => {
-      if (!isLibrary && catalogSectionOf(c) !== activeTabDef.section) return false;
+      // "All Class" xem toàn bộ khóa, không lọc theo section; các tab còn lại
+      // lọc theo section riêng (hoặc includeSections khi 1 tab gộp nhiều
+      // section, như Online Class).
+      if (!isLibrary) {
+        const sectionOk = activeTabDef.includeSections
+          ? activeTabDef.includeSections.includes(catalogSectionOf(c))
+          : catalogSectionOf(c) === activeTabDef.section;
+        if (!sectionOk) return false;
+      }
       const rowLifecycle = (isFullAdmin || isAdmin) ? computeLifecycleStatus(c) : personalLifecycleStatusOf(c);
       const matchLifecycle = selectedLifecycle === 'ALL' || rowLifecycle === selectedLifecycle;
       return matchLifecycle;
@@ -267,7 +311,7 @@ export default function AdminCourses() {
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const groups = isCurriculum || isAssessment ? null : buildCourseGroups(filtered, groupBy, { personal: !(isFullAdmin || isAdmin) });
+  const groups = isCurriculum || isAssessment || isLibraryManager ? null : buildCourseGroups(filtered, groupBy, { personal: !(isFullAdmin || isAdmin) });
 
   function toggleGroup(key) {
     setCollapsedGroups((prev) => {
@@ -457,7 +501,7 @@ export default function AdminCourses() {
               : 'Thiết lập mô-đun bài học, bài kiểm tra tương tác, ngân hàng câu hỏi và phân bổ đào tạo bắt buộc theo Khối, Phòng ban hoặc Cấp bậc định biên.'}
           </p>
         </div>
-        {isAdmin && !isCurriculum && !isAssessment && !hideCreateForTrainerTab && (
+        {isAdmin && !isCurriculum && !isAssessment && !isLibraryManager && !hideCreateForTrainerTab && (
           <Button
             variant="primary"
             icon="ti-plus"
@@ -467,10 +511,11 @@ export default function AdminCourses() {
                 navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
                 return;
               }
-              const section = activeTabDef.section;
-              if (section === CATALOG_SECTIONS.CLASSROOM) navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
-              else if (section === CATALOG_SECTIONS.ONLINE_CLASS) navigate('/admin/courses/new?deliveryType=ONLINE_ELEARNING&onlineClassType=VIRTUAL_CLASS');
-              else if (section === CATALOG_SECTIONS.LEARNING_OBJECTS) navigate('/admin/courses/new?deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING');
+              if (activeTabDef.section === CATALOG_SECTIONS.CLASSROOM) navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
+              // Tab "Online Class" gộp cả E-Learning tự học lẫn Lớp Live —
+              // mặc định tạo khóa E-Learning (đa số khóa hiện có thuộc dạng
+              // này); có thể đổi sang Lớp Live ngay trong Course Builder.
+              else if (activeTabDef.id === 'online-class') navigate('/admin/courses/new?deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING');
               else navigate('/admin/courses/new');
             }}
           >
@@ -487,10 +532,15 @@ export default function AdminCourses() {
             Tạo Assessment Mới
           </Button>
         )}
+        {isLibraryManager && (
+          <Button variant="primary" icon="ti-plus" onClick={() => setEditingLibrary(emptyLibraryDraft())}>
+            Tạo Library Mới
+          </Button>
+        )}
       </div>
 
       <Tabs
-        tabs={CATALOG_TABS.map((tb) => ({
+        tabs={CATALOG_TABS.filter((tb) => !tb.adminOnly || isFullAdmin).map((tb) => ({
           id: tb.id,
           label: tb.label,
           icon: tb.icon,
@@ -498,8 +548,12 @@ export default function AdminCourses() {
             ? visibleCurricula.length
             : tb.id === 'assessment'
             ? visibleAssessments.length
+            : tb.id === 'domain-library'
+            ? libraries.length
             : tb.id === 'library'
             ? visibleCourses.length
+            : tb.includeSections
+            ? visibleCourses.filter((c) => tb.includeSections.includes(catalogSectionOf(c))).length
             : visibleCourses.filter((c) => catalogSectionOf(c) === tb.section).length,
         }))}
         activeTab={activeTab}
@@ -868,6 +922,51 @@ export default function AdminCourses() {
             )}
           </div>
         </>
+      ) : isLibraryManager ? (
+        <>
+          <div className="card card-pad" style={{ marginBottom: 16, fontSize: 12.5, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="ti ti-folders" style={{ color: 'var(--rail)', fontSize: 16 }} />
+            <div>
+              <strong>Library</strong> — tự tạo Library, thêm các <strong>Lĩnh Vực</strong> bên trong rồi gán khóa học thủ công vào từng Lĩnh Vực để dễ tra cứu. Chỉ hiển thị cho <strong>User Admin &amp; System Admin</strong>.
+            </div>
+          </div>
+          <div className="grid grid-3" style={{ gap: 14 }}>
+            {libraries.map((lib) => {
+              const domainCount = (lib.domains || []).length;
+              const courseCount = new Set((lib.domains || []).flatMap((d) => d.courseIds || [])).size;
+              return (
+                <div key={lib.id} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6 }}>{lib.name || 'Library chưa đặt tên'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, minHeight: 34 }}>{lib.description}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Badge tone="slate" size="sm">{domainCount} Lĩnh Vực</Badge>
+                      <span>&middot;</span>
+                      <span>{courseCount} khóa học</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+                    <Button size="sm" icon="ti-pencil" onClick={() => setEditingLibrary(lib)}>Quản Lý</Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="ti-trash"
+                      onClick={() => { if (window.confirm(`Xóa Library "${lib.name}"? Các khóa học không bị ảnh hưởng.`)) deleteLibrary(lib.id); }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {libraries.length === 0 && (
+              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                <i className="ti ti-folders" aria-hidden="true" />
+                <p>Chưa có Library nào. Bấm "Tạo Library Mới" để bắt đầu.</p>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <>
           {/* Filter & Search Bar */}
@@ -1043,6 +1142,16 @@ export default function AdminCourses() {
           companyCategories={companyCategories}
           onCancel={() => setEditingCurriculum(null)}
           onSave={saveCurriculum}
+        />
+      )}
+
+      {editingLibrary && (
+        <LibraryEditorModal
+          draft={editingLibrary}
+          courses={courses}
+          companyCategories={companyCategories}
+          onCancel={() => setEditingLibrary(null)}
+          onSave={saveLibrary}
         />
       )}
 
@@ -2081,6 +2190,229 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, onCan
               )}
             </div>
           </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Editor 1-lần cho Library: tên/mô tả + thêm Lĩnh Vực (gắn 1 Category có sẵn)
+// + gán khóa học vào từng Lĩnh Vực đều thao tác trên state cục bộ (chưa ghi
+// store), chỉ commit 1 lần khi bấm "Lưu Library" (qua onSave, giống hệt
+// CurriculumEditorModal) — dùng chung cho cả tạo mới lẫn sửa Library đã có,
+// nên "xây" xong toàn bộ cụm Lĩnh Vực + khóa học trong 1 lần mở modal.
+export function LibraryEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
+  const [form, setForm] = useState(() => ({ ...draft, domains: draft.domains || [] }));
+  const domains = form.domains;
+
+  const [addingDomainCategory, setAddingDomainCategory] = useState('');
+  const [openPickerFor, setOpenPickerFor] = useState(null);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerSelected, setPickerSelected] = useState([]);
+
+  const usedCategories = new Set(domains.map((d) => d.category));
+  const availableCategories = companyCategories.filter((c) => !usedCategories.has(c));
+  const totalCourses = new Set(domains.flatMap((d) => d.courseIds || [])).size;
+
+  function setDomains(nextDomains) {
+    setForm((f) => ({ ...f, domains: nextDomains }));
+  }
+
+  function addDomain() {
+    if (!addingDomainCategory) return;
+    setDomains([...domains, { id: `DOM-${Date.now()}`, category: addingDomainCategory, courseIds: [] }]);
+    setAddingDomainCategory('');
+  }
+
+  function removeDomain(domainId) {
+    if (!window.confirm('Bỏ Lĩnh Vực này khỏi Library? Khóa học bên trong không bị ảnh hưởng.')) return;
+    setDomains(domains.filter((d) => d.id !== domainId));
+    if (openPickerFor === domainId) setOpenPickerFor(null);
+  }
+
+  function removeCourseFromDomain(domainId, courseId) {
+    setDomains(domains.map((d) => (d.id === domainId ? { ...d, courseIds: (d.courseIds || []).filter((id) => id !== courseId) } : d)));
+  }
+
+  function openPicker(domainId) {
+    setOpenPickerFor(domainId === openPickerFor ? null : domainId);
+    setPickerSearch('');
+    setPickerSelected([]);
+  }
+
+  function togglePickerCourse(id) {
+    setPickerSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function confirmAddCourses(domainId) {
+    setDomains(domains.map((d) => (d.id === domainId ? { ...d, courseIds: Array.from(new Set([...(d.courseIds || []), ...pickerSelected])) } : d)));
+    setOpenPickerFor(null);
+    setPickerSelected([]);
+    setPickerSearch('');
+  }
+
+  return (
+    <Modal
+      isOpen
+      title={draft.name ? 'Chỉnh Sửa Library' : 'Tạo Library Mới'}
+      subtitle={`${domains.length} Lĩnh Vực · ${totalCourses} khóa học — thêm Lĩnh Vực & khóa học rồi bấm Lưu để tạo 1 lần`}
+      onClose={onCancel}
+      size="xl"
+      footer={(
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+            {domains.length} Lĩnh Vực &middot; {totalCourses} khóa học đã gán
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+            <Button variant="primary" icon="ti-check" disabled={!form.name.trim()} onClick={() => onSave(form)}>
+              Lưu Library
+            </Button>
+          </div>
+        </div>
+      )}
+    >
+      <div className="grid grid-2" style={{ gap: 14, marginBottom: 16 }}>
+        <div>
+          <label className="field-label">Tên Library <span style={{ color: 'var(--rust)' }}>*</span></label>
+          <input
+            className="field-input"
+            placeholder="VD: Thư Viện Kỹ Năng Cứng"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label className="field-label">Mô tả</label>
+          <input
+            className="field-input"
+            placeholder="Mục đích & phạm vi của Library này..."
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {domains.map((d) => {
+          const domainCourses = (d.courseIds || []).map((id) => courses.find((c) => c.id === id)).filter(Boolean);
+          const isPickerOpen = openPickerFor === d.id;
+          const q = pickerSearch.toLowerCase();
+          const pickerCandidates = courses.filter((c) => {
+            if ((d.courseIds || []).includes(c.id)) return false;
+            return !q || c.title.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
+          });
+
+          return (
+            <div key={d.id} className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--paper-sunken)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Badge tone="rail" icon="ti-tag">{d.category}</Badge>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{domainCourses.length} khóa học</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDomain(d.id)}
+                  className="btn btn-sm"
+                  style={{ background: 'transparent', border: 'none', color: 'var(--rust)', cursor: 'pointer' }}
+                  title="Xóa Lĩnh Vực"
+                >
+                  <i className="ti ti-trash" />
+                </button>
+              </div>
+
+              <div style={{ padding: '10px 14px' }}>
+                {domainCourses.map((c) => (
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', borderRadius: 6 }}>
+                    <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)', marginRight: 6 }}>{c.code}</span>
+                      {c.title}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeCourseFromDomain(d.id, c.id)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--rust)', cursor: 'pointer' }}
+                      title="Bỏ khỏi Lĩnh Vực"
+                    >
+                      <i className="ti ti-x" />
+                    </button>
+                  </div>
+                ))}
+                {domainCourses.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: '8px 0' }}>Chưa có khóa học nào trong Lĩnh Vực này.</div>
+                )}
+
+                <Button size="sm" variant="outline" icon="ti-plus" onClick={() => openPicker(d.id)} style={{ marginTop: 8 }}>
+                  {isPickerOpen ? 'Đóng' : 'Thêm Khóa Học'}
+                </Button>
+
+                {isPickerOpen && (
+                  <div style={{ marginTop: 10, border: '1px solid var(--line)', borderRadius: 8, padding: 10, background: 'var(--paper-sunken)' }}>
+                    <input
+                      type="text"
+                      className="field-input"
+                      style={{ height: 32, fontSize: 12, marginBottom: 8 }}
+                      placeholder="Tìm khóa học theo tên hoặc mã..."
+                      value={pickerSearch}
+                      onChange={(e) => setPickerSearch(e.target.value)}
+                    />
+                    <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                      {pickerCandidates.map((c) => {
+                        const checked = pickerSelected.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => togglePickerCourse(c.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
+                              background: checked ? 'var(--blue-soft, rgba(37,99,235,0.08))' : 'transparent',
+                            }}
+                          >
+                            <input type="checkbox" checked={checked} onChange={() => {}} />
+                            <div style={{ fontSize: 12, color: 'var(--ink)' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)', marginRight: 6 }}>{c.code}</span>
+                              {c.title}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {pickerCandidates.length === 0 && (
+                        <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: 8 }}>Không có khóa học phù hợp.</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                      <Button size="sm" variant="ghost" onClick={() => setOpenPickerFor(null)}>Hủy</Button>
+                      <Button size="sm" variant="primary" disabled={pickerSelected.length === 0} onClick={() => confirmAddCourses(d.id)}>
+                        Thêm {pickerSelected.length || ''} Khóa Đã Chọn
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {domains.length === 0 && (
+          <div className="empty-state"><p>Chưa có Lĩnh Vực nào. Thêm Lĩnh Vực đầu tiên bên dưới.</p></div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+          <select
+            className="field-select"
+            style={{ height: 34, fontSize: 12, flex: 1 }}
+            value={addingDomainCategory}
+            onChange={(e) => setAddingDomainCategory(e.target.value)}
+          >
+            <option value="">{availableCategories.length ? 'Chọn Lĩnh Vực để thêm...' : 'Đã thêm hết Danh Mục hiện có'}</option>
+            {availableCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <Button size="sm" variant="primary" icon="ti-plus" disabled={!addingDomainCategory} onClick={addDomain}>
+            Thêm Lĩnh Vực
+          </Button>
         </div>
       </div>
     </Modal>

@@ -25,7 +25,7 @@ import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadm
 import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
 import { curricula as initialCurricula } from '../data/mockData';
-import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
+import { DEFAULT_COMPANY_CATEGORIES, courseMatchesCategory } from '../utils/courseCatalog';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
 import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
@@ -58,6 +58,69 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // vực công ty (Category) do System Admin quản lý — hai domain mới, chưa từng
 // tồn tại trước bản Catalog 5-Phân-Hệ này.
 const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
+// Library (Library -> Lĩnh Vực/Domain -> Courses): admin tự tạo Library, thêm
+// các Lĩnh Vực (mỗi Lĩnh Vực gắn 1 Category có sẵn) rồi gán khóa học thủ công
+// vào từng Lĩnh Vực để dễ tra cứu — khác Curriculum ở chỗ chỉ là góc nhìn
+// tham chiếu/tra cứu cho User Admin & System Admin, không có phân bổ/enroll.
+const LIBRARY_KEY = 'mm-megalearn-libraries-v1';
+
+// Dữ liệu mẫu cho vài Library đầu tiên (demo/first-run) — gom sẵn các khóa
+// học seed có trong mockData.js vào Lĩnh Vực đúng Category của chúng, để tab
+// Library không trống trơn khi User Admin/SysAdmin vào lần đầu. Domain nào
+// không có khóa nào khớp thì bỏ qua (không tạo Lĩnh Vực rỗng vô nghĩa).
+function buildSeedLibraries(allCourses) {
+  function domainFor(category, limit = 8) {
+    const courseIds = allCourses.filter((c) => courseMatchesCategory(c, category)).slice(0, limit).map((c) => c.id);
+    return { id: `DOM-SEED-${category.replace(/[^a-zA-Z0-9]/g, '')}`, category, courseIds };
+  }
+  const seedDate = '2026-01-05';
+  return [
+    {
+      id: 'LIB-SEED-HARDSKILL',
+      name: 'Thư Viện Kỹ Năng Cứng Vận Hành',
+      description: 'Gom các khóa học nghiệp vụ chuyên môn theo từng lĩnh vực vận hành cửa hàng & kho vận.',
+      domains: [
+        domainFor('Food Safety & Hygiene'),
+        domainFor('Cold Chain'),
+        domainFor('Store Operations'),
+        domainFor('Loss Prevention & QA'),
+        domainFor('Fresh Food Practice'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+    {
+      id: 'LIB-SEED-LEADERSHIP',
+      name: 'Thư Viện Kỹ Năng Mềm & Quản Trị',
+      description: 'Các khóa học lãnh đạo, dịch vụ khách hàng và tuân thủ đạo đức dành cho cấp quản lý.',
+      domains: [
+        domainFor('Leadership & Management'),
+        domainFor('Customer Service'),
+        domainFor('Compliance & Ethics'),
+        domainFor('Corporate Governance'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+    {
+      id: 'LIB-SEED-DIGITAL',
+      name: 'Thư Viện Chuyển Đổi Số & Chuỗi Cung Ứng',
+      description: 'Khóa học về an ninh thông tin, thương mại điện tử, tài chính và chuỗi cung ứng.',
+      domains: [
+        domainFor('Information Security'),
+        domainFor('Digital & E-Commerce'),
+        domainFor('Supply Chain & Logistics'),
+        domainFor('Finance & Accounting'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+  ].map((lib) => ({ ...lib, domains: lib.domains.filter((d) => d.courseIds.length > 0) }))
+    .filter((lib) => lib.domains.length > 0);
+}
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
 const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
 const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
@@ -350,6 +413,11 @@ export function CourseStoreProvider({ children }) {
   // không sao chép lại module/lesson).
   const [curricula, setCurricula] = useState(() => loadItem(CURRICULUM_KEY, initialCurricula));
 
+  // Library: admin-managed Library -> Domain(Lĩnh Vực, gắn Category có sẵn) ->
+  // courseIds[] (1 khóa có thể nằm trong nhiều Domain/Library, không loại
+  // trừ lẫn nhau — chỉ là tag tham chiếu, không đổi dữ liệu khóa học gốc).
+  const [libraries, setLibraries] = useState(() => loadItem(LIBRARY_KEY, buildSeedLibraries(initialCourses)));
+
   // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn, System Admin có thể
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
   const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
@@ -410,6 +478,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(COST_LEDGER_KEY, JSON.stringify(costLedgerSession));
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraries));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
       localStorage.setItem(BU_KEY, JSON.stringify(businessUnits));
       localStorage.setItem(DIV_KEY, JSON.stringify(divisions));
@@ -432,7 +501,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -779,6 +848,18 @@ export function CourseStoreProvider({ children }) {
 
   const deleteCurriculum = useCallback((curriculumId) => {
     setCurricula((prev) => prev.filter((c) => c.id !== curriculumId));
+  }, []);
+
+  const addLibrary = useCallback((library) => {
+    setLibraries((prev) => [...prev, library]);
+  }, []);
+
+  const updateLibrary = useCallback((libraryId, nextLibrary) => {
+    setLibraries((prev) => prev.map((l) => (l.id === libraryId ? nextLibrary : l)));
+  }, []);
+
+  const deleteLibrary = useCallback((libraryId) => {
+    setLibraries((prev) => prev.filter((l) => l.id !== libraryId));
   }, []);
 
   const assignCurriculum = useCallback((curriculumId, assignmentOrAssignments) => {
@@ -1924,6 +2005,10 @@ export function CourseStoreProvider({ children }) {
         addCurriculum,
         updateCurriculum,
         deleteCurriculum,
+        libraries,
+        addLibrary,
+        updateLibrary,
+        deleteLibrary,
         assignCurriculum,
         proposeCurriculumAssignment,
         removeCurriculumAssignment,
