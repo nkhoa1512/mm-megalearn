@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { courseHasParticipants, userAdminUser, isUserAssignedToCourse } from '../../data/mockData';
-import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs } from '../../features/common/ui';
+import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs, CertificateTemplatePicker } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
 import { getCourseImage } from '../../data/courseImages';
@@ -70,7 +70,7 @@ const COURSE_GROUP_BY_OPTIONS = [
 ];
 
 function emptyCurriculumDraft(defaultCat = 'Food Safety & Hygiene') {
-  return { id: `CUR-${Date.now()}`, title: '', description: '', category: defaultCat, courseIds: [], status: 'PUBLISHED', assignments: [] };
+  return { id: `CUR-${Date.now()}`, title: '', description: '', category: defaultCat, courseIds: [], status: 'PUBLISHED', assignments: [], certificateTemplateId: null };
 }
 
 function emptyLibraryDraft() {
@@ -83,6 +83,7 @@ export default function AdminCourses() {
     courses, updateCourse, removeCourse, currentUser, language, t,
     companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
     libraries, addLibrary, updateLibrary, deleteLibrary,
+    certificateTemplates, addCertificateTemplate,
     assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
     approvals, myEnrollments,
     assessments, addAssessment, updateAssessment, deleteAssessment,
@@ -1140,6 +1141,8 @@ export default function AdminCourses() {
           draft={editingCurriculum}
           courses={courses}
           companyCategories={companyCategories}
+          certificateTemplates={certificateTemplates}
+          onCreateCertificateTemplate={addCertificateTemplate}
           onCancel={() => setEditingCurriculum(null)}
           onSave={saveCurriculum}
         />
@@ -1879,11 +1882,12 @@ function CourseDetailModal({
   );
 }
 
-export function CurriculumEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
+export function CurriculumEditorModal({ draft, courses, companyCategories, certificateTemplates = [], onCreateCertificateTemplate, onCancel, onSave }) {
   const [form, setForm] = useState(() => ({
     ...draft,
     category: draft.category || companyCategories[0] || 'Store Operations',
     assignments: draft.assignments || [],
+    certificateTemplateId: draft.certificateTemplateId || null,
   }));
 
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -2018,6 +2022,17 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, onCan
           />
           <span>Xuất bản ngay (Published - Sẵn sàng phân bổ cho học viên)</span>
         </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <CertificateTemplatePicker
+          templateId={form.certificateTemplateId}
+          onChange={(id) => setForm({ ...form, certificateTemplateId: id })}
+          certificateTemplates={certificateTemplates}
+          companyCategories={companyCategories}
+          defaultCategory={form.category}
+          onCreateTemplate={onCreateCertificateTemplate}
+        />
       </div>
 
       {/* Course Selection Area */}

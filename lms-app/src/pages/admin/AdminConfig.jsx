@@ -18,8 +18,6 @@ export default function AdminConfig() {
   const [activeTab, setActiveTab] = useState('auto-rules');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const { companyCategories, addCompanyCategory } = useCourseStore();
-  const [newCategoryName, setNewCategoryName] = useState('');
 
   // 1. Auto-Assignment Rules State
   const [autoRules, setAutoRules] = useState([
@@ -297,7 +295,6 @@ export default function AdminConfig() {
           { id: 'security', label: 'Security, Watermark & Anti-Cheat', icon: 'ti-shield-lock' },
           { id: 'hris', label: 'SAP SuccessFactors HRIS', icon: 'ti-cloud-computing', count: syncLogs.length },
           { id: 'org-structure', label: 'Org Structure (Dual Hierarchy)', icon: 'ti-sitemap' },
-          { id: 'categories', label: 'Course Categories', icon: 'ti-tags', count: companyCategories.length },
           { id: 'gateways', label: 'Notifications & Message Templates', icon: 'ti-bell' },
           { id: 'rbac', label: 'MMVN Matrix & RBAC Permissions', icon: 'ti-users', count: 16 },
           { id: 'branding', label: 'Certificates & System Backup', icon: 'ti-certificate' },
@@ -835,69 +832,6 @@ export default function AdminConfig() {
             </p>
           </div>
           <OrgHierarchyBrowser />
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: COURSE CATEGORIES — danh mục Lĩnh Vực chuẩn dùng chung cho Course
-          Builder (tick chọn) và bộ lọc Catalog/Library — lưu trong CourseStore
-          (companyCategories), không giới hạn số lượng, System Admin xem toàn
-          bộ & thêm mới tại đây. */}
-      {/* ========================================================================= */}
-      {activeTab === 'categories' && (
-        <div style={{ marginBottom: 28 }}>
-          <div className="card card-pad" style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
-              Danh sách chuẩn các Lĩnh Vực (Category) dùng để phân loại khóa học trong Course Builder và các bộ lọc Catalog/Thư Viện. Thêm mới tại đây sẽ hiển thị ngay lập tức trong ô tick chọn Category khi tạo/sửa khóa học.
-            </p>
-          </div>
-
-          <div className="section-label">Toàn Bộ Danh Mục Hiện Có ({companyCategories.length})</div>
-          <div className="card card-pad" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {companyCategories.map((cat) => (
-                <span
-                  key={cat}
-                  style={{
-                    padding: '6px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 600,
-                    border: '1px solid var(--line-strong)', background: 'var(--paper-sunken)', color: 'var(--ink)',
-                  }}
-                >
-                  {cat}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="section-label">Thêm Danh Mục Mới</div>
-          <div className="card card-pad">
-            <form
-              style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newCategoryName.trim()) return;
-                if (companyCategories.includes(newCategoryName.trim())) {
-                  showToast(`Danh mục "${newCategoryName.trim()}" đã tồn tại.`);
-                  return;
-                }
-                addCompanyCategory(newCategoryName.trim());
-                showToast(`Đã thêm danh mục "${newCategoryName.trim()}"!`);
-                setNewCategoryName('');
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <label className="field-label">Tên Danh Mục Mới</label>
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="VD: Retail Analytics & Business Intelligence"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                />
-              </div>
-              <Button type="submit" variant="primary" icon="ti-plus">Thêm Danh Mục</Button>
-            </form>
-          </div>
         </div>
       )}
 

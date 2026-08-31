@@ -61,6 +61,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     t,
     curricula,
     companyCategories,
+    certificateTemplates,
   } = useCourseStore();
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
 
@@ -119,7 +120,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const activeCourseList = enrolledCourses;
 
-  const userCertificates = React.useMemo(() => deriveCertificates(allCourses, user, myEnrollments), [allCourses, user, myEnrollments]);
+  const userCertificates = React.useMemo(() => deriveCertificates(allCourses, user, myEnrollments, certificateTemplates), [allCourses, user, myEnrollments, certificateTemplates]);
   const recertByCourseId = React.useMemo(() => {
     const map = {};
     enrolledCourses.forEach((c) => {

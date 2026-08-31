@@ -122,6 +122,12 @@ function buildSeedLibraries(allCourses) {
     .filter((lib) => lib.domains.length > 0);
 }
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
+// Certificate Template: thư viện mẫu chứng chỉ do admin quản lý trước, Course
+// Builder & Curriculum Editor chỉ gắn certificateTemplateId tham chiếu tới
+// đây (không copy dữ liệu) — file đính kèm chỉ lưu metadata (tên/kích thước),
+// không dùng để render; các field còn lại (signerName/signerTitle/issuerOrg)
+// mới thực sự thay thế nội dung mặc định trên CertificateModal.
+const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v1';
 const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
 const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
 const ATTEMPT_KEY = 'mm-megalearn-assessment-attempts-v1';
@@ -422,6 +428,9 @@ export function CourseStoreProvider({ children }) {
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
   const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
 
+  // Certificate Template: xem chú thích ở CERT_TEMPLATE_KEY phía trên.
+  const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, []));
+
   // Enterprise Org Hierarchy & Job Levels States (BU, Division, Department, Sub-Department, Job Levels)
   const [businessUnits, setBusinessUnits] = useState(() => loadItem(BU_KEY, initialBusinessUnits));
   const [divisions, setDivisions] = useState(() => loadItem(DIV_KEY, initialDivisions));
@@ -480,6 +489,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraries));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
+      localStorage.setItem(CERT_TEMPLATE_KEY, JSON.stringify(certificateTemplates));
       localStorage.setItem(BU_KEY, JSON.stringify(businessUnits));
       localStorage.setItem(DIV_KEY, JSON.stringify(divisions));
       localStorage.setItem(DEPT_KEY, JSON.stringify(departments));
@@ -501,7 +511,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, certificateTemplates, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -862,6 +872,21 @@ export function CourseStoreProvider({ children }) {
     setLibraries((prev) => prev.filter((l) => l.id !== libraryId));
   }, []);
 
+  const addCertificateTemplate = useCallback((template) => {
+    setCertificateTemplates((prev) => [...prev, template]);
+  }, []);
+
+  const updateCertificateTemplate = useCallback((templateId, nextTemplate) => {
+    setCertificateTemplates((prev) => prev.map((t) => (t.id === templateId ? nextTemplate : t)));
+  }, []);
+
+  // UI phải tự tính usage (course/curriculum nào đang certificateTemplateId
+  // == templateId) và chỉ gọi khi = 0, giống deleteCompanyCategory ở trên —
+  // action này không tự kiểm tra lại.
+  const deleteCertificateTemplate = useCallback((templateId) => {
+    setCertificateTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  }, []);
+
   const assignCurriculum = useCallback((curriculumId, assignmentOrAssignments) => {
     const rawList = Array.isArray(assignmentOrAssignments) ? assignmentOrAssignments : [assignmentOrAssignments];
     const newAsgs = rawList.map((assignment) => ({
@@ -939,6 +964,37 @@ export function CourseStoreProvider({ children }) {
     const clean = (name || '').trim();
     if (!clean) return;
     setCompanyCategories((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+  }, []);
+
+  // Đổi tên 1 Category: cascade sang MỌI nơi đang giữ đúng tên cũ (Course,
+  // Curriculum, Assessment, Library domain) để không bao giờ để lại tag "mồ
+  // côi" trỏ về tên không còn tồn tại trong danh sách chuẩn.
+  const renameCompanyCategory = useCallback((oldName, newName) => {
+    const clean = (newName || '').trim();
+    if (!clean || clean === oldName) return;
+    setCompanyCategories((prev) => prev.map((c) => (c === oldName ? clean : c)));
+    setCourses((prev) => prev.map((c) => ({
+      ...c,
+      category: c.category === oldName ? clean : c.category,
+      categories: c.categories ? c.categories.map((cat) => (cat === oldName ? clean : cat)) : c.categories,
+    })));
+    setCurricula((prev) => prev.map((cur) => (cur.category === oldName ? { ...cur, category: clean } : cur)));
+    setAssessments((prev) => prev.map((a) => ({
+      ...a,
+      category: a.category === oldName ? clean : a.category,
+      categories: a.categories ? a.categories.map((cat) => (cat === oldName ? clean : cat)) : a.categories,
+    })));
+    setLibraries((prev) => prev.map((lib) => ({
+      ...lib,
+      domains: (lib.domains || []).map((d) => (d.category === oldName ? { ...d, category: clean } : d)),
+    })));
+  }, []);
+
+  // Xóa 1 Category khỏi danh sách chuẩn. UI phải tự tính usage count và chỉ
+  // gọi hàm này khi = 0 (chặn xóa khi đang dùng) — action ở đây không tự
+  // kiểm tra lại để tránh trùng logic 2 nơi.
+  const deleteCompanyCategory = useCallback((name) => {
+    setCompanyCategories((prev) => prev.filter((c) => c !== name));
   }, []);
 
   // -------------------------------------------------------------------------
@@ -2009,6 +2065,10 @@ export function CourseStoreProvider({ children }) {
         addLibrary,
         updateLibrary,
         deleteLibrary,
+        certificateTemplates,
+        addCertificateTemplate,
+        updateCertificateTemplate,
+        deleteCertificateTemplate,
         assignCurriculum,
         proposeCurriculumAssignment,
         removeCurriculumAssignment,
@@ -2025,6 +2085,8 @@ export function CourseStoreProvider({ children }) {
         recordAssessmentAttempt,
         companyCategories,
         addCompanyCategory,
+        renameCompanyCategory,
+        deleteCompanyCategory,
         accessFor,
         enrollCourse,
         // Trung Tâm Chi Phí (Cost Center)

@@ -16,6 +16,15 @@ const LEARNER_SELF_NAV = [
   { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', labelVi: 'Đánh Giá Giảng Viên (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
 ];
 
+// Nhóm "Quản Trị Hệ Thống" — riêng cho User Admin & System Admin, tách biệt
+// khỏi "Công việc của <role>" vì đây là 2 trang cấu hình toàn hệ thống
+// (Certificate Template & Category), không phải nghiệp vụ quản lý khóa học
+// hàng ngày.
+const SYSTEM_ADMIN_NAV = [
+  { to: '/admin/certifications', label: 'Quản Lý Chứng Chỉ', labelVi: 'Quản Lý Chứng Chỉ', labelEn: 'Manage Certification', icon: 'ti-certificate' },
+  { to: '/admin/categories', label: 'Quản Lý Danh Mục', labelVi: 'Quản Lý Danh Mục', labelEn: 'Manage Category', icon: 'ti-tags' },
+];
+
 // Nhóm "Công việc của <role>" — đặc thù từng role.
 const ROLE_WORK_NAV = {
   learner: [
@@ -100,6 +109,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
   const def = roleDefinition(effectiveRole);
   const workItems = ROLE_WORK_NAV[effectiveRole] || ROLE_WORK_NAV.learner;
   const selfItems = effectiveRole === 'learner' ? [] : LEARNER_SELF_NAV;
+  const systemAdminItems = (effectiveRole === 'useradmin' || effectiveRole === 'sysadmin') ? SYSTEM_ADMIN_NAV : [];
   const profile = authUser && normalizeRole(authUser.role) === effectiveRole ? authUser : personaForRole(effectiveRole);
   const rolePersonaList = ROLE_ORDER.map((r) => personaForRole(r));
   const unreadCount = inbox.filter((n) => n.unread).length;
@@ -211,6 +221,14 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               </div>
               {workItems.map(renderNavItem)}
             </div>
+            {systemAdminItems.length > 0 && (
+              <div className="app-nav-drawer-group">
+                <div className="app-nav-drawer-group-label">
+                  {language === 'en' ? 'System Administration' : 'Quản Trị Hệ Thống'}
+                </div>
+                {systemAdminItems.map(renderNavItem)}
+              </div>
+            )}
             {selfItems.length > 0 && (
               <div className="app-nav-drawer-group">
                 <div className="app-nav-drawer-group-label">

@@ -7,9 +7,9 @@ import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils
 
 export default function LearnerCertificates({ user: propUser, basePath = '/learner/courses' }) {
   const navigate = useNavigate();
-  const { courses, currentUser: authUser, enrollments, language = 'vi' } = useCourseStore();
+  const { courses, currentUser: authUser, enrollments, certificateTemplates, language = 'vi' } = useCourseStore();
   const user = propUser || authUser || currentUser;
-  const rawCertificates = deriveCertificates(courses, user, enrollments);
+  const rawCertificates = deriveCertificates(courses, user, enrollments, certificateTemplates);
   const [selectedCert, setSelectedCert] = useState(null);
   const [filterTab, setFilterTab] = useState('ALL'); // ALL | ACTIVE | DUE_SOON | EXPIRED
 

@@ -18,14 +18,14 @@ import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
-  const { courses: allCourses, currentUser: authUser, enrollments, classrooms, myCourses } = useCourseStore();
+  const { courses: allCourses, currentUser: authUser, enrollments, classrooms, myCourses, certificateTemplates } = useCourseStore();
   const user = authUser || currentUser;
   const [activeChartType, setActiveChartType] = useState('BAR'); // 'BAR' | 'DONUT' | 'LINE'
 
   const userRole = normalizeRole(user.role);
   const isNonLearner = userRole !== 'learner';
   const courses = myCourses ? myCourses(allCourses, user) : myLearningCourses(allCourses, user, enrollments);
-  const certificates = deriveCertificates(allCourses, user, enrollments);
+  const certificates = deriveCertificates(allCourses, user, enrollments, certificateTemplates);
 
   const recertAlerts = courses
     .map((c) => {

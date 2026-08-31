@@ -34,7 +34,7 @@ function formatDate(iso) {
 export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, currentUser: authUser, enrollCourse, accessFor, requestLevelAdvanceApproval, myEnrollments, curricula } = useCourseStore();
+  const { courses, currentUser: authUser, enrollCourse, accessFor, requestLevelAdvanceApproval, myEnrollments, curricula, certificateTemplates } = useCourseStore();
   const user = authUser || currentUser;
   const rawCourse = courses.find((c) => c.id === courseId);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -76,8 +76,8 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
   // và khóa có bật certificateEnabled (xem deriveCertificates() trong mockData.js).
   const certificate = useMemo(() => {
     if (!course) return null;
-    return deriveCertificates(courses, user, myEnrollments).find((cert) => cert.courseId === course.id) || null;
-  }, [courses, user, course, myEnrollments]);
+    return deriveCertificates(courses, user, myEnrollments, certificateTemplates).find((cert) => cert.courseId === course.id) || null;
+  }, [courses, user, course, myEnrollments, certificateTemplates]);
 
   const recert = useMemo(() => {
     return computeCourseRecertification(course, course?.enrollment, certificate);

@@ -33,6 +33,8 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminTrainingOps from './pages/admin/AdminTrainingOps';
 import AdminCostCenter from './pages/admin/AdminCostCenter';
 import AdminLevelRoadmaps from './pages/admin/AdminLevelRoadmaps';
+import AdminCertifications from './pages/admin/AdminCertifications';
+import AdminCategoryManager from './pages/admin/AdminCategoryManager';
 import TrainerHub from './pages/trainer/TrainerHub';
 import MyLearning from './pages/shared/MyLearning';
 import MyCertificates from './pages/shared/MyCertificates';
@@ -101,6 +103,8 @@ const PAGE_META = {
   '/admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'L&D Faculty' },
   '/user-admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'User Admin (Level 2)' },
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
+  '/admin/certifications': { title: 'Quản Lý Chứng Chỉ (Certificate Templates)', crumb: 'System Administration' },
+  '/admin/categories': { title: 'Quản Lý Danh Mục (Category Taxonomy)', crumb: 'System Administration' },
   '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
 };
 
@@ -255,6 +259,8 @@ function Shell({ role, setRole }) {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/cost-center" element={<AdminCostCenter />} />
         <Route path="/admin/roadmaps" element={<AdminLevelRoadmaps />} />
+        <Route path="/admin/certifications" element={<AdminCertifications />} />
+        <Route path="/admin/categories" element={<AdminCategoryManager />} />
 
         <Route path="*" element={<Navigate to={roleHome} replace />} />
       </Routes>

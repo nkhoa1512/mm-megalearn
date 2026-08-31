@@ -1408,7 +1408,12 @@ export function applyAssessmentAttempt(course, { score, passed, answered }) {
   return recomputeEnrollment(next);
 }
 
-export function deriveCertificates(courseList, user, overlay = null) {
+// `certificateTemplates` (từ CourseStore) là tùy chọn — khi khóa có
+// configuration.certificateTemplateId khớp 1 template trong thư viện, các
+// field signerName/signerTitle/issuerOrg của template đó thay thế mặc định
+// trên CertificateModal; ngày cấp vẫn luôn lấy từ enrollment.completedAt của
+// từng học viên (auto khớp ngày hoàn thành, không đổi theo template).
+export function deriveCertificates(courseList, user, overlay = null, certificateTemplates = []) {
   if (!user) return [];
   const list = myLearningCourses(courseList, user, overlay);
   const derived = list
@@ -1424,6 +1429,9 @@ export function deriveCertificates(courseList, user, overlay = null) {
         : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + 1)).toISOString().slice(0, 10)
       );
       const cleanEmpCode = (user.employeeCode || 'EMP-1042').replace('MMVN-', '');
+      const template = c.configuration?.certificateTemplateId
+        ? certificateTemplates.find((t) => t.id === c.configuration.certificateTemplateId) || null
+        : null;
       return {
         id: `CERT-MMVN-${(c.code || c.id).toUpperCase()}-${cleanEmpCode}`,
         courseId: c.id,
@@ -1435,11 +1443,12 @@ export function deriveCertificates(courseList, user, overlay = null) {
         validUntil: validUntil,
         isCompliance: c.courseType === 'MANDATORY',
         score: c.enrollment.score || (passingAttempt ? passingAttempt.score : 90),
-        issuer: 'MM Mega Market Vietnam - Learning & Organizational Development',
+        issuer: template?.issuerOrg || 'MM Mega Market Vietnam - Learning & Organizational Development',
         verificationUrl: `https://megalearn.mmvietnam.com/verify/CERT-MMVN-${c.code || 'LMS'}-${cleanEmpCode}`,
         recipientName: user.fullName,
         recipientPosition: user.position,
         department: orgPathLabel(user),
+        template,
       };
     });
 

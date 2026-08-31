@@ -5,7 +5,7 @@ import {
   meetingRoomsAndLabs, teachingEligibleUsers, nextMajorVersion,
 } from '../../data/mockData';
 import { ASSIGNMENT_TYPES, TARGET_ID_FIELD, targetOptionsFor, assignmentTypeLabel, resolveTargetLabel } from '../../data/assignmentTargets';
-import { Badge, Button, CourseTypeBadge, JobLevelBadge } from '../../features/common/ui';
+import { Badge, Button, CourseTypeBadge, JobLevelBadge, CertificateTemplatePicker } from '../../features/common/ui';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelSystem';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../store/CourseStore';
@@ -875,6 +875,8 @@ export default function AdminCourseBuilder() {
     assessments,
     addAssessment,
     updateAssessment,
+    certificateTemplates,
+    addCertificateTemplate,
   } = useCourseStore();
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
@@ -2987,6 +2989,16 @@ export default function AdminCourseBuilder() {
 
             {cfg.certificateEnabled && (
               <div style={{ marginLeft: 24, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* 0. MẪU CHỨNG CHỈ (Certificate Template) */}
+                <CertificateTemplatePicker
+                  templateId={cfg.certificateTemplateId || null}
+                  onChange={(id) => patchConfig({ certificateTemplateId: id })}
+                  certificateTemplates={certificateTemplates}
+                  companyCategories={companyCategories}
+                  defaultCategory={(draft.categories && draft.categories[0]) || draft.category || companyCategories[0]}
+                  onCreateTemplate={addCertificateTemplate}
+                />
+
                 {/* 1. THỜI HẠN HIỆU LỰC & SỐ NGÀY BÁO TRƯỚC */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>

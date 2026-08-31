@@ -409,6 +409,7 @@ export function QRCodeView({ value, size = 160, label }) {
 // Certificate Preview Modal
 export function CertificateModal({ certificate, isOpen, onClose }) {
   if (!isOpen || !certificate) return null;
+  const tpl = certificate.template;
 
   return (
     <Modal
@@ -462,8 +463,9 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
           <div className="cert-footer">
             <div className="cert-sign-col">
               <div className="cert-sign-line" />
-              <div className="cert-sign-title">Head of Learning &amp; Org Development</div>
-              <div className="cert-sign-org">MM Mega Market Vietnam</div>
+              {tpl?.signerName && <div className="cert-sign-name" style={{ fontWeight: 700, fontSize: 12.5 }}>{tpl.signerName}</div>}
+              <div className="cert-sign-title">{tpl?.signerTitle || 'Head of Learning & Org Development'}</div>
+              <div className="cert-sign-org">{tpl?.issuerOrg || 'MM Mega Market Vietnam'}</div>
             </div>
 
             <div className="cert-qr-col">
@@ -485,6 +487,124 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Picker "Mẫu Chứng Chỉ" dùng chung cho Course Builder & Curriculum Editor —
+// 2 chế độ: (1) chọn 1 mẫu có sẵn từ thư viện Manage Certification, lọc theo
+// Lĩnh Vực; (2) "Import File Mới" tạo nhanh 1 mẫu mới (tên + file đính kèm
+// dạng metadata) rồi gắn luôn — mẫu mới này LUÔN được lưu vào thư viện chung
+// qua onCreateTemplate (không có "mẫu ẩn" riêng cho từng course/curriculum).
+export function CertificateTemplatePicker({ templateId, onChange, certificateTemplates, companyCategories, defaultCategory, onCreateTemplate }) {
+  const [mode, setMode] = useState('existing');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [importName, setImportName] = useState('');
+  const [importFile, setImportFile] = useState(null);
+
+  const filteredTemplates = certificateTemplates.filter((t) => categoryFilter === 'ALL' || t.category === categoryFilter);
+  const selectedTemplate = certificateTemplates.find((t) => t.id === templateId) || null;
+
+  function handleImportFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const sizeLabel = file.size < 1024 * 1024
+      ? `${Math.max(1, Math.round(file.size / 1024))} KB`
+      : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    setImportFile({ name: file.name, sizeLabel });
+  }
+
+  function handleCreateAndAttach() {
+    if (!importName.trim()) return;
+    const now = new Date().toISOString().slice(0, 10);
+    const newTemplate = {
+      id: `CERTTPL-${Date.now()}`,
+      name: importName.trim(),
+      description: '',
+      category: defaultCategory,
+      signerName: '',
+      signerTitle: '',
+      issuerOrg: 'MM Mega Market Vietnam',
+      attachedFile: importFile,
+      createdAt: now,
+      updatedAt: now,
+    };
+    onCreateTemplate(newTemplate);
+    onChange(newTemplate.id);
+    setImportName('');
+    setImportFile(null);
+    setMode('existing');
+  }
+
+  return (
+    <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: 12, border: '1px solid var(--line)' }}>
+      <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 6, display: 'block' }}>
+        <i className="ti ti-certificate" style={{ marginRight: 4, color: 'var(--rail)' }} />
+        Mẫu Chứng Chỉ (Certificate Template)
+      </label>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        <button type="button" className={`btn btn-sm ${mode === 'existing' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('existing')}>
+          Chọn Có Sẵn
+        </button>
+        <button type="button" className={`btn btn-sm ${mode === 'import' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('import')}>
+          Import File Mới
+        </button>
+      </div>
+
+      {mode === 'existing' ? (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select
+            className="field-select"
+            style={{ height: 32, fontSize: 12, width: 150 }}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="ALL">Mọi Lĩnh Vực</option>
+            {companyCategories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            className="field-select"
+            style={{ height: 32, fontSize: 12, flex: '1 1 220px' }}
+            value={templateId || ''}
+            onChange={(e) => onChange(e.target.value || null)}
+          >
+            <option value="">— Không dùng mẫu (giữ layout mặc định) —</option>
+            {filteredTemplates.map((t) => (
+              <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <label className="field-label" style={{ fontSize: 11 }}>Tên Mẫu Mới</label>
+            <input
+              className="field-input"
+              style={{ height: 32, fontSize: 12 }}
+              placeholder="VD: Chứng Chỉ Chuẩn ATVSTP"
+              value={importName}
+              onChange={(e) => setImportName(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: '1 1 200px' }}>
+            <label className="field-label" style={{ fontSize: 11 }}>File Định Dạng (tùy chọn)</label>
+            <input type="file" className="field-input" style={{ height: 32, fontSize: 12, paddingTop: 5 }} onChange={handleImportFile} />
+          </div>
+          <Button size="sm" variant="primary" icon="ti-check" disabled={!importName.trim()} onClick={handleCreateAndAttach}>
+            Tạo &amp; Gắn Mẫu
+          </Button>
+        </div>
+      )}
+
+      {selectedTemplate && (
+        <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--ink-soft)' }}>
+          <i className="ti ti-check" style={{ color: 'var(--sage)', marginRight: 4 }} />
+          Đang dùng mẫu: <strong>{selectedTemplate.name}</strong>
+        </div>
+      )}
+    </div>
   );
 }
 
