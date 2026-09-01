@@ -5,7 +5,7 @@ import { canManage } from '../../data/roles';
 import { Badge, ProgressBar, Button, CourseTypeBadge, Modal } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
-import RoadmapProgressSummary from '../../features/roadmaps/RoadmapProgressSummary';
+import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 
 const STATUS_META = {
   NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu', enLabel: 'Not Started' },
@@ -459,13 +459,26 @@ export default function ManagerTeam() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          icon="ti-map-2"
+                          icon="ti-stairs-up"
                           onClick={() => {
                             const list = users && users.length > 0 ? users : allUsers ? allUsers() : [];
-                            const fullUser = list.find((u) => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
+                            let fullUser = list.find((u) => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name);
+                            if (!fullUser) {
+                              fullUser = {
+                                userId: m.userId || m.employeeId || 'USR-TMP',
+                                employeeCode: m.employeeId,
+                                fullName: m.name,
+                                name: m.name,
+                                position: m.position,
+                                level: m.level || 6,
+                                divisionCode: m.divisionCode || 'OMD',
+                                departmentCode: m.departmentCode || 'PPF',
+                                storeName: m.storeName || activeManager.storeName || 'MM An Phú',
+                              };
+                            }
                             setRoadmapUser(fullUser);
                           }}
-                          title="Xem Lộ Trình Cấp Bậc (Tab 1 & Tab 2) của nhân sự này"
+                          title="Xem Lộ Trình Cấp Bậc (Job Level Roadmap) của nhân sự này"
                         />
                       </div>
                     </td>
@@ -1232,9 +1245,9 @@ export default function ManagerTeam() {
         <Modal
           title={`Lộ Trình Năng Lực Cấp Bậc: ${roadmapUser.fullName || roadmapUser.name} (${roadmapUser.position || 'Nhân Viên'})`}
           onClose={() => setRoadmapUser(null)}
-          maxWidth={880}
+          maxWidth={920}
         >
-          <RoadmapProgressSummary user={roadmapUser} />
+          <RoadmapTabsPanel user={roadmapUser} />
         </Modal>
       )}
 
