@@ -91,10 +91,10 @@ const PAGE_META = {
   '/sysadmin/org-config': { title: 'Cấu Hình Cây Tổ Chức & Đồng Bộ HRIS', crumb: 'System Admin IT (Level 1)' },
 
   '/manager': { title: 'Bảng Điều Khiển Vận Hành Đội Ngũ', crumb: 'Manager (Level 4)' },
-  '/manager/team': { title: 'Nhân Viên Trực Thuộc & Khoảng Cách Năng Lực', crumb: 'Manager (Level 4)' },
+  '/manager/team': { title: 'Quản Lý Đào Tạo & Năng Lực Đội Ngũ', crumb: 'Manager (Level 4)' },
   '/manager/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Manager (Level 4)' },
   '/manager/courses': { title: 'Chương Trình Bắt Buộc Của Phòng Ban', crumb: 'Manager (Level 4)' },
-  '/manager/reports': { title: 'Tiến Độ Học Viên & Báo Cáo Tuân Thủ', crumb: 'Manager (Level 4)' },
+  '/manager/reports': { title: 'Quản Lý Đào Tạo & Năng Lực Đội Ngũ', crumb: 'Manager (Level 4)' },
   '/manager/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Manager (Level 4)' },
 
   '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
@@ -203,7 +203,7 @@ function Shell({ role, setRole }) {
         <Route path="/manager/team" element={<ManagerTeam />} />
         <Route path="/manager/approvals" element={<ManagerApprovals />} />
         <Route path="/manager/courses" element={<ManagerCourses />} />
-        <Route path="/manager/reports" element={<ManagerReports />} />
+        <Route path="/manager/reports" element={<ManagerTeam />} />
         <Route path="/manager/learning" element={<ManagerLearning />} />
         <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
         <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />

@@ -41,10 +41,9 @@ const ROLE_WORK_NAV = {
   ],
   manager: [
     { to: '/manager', label: 'Bảng Điều Khiển Đội Ngũ', labelVi: 'Bảng Điều Khiển Đội Ngũ', labelEn: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/team', label: 'Nhân Viên & Khoảng Cách Năng Lực', labelVi: 'Nhân Viên & Khoảng Cách Năng Lực', labelEn: 'Team Skills & Competencies', icon: 'ti-users' },
+    { to: '/manager/team', label: 'Quản Lý & Đào Tạo Đội Ngũ', labelVi: 'Quản Lý & Đào Tạo Đội Ngũ', labelEn: 'Team Learning & Competencies', icon: 'ti-users' },
     { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', labelVi: 'Khóa Học Của Phòng Ban', labelEn: 'Department Courses', icon: 'ti-stack-2' },
     { to: '/manager/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
-    { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', labelVi: 'Báo Cáo & Tuân Thủ', labelEn: 'Compliance & Reports', icon: 'ti-chart-bar' },
   ],
   trainer: [
     { to: '/trainer', label: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelVi: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },

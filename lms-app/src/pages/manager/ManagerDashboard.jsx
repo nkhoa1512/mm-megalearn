@@ -181,7 +181,7 @@ export default function ManagerDashboard() {
           subtext="Mục tiêu quý: ≥80% hoàn thành"
           tone="rail"
           icon="ti-chart-pie"
-          onClick={() => navigate('/manager/reports')}
+          onClick={() => navigate('/manager/team')}
         />
         <StatTile
           label="Cần Quản Lý Can Thiệp"
@@ -189,6 +189,7 @@ export default function ManagerDashboard() {
           subtext={`${overdue} quá hạn · ${failed} trượt thi · ${needsAttention.length - overdue - failed} ngừng học`}
           tone="rust"
           icon="ti-alert-triangle"
+          onClick={() => navigate('/manager/team')}
         />
       </div>
 
