@@ -79,12 +79,19 @@ export default function AdminCostCenter() {
 
   if (!canView) {
     return (
-      <div className="card card-pad empty-state">
-        <i className="ti ti-lock" aria-hidden="true" />
-        <p>
-          Trung Tâm Chi Phí là báo cáo tài chính đào tạo, chỉ dành cho Quản Lý, Giảng Viên/L&amp;D, HRBP,
-          User Admin và System Admin. Tài khoản của bạn không có quyền xem.
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 540, textAlign: 'center', padding: '48px 24px' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--rust-soft)', color: 'var(--rust)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
+          <i className="ti ti-lock" aria-hidden="true" />
+        </div>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>
+          Truy Cập Bị Giới Hạn (Access Restricted)
+        </h2>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
+          Trung Tâm Chi Phí Đào Tạo là báo cáo tài chính nội bộ, chỉ dành riêng cho <strong>Quản Trị Nhân Sự (User Admin)</strong> và <strong>Quản Trị Hệ Thống (System Admin)</strong>. Các vai trò khác (Học viên, Quản lý, Giảng viên, HRBP) không có quyền truy cập trang này.
         </p>
+        <Button variant="primary" icon="ti-arrow-left" onClick={() => window.history.back()}>
+          Quay Lại Trang Trước
+        </Button>
       </div>
     );
   }

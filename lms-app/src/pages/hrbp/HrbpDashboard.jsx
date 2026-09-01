@@ -84,6 +84,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   const [nominateUserId, setNominateUserId] = useState('');
   const [nominateTargetRole, setNominateTargetRole] = useState('');
   const [nominateMentor, setNominateMentor] = useState('Trần Minh Quang (SGM)');
+  const [successionSearch, setSuccessionSearch] = useState('');
+  const [successionReadinessFilter, setSuccessionReadinessFilter] = useState('ALL');
+  const [successionGroupBy, setSuccessionGroupBy] = useState('NONE');
 
   // Tab 3: Compliance Drilldown & Nudge
   const [storeDrilldown, setStoreDrilldown] = useState(null); // store item
@@ -515,28 +518,126 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       )}
 
       {/* TAB 2: SUCCESSION PIPELINE & 70-20-10 */}
-      {activeTab === 'SUCCESSION' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', borderColor: 'var(--sage)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#166534' }}>
-                  Quy Hoạch Đội Ngũ Kế Nhiệm Khối Vận Hành Siêu Thị (Succession Talent Pool)
+      {activeTab === 'SUCCESSION' && (() => {
+        const filteredTalents = successionTalents.filter((t) => {
+          if (successionReadinessFilter !== 'ALL' && t.readiness !== successionReadinessFilter) return false;
+          if (successionSearch) {
+            const q = successionSearch.toLowerCase().trim();
+            const nameMatch = t.name?.toLowerCase().includes(q);
+            const idMatch = t.id?.toLowerCase().includes(q);
+            const roleMatch = t.currentRole?.toLowerCase().includes(q);
+            const targetMatch = t.targetRole?.toLowerCase().includes(q);
+            const storeMatch = t.store?.toLowerCase().includes(q);
+            if (!nameMatch && !idMatch && !roleMatch && !targetMatch && !storeMatch) return false;
+          }
+          return true;
+        });
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', borderColor: 'var(--sage)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#166534' }}>
+                    Quy Hoạch Đội Ngũ Kế Nhiệm Khối Vận Hành Siêu Thị (Succession Talent Pool)
+                  </div>
+                  <p style={{ fontSize: 12.5, color: '#14532D', margin: '4px 0 0' }}>
+                    Theo dõi tiến độ phát triển năng lực theo mô hình 70-20-10 của các ứng viên kế nhiệm vị trí Giám đốc Siêu thị (SGM) và Trưởng quầy ngành hàng.
+                  </p>
                 </div>
-                <p style={{ fontSize: 12.5, color: '#14532D', margin: '4px 0 0' }}>
-                  Theo dõi tiến độ phát triển năng lực theo mô hình 70-20-10 của các ứng viên kế nhiệm vị trí Giám đốc Siêu thị (SGM) và Trưởng quầy ngành hàng.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <Badge tone="sage">{successionTalents.length} Nhân Sự Trong Talent Pool</Badge>
-                <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
-                  Đề Cử Ứng Viên Mới
-                </Button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <Badge tone="sage">{successionTalents.length} Nhân Sự Trong Talent Pool</Badge>
+                  <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
+                    Đề Cử Ứng Viên Mới
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="card card-pad">
+            {/* STANDARDIZED FILTER TOOLBAR */}
+            <div className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
+                {/* Search input */}
+                <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
+                  <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                  <input
+                    type="text"
+                    className="field-input"
+                    style={{ paddingLeft: 36, paddingRight: successionSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                    placeholder="Tìm theo tên nhân sự, mã NV, chức danh, siêu thị..."
+                    value={successionSearch}
+                    onChange={(e) => setSuccessionSearch(e.target.value)}
+                  />
+                  {successionSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setSuccessionSearch('')}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                    >
+                      <i className="ti ti-x" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Readiness filter */}
+                <div style={{ minWidth: 200 }}>
+                  <select
+                    className="field-select"
+                    style={{
+                      width: '100%',
+                      height: 38,
+                      fontSize: 12.5,
+                      borderRadius: 8,
+                      background: successionReadinessFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                      borderColor: successionReadinessFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
+                      color: successionReadinessFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                      fontWeight: successionReadinessFilter !== 'ALL' ? 700 : 500,
+                    }}
+                    value={successionReadinessFilter}
+                    onChange={(e) => setSuccessionReadinessFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả mức độ sẵn sàng</option>
+                    <option value="READY_NOW">🟢 Sẵn Sàng Ngay (Ready Now)</option>
+                    <option value="READY_IN_6_MONTHS">🟡 Sẵn Sàng Sau 6 Tháng</option>
+                    <option value="READY_IN_1_YEAR">🔵 Sẵn Sàng Sau 1-2 Năm</option>
+                    <option value="DEVELOPING">⚪ Đang Bồi Dưỡng (Developing)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ACTIVE FILTER TAGS & RESET */}
+              {(successionSearch || successionReadinessFilter !== 'ALL') && (
+                <div style={{ paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+                    {successionSearch && (
+                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Từ khóa: <strong>"{successionSearch}"</strong>
+                        <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSuccessionSearch('')} />
+                      </span>
+                    )}
+                    {successionReadinessFilter !== 'ALL' && (
+                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Mức sẵn sàng: <strong>{successionReadinessFilter}</strong>
+                        <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSuccessionReadinessFilter('ALL')} />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setSuccessionSearch(''); setSuccessionReadinessFilter('ALL'); }}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
+                    >
+                      Xóa tất cả bộ lọc
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                    Tìm thấy <strong>{filteredTalents.length}</strong> / {successionTalents.length} ứng viên
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card card-pad">
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
@@ -549,7 +650,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 </tr>
               </thead>
               <tbody>
-                {successionTalents.map((talent) => (
+                {filteredTalents.map((talent) => (
                   <tr key={talent.id}>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13.5 }}>{talent.name}</div>
@@ -729,7 +830,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* TAB 3: REGIONAL COMPLIANCE MAP & NUDGE */}
       {activeTab === 'COMPLIANCE' && (

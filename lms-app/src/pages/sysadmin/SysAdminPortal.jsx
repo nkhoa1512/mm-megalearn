@@ -39,7 +39,8 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
   // Hồ sơ nhân sự đang mở trong modal (null = đóng).
   const [transcriptUser, setTranscriptUser] = useState(null);
 
-  // Security Policy States
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditLevelFilter, setAuditLevelFilter] = useState('ALL');
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [windowBlurGuard, setWindowBlurGuard] = useState(true);
   const [sessionTimeoutMins, setSessionTimeoutMins] = useState(30);
@@ -216,54 +217,161 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
       )}
 
       {/* TAB 2: AUDIT LOGS */}
-      {activeTab === 'AUDIT_LOGS' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
-                Nhật Ký Kiểm Toán An Ninh &amp; Giám Sát Truy Cập (Security Audit Logs)
-              </div>
-              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
-                Ghi nhận 100% các hành động đăng nhập, phân quyền, cấp chứng chỉ và xuất dữ liệu tuân thủ chuẩn ISO 27001.
-              </p>
-            </div>
-            <Button variant="outline" icon="ti-download">
-              Xuất File Log Kiểm Toán (.LOG)
-            </Button>
-          </div>
+      {activeTab === 'AUDIT_LOGS' && (() => {
+        const auditLogData = [
+          { time: '2026-08-24 16:15:22', ip: '113.161.42.18 (HCMC)', user: 'Tran Quoc Bao (sysadmin)', action: 'Phê duyệt cấu hình chính sách bảo mật hệ thống v2.1', level: 'INFO', tone: 'blue' },
+          { time: '2026-08-24 15:40:10', ip: '14.169.88.204 (HCMC)', user: 'Sarah Nguyen (admin)', action: 'Xuất bản khóa học: Thực hành Lò nướng Bánh & HACCP', level: 'NOTICE', tone: 'sage' },
+          { time: '2026-08-24 14:20:05', ip: '171.244.12.90 (Hanoi)', user: 'Minh Tran (learner)', action: 'Hoàn thành bài thi trắc nghiệm HACCP đạt 100/100 điểm', level: 'INFO', tone: 'blue' },
+          { time: '2026-08-24 11:10:45', ip: '42.112.30.15 (HCMC)', user: 'Le Thi Mai (useradmin)', action: 'Cập nhật chức danh nhân sự cho 3 cán bộ quầy thu ngân', level: 'NOTICE', tone: 'sage' },
+          { time: '2026-08-24 09:05:12', ip: '118.69.182.50 (Danang)', user: 'Nguyen Van Hung (trainer)', action: 'Kích hoạt mã Live QR Điểm danh Lớp Thực hành Quầy Bánh', level: 'INFO', tone: 'blue' },
+        ];
 
-          <div className="card" style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Thời Gian</th>
-                  <th>Địa Chỉ IP</th>
-                  <th>Tài Khoản / Người Dùng</th>
-                  <th>Hành Động Hệ Thống (Event Action)</th>
-                  <th>Kết Quả / Mức Độ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { time: '2026-08-24 16:15:22', ip: '113.161.42.18 (HCMC)', user: 'Tran Quoc Bao (sysadmin)', action: 'Phê duyệt cấu hình chính sách bảo mật hệ thống v2.1', level: 'INFO', tone: 'blue' },
-                  { time: '2026-08-24 15:40:10', ip: '14.169.88.204 (HCMC)', user: 'Sarah Nguyen (admin)', action: 'Xuất bản khóa học: Thực hành Lò nướng Bánh & HACCP', level: 'NOTICE', tone: 'sage' },
-                  { time: '2026-08-24 14:20:05', ip: '171.244.12.90 (Hanoi)', user: 'Minh Tran (learner)', action: 'Hoàn thành bài thi trắc nghiệm HACCP đạt 100/100 điểm', level: 'INFO', tone: 'blue' },
-                  { time: '2026-08-24 11:10:45', ip: '42.112.30.15 (HCMC)', user: 'Le Thi Mai (useradmin)', action: 'Cập nhật chức danh nhân sự cho 3 cán bộ quầy thu ngân', level: 'NOTICE', tone: 'sage' },
-                  { time: '2026-08-24 09:05:12', ip: '118.69.182.50 (Danang)', user: 'Nguyen Van Hung (trainer)', action: 'Kích hoạt mã Live QR Điểm danh Lớp Thực hành Quầy Bánh', level: 'INFO', tone: 'blue' },
-                ].map((item, idx) => (
-                  <tr key={idx}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{item.time}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--ink-soft)' }}>{item.ip}</td>
-                    <td><strong>{item.user}</strong></td>
-                    <td style={{ color: 'var(--ink)' }}>{item.action}</td>
-                    <td><Badge tone={item.tone}>{item.level}</Badge></td>
+        const filteredLogs = auditLogData.filter((item) => {
+          if (auditLevelFilter !== 'ALL' && item.level !== auditLevelFilter) return false;
+          if (auditSearch) {
+            const q = auditSearch.toLowerCase().trim();
+            const ipMatch = item.ip.toLowerCase().includes(q);
+            const userMatch = item.user.toLowerCase().includes(q);
+            const actionMatch = item.action.toLowerCase().includes(q);
+            if (!ipMatch && !userMatch && !actionMatch) return false;
+          }
+          return true;
+        });
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
+                  Nhật Ký Kiểm Toán An Ninh &amp; Giám Sát Truy Cập (Security Audit Logs)
+                </div>
+                <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
+                  Ghi nhận 100% các hành động đăng nhập, phân quyền, cấp chứng chỉ và xuất dữ liệu tuân thủ chuẩn ISO 27001.
+                </p>
+              </div>
+              <Button variant="outline" icon="ti-download">
+                Xuất File Log Kiểm Toán (.LOG)
+              </Button>
+            </div>
+
+            {/* STANDARDIZED FILTER TOOLBAR CARD */}
+            <div className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                {/* Search input */}
+                <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
+                  <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                  <input
+                    type="text"
+                    className="field-input"
+                    style={{ paddingLeft: 36, paddingRight: auditSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                    placeholder="Tìm theo địa chỉ IP, người dùng, hành động..."
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                  />
+                  {auditSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setAuditSearch('')}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                    >
+                      <i className="ti ti-x" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Level Filter */}
+                <div style={{ minWidth: 180 }}>
+                  <select
+                    className="field-select"
+                    style={{
+                      width: '100%',
+                      height: 38,
+                      fontSize: 12.5,
+                      borderRadius: 8,
+                      background: auditLevelFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                      borderColor: auditLevelFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
+                      color: auditLevelFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                      fontWeight: auditLevelFilter !== 'ALL' ? 700 : 500,
+                    }}
+                    value={auditLevelFilter}
+                    onChange={(e) => setAuditLevelFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả mức độ</option>
+                    <option value="INFO">🔵 INFO</option>
+                    <option value="NOTICE">🟢 NOTICE</option>
+                    <option value="WARNING">🟡 WARNING</option>
+                    <option value="ERROR">🔴 ERROR</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ACTIVE FILTER TAGS & RESET */}
+              {(auditSearch || auditLevelFilter !== 'ALL') && (
+                <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+                    {auditSearch && (
+                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Từ khóa: <strong>"{auditSearch}"</strong>
+                        <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setAuditSearch('')} />
+                      </span>
+                    )}
+                    {auditLevelFilter !== 'ALL' && (
+                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Mức độ: <strong>{auditLevelFilter}</strong>
+                        <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setAuditLevelFilter('ALL')} />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setAuditSearch(''); setAuditLevelFilter('ALL'); }}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
+                    >
+                      Xóa tất cả bộ lọc
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                    Tìm thấy <strong>{filteredLogs.length}</strong> / {auditLogData.length} bản ghi
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC' }}>
+                    <th>Thời Gian</th>
+                    <th>Địa Chỉ IP</th>
+                    <th>Tài Khoản / Người Dùng</th>
+                    <th>Hành Động Hệ Thống (Event Action)</th>
+                    <th>Kết Quả / Mức Độ</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--ink-soft)' }}>
+                        Không tìm thấy bản ghi log nào khớp với bộ lọc.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLogs.map((item, idx) => (
+                      <tr key={idx}>
+                        <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{item.time}</td>
+                        <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--ink-soft)' }}>{item.ip}</td>
+                        <td><strong>{item.user}</strong></td>
+                        <td style={{ color: 'var(--ink)' }}>{item.action}</td>
+                        <td><Badge tone={item.tone}>{item.level}</Badge></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 3: SECURITY POLICIES */}
       {activeTab === 'POLICIES' && (

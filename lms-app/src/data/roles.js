@@ -34,9 +34,8 @@ export const ROLE_DEFINITIONS = [
     summaryVi: 'Quản lý nhân viên phòng ban và theo dõi tiến độ học tập của đội ngũ.',
     // Duyệt đơn học vượt cấp KHÔNG còn ở Manager — chỉ User Admin/SysAdmin
     // mới thấy và duyệt (xem roles useradmin/sysadmin bên dưới).
-    // Manager xem được Trung Tâm Chi Phí NHƯNG chỉ phần chi phí đào tạo của
-    // chính Division mình (không có canViewAllCostCenters).
-    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat', 'canViewCostCenter'],
+    // Trung Tâm Chi Phí Đào Tạo CHỈ dành riêng cho User Admin & SysAdmin.
+    capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat'],
   },
   {
     id: 'trainer',
@@ -55,9 +54,6 @@ export const ROLE_DEFINITIONS = [
       // canAuthorOnlineCourses, không có canAssignTrainers (chỉ tự đứng lớp).
       // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
       'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance', 'canViewCsat',
-      // L&D theo dõi toàn bộ chi phí đào tạo để lập kế hoạch khóa, nhưng không
-      // được sửa bảng giá (quyền tài chính thuộc User Admin/SysAdmin).
-      'canViewCostCenter', 'canViewAllCostCenters',
     ],
   },
   {
@@ -81,7 +77,6 @@ export const ROLE_DEFINITIONS = [
       // Giáo trình: HRBP CHỈ được xem (không sửa/xóa) và đề xuất ứng viên nhân
       // tài vào học — đề xuất phải qua User Admin/SysAdmin duyệt mới có hiệu lực.
       'canProposeCurriculum',
-      'canViewCostCenter', 'canViewAllCostCenters',
     ],
   },
   {

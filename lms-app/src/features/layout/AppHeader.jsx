@@ -45,19 +45,16 @@ const ROLE_WORK_NAV = {
     { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', labelVi: 'Khóa Học Của Phòng Ban', labelEn: 'Department Courses', icon: 'ti-stack-2' },
     { to: '/manager/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
     { to: '/manager/reports', label: 'Báo Cáo & Tuân Thủ', labelVi: 'Báo Cáo & Tuân Thủ', labelEn: 'Compliance & Reports', icon: 'ti-chart-bar' },
-    { to: '/manager/cost-center', label: 'Chi Phí Đào Tạo Phòng Ban', labelVi: 'Chi Phí Đào Tạo Phòng Ban', labelEn: 'Department Training Cost', icon: 'ti-report-money' },
   ],
   trainer: [
     { to: '/trainer', label: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelVi: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },
     { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
     { to: '/trainer/reports', label: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelVi: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
-    { to: '/admin/cost-center', label: 'Trung Tâm Chi Phí Đào Tạo', labelVi: 'Trung Tâm Chi Phí Đào Tạo', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
   ],
   hrbp: [
     { to: '/hrbp', label: 'Phân Tích Nhân Tài & Tuân Thủ', labelVi: 'Phân Tích Nhân Tài & Tuân Thủ', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },
     { to: '/hrbp/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
     { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
-    { to: '/admin/cost-center', label: 'Trung Tâm Chi Phí Đào Tạo', labelVi: 'Trung Tâm Chi Phí Đào Tạo', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
   ],
   useradmin: [
     { to: '/user-admin', label: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelVi: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelEn: 'User & Org Administration', icon: 'ti-users-group', end: true },

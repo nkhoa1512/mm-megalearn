@@ -204,7 +204,6 @@ function Shell({ role, setRole }) {
         <Route path="/manager/approvals" element={<ManagerApprovals />} />
         <Route path="/manager/courses" element={<ManagerCourses />} />
         <Route path="/manager/reports" element={<ManagerReports />} />
-        <Route path="/manager/cost-center" element={<AdminCostCenter />} />
         <Route path="/manager/learning" element={<ManagerLearning />} />
         <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
         <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />

@@ -30,6 +30,7 @@ export default function HrbpCurriculumTab() {
 
   const [activeFilter, setActiveFilter] = useState('MINE'); // 'MINE' | 'PROPOSED' | 'ALL'
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
   const [nominateModal, setNominateModal] = useState({ open: false, curriculum: null });
   const [toastMessage, setToastMessage] = useState(null);
@@ -62,6 +63,12 @@ export default function HrbpCurriculumTab() {
 
   const allUserOptions = useMemo(() => targetOptionsFor('USER') || [], []);
 
+  const categories = useMemo(() => {
+    const set = new Set();
+    (curricula || []).forEach((c) => { if (c.category) set.add(c.category); });
+    return Array.from(set);
+  }, [curricula]);
+
   // Filtered lists for the active tab view
   const currentList = useMemo(() => {
     let list = [];
@@ -69,15 +76,19 @@ export default function HrbpCurriculumTab() {
     else if (activeFilter === 'PROPOSED') list = proposed;
     else list = publishedCurricula;
 
-    if (!search.trim()) return list;
-    const q = search.toLowerCase();
-    return list.filter(
-      (c) =>
-        (c.title && c.title.toLowerCase().includes(q)) ||
-        (c.category && c.category.toLowerCase().includes(q)) ||
-        (c.description && c.description.toLowerCase().includes(q))
-    );
-  }, [activeFilter, mine, proposed, publishedCurricula, search]);
+    return list.filter((c) => {
+      if (categoryFilter !== 'ALL' && c.category !== categoryFilter) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const match =
+          (c.title && c.title.toLowerCase().includes(q)) ||
+          (c.category && c.category.toLowerCase().includes(q)) ||
+          (c.description && c.description.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [activeFilter, mine, proposed, publishedCurricula, search, categoryFilter]);
 
   const proposalsList = useMemo(() => {
     const raw = myCurriculumProposals ? myCurriculumProposals(currentUser) : [];
@@ -200,19 +211,59 @@ export default function HrbpCurriculumTab() {
         </div>
       </div>
 
-      {/* Filter Selector & Search */}
-      <div
-        className="card card-pad"
-        style={{
-          marginBottom: 20,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* STANDARDIZED FILTER TOOLBAR CARD */}
+      <div className="card card-pad" style={{ marginBottom: 20, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+        {/* ROW 1: SEARCH & CATEGORY FILTER */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
+          {/* Search input */}
+          <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
+            <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+            <input
+              type="text"
+              className="field-input"
+              style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+              placeholder="Tìm theo tên giáo trình, lĩnh vực..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+              >
+                <i className="ti ti-x" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Filter */}
+          <div style={{ minWidth: 200 }}>
+            <select
+              className="field-select"
+              style={{
+                width: '100%',
+                height: 38,
+                fontSize: 12.5,
+                borderRadius: 8,
+                background: categoryFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                borderColor: categoryFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
+                color: categoryFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                fontWeight: categoryFilter !== 'ALL' ? 700 : 500,
+              }}
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="ALL">Tất cả lĩnh vực</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* TAB FILTER BUTTONS */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
             { id: 'MINE', label: 'Giáo Trình Của Bản Thân', icon: 'ti-user-check', count: mine.length },
             { id: 'PROPOSED', label: 'Giáo Trình Tôi Đã Đề Xuất', icon: 'ti-send', count: proposed.length },
@@ -225,22 +276,24 @@ export default function HrbpCurriculumTab() {
                 setActiveFilter(tab.id);
                 setSearch('');
               }}
-              className="btn btn-sm"
+              className={`btn btn-sm ${activeFilter === tab.id ? 'btn-primary' : 'btn-outline'}`}
               style={{
-                background: activeFilter === tab.id ? 'var(--blue)' : 'var(--paper-raised)',
-                color: activeFilter === tab.id ? '#fff' : 'var(--ink)',
-                borderColor: activeFilter === tab.id ? 'var(--blue)' : 'var(--line-strong)',
-                fontWeight: activeFilter === tab.id ? 700 : 500,
+                borderRadius: 20,
+                fontSize: 12,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
+                borderColor: activeFilter === tab.id ? 'var(--blue)' : 'var(--line)',
+                background: activeFilter === tab.id ? 'var(--blue)' : 'transparent',
+                color: activeFilter === tab.id ? '#fff' : 'var(--ink)',
+                fontWeight: activeFilter === tab.id ? 700 : 500,
               }}
             >
               <i className={`ti ${tab.icon}`} />
               <span>{tab.label}</span>
               <span
                 style={{
-                  background: activeFilter === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--paper-sunken)',
+                  background: activeFilter === tab.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
                   color: activeFilter === tab.id ? '#fff' : 'var(--ink-soft)',
                   padding: '1px 6px',
                   borderRadius: 10,
@@ -254,17 +307,36 @@ export default function HrbpCurriculumTab() {
           ))}
         </div>
 
-        <div style={{ position: 'relative', width: 240, flexShrink: 0 }}>
-          <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 9, color: 'var(--ink-faint)', fontSize: 13 }} />
-          <input
-            type="text"
-            className="field-input"
-            style={{ paddingLeft: 30, height: 32, fontSize: 12, width: '100%' }}
-            placeholder="Tìm theo tên giáo trình, lĩnh vực..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        {/* ACTIVE FILTER TAGS & RESET */}
+        {(search || categoryFilter !== 'ALL') && (
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              {search && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Từ khóa: <strong>"{search}"</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
+                </span>
+              )}
+              {categoryFilter !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Lĩnh vực: <strong>{categoryFilter}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setCategoryFilter('ALL')} />
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => { setSearch(''); setCategoryFilter('ALL'); }}
+                style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Tìm thấy <strong>{currentList.length}</strong> giáo trình
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grid of Curricula Cards */}

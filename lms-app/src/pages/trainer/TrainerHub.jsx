@@ -15,20 +15,18 @@ import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const navigate = useNavigate();
   const { courses, currentUser: authUser, users } = useCourseStore();
-  // CLASSES | ATTENDANCE | FEEDBACK | LABS — chọn qua điều hướng sidebar
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED
+  const [classSearch, setClassSearch] = useState('');
+  const [classModalityFilter, setClassModalityFilter] = useState('ALL');
+  const [classGroupBy, setClassGroupBy] = useState('NONE');
   const [transcriptUser, setTranscriptUser] = useState(null);
   const [activeChartTab, setActiveChartTab] = useState('BAR'); // 'BAR' | 'LINE'
 
   const authRole = normalizeRole(authUser?.role);
   const canBeAssignedToClass = hasCapability(authRole, 'canBeAssignedToClass');
 
-  // Danh sách người đủ chuẩn đứng lớp: Trainer/L&D, HRBP, User Admin, SysAdmin.
-  // Mặc định xem lịch dạy của chính người đang đăng nhập; vẫn giữ dropdown để
-  // xem thử lịch của người khác (tiện demo), nhưng nguồn dữ liệu giờ là nhân
-  // sự thật thay vì hồ sơ tĩnh trainersDirectory.
   const eligibleTrainers = teachingEligibleUsers();
   const [selectedTrainerId, setSelectedTrainerId] = useState(authUser?.userId || eligibleTrainers[0]?.userId);
   useEffect(() => {
@@ -41,9 +39,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   // Filter in-person courses taught specifically by selected trainer
   const inPersonCourses = courses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB');
 
-  // Lớp Học Trực Tuyến Trực Tiếp (Virtual Class) do trainer này chủ trì — tái
-  // dùng nguyên cơ chế "Lớp Học Phụ Trách"/Điểm Danh bên dưới, chỉ khác nút
-  // hành động (Host Meeting thay vì QR) vì không có mã QR vật lý từ xa.
+  // Lớp Học Trực Tuyến Trực Tiếp (Virtual Class) do trainer này chủ trì
   const virtualClassCourses = courses
 
     .filter((c) => c.deliveryType === 'ONLINE_ELEARNING' && c.onlineClassType === 'VIRTUAL_CLASS')
@@ -134,9 +130,25 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
     };
   });
 
+  const TRAINER_GROUP_BY_OPTIONS = [
+    { id: 'NONE', label: 'Không gộp nhóm' },
+    { id: 'MODALITY', label: 'Theo Hình Thức Đào Tạo' },
+    { id: 'STATUS', label: 'Theo Trạng Thái Lớp' },
+  ];
+
   const filteredClasses = myTeachingClasses.filter((cls) => {
-    if (statusFilter === 'UPCOMING') return cls.status === 'UPCOMING' || cls.status === 'OPEN';
-    if (statusFilter === 'COMPLETED') return cls.status === 'COMPLETED';
+    if (statusFilter === 'UPCOMING' && !(cls.status === 'UPCOMING' || cls.status === 'OPEN')) return false;
+    if (statusFilter === 'COMPLETED' && cls.status !== 'COMPLETED') return false;
+    if (classModalityFilter === 'IN_PERSON' && cls.isVirtual) return false;
+    if (classModalityFilter === 'VIRTUAL' && !cls.isVirtual) return false;
+    if (classSearch) {
+      const q = classSearch.toLowerCase().trim();
+      const titleMatch = cls.title?.toLowerCase().includes(q);
+      const codeMatch = cls.code?.toLowerCase().includes(q);
+      const venueMatch = cls.venue?.toLowerCase().includes(q);
+      const catMatch = cls.category?.toLowerCase().includes(q);
+      if (!titleMatch && !codeMatch && !venueMatch && !catMatch) return false;
+    }
     return true;
   });
 
@@ -595,27 +607,154 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       {/* TAB 1: TEACHING CLASSES */}
       {activeTab === 'CLASSES' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              Danh sách các lớp học đào tạo trực tiếp <strong>do L&amp;D phân công Giảng viên {trainerProfile.fullName} giảng dạy</strong>:
+          {/* STANDARDIZED FILTER TOOLBAR CARD */}
+          <div className="card card-pad" style={{ marginBottom: 20, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+            {/* ROW 1: SEARCH & MODALITY */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
+              {/* Search input */}
+              <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
+                <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                <input
+                  type="text"
+                  className="field-input"
+                  style={{ paddingLeft: 36, paddingRight: classSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                  placeholder="Tìm theo tên lớp, mã lớp, địa điểm đào tạo..."
+                  value={classSearch}
+                  onChange={(e) => setClassSearch(e.target.value)}
+                />
+                {classSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setClassSearch('')}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                  >
+                    <i className="ti ti-x" />
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Group By */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                  <select
+                    value={classGroupBy}
+                    onChange={(e) => setClassGroupBy(e.target.value)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      fontSize: 12.5,
+                      fontWeight: classGroupBy !== 'NONE' ? 700 : 500,
+                      color: classGroupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="NONE">Không gộp nhóm</option>
+                    <option value="MODALITY">Theo Hình Thức</option>
+                    <option value="STATUS">Theo Trạng Thái</option>
+                  </select>
+                </div>
+
+                {/* Modality Filter */}
+                <div style={{ minWidth: 200 }}>
+                  <select
+                    className="field-select"
+                    style={{
+                      width: '100%',
+                      height: 38,
+                      fontSize: 12.5,
+                      borderRadius: 8,
+                      background: classModalityFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                      borderColor: classModalityFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
+                      color: classModalityFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                      fontWeight: classModalityFilter !== 'ALL' ? 700 : 500,
+                    }}
+                    value={classModalityFilter}
+                    onChange={(e) => setClassModalityFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả hình thức đào tạo</option>
+                    <option value="IN_PERSON">🏪 Thực Hành Xưởng Siêu Thị</option>
+                    <option value="VIRTUAL">💻 Trực Tuyến Live (Teams/Zoom)</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {['ALL', 'UPCOMING', 'COMPLETED'].map((st) => (
+
+            {/* STATUS FILTER PILLS */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { id: 'ALL', label: 'Tất Cả Lớp Học', count: myTeachingClasses.length },
+                { id: 'UPCOMING', label: 'Lớp Sắp Diễn Ra', count: myTeachingClasses.filter(c => c.status === 'UPCOMING' || c.status === 'OPEN').length },
+                { id: 'COMPLETED', label: 'Lớp Đã Hoàn Thành', count: myTeachingClasses.filter(c => c.status === 'COMPLETED').length },
+              ].map((st) => (
                 <button
-                  key={st}
-                  onClick={() => setStatusFilter(st)}
-                  className="btn btn-sm"
+                  key={st.id}
+                  onClick={() => setStatusFilter(st.id)}
+                  className={`btn btn-sm ${statusFilter === st.id ? 'btn-primary' : 'btn-outline'}`}
                   style={{
-                    background: statusFilter === st ? 'var(--blue-soft)' : 'transparent',
-                    color: statusFilter === st ? 'var(--blue)' : 'var(--ink-soft)',
-                    borderColor: statusFilter === st ? 'var(--blue)' : 'var(--line)',
-                    fontWeight: statusFilter === st ? 700 : 500,
+                    borderRadius: 20,
+                    fontSize: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderColor: statusFilter === st.id ? 'var(--blue)' : 'var(--line)',
+                    background: statusFilter === st.id ? 'var(--blue)' : 'transparent',
+                    color: statusFilter === st.id ? '#fff' : 'var(--ink)',
+                    fontWeight: statusFilter === st.id ? 700 : 500,
                   }}
                 >
-                  {st === 'ALL' ? 'Tất cả Lớp' : st === 'UPCOMING' ? 'Lớp Sắp Diễn Ra' : 'Lớp Đã Hoàn Thành'}
+                  {st.label}
+                  <span style={{
+                    background: statusFilter === st.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
+                    color: statusFilter === st.id ? '#fff' : 'var(--ink-soft)',
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                  }}>
+                    {st.count}
+                  </span>
                 </button>
               ))}
             </div>
+
+            {/* ACTIVE FILTER TAGS & RESET */}
+            {(classSearch || statusFilter !== 'ALL' || classModalityFilter !== 'ALL') && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+                  {classSearch && (
+                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Từ khóa: <strong>"{classSearch}"</strong>
+                      <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setClassSearch('')} />
+                    </span>
+                  )}
+                  {statusFilter !== 'ALL' && (
+                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Trạng thái: <strong>{statusFilter === 'UPCOMING' ? 'Sắp diễn ra' : 'Đã hoàn thành'}</strong>
+                      <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setStatusFilter('ALL')} />
+                    </span>
+                  )}
+                  {classModalityFilter !== 'ALL' && (
+                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Hình thức: <strong>{classModalityFilter === 'IN_PERSON' ? 'Thực hành xưởng' : 'Trực tuyến Webinar'}</strong>
+                      <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setClassModalityFilter('ALL')} />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setClassSearch(''); setStatusFilter('ALL'); setClassModalityFilter('ALL'); }}
+                    style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
+                  >
+                    Xóa tất cả bộ lọc
+                  </button>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                  Tìm thấy <strong>{filteredClasses.length}</strong> / {myTeachingClasses.length} lớp học
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
