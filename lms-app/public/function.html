@@ -158,18 +158,57 @@
   .section-sub{font-size:13.5px; color:var(--ink-soft); max-width:680px; margin-bottom:22px;}
   h3.sub-title{font-size:15px; font-weight:700; margin:30px 0 10px;}
 
+  /* ===== phase timeline ===== */
+  .phase-track{display:flex; align-items:center; gap:0; margin:28px 0 32px; flex-wrap:wrap; row-gap:10px;}
+  .phase-track-node{display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; background:var(--paper-raised); border:1px solid var(--line); box-shadow:var(--shadow-card); text-decoration:none; color:inherit;}
+  .phase-track-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .phase-track-node b{font-family:var(--font-display); font-weight:700; font-size:12.5px;}
+  .phase-track-node span{font-size:11px; color:var(--ink-faint); font-family:var(--font-mono);}
+  .phase-track-arrow{color:var(--ink-faint); font-size:15px; margin:0 6px; flex-shrink:0;}
+
+  .phase-grid{display:flex; flex-direction:column; gap:16px; margin-top:8px;}
+  .phase-card{
+    display:flex; gap:20px; padding:22px 24px; border-radius:var(--radius-lg); background:var(--paper-raised);
+    border:1px solid var(--line); border-left:4px solid var(--phase-accent); box-shadow:var(--shadow-card); flex-wrap:wrap;
+  }
+  .phase-num{
+    width:44px; height:44px; border-radius:10px; background:var(--phase-accent-soft); color:var(--phase-accent-soft-text);
+    display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:15px; flex-shrink:0;
+  }
+  .phase-body{flex:1; min-width:260px;}
+  .phase-body h3{font-size:16.5px; font-weight:800; margin:0;}
+  .phase-body .phase-en{font-size:12px; color:var(--ink-faint); font-weight:600; margin-top:1px;}
+  .phase-body .phase-goal{font-size:13.2px; color:var(--ink-soft); margin-top:9px; line-height:1.6; max-width:640px;}
+  .phase-deliverables{display:flex; flex-wrap:wrap; gap:6px; margin-top:13px;}
+  .phase-chip{font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px; background:var(--phase-accent-soft); color:var(--phase-accent-soft-text);}
+  .phase-meta{display:flex; flex-direction:column; gap:8px; align-items:flex-end; flex-shrink:0; min-width:150px;}
+  .phase-time{font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--ink);}
+  .phase-roles{font-size:11.5px; color:var(--ink-faint); text-align:right;}
+  .phase-status{font-size:11px; font-weight:700; padding:5px 11px; border-radius:999px; white-space:nowrap;}
+  .phase-status.done{background:var(--green-soft); color:var(--green-soft-text);}
+  .phase-status.pending{background:var(--slate-soft); color:var(--slate-soft-text);}
+  .timeline-note{margin-top:16px; padding:12px 16px; border-radius:var(--radius-md); background:var(--paper-sunken); border:1px solid var(--line); font-size:12.3px; color:var(--ink-soft); max-width:760px;}
+
   /* ===== rbac matrix ===== */
   .table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:var(--shadow-card);}
-  table.matrix{width:100%; min-width:760px; font-size:13px;}
+  table.matrix{width:100%; min-width:1180px; font-size:13px;}
   table.matrix th, table.matrix td{padding:10px 13px; text-align:center; border-bottom:1px solid var(--line); white-space:nowrap;}
   table.matrix th{background:var(--paper-sunken); font-family:var(--font-display); font-weight:700; font-size:12px;}
   table.matrix td:first-child, table.matrix th:first-child{text-align:left; position:sticky; left:0; background:var(--paper-raised); font-weight:600; white-space:normal; min-width:220px;}
   table.matrix th:first-child{background:var(--paper-sunken);}
+  table.matrix td.mx-desc{text-align:left; white-space:normal; min-width:260px; max-width:320px; color:var(--ink-soft); font-size:12.3px; line-height:1.5;}
+  table.matrix td.mx-time{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  table.matrix tbody tr.mx-phase-start td{border-top:2px solid var(--line-strong);}
   table.matrix tr:last-child td{border-bottom:none;}
   .mk{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:6px; font-size:12px; font-weight:800;}
   .mk-yes{background:var(--green-soft); color:var(--green-soft-text);}
   .mk-no{background:var(--paper-sunken); color:var(--ink-faint);}
   .mk-r{background:var(--amber-soft); color:var(--amber-soft-text); width:auto; padding:0 6px; font-size:10.5px; font-weight:700;}
+  .phase-badge{display:inline-flex; align-items:center; justify-content:center; width:auto; padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:700; font-family:var(--font-mono); white-space:nowrap;}
+  .phase-badge.p1{background:var(--green-soft); color:var(--green-soft-text);}
+  .phase-badge.p2{background:var(--amber-soft); color:var(--amber-soft-text);}
+  .phase-badge.p3{background:var(--blue-soft); color:var(--blue-soft-text);}
+  .phase-badge.p4{background:var(--red-soft); color:var(--red-soft-text);}
 
   /* ===== role section ===== */
   section.role{margin-top:70px; scroll-margin-top:80px;}
@@ -263,6 +302,7 @@
     <div class="sidenav-group">
       <div class="sidenav-label">Tổng quan</div>
       <a href="#overview" data-nav>Giới thiệu &amp; phạm vi</a>
+      <a href="#timeline" data-nav>Lộ trình triển khai (Phase)</a>
       <a href="#rbac-matrix" data-nav>Ma trận quyền truy cập</a>
     </div>
     <div class="sidenav-group">
@@ -314,14 +354,113 @@
       </div>
     </section>
 
+    <section id="timeline">
+      <h2 class="section-title">Lộ trình triển khai theo Phase</h2>
+      <p class="section-sub">Dự án được chia làm <b>4 phase</b>, đi theo đúng thứ tự phân cấp 6 vai trò (Learner → Manager/Trainer → HRBP → User Admin/SysAdmin) — mỗi phase đóng gói xong mới mở khóa nhóm chức năng của phase kế tiếp, thuận tiện demo &amp; nghiệm thu theo từng cột mốc.</p>
+
+      <div class="phase-track">
+        <a href="#phase-1" class="phase-track-node"><span class="phase-track-dot" style="background:var(--green)"></span><b>Phase 1</b><span>Tuần 1–3</span></a>
+        <span class="phase-track-arrow">→</span>
+        <a href="#phase-2" class="phase-track-node"><span class="phase-track-dot" style="background:var(--amber)"></span><b>Phase 2</b><span>Tuần 4–9</span></a>
+        <span class="phase-track-arrow">→</span>
+        <a href="#phase-3" class="phase-track-node"><span class="phase-track-dot" style="background:var(--blue)"></span><b>Phase 3</b><span>Tuần 10–12</span></a>
+        <span class="phase-track-arrow">→</span>
+        <a href="#phase-4" class="phase-track-node"><span class="phase-track-dot" style="background:var(--red)"></span><b>Phase 4</b><span>Tuần 13–16</span></a>
+      </div>
+
+      <div class="phase-grid">
+        <div class="phase-card" id="phase-1" style="--phase-accent:var(--green); --phase-accent-soft:var(--green-soft); --phase-accent-soft-text:var(--green-soft-text);">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h3>Nền Tảng Học Tập Cá Nhân</h3>
+            <div class="phase-en">Learner Core · Rank 1 · Vai trò: User Learner</div>
+            <p class="phase-goal">Đưa vào vận hành cổng học tập cá nhân cho mọi nhân sự: học liệu đa định dạng (Video/PDF/SCORM/Slide), thi trắc nghiệm rút đề ngẫu nhiên, khảo sát hài lòng ngay sau khóa học.</p>
+            <div class="phase-deliverables">
+              <span class="phase-chip">Học e-Learning &amp; thi cá nhân</span>
+              <span class="phase-chip">Khảo sát CSAT L1 &amp; Action Plan</span>
+            </div>
+          </div>
+          <div class="phase-meta">
+            <span class="phase-time">Tuần 1 – 3</span>
+            <span class="phase-roles">2 chức năng · 1 vai trò</span>
+            <span class="phase-status done">✓ Hoàn thành (Prototype)</span>
+          </div>
+        </div>
+
+        <div class="phase-card" id="phase-2" style="--phase-accent:var(--amber); --phase-accent-soft:var(--amber-soft); --phase-accent-soft-text:var(--amber-soft-text);">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h3>Quản Lý Đội Ngũ &amp; Đào Tạo Trực Tiếp</h3>
+            <div class="phase-en">Team &amp; Classroom Management · Rank 2–3 · Vai trò: Line Manager, Trainer/L&amp;D</div>
+            <p class="phase-goal">Trang bị công cụ giám sát đội ngũ cho Manager (đề cử khóa, phê duyệt chi phí, đánh giá hành vi L3) và vận hành lớp học trực tiếp cho Trainer (Live QR điểm danh, đặt phòng thực hành, soạn khóa Offline).</p>
+            <div class="phase-deliverables">
+              <span class="phase-chip">Đánh giá hành vi L3 (team)</span>
+              <span class="phase-chip">Đề cử / chỉ định khóa học</span>
+              <span class="phase-chip">Phê duyệt khóa học &amp; chi phí</span>
+              <span class="phase-chip">Quản lý Giảng viên &amp; đặt phòng</span>
+              <span class="phase-chip">Điểm danh Live QR</span>
+              <span class="phase-chip">Course Builder (Offline/ILT)</span>
+              <span class="phase-chip">Giám sát tiến độ &amp; Nudge</span>
+            </div>
+          </div>
+          <div class="phase-meta">
+            <span class="phase-time">Tuần 4 – 9</span>
+            <span class="phase-roles">7 chức năng · 2 vai trò</span>
+            <span class="phase-status done">✓ Hoàn thành (Prototype)</span>
+          </div>
+        </div>
+
+        <div class="phase-card" id="phase-3" style="--phase-accent:var(--blue); --phase-accent-soft:var(--blue-soft); --phase-accent-soft-text:var(--blue-soft-text);">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h3>Phân Tích Nhân Tài &amp; Tuân Thủ</h3>
+            <div class="phase-en">Talent Analytics &amp; Compliance · Rank 4 · Vai trò: HR Business Partner</div>
+            <p class="phase-goal">Cung cấp cho HRBP bộ công cụ phân tích khoảng cách năng lực toàn tổ chức, quy hoạch kế nhiệm theo khung 70-20-10 và đề xuất nhân tài vào giáo trình (chờ User Admin/SysAdmin duyệt).</p>
+            <div class="phase-deliverables">
+              <span class="phase-chip">Phân tích khoảng cách năng lực (Skill Gap)</span>
+              <span class="phase-chip">Quy hoạch kế nhiệm &amp; Talent Pool</span>
+              <span class="phase-chip">Giáo trình: đề xuất / quản lý</span>
+            </div>
+          </div>
+          <div class="phase-meta">
+            <span class="phase-time">Tuần 10 – 12</span>
+            <span class="phase-roles">3 chức năng · 1 vai trò</span>
+            <span class="phase-status done">✓ Hoàn thành (Prototype)</span>
+          </div>
+        </div>
+
+        <div class="phase-card" id="phase-4" style="--phase-accent:var(--red); --phase-accent-soft:var(--red-soft); --phase-accent-soft-text:var(--red-soft-text);">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h3>Quản Trị Hệ Thống &amp; Vận Hành</h3>
+            <div class="phase-en">System Administration &amp; Integration · Rank 5–6 · Vai trò: User Administrator, System Admin</div>
+            <p class="phase-goal">Hoàn thiện quản trị nhân sự &amp; phân quyền toàn hệ thống, ngân hàng đề thi, duyệt học vượt cấp, cấu hình bảo mật/anti-cheat và audit log — sẵn sàng để tích hợp hạ tầng thật (SSO, HRIS, database) khi lên Production.</p>
+            <div class="phase-deliverables">
+              <span class="phase-chip">Ngân hàng đề thi &amp; import CSV</span>
+              <span class="phase-chip">Duyệt đơn học vượt cấp</span>
+              <span class="phase-chip">Cấu hình hệ thống / bảo mật</span>
+              <span class="phase-chip">Xem Audit Log (ISO 27001)</span>
+            </div>
+          </div>
+          <div class="phase-meta">
+            <span class="phase-time">Tuần 13 – 16</span>
+            <span class="phase-roles">4 chức năng · 2 vai trò</span>
+            <span class="phase-status pending">◐ Cần tích hợp Backend</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-note">Mốc thời gian tính theo tuần kể từ ngày khởi động dự án (Kick-off) và sẽ được khóa lại theo lịch thực tế khi thống nhất với khách hàng. Phase 1–3 đã hoàn thiện trên front-end prototype; Phase 4 cần thêm hạ tầng backend thật (xem mục <a href="#status">Trạng thái triển khai</a>) trước khi go-live.</div>
+    </section>
+
     <section id="rbac-matrix">
       <h2 class="section-title">Ma trận quyền truy cập chức năng (RBAC)</h2>
-      <p class="section-sub">Đối chiếu trực tiếp với <code>src/data/roles.js</code>. ✓ = có quyền toàn phần · <span class="mk mk-r" style="position:relative;top:-1px;">GIỚI HẠN</span> = chỉ xem/phạm vi hẹp · − = không có quyền.</p>
+      <p class="section-sub">Đối chiếu trực tiếp với <code>src/data/roles.js</code>, sắp xếp theo đúng thứ tự 4 phase ở trên để thuyết trình liền mạch. ✓ = có quyền toàn phần · <span class="mk mk-r" style="position:relative;top:-1px;">GIỚI HẠN</span> = chỉ xem/phạm vi hẹp · − = không có quyền. Cột <b>Phase</b> đối chiếu với lộ trình triển khai; cột <b>Hoàn thành</b> là mốc tuần dự kiến.</p>
       <div class="table-scroll">
         <table class="matrix">
           <thead>
             <tr>
-              <th>Chức năng</th><th>Learner</th><th>Manager</th><th>Trainer</th><th>HRBP</th><th>User Admin</th><th>SysAdmin</th>
+              <th>Chức năng</th><th>Mô tả</th><th>Phase</th><th>Hoàn thành</th><th>Learner</th><th>Manager</th><th>Trainer</th><th>HRBP</th><th>User Admin</th><th>SysAdmin</th>
             </tr>
           </thead>
           <tbody id="matrixBody"></tbody>
@@ -727,35 +866,56 @@
   });
 
   var MATRIX_ROWS = [
-    ["Học e-Learning &amp; thi cá nhân","y","y","y","y","y","y"],
-    ["Khảo sát CSAT L1 &amp; Action Plan","y","y","y","y","y","y"],
-    ["Đánh giá hành vi L3 (team)","n","y","n","r","n","n"],
-    ["Đề cử / chỉ định khóa học","n","y","n","n","n","n"],
-    ["Điểm danh Live QR (mở phiên)","n","n","y","n","r","r"],
-    ["Giám sát tiến độ &amp; Nudge","n","y","n","r","y","n"],
-    ["Phê duyệt khóa học &amp; chi phí","n","y","n","n","n","n"],
-    ["Quản lý Giảng viên &amp; đặt phòng","n","n","y","n","y","y"],
-    ["Course Builder (soạn khóa)","n","n","Offline","n","Online+Offline","Online+Offline"],
-    ["Ngân hàng đề thi &amp; import CSV","n","n","n","n","y","y"],
-    ["Duyệt đơn học vượt cấp","n","n","n","n","y","y"],
-    ["Cấu hình hệ thống / bảo mật","n","n","n","n","n","y"],
-    ["Xem Audit Log (ISO 27001)","n","n","n","n","n","y"]
+    {name:"Học e-Learning &amp; thi cá nhân", desc:"Học nội dung đa định dạng (Video/PDF/SCORM/Slide), làm bài thi rút đề ngẫu nhiên, chấm điểm &amp; ghi nhận hoàn thành tự động.", phase:1, time:"Tuần 1–2", marks:["y","y","y","y","y","y"]},
+    {name:"Khảo sát CSAT L1 &amp; Action Plan", desc:"Khảo sát hài lòng ngay sau khóa học (Kirkpatrick L1) và cam kết Action Plan 90 ngày.", phase:1, time:"Tuần 3", marks:["y","y","y","y","y","y"]},
+    {name:"Đánh giá hành vi L3 (team)", desc:"Đánh giá tiến bộ hành vi nhân viên 1–5 sao sau 3–6 tháng, ký xác nhận (sign-off).", phase:2, time:"Tuần 4", marks:["n","y","n","r","n","n"]},
+    {name:"Đề cử / chỉ định khóa học", desc:"Đề cử khóa học nâng cao trực tiếp 1:1 cho nhân viên, đặt hạn hoàn thành &amp; lý do đề cử.", phase:2, time:"Tuần 5", marks:["n","y","n","n","n","n"]},
+    {name:"Phê duyệt khóa học &amp; chi phí", desc:"Duyệt/từ chối đơn xin học khóa nâng cao kèm chi phí — duyệt sẽ ghi danh ngay &amp; cộng dồn ngân sách phòng ban.", phase:2, time:"Tuần 5", marks:["n","y","n","n","n","n"]},
+    {name:"Quản lý Giảng viên &amp; đặt phòng", desc:"Trainer tự quản lớp phụ trách; User Admin/SysAdmin phân công giảng viên &amp; chặn trùng lịch phòng thực hành.", phase:2, time:"Tuần 6", marks:["n","n","y","n","y","y"]},
+    {name:"Điểm danh Live QR (mở phiên)", desc:"Chiếu mã QR xoay 15–30 giây chống chụp ảnh điểm danh hộ, chấm điểm thực hành từng học viên.", phase:2, time:"Tuần 7", marks:["n","n","y","n","r","r"]},
+    {name:"Course Builder (soạn khóa)", desc:"Trainer soạn khóa Trực tiếp/ILT; User Admin &amp; SysAdmin soạn đủ 3 hình thức (E-Learning, Virtual Class, In-Person).", phase:2, time:"Tuần 8", marks:["n","n","Offline","n","Online+Offline","Online+Offline"]},
+    {name:"Giám sát tiến độ &amp; Nudge", desc:"Nhắc nhở 1-chạm nhân viên trễ hạn; HRBP xem toàn tổ chức (không nhắc được), User Admin can thiệp toàn hệ thống.", phase:2, time:"Tuần 9", marks:["n","y","n","r","y","n"]},
+    {name:"Phân tích khoảng cách năng lực (Skill Gap)", desc:"Ma trận so sánh năng lực thực tế với chuẩn định biên theo chức danh, trên phạm vi toàn tổ chức.", phase:3, time:"Tuần 10", marks:["n","n","n","y","n","n"]},
+    {name:"Quy hoạch kế nhiệm &amp; Talent Pool", desc:"Lộ trình kế nhiệm theo khung 70-20-10 cho các vị trí chủ chốt.", phase:3, time:"Tuần 11", marks:["n","n","n","y","n","n"]},
+    {name:"Giáo trình: đề xuất / quản lý", desc:"HRBP chỉ xem &amp; đề xuất nhân tài vào giáo trình; User Admin/SysAdmin toàn quyền tạo/sửa/xóa &amp; phân bổ trực tiếp.", phase:3, time:"Tuần 12", marks:["n","n","n","r","y","y"]},
+    {name:"Ngân hàng đề thi &amp; import CSV", desc:"Soạn câu hỏi thủ công hoặc nhập hàng loạt qua file CSV.", phase:4, time:"Tuần 13", marks:["n","n","n","n","y","y"]},
+    {name:"Duyệt đơn học vượt cấp", desc:"Tiếp nhận &amp; xử lý đơn xin học vượt đúng 1 cấp liền kề từ mọi nhân sự trong hệ thống.", phase:4, time:"Tuần 14", marks:["n","n","n","n","y","y"]},
+    {name:"Cấu hình hệ thống / bảo mật", desc:"Cấu hình HRIS/SSO, watermark &amp; cảnh báo chuyển tab chống gian lận thi cử, chính sách bảo mật.", phase:4, time:"Tuần 15", marks:["n","n","n","n","n","y"]},
+    {name:"Xem Audit Log (ISO 27001)", desc:"Nhật ký bảo mật &amp; giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001.", phase:4, time:"Tuần 16", marks:["n","n","n","n","n","y"]}
   ];
   var tbody = document.getElementById('matrixBody');
+  var prevPhase = null;
   MATRIX_ROWS.forEach(function(row){
     var tr = document.createElement('tr');
+    if(row.phase !== prevPhase){ tr.className = 'mx-phase-start'; prevPhase = row.phase; }
+
     var tdLabel = document.createElement('td');
-    tdLabel.innerHTML = row[0];
+    tdLabel.innerHTML = row.name;
     tr.appendChild(tdLabel);
-    for(var i=1;i<row.length;i++){
+
+    var tdDesc = document.createElement('td');
+    tdDesc.className = 'mx-desc';
+    tdDesc.innerHTML = row.desc;
+    tr.appendChild(tdDesc);
+
+    var tdPhase = document.createElement('td');
+    tdPhase.innerHTML = '<span class="phase-badge p' + row.phase + '">PHASE ' + row.phase + '</span>';
+    tr.appendChild(tdPhase);
+
+    var tdTime = document.createElement('td');
+    tdTime.className = 'mx-time';
+    tdTime.textContent = row.time;
+    tr.appendChild(tdTime);
+
+    row.marks.forEach(function(v){
       var td = document.createElement('td');
-      var v = row[i];
       if(v === 'y'){ td.innerHTML = '<span class="mk mk-yes">✓</span>'; }
       else if(v === 'n'){ td.innerHTML = '<span class="mk mk-no">−</span>'; }
       else if(v === 'r'){ td.innerHTML = '<span class="mk mk-r">GIỚI HẠN</span>'; }
       else { td.innerHTML = '<span style="font-size:11.5px;font-weight:600;color:var(--ink-soft)">'+v+'</span>'; }
       tr.appendChild(td);
-    }
+    });
+
     tbody.appendChild(tr);
   });
 
