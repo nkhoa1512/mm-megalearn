@@ -47,11 +47,12 @@ function positionLabel(row) {
   return parts.join(' › ');
 }
 
-const GROUP_BY_OPTIONS = [
-  { id: 'DIVISION', label: 'Division' },
-  { id: 'DEPARTMENT', label: 'Department' },
-  { id: 'LEVEL', label: 'Cấp Bậc' },
-  { id: 'NONE', label: 'Không Gộp Nhóm' },
+const ROADMAP_GROUP_BY_OPTIONS = [
+  { id: 'DIVISION', label: 'Theo Division (Phòng/Ban)' },
+  { id: 'DEPARTMENT', label: 'Theo Department (Bộ Phận)' },
+  { id: 'LEVEL', label: 'Theo Cấp Bậc (Level)' },
+  { id: 'STATUS', label: 'Theo Trạng Thái Lộ Trình' },
+  { id: 'NONE', label: 'Không gộp nhóm' },
 ];
 
 /** Danh sách khóa học của 1 lộ trình + nút Thêm/Xóa — dùng chung cho modal Chỉnh Sửa & Tạo Mới. */
@@ -117,7 +118,7 @@ function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
             if (!course) return null;
             return (
               <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--rail)', color: '#fff', textAlign: 'center', lineHeight: '22px', fontSize: 10.5, fontWeight: 800, flexShrink: 0 }}>{idx + 1}</div>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--rail, #005BAA)', color: '#fff', textAlign: 'center', lineHeight: '22px', fontSize: 10.5, fontWeight: 800, flexShrink: 0 }}>{idx + 1}</div>
                 <img
                   src={getCourseImage(course)}
                   alt={course.title}
@@ -145,14 +146,19 @@ export default function AdminLevelRoadmaps() {
   const role = normalizeRole(currentUser?.role);
   const canManage = hasCapability(role, 'canManageLevelRoadmaps');
 
-  const [filterBuId, setFilterBuId] = useState('');
-  const [filterDivisionId, setFilterDivisionId] = useState('');
-  const [filterDepartmentId, setFilterDepartmentId] = useState('');
-  const [filterLevel, setFilterLevel] = useState('');
+  // Filter & Toolbar States
+  const [filterBuId, setFilterBuId] = useState('ALL');
+  const [filterDivisionId, setFilterDivisionId] = useState('ALL');
+  const [filterDepartmentId, setFilterDepartmentId] = useState('ALL');
+  const [filterLevel, setFilterLevel] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [groupBy, setGroupBy] = useState('DIVISION');
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState('TABLE'); // 'TABLE' | 'GRID'
   const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
 
+  // Modals
   const [detailRow, setDetailRow] = useState(null);
   const [editRow, setEditRow] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -187,6 +193,28 @@ export default function AdminLevelRoadmaps() {
     return rows.sort((a, b) => Number(a.level) - Number(b.level));
   }, [positions, roadmapsConfig]);
 
+  // Counts
+  const totalHeadcount = useMemo(() => {
+    return directoryRows.reduce((sum, r) => sum + (r.headcount || 0), 0);
+  }, [directoryRows]);
+
+  const activeFiltersCount = (
+    (filterBuId !== 'ALL' ? 1 : 0) +
+    (filterDivisionId !== 'ALL' ? 1 : 0) +
+    (filterDepartmentId !== 'ALL' ? 1 : 0) +
+    (filterLevel !== 'ALL' ? 1 : 0) +
+    (filterStatus !== 'ALL' ? 1 : 0)
+  );
+
+  function resetAllFilters() {
+    setFilterBuId('ALL');
+    setFilterDivisionId('ALL');
+    setFilterDepartmentId('ALL');
+    setFilterLevel('ALL');
+    setFilterStatus('ALL');
+    setSearch('');
+  }
+
   if (!canManage) {
     return (
       <div className="empty-state">
@@ -199,17 +227,26 @@ export default function AdminLevelRoadmaps() {
 
   function handleDivisionFilterChange(nextId) {
     setFilterDivisionId(nextId);
-    setFilterDepartmentId('');
+    setFilterDepartmentId('ALL');
   }
 
-  const departmentFilterOptions = filterDivisionId ? departments.filter((d) => d.divisionId === filterDivisionId) : [];
+  const departmentFilterOptions = filterDivisionId !== 'ALL'
+    ? departments.filter((d) => d.divisionId === filterDivisionId)
+    : departments;
 
   const filteredRows = directoryRows.filter((r) => {
-    if (filterBuId && r.buId !== filterBuId) return false;
-    if (filterDivisionId && r.divisionId !== filterDivisionId) return false;
-    if (filterDepartmentId && r.departmentId !== filterDepartmentId) return false;
-    if (filterLevel && r.level !== filterLevel) return false;
-    if (search && !positionLabel(r).toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterBuId !== 'ALL' && r.buId !== filterBuId) return false;
+    if (filterDivisionId !== 'ALL' && r.divisionId !== filterDivisionId) return false;
+    if (filterDepartmentId !== 'ALL' && r.departmentId !== filterDepartmentId) return false;
+    if (filterLevel !== 'ALL' && r.level !== filterLevel) return false;
+    if (filterStatus === 'CUSTOM' && !r.hasOwnOverride) return false;
+    if (filterStatus === 'INHERITED' && !r.isInherited) return false;
+    if (search) {
+      const q = search.toLowerCase().trim();
+      const posText = positionLabel(r).toLowerCase();
+      const levelText = `level ${r.level}`;
+      if (!posText.includes(q) && !levelText.includes(q)) return false;
+    }
     return true;
   });
 
@@ -217,6 +254,7 @@ export default function AdminLevelRoadmaps() {
     if (groupBy === 'DIVISION') return { key: r.divisionId || 'NONE', label: r.divisionId ? labelForDivision(r.divisionId) : 'Toàn Khối (không gắn Division)', icon: 'ti-building' };
     if (groupBy === 'DEPARTMENT') return { key: r.departmentId || 'NONE', label: r.departmentId ? labelForDepartment(r.departmentId) : 'Toàn Division (không gắn Department)', icon: 'ti-stack-2' };
     if (groupBy === 'LEVEL') return { key: r.level, label: `Level ${r.level} — ${levelShortLabel(r.level)}`, icon: 'ti-stairs-up' };
+    if (groupBy === 'STATUS') return { key: r.isInherited ? 'INHERITED' : 'CUSTOM', label: r.isInherited ? 'Lộ Trình Đang Kế Thừa Chuẩn' : 'Lộ Trình Đã Tùy Biến Riêng', icon: r.isInherited ? 'ti-git-branch' : 'ti-award' };
     return { key: 'ALL', label: '', icon: '' };
   }
 
@@ -254,16 +292,16 @@ export default function AdminLevelRoadmaps() {
 
   function renderTable(rows) {
     return (
-      <div className="card" style={{ overflowX: 'auto', marginBottom: 20 }}>
-        <table className="table" style={{ width: '100%' }}>
+      <div className="card" style={{ overflowX: 'auto', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+        <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr>
-              <th>Vị Trí</th>
-              <th style={{ width: 90 }}>Cấp Bậc</th>
-              <th style={{ width: 90 }}>Nhân Sự</th>
-              <th style={{ width: 90 }}>Khóa Học</th>
-              <th style={{ width: 170 }}>Trạng Thái</th>
-              <th style={{ textAlign: 'right', width: 200 }}>Thao Tác</th>
+            <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Vị Trí Cơ Cấu Trực Thuộc</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', width: 110, fontWeight: 700 }}>Cấp Bậc</th>
+              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Nhân Sự</th>
+              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Khóa Học</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', width: 180, fontWeight: 700 }}>Trạng Thái Lộ Trình</th>
+              <th style={{ padding: '12px 14px', textAlign: 'right', width: 170, fontWeight: 700 }}>Thao Tác</th>
             </tr>
           </thead>
           <tbody>
@@ -271,21 +309,27 @@ export default function AdminLevelRoadmaps() {
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--ink-soft)' }}>Không có vị trí nào khớp bộ lọc.</td></tr>
             ) : (
               rows.map((r) => (
-                <tr key={r.scopeKey}>
-                  <td style={{ fontSize: 12.5, fontWeight: 600, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={positionLabel(r)}>
+                <tr key={r.scopeKey} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 12.5, fontWeight: 600, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={positionLabel(r)}>
                     {positionLabel(r)}
                   </td>
-                  <td><Badge tone="blue">Level {r.level}</Badge></td>
-                  <td style={{ fontSize: 12.5 }}>{r.headcount}</td>
-                  <td style={{ fontSize: 12.5 }}>{r.courseCount}</td>
-                  <td title={r.isInherited ? `Kế thừa từ: ${scopeBreadcrumb(r.resolvedScopeKey)}` : undefined}>
+                  <td style={{ padding: '12px 14px' }}>
+                    <Badge tone="blue">Level {r.level}</Badge>
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 12.5, fontWeight: 700 }}>
+                    {r.headcount}
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--blue, #005BAA)' }}>
+                    {r.courseCount}
+                  </td>
+                  <td style={{ padding: '12px 14px' }} title={r.isInherited ? `Kế thừa từ: ${scopeBreadcrumb(r.resolvedScopeKey)}` : undefined}>
                     {r.isInherited ? (
                       <Badge tone="amber">Kế Thừa</Badge>
                     ) : (
                       <Badge tone="sage">Riêng · {r.currentVersion}</Badge>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setDetailRow(r)}>Xem</Button>
                       <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Sửa</Button>
@@ -300,12 +344,58 @@ export default function AdminLevelRoadmaps() {
     );
   }
 
+  function renderGrid(rows) {
+    return (
+      <div className="grid grid-3" style={{ gap: 14 }}>
+        {rows.map((r) => (
+          <div
+            key={r.scopeKey}
+            className="card card-pad"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              background: '#fff',
+              borderRadius: 10,
+              border: '1px solid var(--line)',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                <Badge tone="blue">Level {r.level}</Badge>
+                {r.isInherited ? (
+                  <Badge tone="amber">Kế Thừa</Badge>
+                ) : (
+                  <Badge tone="sage">Riêng · {r.currentVersion}</Badge>
+                )}
+              </div>
+
+              <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0F172A', marginBottom: 8, lineHeight: 1.4 }} title={positionLabel(r)}>
+                {positionLabel(r)}
+              </div>
+
+              <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
+                <span>Nhân sự đang học: <strong>{r.headcount}</strong></span>
+                <span style={{ color: 'var(--blue, #005BAA)', fontWeight: 700 }}>{r.courseCount} Khóa học</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 6 }}>
+              <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setDetailRow(r)}>Xem</Button>
+              <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Sửa</Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Danh Bạ Lộ Trình Cấp Bậc</h1>
+            <h1>Danh Bạ Lộ Trình Cấp Bậc (Level Roadmaps)</h1>
             <Badge tone="blue">{directoryRows.length} Lộ Trình</Badge>
           </div>
           <p>
@@ -317,75 +407,392 @@ export default function AdminLevelRoadmaps() {
         <Button variant="primary" icon="ti-plus" onClick={() => setCreateOpen(true)}>Tạo Lộ Trình Mới</Button>
       </div>
 
-      {/* FILTER / GROUP BY BAR */}
-      <div className="card card-pad" style={{ marginBottom: 20, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div>
-          <div className="field-label" style={{ marginBottom: 6 }}>Khối (Business Unit)</div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setFilterBuId('')} className="btn btn-sm" style={{ background: filterBuId === '' ? 'var(--rail)' : 'var(--paper-raised)', color: filterBuId === '' ? '#fff' : 'var(--ink)', borderColor: filterBuId === '' ? 'var(--rail)' : 'var(--line-strong)' }}>Tất cả</button>
-            {SCOPE_BUSINESS_UNITS.map((bu) => (
-              <button key={bu.id} onClick={() => setFilterBuId(bu.id)} className="btn btn-sm" style={{ background: filterBuId === bu.id ? 'var(--rail)' : 'var(--paper-raised)', color: filterBuId === bu.id ? '#fff' : 'var(--ink)', borderColor: filterBuId === bu.id ? 'var(--rail)' : 'var(--line-strong)' }}>{bu.name}</button>
-            ))}
+      {/* METRICS ROW */}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div className="card card-pad" style={{ background: '#fff' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Vị Trí &amp; Cấp Bậc</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--blue, #005BAA)', marginTop: 2 }}>{directoryRows.length}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Bao phủ 2 khối lớn &middot; 7 cấp bậc MMVN</div>
+        </div>
+
+        <div className="card card-pad" style={{ background: '#fff' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Đã Tùy Biến Lộ Trình Riêng</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginTop: 2 }}>
+            {directoryRows.filter((r) => r.hasOwnOverride).length}
           </div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Có phiên bản quản lý riêng theo bộ phận</div>
         </div>
 
-        <div style={{ minWidth: 190 }}>
-          <div className="field-label" style={{ marginBottom: 6 }}>Division</div>
-          <select aria-label="Filter Division" className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={filterDivisionId} onChange={(e) => handleDivisionFilterChange(e.target.value)}>
-            <option value="">— Tất cả Division —</option>
-            {divisions.map((d) => (<option key={d.id} value={d.id}>{d.code} · {d.name}</option>))}
-          </select>
+        <div className="card card-pad" style={{ background: '#fff' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Đang Kế Thừa Lộ Trình Chuẩn</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#D97706', marginTop: 2 }}>
+            {directoryRows.filter((r) => r.isInherited).length}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Tự động kế thừa từ Division / Cấp Cha</div>
         </div>
 
-        <div style={{ minWidth: 190 }}>
-          <div className="field-label" style={{ marginBottom: 6 }}>Department</div>
-          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={filterDepartmentId} onChange={(e) => setFilterDepartmentId(e.target.value)} disabled={!filterDivisionId}>
-            <option value="">{filterDivisionId ? '— Tất cả Department —' : 'Chọn Division trước'}</option>
-            {departmentFilterOptions.map((d) => (<option key={d.id} value={d.id}>{d.code} · {d.name}</option>))}
-          </select>
-        </div>
-
-        <div style={{ minWidth: 180 }}>
-          <div className="field-label" style={{ marginBottom: 6 }}>Cấp Bậc</div>
-          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)}>
-            <option value="">— Tất cả Level —</option>
-            {[...LEVEL_DEFINITIONS].reverse().map((def) => (<option key={def.level} value={def.level}>{def.emoji} Level {def.level}</option>))}
-          </select>
-        </div>
-
-        <div style={{ minWidth: 200 }}>
-          <div className="field-label" style={{ marginBottom: 6 }}>Tìm kiếm</div>
-          <input type="text" className="field-input" style={{ width: '100%', height: 34, fontSize: 12.5 }} placeholder="Tìm vị trí..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-
-        <div style={{ minWidth: 190 }}>
-          <div className="field-label" style={{ marginBottom: 6 }}>Gộp Nhóm</div>
-          <select aria-label="Group By" className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5, fontWeight: 600 }} value={groupBy} onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}>
-            {GROUP_BY_OPTIONS.map((opt) => (<option key={opt.id} value={opt.id}>🗂️ Gộp nhóm: {opt.label}</option>))}
-          </select>
+        <div className="card card-pad" style={{ background: '#fff' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Nhân Sự Đang Áp Dụng</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#7C3AED', marginTop: 2 }}>{totalHeadcount}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Học viên thực tế trên toàn hệ thống</div>
         </div>
       </div>
 
-      {groupBy === 'NONE' || !groups ? (
-        renderTable(filteredRows)
+      {/* STANDARDIZED FILTER TOOLBAR CARD */}
+      <div className="card card-pad" style={{ marginBottom: 18, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+        {/* ROW 1: SEARCH, GROUP BY, FILTER TOGGLE, VIEW MODE */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          {/* Search Input */}
+          <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 240 }}>
+            <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+            <input
+              type="text"
+              className="field-input"
+              style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+              placeholder="Tìm theo tên vị trí, cấp bậc, đơn vị..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+              >
+                <i className="ti ti-x" />
+              </button>
+            )}
+          </div>
+
+          {/* Right Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Group By Select */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <select
+                value={groupBy}
+                onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: 12.5,
+                  fontWeight: groupBy !== 'NONE' ? 700 : 500,
+                  color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {ROADMAP_GROUP_BY_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`btn btn-sm ${activeFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+              style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+            >
+              <i className="ti ti-filter" />
+              <span>Bộ Lọc</span>
+              {activeFiltersCount > 0 && (
+                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                  {activeFiltersCount}
+                </span>
+              )}
+              <i className={`ti ${showFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+            </button>
+
+            {/* View Mode Toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('TABLE')}
+                className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                title="Dạng Bảng (List View)"
+              >
+                <i className="ti ti-list" />
+                <span>Bảng</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('GRID')}
+                className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                title="Dạng Lưới (Grid View)"
+              >
+                <i className="ti ti-layout-grid" />
+                <span>Lưới</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ROW 2: COLLAPSIBLE FILTER PANEL WITH TOP LABELS */}
+        {showFilters && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+              {/* Filter 1: Khối (Business Unit) */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Khối (Business Unit)
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    background: filterBuId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    borderColor: filterBuId !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: filterBuId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    fontWeight: filterBuId !== 'ALL' ? 700 : 500,
+                  }}
+                  value={filterBuId}
+                  onChange={(e) => setFilterBuId(e.target.value)}
+                >
+                  <option value="ALL">Tất cả Khối ({SCOPE_BUSINESS_UNITS.length})</option>
+                  {SCOPE_BUSINESS_UNITS.map((bu) => (
+                    <option key={bu.id} value={bu.id}>{bu.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter 2: Division */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Phòng / Ban Lớn (Division)
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    background: filterDivisionId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    borderColor: filterDivisionId !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: filterDivisionId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    fontWeight: filterDivisionId !== 'ALL' ? 700 : 500,
+                  }}
+                  value={filterDivisionId}
+                  onChange={(e) => handleDivisionFilterChange(e.target.value)}
+                >
+                  <option value="ALL">Tất cả Division ({divisions.length})</option>
+                  {divisions.map((d) => (
+                    <option key={d.id} value={d.id}>{d.code} · {d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter 3: Department */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Bộ Phận Trực Thuộc (Department)
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    background: filterDepartmentId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    borderColor: filterDepartmentId !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: filterDepartmentId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    fontWeight: filterDepartmentId !== 'ALL' ? 700 : 500,
+                  }}
+                  value={filterDepartmentId}
+                  onChange={(e) => setFilterDepartmentId(e.target.value)}
+                >
+                  <option value="ALL">
+                    {filterDivisionId !== 'ALL' ? `Tất cả Department (${departmentFilterOptions.length})` : `Tất cả Department (${departments.length})`}
+                  </option>
+                  {departmentFilterOptions.map((d) => (
+                    <option key={d.id} value={d.id}>{d.code} · {d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter 4: Cấp Bậc (Level) */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Cấp Bậc (Job Level)
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    background: filterLevel !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    borderColor: filterLevel !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: filterLevel !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    fontWeight: filterLevel !== 'ALL' ? 700 : 500,
+                  }}
+                  value={filterLevel}
+                  onChange={(e) => setFilterLevel(e.target.value)}
+                >
+                  <option value="ALL">Tất cả cấp bậc (7 Levels)</option>
+                  {[...LEVEL_DEFINITIONS].map((def) => (
+                    <option key={def.level} value={def.level}>
+                      Level {def.level} — {def.titleVi || def.shortVi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter 5: Trạng Thái Lộ Trình */}
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Trạng Thái Lộ Trình
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    background: filterStatus !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    borderColor: filterStatus !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: filterStatus !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    fontWeight: filterStatus !== 'ALL' ? 700 : 500,
+                  }}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="CUSTOM">Lộ trình riêng (Đã tùy biến)</option>
+                  <option value="INHERITED">Kế thừa từ cấp cha</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ACTIVE FILTER TAGS & RESET BAR */}
+        {(search || activeFiltersCount > 0 || groupBy !== 'DIVISION') && (
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+
+              {search && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Từ khóa: <strong>"{search}"</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
+                </span>
+              )}
+
+              {filterBuId !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Khối: <strong>{SCOPE_BUSINESS_UNITS.find(b => b.id === filterBuId)?.name}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterBuId('ALL')} />
+                </span>
+              )}
+
+              {filterDivisionId !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Division: <strong>{labelForDivision(filterDivisionId)}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterDivisionId('ALL')} />
+                </span>
+              )}
+
+              {filterDepartmentId !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Department: <strong>{labelForDepartment(filterDepartmentId)}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterDepartmentId('ALL')} />
+                </span>
+              )}
+
+              {filterLevel !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Cấp bậc: <strong>Level {filterLevel}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterLevel('ALL')} />
+                </span>
+              )}
+
+              {filterStatus !== 'ALL' && (
+                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Trạng thái: <strong>{filterStatus === 'CUSTOM' ? 'Lộ trình riêng' : 'Kế thừa'}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('ALL')} />
+                </span>
+              )}
+
+              {groupBy !== 'DIVISION' && (
+                <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Gộp nhóm: <strong>{ROADMAP_GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('DIVISION')} />
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Tìm thấy <strong>{filteredRows.length}</strong> / {directoryRows.length} lộ trình cấp bậc
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* CONTENT: RENDER GROUPED OR FLAT LIST */}
+      {filteredRows.length === 0 ? (
+        <div className="empty-state" style={{ background: '#fff', padding: 40, borderRadius: 10, border: '1px solid var(--line)' }}>
+          <i className="ti ti-stairs-up" aria-hidden="true" style={{ fontSize: 36, color: 'var(--ink-faint)' }} />
+          <p style={{ marginTop: 10, color: 'var(--ink-soft)' }}>
+            Không tìm thấy vị trí hoặc lộ trình cấp bậc nào phù hợp với bộ lọc hiện tại.
+          </p>
+          <div style={{ marginTop: 14 }}>
+            <Button size="sm" variant="outline" onClick={resetAllFilters}>Xóa Bộ Lọc</Button>
+          </div>
+        </div>
+      ) : groupBy === 'NONE' || !groups ? (
+        viewMode === 'TABLE' ? renderTable(filteredRows) : renderGrid(filteredRows)
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {groups.map((g) => {
             const isCollapsed = collapsedGroups.has(g.key);
             return (
-              <div key={g.key} className="card" style={{ overflow: 'hidden' }}>
+              <div key={g.key} className="card" style={{ overflow: 'hidden', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
                 <button
                   onClick={() => toggleCollapsed(g.key)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--paper-raised)', border: 'none', borderBottom: isCollapsed ? 'none' : '1px solid var(--line)', cursor: 'pointer', textAlign: 'left' }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '14px 18px',
+                    background: '#F8FAFC',
+                    border: 'none',
+                    borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
                 >
                   <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} style={{ color: 'var(--ink-faint)' }} />
-                  <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <i className={`ti ${g.icon}`} />
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: '#EFF6FF', color: 'var(--blue, #005BAA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <i className={`ti ${g.icon}`} style={{ fontSize: 16 }} />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{g.label}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: '#0F172A' }}>{g.label}</div>
                   <Badge tone="slate">{g.rows.length} lộ trình</Badge>
                 </button>
-                {!isCollapsed && <div style={{ padding: '12px 16px 0' }}>{renderTable(g.rows)}</div>}
+                {!isCollapsed && (
+                  <div style={{ padding: 12 }}>
+                    {viewMode === 'TABLE' ? renderTable(g.rows) : renderGrid(g.rows)}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -558,7 +965,7 @@ function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
           <div className="field-label" style={{ marginBottom: 6 }}>Khối (Business Unit)</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {SCOPE_BUSINESS_UNITS.map((bu) => (
-              <button key={bu.id} onClick={() => setBuId(bu.id)} className="btn btn-sm" style={{ background: buId === bu.id ? 'var(--rail)' : 'var(--paper-raised)', color: buId === bu.id ? '#fff' : 'var(--ink)', borderColor: buId === bu.id ? 'var(--rail)' : 'var(--line-strong)' }}>{bu.name}</button>
+              <button key={bu.id} onClick={() => setBuId(bu.id)} className="btn btn-sm" style={{ background: buId === bu.id ? 'var(--rail, #005BAA)' : 'var(--paper-raised)', color: buId === bu.id ? '#fff' : 'var(--ink)', borderColor: buId === bu.id ? 'var(--rail)' : 'var(--line-strong)' }}>{bu.name}</button>
             ))}
           </div>
         </div>
@@ -589,7 +996,7 @@ function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
         <div className="field-label" style={{ marginBottom: 6 }}>Cấp Bậc</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {LEVEL_DEFINITIONS.map((lvl) => (
-            <button key={lvl.level} onClick={() => setLevel(lvl.level)} className="btn btn-sm" style={{ background: level === lvl.level ? 'var(--rail)' : 'var(--paper-raised)', color: level === lvl.level ? '#fff' : 'var(--ink)', borderColor: level === lvl.level ? 'var(--rail)' : 'var(--line-strong)' }}>{lvl.emoji} Level {lvl.level}</button>
+            <button key={lvl.level} onClick={() => setLevel(lvl.level)} className="btn btn-sm" style={{ background: level === lvl.level ? 'var(--rail, #005BAA)' : 'var(--paper-raised)', color: level === lvl.level ? '#fff' : 'var(--ink)', borderColor: level === lvl.level ? 'var(--rail)' : 'var(--line-strong)' }}>{lvl.emoji} Level {lvl.level}</button>
           ))}
         </div>
       </div>

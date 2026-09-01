@@ -45,6 +45,8 @@ import {
   TXN_TYPE,
   TXN_SOURCE,
 } from '../utils/costCenter';
+import { DEFAULT_CERTIFICATE_TEMPLATES } from '../data/certificateTemplatesData';
+import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
@@ -133,7 +135,7 @@ const CATEGORY_KEY = 'mm-megalearn-categories-v1';
 // đây (không copy dữ liệu) — file đính kèm chỉ lưu metadata (tên/kích thước),
 // không dùng để render; các field còn lại (signerName/signerTitle/issuerOrg)
 // mới thực sự thay thế nội dung mặc định trên CertificateModal.
-const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v1';
+const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v4';
 const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
 const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
 const ATTEMPT_KEY = 'mm-megalearn-assessment-attempts-v1';
@@ -444,7 +446,7 @@ export function CourseStoreProvider({ children }) {
   );
 
   // Certificate Template: xem chú thích ở CERT_TEMPLATE_KEY phía trên.
-  const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, []));
+  const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, DEFAULT_CERTIFICATE_TEMPLATES));
 
   // Enterprise Org Hierarchy & Job Levels States (BU, Division, Department, Sub-Department, Job Levels)
   const [businessUnits, setBusinessUnits] = useState(() => loadItem(BU_KEY, initialBusinessUnits));

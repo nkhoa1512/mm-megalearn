@@ -640,6 +640,25 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
         maxAttempts: 3,
         passingScorePercent: tpl.passScore,
         certificateEnabled: true,
+        certificateTemplateId:
+          tpl.category === 'Food Safety & Hygiene' ? 'CERTTPL-FSH-001' :
+          tpl.category === 'Health & Safety' ? 'CERTTPL-HSE-001' :
+          tpl.category === 'Retail Operations' ? 'CERTTPL-OPS-001' :
+          tpl.category === 'Supply Chain & Logistics' ? 'CERTTPL-SCM-001' :
+          tpl.category === 'Customer Service' ? 'CERTTPL-CS-001' :
+          tpl.category === 'Leadership & Management' ? 'CERTTPL-LEAD-001' :
+          tpl.category === 'Digital & Technology' ? 'CERTTPL-TECH-001' :
+          tpl.category === 'Compliance & Ethics' ? 'CERTTPL-COMP-001' :
+          tpl.category === 'Fresh Food Processing' ? 'CERTTPL-FRESH-001' :
+          tpl.category === 'Financial Management' ? 'CERTTPL-FIN-001' :
+          'CERTTPL-OPS-001',
+        validityPeriodMonths:
+          tpl.category === 'Customer Service' || tpl.category === 'Digital & Technology' ? 0 :
+          tpl.category === 'Leadership & Management' ? 36 :
+          tpl.category === 'Food Safety & Hygiene' || tpl.category === 'Health & Safety' || tpl.category === 'Compliance & Ethics' || tpl.category === 'Fresh Food Processing' ? 12 :
+          24,
+        recertificationWarningDays: 30,
+        recertificationMethod: tpl.isMandatory ? 'RETAKE_FULL_COURSE' : 'ASSESSMENT_ONLY',
         questionBankSize: 20,
         questionsPerAttempt: 5,
         version: versionNumber,

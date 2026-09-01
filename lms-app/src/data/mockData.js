@@ -1423,16 +1423,20 @@ export function deriveCertificates(courseList, user, overlay = null, certificate
       const attempts = c.assessmentAttempts || [];
       const passingAttempt = [...attempts].reverse().find((a) => a.passed);
       const issueDate = c.enrollment.completedAt || '2025-08-10';
+      const validityMonths = c.configuration?.validityPeriodMonths !== undefined ? parseInt(c.configuration.validityPeriodMonths, 10) : 12;
+      const isLifetime = validityMonths === 0;
+
       // Hạn tái cấp: lấy từ enrollment (nếu vừa thi lại) hoặc tính theo chu kỳ
-      const validUntil = c.enrollment.validUntil || (
+      const validUntil = isLifetime ? null : (c.enrollment.validUntil || (
         c.id === 'CRS-FSH-001' ? '2026-08-15' // Kịch bản mẫu: Quá hạn 13 ngày -> Trạng thái RECERTIFICATION_REQUIRED
         : c.id === 'CRS-CS-002' ? '2026-09-10' // Kịch bản mẫu: Cận hạn 13 ngày -> Trạng thái DUE_SOON
-        : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + 1)).toISOString().slice(0, 10)
-      );
+        : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + (validityMonths / 12 || 1))).toISOString().slice(0, 10)
+      ));
       const cleanEmpCode = (user.employeeCode || 'EMP-1042').replace('MMVN-', '');
-      const template = c.configuration?.certificateTemplateId
-        ? certificateTemplates.find((t) => t.id === c.configuration.certificateTemplateId) || null
-        : null;
+      const template = (c.configuration?.certificateTemplateId
+        ? certificateTemplates.find((t) => t.id === c.configuration.certificateTemplateId)
+        : null) || certificateTemplates.find((t) => t.category === c.category || (c.categories && c.categories.includes(t.category))) || certificateTemplates[0] || null;
+
       return {
         id: `CERT-MMVN-${(c.code || c.id).toUpperCase()}-${cleanEmpCode}`,
         courseId: c.id,
@@ -1442,6 +1446,8 @@ export function deriveCertificates(courseList, user, overlay = null, certificate
         completionDate: issueDate,
         issueDate: issueDate,
         validUntil: validUntil,
+        isLifetime: isLifetime,
+        validityPeriodMonths: validityMonths,
         isCompliance: c.courseType === 'MANDATORY',
         score: c.enrollment.score || (passingAttempt ? passingAttempt.score : 90),
         issuer: template?.issuerOrg || 'MM Mega Market Vietnam - Learning & Organizational Development',
