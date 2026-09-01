@@ -447,45 +447,52 @@ export const subDepartments = [
 
 export const LEVEL_HR_META = {
   '1': {
+    code: 'L1_DIRECTOR',
     authority: 'SUPREME_EXECUTIVE',
     typicalRoles: ['sysadmin'],
-    descVi: 'Ban điều hành / Giám đốc toàn quyền: hoạch định chiến lược tập đoàn, quản trị rủi ro & khủng hoảng toàn quốc.',
+    descVi: 'Giám đốc / Lãnh đạo cấp cao: hoạch định chiến lược tập đoàn, quản trị rủi ro & định hướng phát triển toàn diện.',
     headcount: 2,
   },
   '2': {
+    code: 'L2_HEAD',
     authority: 'DIVISION_LEAD',
     typicalRoles: ['hrbp', 'useradmin'],
-    descVi: 'Giám đốc siêu thị (SGM) / Trưởng khối: chịu trách nhiệm P&L siêu thị, ngân sách và quy hoạch nhân tài kế nhiệm.',
+    descVi: 'Phó Giám đốc / Trưởng Phòng/Khối: chịu trách nhiệm P&L, ngân sách và quy hoạch nhân tài kế nhiệm của khối/phòng ban.',
     headcount: 4,
   },
   '3': {
+    code: 'L3_SENIOR_MANAGER',
     authority: 'SENIOR_MANAGER',
     typicalRoles: ['trainer'],
-    descVi: 'Trưởng ngành hàng / Master Trainer L&D: quản trị chi phí ngành hàng, đàm phán nhà cung cấp, đứng lớp đào tạo.',
+    descVi: 'Quản lý cấp cao: quản trị mảng chức năng lớn, đàm phán đối tác chiến lược và dẫn dắt đào tạo chuyên sâu.',
     headcount: 8,
   },
   '4': {
+    code: 'L4_MANAGER',
     authority: 'SECTION_MANAGER',
     typicalRoles: ['manager'],
-    descVi: 'Trưởng bộ phận / Quản lý ca: điều phối chỉ tiêu ca làm việc, kèm cặp nhân viên mới và xử lý khiếu nại.',
+    descVi: 'Quản lý: điều phối chỉ tiêu, quản lý trực tiếp đội ngũ nhân viên phòng ban và giám sát hiệu quả công việc.',
     headcount: 14,
   },
   '5': {
+    code: 'L5_SUPERVISOR',
     authority: 'SUPERVISOR',
     typicalRoles: ['manager', 'learner'],
-    descVi: 'Giám sát quầy / Trưởng nhóm chuyên môn: kiểm soát tồn kho, kiểm kê định kỳ và an toàn vệ sinh thực phẩm.',
+    descVi: 'Giám sát / Chuyên viên cao cấp: kiểm soát quy trình nghiệp vụ, chuyên môn kỹ thuật sâu và kèm cặp nhân viên.',
     headcount: 22,
   },
   '6': {
+    code: 'L6_EXECUTIVE',
     authority: 'SENIOR_STAFF',
     typicalRoles: ['learner'],
-    descVi: 'Nhân viên có kinh nghiệm / Kỹ thuật viên chính: phụ trách vận hành độc lập, hướng dẫn nhân viên mới.',
+    descVi: 'Chuyên viên / Nhân viên nghiệp vụ: thực thi nghiệp vụ độc lập, phối hợp liên phòng ban và hướng dẫn nhân viên mới.',
     headcount: 35,
   },
   '7': {
+    code: 'L7_STAFF',
     authority: 'FRONTLINE',
     typicalRoles: ['learner'],
-    descVi: 'Nhân viên mới gia nhập / Tuyến đầu quầy kệ: hoàn thành đào tạo hội nhập, tuân thủ nội quy và phục vụ khách hàng.',
+    descVi: 'Nhân viên: nhân viên mới gia nhập / nhân sự tuyến đầu, hoàn thành đào tạo hội nhập, tuân thủ nội quy và phục vụ khách hàng.',
     headcount: 42,
   },
 };
@@ -494,10 +501,12 @@ export const jobLevels = LEVEL_DEFINITIONS.map((def) => ({
   ...def,
   ...(LEVEL_HR_META[def.level] || {}),
   viTitle: def.titleVi,
-  colors: {
-    bg: def.tone === 'purple' ? '#F5F3FF' : def.tone === 'indigo' ? '#EEF2FF' : def.tone === 'blue' ? '#EFF6FF' : def.tone === 'teal' ? '#F0FDFA' : def.tone === 'amber' ? '#FFFBEB' : def.tone === 'orange' ? '#FFF7ED' : '#F1F5F9',
-    text: def.tone === 'purple' ? '#6D28D9' : def.tone === 'indigo' ? '#4338CA' : def.tone === 'blue' ? '#1D4ED8' : def.tone === 'teal' ? '#0F766E' : def.tone === 'amber' ? '#B45309' : def.tone === 'orange' ? '#C2410C' : '#475569',
-    border: def.tone === 'purple' ? '#C4B5FD' : def.tone === 'indigo' ? '#A5B4FC' : def.tone === 'blue' ? '#93C5FD' : def.tone === 'teal' ? '#99F6E4' : def.tone === 'amber' ? '#FDE68A' : def.tone === 'orange' ? '#FDBA74' : '#CBD5E1',
+  title: def.titleEn,
+  code: def.code || LEVEL_HR_META[def.level]?.code,
+  colors: def.colors || {
+    bg: '#F1F5F9',
+    text: '#475569',
+    border: '#CBD5E1',
   },
 }));
 

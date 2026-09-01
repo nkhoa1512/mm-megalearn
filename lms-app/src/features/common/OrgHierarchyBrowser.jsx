@@ -701,7 +701,7 @@ export default function OrgHierarchyBrowser() {
           <div style={{ position: 'relative', minWidth: 260, flex: 1, maxWidth: 420 }}>
             <i
               className="ti ti-search"
-              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 14 }}
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 14 }}
             />
             <input
               type="text"
@@ -709,8 +709,17 @@ export default function OrgHierarchyBrowser() {
               placeholder="Tìm theo tên/mã Division, Dept, Sub-Dept..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: 32 }}
+              style={{ paddingLeft: 34, paddingRight: searchTerm ? 32 : 12, height: 38, fontSize: 13, borderRadius: 8 }}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+              >
+                <i className="ti ti-x" />
+              </button>
+            )}
           </div>
         </div>
       </div>

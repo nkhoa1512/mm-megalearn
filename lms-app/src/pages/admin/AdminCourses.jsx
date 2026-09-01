@@ -173,10 +173,20 @@ export default function AdminCourses() {
   }
 
   const [searchParams, setSearchParams] = useSearchParams();
-  // Mặc định mở tab "Library Course" (toàn bộ danh mục) — Admin/Trainer bấm
+  // Mặc định mở tab "All Class" (toàn bộ danh mục) — Admin/Trainer bấm
   // vào trang Courses từ nav thường muốn thấy hết mọi khóa, không riêng 1
   // hình thức đào tạo cụ thể.
-  const activeTab = searchParams.get('tab') || 'library';
+  const rawTab = (searchParams.get('tab') || 'library').toLowerCase().trim();
+  const activeTab = (() => {
+    const clean = rawTab.replace(/[\s_/]+/g, '-');
+    if (clean.includes('online')) return 'online-class';
+    if (clean.includes('classroom') || clean.includes('in-person')) return 'classroom';
+    if (clean === 'curriculum') return 'curriculum';
+    if (clean === 'assessment') return 'assessment';
+    if (clean === 'domain-library') return 'domain-library';
+    return 'library';
+  })();
+
   function setActiveTab(id) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -194,13 +204,8 @@ export default function AdminCourses() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isFullAdmin]);
-  // Trainer/L&D chỉ được tạo khóa Lớp Trực Tiếp (Classroom/In-Person) — nút
-  // "Create New Course" luôn tạo IN_PERSON_CLASSROOM bất kể đang ở tab nào
-  // (xem onClick bên dưới), nên hiện nút đó ở tab Online Class (gộp Learning
-  // Objects + Live) dễ gây hiểu lầm là tạo được khóa E-Learning/Lớp Online.
-  // Chỉ ẩn cho đúng Trainer trên tab này; các role khác (User Admin, SysAdmin)
-  // và các tab khác của Trainer không đổi.
-  const hideCreateForTrainerTab = isAdmin && !isFullAdmin && activeTabDef.id === 'online-class';
+  // Trainer/L&D chỉ được tạo khóa Lớp Trực Tiếp (Classroom/In-Person)
+  const hideCreateForTrainerTab = isAdmin && !isFullAdmin && activeTab === 'online-class';
 
   // User Learner, Manager & HRBP không có bất kỳ quyền tạo/sửa/xóa/phát hành
   // hay xem chi tiết phân bổ nào cả — họ chỉ được duyệt danh mục (đủ 5+ cột dữ
@@ -910,25 +915,41 @@ export default function AdminCourses() {
           </p>
         </div>
         {isAdmin && !isCurriculum && !isAssessment && !isLibraryManager && !hideCreateForTrainerTab && (
-          <Button
-            variant="primary"
-            icon="ti-plus"
-            onClick={() => {
-              if (!isFullAdmin) {
-                // Trainer chỉ mở lớp Trực tiếp
-                navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
-                return;
-              }
-              if (activeTabDef.section === CATALOG_SECTIONS.CLASSROOM) navigate('/admin/courses/new?deliveryType=IN_PERSON_CLASSROOM');
-              // Tab "Online Class" gộp cả E-Learning tự học lẫn Lớp Live —
-              // mặc định tạo khóa E-Learning (đa số khóa hiện có thuộc dạng
-              // này); có thể đổi sang Lớp Live ngay trong Course Builder.
-              else if (activeTabDef.id === 'online-class') navigate('/admin/courses/new?deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING');
-              else navigate('/admin/courses/new');
-            }}
-          >
-            Create New Course
-          </Button>
+          <div>
+            {!isFullAdmin ? (
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
+              >
+                {language === 'en' ? '+ Create In-Person Class' : '+ Tạo Khóa Trực Tiếp'}
+              </Button>
+            ) : activeTab === 'online-class' ? (
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => navigate('/admin/courses/new?scope=online&deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING')}
+              >
+                {language === 'en' ? '+ Create Online Course' : '+ Tạo Khóa Trực Tuyến'}
+              </Button>
+            ) : activeTab === 'classroom' ? (
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
+              >
+                {language === 'en' ? '+ Create In-Person Course' : '+ Tạo Khóa Trực Tiếp'}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => navigate('/admin/courses/new?scope=all')}
+              >
+                {language === 'en' ? '+ Create New Course' : '+ Tạo Khóa Học Mới'}
+              </Button>
+            )}
+          </div>
         )}
         {isCurriculumAdmin && isCurriculum && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingCurriculum(emptyCurriculumDraft())}>

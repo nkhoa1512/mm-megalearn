@@ -41,14 +41,28 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     t,
   } = useCourseStore();
 
-  // Search & Filter
+  // Search & Filter State
   const [search, setSearch] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('ALL');
   const [selectedDiv, setSelectedDiv] = useState('ALL');
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [selectedSubDept, setSelectedSubDept] = useState('ALL');
   const [selectedLevel, setSelectedLevel] = useState('ALL');
+  const [selectedRole, setSelectedRole] = useState('ALL');
+  const [showUserFilters, setShowUserFilters] = useState(false);
+  const [userGroupBy, setUserGroupBy] = useState('NONE');
+  const [userViewMode, setUserViewMode] = useState('TABLE');
+  const [collapsedGroups, setCollapsedGroups] = useState({});
   const [transcriptUser, setTranscriptUser] = useState(null);
+
+  const USER_GROUP_BY_OPTIONS = [
+    { id: 'NONE', label: 'Không gộp nhóm' },
+    { id: 'DIVISION', label: 'Theo Khối (Division)' },
+    { id: 'DEPARTMENT', label: 'Theo Phòng Ban' },
+    { id: 'LEVEL', label: 'Theo Cấp Bậc (Job Level)' },
+    { id: 'BRANCH', label: 'Theo Trụ Sở / Siêu Thị' },
+    { id: 'ROLE', label: 'Theo Vai Trò Hệ Thống' },
+  ];
 
   // User Modal State
   const [userModal, setUserModal] = useState({ isOpen: false, mode: 'ADD' });
@@ -76,11 +90,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [parsedPreview, setParsedPreview] = useState([]);
   const [importFeedback, setImportFeedback] = useState(null);
 
-  // Job Level Modal
+  // Job Level Modal State
   const [levelModal, setLevelModal] = useState({ isOpen: false, mode: 'ADD', data: null });
   const [levelForm, setLevelForm] = useState({
     level: '',
+    titleEn: '',
     viTitle: '',
+    titleVi: '',
     title: '',
     code: '',
     authority: 'STANDARD',
@@ -102,11 +118,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         (u.fullName && u.fullName.toLowerCase().includes(search.toLowerCase())) ||
         (u.userId && u.userId.toLowerCase().includes(search.toLowerCase())) ||
         (u.employeeCode && u.employeeCode.toLowerCase().includes(search.toLowerCase())) ||
+        (u.email && u.email.toLowerCase().includes(search.toLowerCase())) ||
         (u.title && u.title.toLowerCase().includes(search.toLowerCase())) ||
         (u.position && u.position.toLowerCase().includes(search.toLowerCase())) ||
         (u.department && u.department.toLowerCase().includes(search.toLowerCase())) ||
         (u.departmentName && u.departmentName.toLowerCase().includes(search.toLowerCase())) ||
-        (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(search.toLowerCase()));
+        (u.subDepartmentName && u.subDepartmentName.toLowerCase().includes(search.toLowerCase())) ||
+        (u.divisionName && u.divisionName.toLowerCase().includes(search.toLowerCase()));
 
       const matchBranch = selectedBranch === 'ALL' ||
         (selectedBranch === 'HEAD_OFFICE' && (u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' || !u.store)) ||
@@ -127,9 +145,75 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
       const matchLevel = selectedLevel === 'ALL' || String(u.level) === String(selectedLevel);
 
-      return matchSearch && matchBranch && matchDiv && matchDept && matchSubDept && matchLevel;
+      const matchRole = selectedRole === 'ALL' || normalizeRole(u.role) === normalizeRole(selectedRole);
+
+      return matchSearch && matchBranch && matchDiv && matchDept && matchSubDept && matchLevel && matchRole;
     });
-  }, [userList, search, selectedBranch, selectedDiv, selectedDept, selectedSubDept, selectedLevel]);
+  }, [userList, search, selectedBranch, selectedDiv, selectedDept, selectedSubDept, selectedLevel, selectedRole]);
+
+  const activeUserFiltersCount =
+    (selectedBranch !== 'ALL' ? 1 : 0) +
+    (selectedDiv !== 'ALL' ? 1 : 0) +
+    (selectedDept !== 'ALL' ? 1 : 0) +
+    (selectedSubDept !== 'ALL' ? 1 : 0) +
+    (selectedLevel !== 'ALL' ? 1 : 0) +
+    (selectedRole !== 'ALL' ? 1 : 0);
+
+  function handleClearAllUserFilters() {
+    setSearch('');
+    setSelectedBranch('ALL');
+    setSelectedDiv('ALL');
+    setSelectedDept('ALL');
+    setSelectedSubDept('ALL');
+    setSelectedLevel('ALL');
+    setSelectedRole('ALL');
+  }
+
+  function toggleGroupCollapse(groupId) {
+    setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  }
+
+  const groupedUsers = useMemo(() => {
+    if (userGroupBy === 'NONE') return null;
+    const map = {};
+    filteredUsers.forEach((u) => {
+      let key = 'OTHER';
+      let title = 'Chưa phân loại';
+      let icon = 'ti-folder';
+
+      if (userGroupBy === 'DIVISION') {
+        key = u.divisionId || u.divisionCode || 'UNKNOWN';
+        title = u.divisionName || u.divisionCode || 'Khối Chưa Phân Loại';
+        icon = 'ti-building';
+      } else if (userGroupBy === 'DEPARTMENT') {
+        key = u.departmentId || u.department || 'UNKNOWN';
+        title = u.departmentName || u.department || 'Phòng Ban Chung';
+        icon = 'ti-folders';
+      } else if (userGroupBy === 'LEVEL') {
+        key = String(u.level || '7');
+        const def = levelDefinition(u.level || '7');
+        title = `Level ${u.level || '7'} — ${def.shortVi || def.titleVi}`;
+        icon = 'ti-id-badge-2';
+      } else if (userGroupBy === 'BRANCH') {
+        const isOps = u.branch === 'OPERATIONS' || Boolean(u.store);
+        key = isOps ? 'OPERATIONS' : 'HEAD_OFFICE';
+        title = isOps ? '🛒 Siêu Thị & Trung Tâm Vận Hành' : '🏢 Trụ Sở Văn Phòng (Head Office)';
+        icon = isOps ? 'ti-building-store' : 'ti-building';
+      } else if (userGroupBy === 'ROLE') {
+        key = u.role || 'learner';
+        const rDef = roleDefinition(u.role || 'learner');
+        title = `Vai trò: ${rDef.titleVi || u.role}`;
+        icon = 'ti-shield-check';
+      }
+
+      if (!map[key]) {
+        map[key] = { id: key, title, icon, users: [] };
+      }
+      map[key].users.push(u);
+    });
+
+    return Object.values(map);
+  }, [filteredUsers, userGroupBy]);
 
   // User Handlers
   function handleOpenAddUser() {
@@ -370,12 +454,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     const nextLvlNum = String(jobLevels.length + 1);
     setLevelForm({
       level: nextLvlNum,
-      viTitle: `Level ${nextLvlNum} — Chuyên Viên / Cán Bộ Mới`,
+      titleEn: `Level ${nextLvlNum}`,
+      titleVi: `Nhân Viên Cấp ${nextLvlNum}`,
+      viTitle: `Nhân Viên Cấp ${nextLvlNum}`,
       title: `Level ${nextLvlNum}`,
-      code: `LVL-${nextLvlNum}`,
+      code: `L${nextLvlNum}_STAFF`,
       authority: 'STANDARD',
       band: 'GENERAL',
-      descVi: 'Cấp bậc định biên trong thang tiêu chuẩn năng lực MM Mega Market.',
+      descVi: 'Cấp bậc định biên trong khung tiêu chuẩn năng lực MM Mega Market.',
       emoji: '⭐',
       headcount: 0,
       colors: { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
@@ -386,9 +472,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   function handleOpenEditLevel(lvl) {
     setLevelForm({
       level: String(lvl.level),
-      viTitle: lvl.viTitle || lvl.title || '',
-      title: lvl.title || '',
-      code: lvl.code || `LVL-${lvl.level}`,
+      titleEn: lvl.titleEn || lvl.title || '',
+      titleVi: lvl.titleVi || lvl.viTitle || '',
+      viTitle: lvl.viTitle || lvl.titleVi || lvl.title || '',
+      title: lvl.title || lvl.titleEn || '',
+      code: lvl.code || `L${lvl.level}_STAFF`,
       authority: lvl.authority || 'STANDARD',
       band: lvl.band || 'GENERAL',
       descVi: lvl.descVi || '',
@@ -401,11 +489,18 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
   function handleSaveLevelSubmit(e) {
     e.preventDefault();
-    if (!levelForm.level || !levelForm.viTitle.trim()) return;
+    if (!levelForm.level || (!levelForm.viTitle.trim() && !levelForm.titleVi.trim())) return;
+    const finalForm = {
+      ...levelForm,
+      titleVi: levelForm.titleVi || levelForm.viTitle,
+      viTitle: levelForm.viTitle || levelForm.titleVi,
+      titleEn: levelForm.titleEn || levelForm.title,
+      title: levelForm.titleEn || levelForm.title || levelForm.viTitle,
+    };
     if (levelModal.mode === 'ADD') {
-      addJobLevel(levelForm);
+      addJobLevel(finalForm);
     } else if (levelModal.data) {
-      updateJobLevel(levelModal.data.level, levelForm);
+      updateJobLevel(levelModal.data.level, finalForm);
     }
     setLevelModal({ isOpen: false, mode: 'ADD', data: null });
   }
@@ -514,226 +609,613 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       </div>
 
       {/* TAB 1: DIRECTORY */}
-      {activeTab === 'DIRECTORY' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
-              <div style={{ position: 'relative', minWidth: 200, flex: 1 }}>
-                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 14 }} />
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="Tìm kiếm theo tên, mã NV, chức danh..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{ paddingLeft: 32, borderRadius: 8, height: 38 }}
-                />
+      {activeTab === 'DIRECTORY' && (() => {
+        function renderUserTable(usersToRender) {
+          return (
+            <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', background: '#fff' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Mã Nhân Viên</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Họ và Tên</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Chức Danh &amp; Vị Trí</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Cơ Cấu &amp; Bộ Phận Trực Thuộc</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Cấp Bậc (Level)</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Vai Trò Hệ Thống</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersToRender.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--ink-soft)' }}>
+                        <i className="ti ti-users" style={{ fontSize: 32, display: 'block', marginBottom: 8, color: 'var(--ink-faint)' }} />
+                        Không tìm thấy nhân sự phù hợp với bộ lọc hiện tại.
+                      </td>
+                    </tr>
+                  ) : (
+                    usersToRender.map((u) => (
+                      <tr key={u.userId || u.employeeCode} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue, #005BAA)' }}>
+                          {u.employeeCode || u.userId}
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{u.fullName}</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.email}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--ink)' }}>{u.position || u.title || 'Store Associate'}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
+                            {u.divisionName || u.storeName || u.departmentName || 'MM Mega Market VN'}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                            Phòng: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong>
+                          </div>
+                          {u.subDepartmentName ? (
+                            <div style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: '#1E40AF',
+                              background: '#EFF6FF',
+                              border: '1px solid #BFDBFE',
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              marginTop: 4,
+                            }}>
+                              <i className="ti ti-git-branch" style={{ fontSize: 12 }} />
+                              <span>{u.subDepartmentName}</span>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 2 }}>
+                              Chưa gán sub-dept
+                            </div>
+                          )}
+                          <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
+                            {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}
+                          </div>
+                        </td>
+                        <td>
+                          <JobLevelBadge level={u.level} compact />
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 3, lineHeight: 1.35 }}>
+                            {levelDefinition(u.level).shortVi}
+                          </div>
+                        </td>
+                        <td>
+                          <Badge tone={roleDefinition(u.role).tone}>
+                            {roleDefinition(u.role).shortVi}
+                          </Badge>
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: 6 }}>
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              icon="ti-id-badge-2"
+                              onClick={() => setTranscriptUser(u)}
+                              title="Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp"
+                              style={{
+                                background: 'linear-gradient(135deg, #1E40AF 0%, #4338CA 100%)',
+                                fontSize: 11.5,
+                              }}
+                            >
+                              Hồ Sơ
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              icon="ti-edit"
+                              onClick={() => handleOpenEditUser(u)}
+                              title="Chỉnh sửa thông tin nhân sự"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="ti-trash"
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  isOpen: true,
+                                  type: 'USER',
+                                  id: u.userId,
+                                  title: `Xóa Nhân Sự ${u.fullName}`,
+                                  message: `Bạn có chắc chắn muốn xóa nhân sự "${u.fullName}" (${u.employeeCode || u.userId}) khỏi danh mục?`,
+                                })
+                              }
+                              style={{ color: '#E11D48' }}
+                              title="Xóa nhân sự"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        function renderUserGrid(usersToRender) {
+          if (usersToRender.length === 0) {
+            return (
+              <div className="card card-pad" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-soft)', background: '#fff', border: '1px solid var(--line)', borderRadius: 10 }}>
+                <i className="ti ti-users" style={{ fontSize: 36, display: 'block', marginBottom: 8, color: 'var(--ink-faint)' }} />
+                Không tìm thấy nhân sự phù hợp với bộ lọc hiện tại.
               </div>
+            );
+          }
 
-              <select
-                className="field-select"
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                style={{ width: 160, borderRadius: 8, height: 38 }}
-              >
-                <option value="ALL">🏢 Tất cả Khối</option>
-                <option value="HEAD_OFFICE">Trụ sở Head Office</option>
-                <option value="OPERATIONS">Siêu thị Vận hành</option>
-              </select>
-
-              <select
-                className="field-select"
-                value={selectedDiv}
-                onChange={(e) => {
-                  setSelectedDiv(e.target.value);
-                  setSelectedDept('ALL');
-                  setSelectedSubDept('ALL');
-                }}
-                style={{ width: 160, borderRadius: 8, height: 38 }}
-              >
-                <option value="ALL">Tất cả Khối (Divisions)</option>
-                {divisions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.code} - {d.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                value={selectedDept}
-                onChange={(e) => {
-                  setSelectedDept(e.target.value);
-                  setSelectedSubDept('ALL');
-                }}
-                style={{ width: 160, borderRadius: 8, height: 38 }}
-              >
-                <option value="ALL">Tất cả Phòng ban (Depts)</option>
-                {(selectedDiv === 'ALL' ? departments : departments.filter((d) => d.divisionId === selectedDiv)).map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.code} - {d.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                value={selectedSubDept}
-                onChange={(e) => setSelectedSubDept(e.target.value)}
-                style={{ width: 160, borderRadius: 8, height: 38 }}
-              >
-                <option value="ALL">🌿 Tất cả Sub-Dept</option>
-                {(selectedDept === 'ALL'
-                  ? subDepartments
-                  : subDepartments.filter((s) => s.departmentId === selectedDept)
-                ).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} - {s.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value)}
-                style={{ width: 130, borderRadius: 8, height: 38 }}
-              >
-                <option value="ALL">Tất cả Cấp bậc</option>
-                {jobLevels.map((lvl) => (
-                  <option key={lvl.level} value={lvl.level}>
-                    Level {lvl.level}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => setImportModal(true)}>
-                Import Hàng Loạt
-              </Button>
-              <Button size="sm" variant="primary" icon="ti-user-plus" onClick={handleOpenAddUser}>
-                Thêm Nhân Viên
-              </Button>
-            </div>
-          </div>
-
-          <div className="card" style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--line)', background: '#fff' }}>
-            <table className="table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Mã Nhân Viên</th>
-                  <th>Họ và Tên</th>
-                  <th>Chức Danh &amp; Vị Trí</th>
-                  <th>Cơ Cấu &amp; Bộ Phận Trực Thuộc</th>
-                  <th>Cấp Bậc (Level)</th>
-                  <th>Vai Trò Hệ Thống</th>
-                  <th style={{ textAlign: 'right' }}>Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.slice(0, 30).map((u) => (
-                  <tr key={u.userId || u.employeeCode}>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.employeeCode || u.userId}</td>
-                    <td>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{u.fullName}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.email}</div>
-                    </td>
-                    <td>{u.position || u.title || 'Store Associate'}</td>
-                    <td>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
-                        {u.divisionName || u.storeName || u.departmentName || 'MM Mega Market VN'}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                        Phòng: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong>
-                      </div>
-                      {u.subDepartmentName ? (
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 14 }}>
+              {usersToRender.map((u) => (
+                <div
+                  key={u.userId || u.employeeCode}
+                  className="card card-pad"
+                  style={{
+                    background: '#fff',
+                    border: '1px solid var(--line)',
+                    borderRadius: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
-                          display: 'inline-flex',
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #005BAA 0%, #1E40AF 100%)',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: 15,
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: 4,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: '#1E40AF',
-                          background: '#EFF6FF',
-                          border: '1px solid #BFDBFE',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          marginTop: 4,
+                          justifyContent: 'center',
+                          flexShrink: 0,
                         }}>
-                          <i className="ti ti-git-branch" style={{ fontSize: 12 }} />
-                          <span>{u.subDepartmentName}</span>
+                          {u.fullName?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
-                      ) : (
-                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 2 }}>
-                          Chưa gán sub-dept
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{u.fullName}</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--blue, #005BAA)', fontFamily: 'monospace', fontWeight: 600 }}>{u.employeeCode || u.userId}</div>
                         </div>
-                      )}
-                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-                        {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}
                       </div>
-                    </td>
-                    <td>
-                      <JobLevelBadge level={u.level} compact />
-                      <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 3, lineHeight: 1.35 }}>
-                        {levelDefinition(u.level).shortVi}
-                      </div>
-                    </td>
-                    <td>
                       <Badge tone={roleDefinition(u.role).tone}>
                         {roleDefinition(u.role).shortVi}
                       </Badge>
-                    </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', gap: 6 }}>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          icon="ti-id-badge-2"
-                          onClick={() => setTranscriptUser(u)}
-                          title="Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp"
-                          style={{
-                            background: 'linear-gradient(135deg, #1E40AF 0%, #4338CA 100%)',
-                            fontSize: 11.5,
-                          }}
-                        >
-                          Hồ Sơ
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          icon="ti-edit"
-                          onClick={() => handleOpenEditUser(u)}
-                          title="Chỉnh sửa thông tin nhân sự"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon="ti-trash"
-                          onClick={() =>
-                            setDeleteConfirm({
-                              isOpen: true,
-                              type: 'USER',
-                              id: u.userId,
-                              title: `Xóa Nhân Sự ${u.fullName}`,
-                              message: `Bạn có chắc chắn muốn xóa nhân sự "${u.fullName}" (${u.employeeCode || u.userId}) khỏi danh mục?`,
-                            })
-                          }
-                          style={{ color: '#E11D48' }}
-                          title="Xóa nhân sự"
-                        />
+                    </div>
+
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {u.email}
+                    </div>
+
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                      {u.position || u.title || 'Store Associate'}
+                    </div>
+
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken, #F8FAFC)', padding: '8px 10px', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 3, border: '1px solid var(--line)' }}>
+                      <div>🏢 <strong>{u.divisionName || u.storeName || 'MM Mega Market'}</strong></div>
+                      <div>Phòng: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong></div>
+                      {u.subDepartmentName ? (
+                        <div style={{ color: '#1E40AF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <i className="ti ti-git-branch" style={{ fontSize: 11 }} /> {u.subDepartmentName}
+                        </div>
+                      ) : (
+                        <div style={{ color: 'var(--ink-faint)', fontStyle: 'italic', fontSize: 11 }}>
+                          {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? 'Trụ sở Head Office' : 'Siêu thị Vận hành'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+                    <JobLevelBadge level={u.level} compact />
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <Button size="sm" variant="primary" icon="ti-id-badge-2" onClick={() => setTranscriptUser(u)} style={{ fontSize: 11, padding: '4px 8px' }}>
+                        Hồ Sơ
+                      </Button>
+                      <Button size="sm" variant="outline" icon="ti-edit" onClick={() => handleOpenEditUser(u)} style={{ padding: '4px 6px' }} />
+                      <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => setDeleteConfirm({ isOpen: true, type: 'USER', id: u.userId, title: `Xóa Nhân Sự ${u.fullName}`, message: `Bạn có chắc muốn xóa nhân sự "${u.fullName}"?` })} style={{ color: '#E11D48', padding: '4px 6px' }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Filter & Toolbar Card */}
+            <div className="card" style={{ padding: '16px 20px', background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+              {/* Row 1: Search + Group By + Filters Toggle + View Mode Switcher + Action Buttons */}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
+                  <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                  <input
+                    type="text"
+                    className="field-input"
+                    style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                    placeholder="Tìm kiếm theo tên, mã NV, email, chức danh, phòng ban..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                    >
+                      <i className="ti ti-x" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Right controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {/* Group By Select */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken, #F8FAFC)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                    <select
+                      value={userGroupBy}
+                      onChange={(e) => setUserGroupBy(e.target.value)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        fontSize: 12.5,
+                        fontWeight: userGroupBy !== 'NONE' ? 700 : 500,
+                        color: userGroupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      {USER_GROUP_BY_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filter Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowUserFilters(!showUserFilters)}
+                    className={`btn btn-sm ${activeUserFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+                  >
+                    <i className="ti ti-filter" />
+                    <span>Bộ Lọc</span>
+                    {activeUserFiltersCount > 0 && (
+                      <span style={{ background: '#fff', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                        {activeUserFiltersCount}
+                      </span>
+                    )}
+                    <i className={`ti ${showUserFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+                  </button>
+
+                  {/* View Mode Toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--paper-sunken, #F8FAFC)', padding: 3, borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                    <button
+                      type="button"
+                      onClick={() => setUserViewMode('GRID')}
+                      className={`btn btn-sm ${userViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                      title="Dạng Lưới (Grid View)"
+                    >
+                      <i className="ti ti-layout-grid" />
+                      <span>Lưới</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserViewMode('TABLE')}
+                      className={`btn btn-sm ${userViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                      title="Dạng Bảng (List View)"
+                    >
+                      <i className="ti ti-list" />
+                      <span>Bảng</span>
+                    </button>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => setImportModal(true)} style={{ height: 38 }}>
+                      Import Hàng Loạt
+                    </Button>
+                    <Button size="sm" variant="primary" icon="ti-user-plus" onClick={handleOpenAddUser} style={{ height: 38 }}>
+                      Thêm Nhân Viên
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Collapsible Filter Grid with Top Labels */}
+              {showUserFilters && (
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    {/* Filter 1: Trụ sở / Siêu thị */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Trụ Sở / Siêu Thị
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedBranch !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedBranch !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedBranch !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả chi nhánh</option>
+                        <option value="HEAD_OFFICE">🏢 Trụ sở Head Office</option>
+                        <option value="OPERATIONS">🛒 Siêu thị Vận hành</option>
+                      </select>
+                    </div>
+
+                    {/* Filter 2: Khối (Division) */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Khối (Division)
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedDiv}
+                        onChange={(e) => {
+                          setSelectedDiv(e.target.value);
+                          setSelectedDept('ALL');
+                          setSelectedSubDept('ALL');
+                        }}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedDiv !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedDiv !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedDiv !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả khối ({divisions.length})</option>
+                        {divisions.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.code} - {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter 3: Phòng ban (Department) */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Phòng Ban (Department)
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedDept}
+                        onChange={(e) => {
+                          setSelectedDept(e.target.value);
+                          setSelectedSubDept('ALL');
+                        }}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedDept !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedDept !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả phòng ban</option>
+                        {(selectedDiv === 'ALL' ? departments : departments.filter((d) => d.divisionId === selectedDiv)).map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.code} - {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter 4: Sub-Department */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Bộ Phận Con (Sub-Dept)
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedSubDept}
+                        onChange={(e) => setSelectedSubDept(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedSubDept !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedSubDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedSubDept !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả sub-dept</option>
+                        {(selectedDept === 'ALL'
+                          ? subDepartments
+                          : subDepartments.filter((s) => s.departmentId === selectedDept)
+                        ).map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.code} - {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter 5: Cấp bậc */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Cấp Bậc (Job Level)
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedLevel}
+                        onChange={(e) => setSelectedLevel(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedLevel !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedLevel !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedLevel !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả cấp bậc</option>
+                        {jobLevels.map((lvl) => (
+                          <option key={lvl.level} value={lvl.level}>
+                            Level {lvl.level} — {lvl.title || lvl.viTitle}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter 6: Vai trò hệ thống */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                        Vai Trò (System Role)
+                      </label>
+                      <select
+                        className="field-select"
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: 38,
+                          fontSize: 12.5,
+                          borderRadius: 6,
+                          borderColor: selectedRole !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                          background: selectedRole !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          fontWeight: selectedRole !== 'ALL' ? 700 : 500,
+                        }}
+                      >
+                        <option value="ALL">Tất cả vai trò</option>
+                        <option value="learner">Học Viên (Learner)</option>
+                        <option value="manager">Cán Bộ Quản Lý (Manager)</option>
+                        <option value="trainer">Giảng Viên Nội Bộ (Trainer)</option>
+                        <option value="hrbp">HRBP / Nhân Sự</option>
+                        <option value="useradmin">User Administrator</option>
+                        <option value="sysadmin">System Administrator</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Reset Filters / Filter Summary */}
+                  {activeUserFiltersCount > 0 && (
+                    <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--ink-soft)', paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
+                      <span>Đang áp dụng <strong>{activeUserFiltersCount}</strong> tiêu chí lọc</span>
+                      <button
+                        type="button"
+                        onClick={handleClearAllUserFilters}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#E11D48',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 12,
+                        }}
+                      >
+                        <i className="ti ti-trash-x" />
+                        Xóa tất cả bộ lọc
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* USER LIST / GROUPED ACCORDIONS */}
+            {userGroupBy === 'NONE' ? (
+              <div>
+                {userViewMode === 'TABLE' ? renderUserTable(filteredUsers) : renderUserGrid(filteredUsers)}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {groupedUsers.map((group) => {
+                  const isCollapsed = collapsedGroups[group.id];
+                  return (
+                    <div
+                      key={group.id}
+                      className="card"
+                      style={{
+                        background: '#fff',
+                        border: '1px solid var(--line)',
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                      }}
+                    >
+                      {/* Group Header */}
+                      <div
+                        onClick={() => toggleGroupCollapse(group.id)}
+                        style={{
+                          padding: '12px 18px',
+                          background: 'var(--paper-sunken, #F8FAFC)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <i className={`ti ${group.icon || 'ti-folder'}`} style={{ fontSize: 18, color: 'var(--blue, #005BAA)' }} />
+                          <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                            {group.title}
+                          </span>
+                          <Badge tone="blue">
+                            {group.users.length} nhân sự
+                          </Badge>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-soft)' }}>
+                          <span style={{ fontSize: 12 }}>{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                          <i className={`ti ${isCollapsed ? 'ti-chevron-down' : 'ti-chevron-up'}`} />
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      {/* Group Content */}
+                      {!isCollapsed && (
+                        <div style={{ padding: userViewMode === 'GRID' ? 16 : 0 }}>
+                          {userViewMode === 'TABLE' ? renderUserTable(group.users) : renderUserGrid(group.users)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'right' }}>
+              Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'right' }}>
-            Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 2: CUSTOMIZED USER GROUPS */}
       {activeTab === 'GROUPS' && (
@@ -757,11 +1239,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   Khung Cấp Bậc Định Biên — Thang ĐẢO NGƯỢC (7 → 1)
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
-                  <strong>Level 7 là cấp THẤP NHẤT</strong> (nhân viên mới vào) và <strong>Level 1 là cấp CAO NHẤT</strong> (Ban điều hành).
+                  <strong>Level 7 là cấp THẤP NHẤT</strong> (Nhân viên) và <strong>Level 1 là cấp CAO NHẤT</strong> (Giám đốc / Lãnh đạo cấp cao).
                 </p>
               </div>
               <Button size="sm" variant="primary" icon="ti-plus" onClick={handleOpenAddLevel}>
-                Thêm Cấp Bậc Mới
+                + Thêm Cấp Bậc Mới
               </Button>
             </div>
           </div>
@@ -775,22 +1257,51 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <div
                   key={lvl.level || lvl.id}
                   className="card card-pad"
-                  style={{ borderLeft: `5px solid ${borderColor}`, borderRadius: 10, display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center', background: '#fff' }}
+                  style={{
+                    borderLeft: `5px solid ${borderColor}`,
+                    borderRadius: 10,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                  }}
                 >
                   <div style={{ flex: 1, minWidth: 320 }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
                       <JobLevelBadge level={lvl.level} />
-                      <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>{lvl.viTitle || lvl.title}</span>
+                      <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>
+                        {lvl.titleEn || lvl.title} {lvl.titleVi ? `— ${lvl.titleVi}` : (lvl.viTitle ? `— ${lvl.viTitle}` : '')}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          color: '#1E40AF',
+                          background: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        {lvl.code}
+                      </span>
                     </div>
-                    <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>{lvl.descVi}</p>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 6 }}>
-                      Mã định biên: <strong>{lvl.code}</strong> &middot; Nhóm quyền: <strong>{lvl.authority}</strong>
-                      {roleNames && <> &middot; Role hệ thống điển hình: <strong>{roleNames}</strong></>}
+                    <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
+                      {lvl.descVi || `${lvl.titleVi || lvl.titleEn || 'Cấp bậc chuẩn hóa'}`}
+                    </p>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <span>Mã định biên: <strong style={{ color: 'var(--blue, #005BAA)' }}>{lvl.code}</strong></span>
+                      <span>Nhóm quyền: <strong>{lvl.authority || lvl.band || 'STANDARD'}</strong></span>
+                      {roleNames && <span>Role hệ thống điển hình: <strong>{roleNames}</strong></span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     <div style={{ textAlign: 'right', minWidth: 100 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{headcount}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue, #005BAA)' }}>{headcount}</div>
                       <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>nhân sự ở cấp này</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -807,7 +1318,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                             type: 'JOB_LEVEL',
                             id: lvl.level,
                             title: `Xóa Cấp Bậc ${lvl.level}`,
-                            message: `Bạn có chắc chắn muốn xóa cấp bậc "${lvl.viTitle || lvl.title}"?`,
+                            message: `Bạn có chắc chắn muốn xóa cấp bậc "${lvl.titleEn || lvl.viTitle || lvl.title}" (${lvl.code})?`,
                           })
                         }
                         style={{ color: '#E11D48' }}
@@ -1152,15 +1663,28 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Tên Tiếng Việt *</label>
+                <label className="field-label">Tên Hiển Thị Tiếng Anh (English Title) *</label>
                 <input
                   className="field-input"
-                  placeholder="e.g. Level 8 — Chuyên Viên Tập Sự"
-                  value={levelForm.viTitle}
-                  onChange={(e) => setLevelForm((p) => ({ ...p, viTitle: e.target.value, title: e.target.value }))}
+                  placeholder="e.g. Director, Manager, Executive, Staff..."
+                  value={levelForm.titleEn}
+                  onChange={(e) => setLevelForm((p) => ({ ...p, titleEn: e.target.value }))}
                   required
                 />
               </div>
+              <div>
+                <label className="field-label">Tên Tiếng Việt (Vietnamese Title) *</label>
+                <input
+                  className="field-input"
+                  placeholder="e.g. Giám đốc, Quản lý, Chuyên viên, Nhân viên..."
+                  value={levelForm.titleVi || levelForm.viTitle}
+                  onChange={(e) => setLevelForm((p) => ({ ...p, titleVi: e.target.value, viTitle: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
                 <label className="field-label">Icon / Emoji</label>
                 <input
@@ -1169,24 +1693,6 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   value={levelForm.emoji}
                   onChange={(e) => setLevelForm((p) => ({ ...p, emoji: e.target.value }))}
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-2" style={{ marginBottom: 12 }}>
-              <div>
-                <label className="field-label">Nhóm Quyền (Authority Band)</label>
-                <select
-                  className="field-select"
-                  value={levelForm.authority}
-                  onChange={(e) => setLevelForm((p) => ({ ...p, authority: e.target.value }))}
-                >
-                  <option value="EXECUTIVE">EXECUTIVE (Ban Điều Hành / BOM)</option>
-                  <option value="DIRECTOR">DIRECTOR (Giám Đốc Khối)</option>
-                  <option value="MANAGEMENT">MANAGEMENT (Trưởng Phòng / Store Manager)</option>
-                  <option value="SUPERVISORY">SUPERVISORY (Giám Sát / Trưởng Nhóm)</option>
-                  <option value="PROFESSIONAL">PROFESSIONAL (Chuyên Viên)</option>
-                  <option value="STANDARD">STANDARD (Nhân Viên Tuyến Đầu)</option>
-                </select>
               </div>
               <div>
                 <label className="field-label">Màu Viền Huy Hiệu (Hex)</label>
@@ -1202,6 +1708,22 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   }
                 />
               </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Nhóm Quyền (Authority Band)</label>
+              <select
+                className="field-select"
+                value={levelForm.authority}
+                onChange={(e) => setLevelForm((p) => ({ ...p, authority: e.target.value }))}
+              >
+                <option value="EXECUTIVE">EXECUTIVE (Ban Điều Hành / BOM)</option>
+                <option value="DIRECTOR">DIRECTOR (Giám Đốc Khối)</option>
+                <option value="MANAGEMENT">MANAGEMENT (Trưởng Phòng / Store Manager)</option>
+                <option value="SUPERVISORY">SUPERVISORY (Giám Sát / Trưởng Nhóm)</option>
+                <option value="PROFESSIONAL">PROFESSIONAL (Chuyên Viên)</option>
+                <option value="STANDARD">STANDARD (Nhân Viên Tuyến Đầu)</option>
+              </select>
             </div>
 
             <div style={{ marginBottom: 16 }}>

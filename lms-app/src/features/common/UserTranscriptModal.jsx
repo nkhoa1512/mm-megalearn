@@ -398,11 +398,11 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                   onChange={(e) => setSelectedNewLevel(e.target.value)}
                   style={{ width: '100%', height: 38, fontSize: 13, fontWeight: 700 }}
                 >
-                  {Object.entries(LEVEL_DEFINITIONS)
-                    .filter(([lvl]) => Number(lvl) < Number(targetUser.level || 7)) // Chỉ cho phép thăng lên level cao hơn (số nhỏ hơn)
-                    .map(([lvl, def]) => (
-                      <option key={lvl} value={lvl}>
-                        Level {lvl} &mdash; {def.title} (Khung: {def.authority})
+                  {LEVEL_DEFINITIONS
+                    .filter((def) => Number(def.level) < Number(targetUser.level || 7)) // Chỉ cho phép thăng lên level cao hơn (số nhỏ hơn)
+                    .map((def) => (
+                      <option key={def.level} value={def.level}>
+                        Level {def.level} &mdash; {def.titleEn || def.titleVi} ({def.titleVi}) [{def.code}]
                       </option>
                     ))}
                 </select>

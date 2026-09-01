@@ -17,6 +17,7 @@ import {
   departments as initialDepartments,
   subDepartments as initialSubDepartments,
   jobLevels as initialJobLevels,
+  curricula as initialCurricula,
   userEnrollmentsMap,
 } from '../data/mockData';
 import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel, evaluateUserEligibilityForCourse } from '../data/levelSystem';
@@ -24,9 +25,14 @@ import { normalizeRole, hasCapability } from '../data/roles';
 import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadmapMatrix';
 import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
-import { curricula as initialCurricula } from '../data/mockData';
-import { DEFAULT_COMPANY_CATEGORIES, courseMatchesCategory } from '../utils/courseCatalog';
-import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+import {
+  DEFAULT_COMPANY_CATEGORIES,
+  DEFAULT_CATEGORY_OBJECTS,
+  normalizeCategory,
+  getCategoryMetadata,
+  generateCategoryCode,
+  courseMatchesCategory,
+} from '../utils/courseCatalog';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
 import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
 import {
@@ -139,7 +145,7 @@ const BU_KEY = 'mm-megalearn-bu-v3';
 const DIV_KEY = 'mm-megalearn-div-v4';
 const DEPT_KEY = 'mm-megalearn-dept-v4';
 const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
-const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v3';
+const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v4';
 const GROUP_KEY = 'mm-megalearn-groups-v1';
 // Cost Center: chỉ lưu các bút toán PHÁT SINH trong phiên. Sổ cái mở đầu (ngân
 // sách năm + ghi danh lịch sử HRIS) được suy ra lại mỗi lần khởi động từ dữ
@@ -424,9 +430,18 @@ export function CourseStoreProvider({ children }) {
   // trừ lẫn nhau — chỉ là tag tham chiếu, không đổi dữ liệu khóa học gốc).
   const [libraries, setLibraries] = useState(() => loadItem(LIBRARY_KEY, buildSeedLibraries(initialCourses)));
 
-  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn, System Admin có thể
+  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn rich objects, System Admin có thể
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
-  const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
+  const [companyCategoryObjects, setCompanyCategoryObjects] = useState(() => {
+    const loaded = loadItem(CATEGORY_KEY, DEFAULT_CATEGORY_OBJECTS);
+    if (!Array.isArray(loaded)) return DEFAULT_CATEGORY_OBJECTS;
+    return loaded.map((cat) => normalizeCategory(cat, DEFAULT_CATEGORY_OBJECTS));
+  });
+
+  const companyCategories = useMemo(
+    () => companyCategoryObjects.map((c) => (typeof c === 'string' ? c : c.name)),
+    [companyCategoryObjects]
+  );
 
   // Certificate Template: xem chú thích ở CERT_TEMPLATE_KEY phía trên.
   const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, []));
@@ -488,7 +503,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraries));
-      localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
+      localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategoryObjects));
       localStorage.setItem(CERT_TEMPLATE_KEY, JSON.stringify(certificateTemplates));
       localStorage.setItem(BU_KEY, JSON.stringify(businessUnits));
       localStorage.setItem(DIV_KEY, JSON.stringify(divisions));
@@ -960,51 +975,103 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
-  const addCompanyCategory = useCallback((name) => {
-    const clean = (name || '').trim();
-    if (!clean) return { ok: false, reason: 'Tên danh mục không được để trống' };
+  const addCompanyCategory = useCallback((categoryInput) => {
+    let catObj;
+    if (typeof categoryInput === 'string') {
+      const clean = categoryInput.trim();
+      if (!clean) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      catObj = {
+        id: `cat-${Date.now()}`,
+        name: clean,
+        code: generateCategoryCode(clean),
+        icon: 'ti-folder',
+        color: '#3b82f6',
+        description: '',
+        coverImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+    } else {
+      const cleanName = (categoryInput.name || '').trim();
+      if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      catObj = {
+        id: categoryInput.id || `cat-${Date.now()}`,
+        name: cleanName,
+        code: categoryInput.code || generateCategoryCode(cleanName),
+        icon: categoryInput.icon || 'ti-folder',
+        color: categoryInput.color || '#3b82f6',
+        description: categoryInput.description || '',
+        coverImage: categoryInput.coverImage || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+        createdAt: categoryInput.createdAt || new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+    }
+
     let alreadyExists = false;
-    setCompanyCategories((prev) => {
-      if (prev.some((c) => c.toLowerCase() === clean.toLowerCase())) {
+    setCompanyCategoryObjects((prev) => {
+      if (prev.some((c) => (typeof c === 'string' ? c : c.name).toLowerCase() === catObj.name.toLowerCase())) {
         alreadyExists = true;
         return prev;
       }
-      return [clean, ...prev];
+      return [catObj, ...prev];
     });
+
     return alreadyExists
-      ? { ok: false, reason: `Danh mục "${clean}" đã tồn tại.` }
-      : { ok: true, name: clean };
+      ? { ok: false, reason: `Danh mục "${catObj.name}" đã tồn tại.` }
+      : { ok: true, category: catObj, name: catObj.name };
   }, []);
 
-  // Đổi tên 1 Category: cascade sang MỌI nơi đang giữ đúng tên cũ (Course,
-  // Curriculum, Assessment, Library domain) để không bao giờ để lại tag "mồ
-  // côi" trỏ về tên không còn tồn tại trong danh sách chuẩn.
+  const updateCompanyCategory = useCallback((idOrOldName, updatedData) => {
+    const cleanName = (updatedData.name || '').trim();
+    if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+
+    let oldName = '';
+    let updatedObj = null;
+
+    setCompanyCategoryObjects((prev) => {
+      return prev.map((c) => {
+        const isMatch = (typeof c === 'object' && (c.id === idOrOldName || c.name === idOrOldName)) || c === idOrOldName;
+        if (!isMatch) return c;
+
+        oldName = typeof c === 'string' ? c : c.name;
+        updatedObj = {
+          ...(typeof c === 'object' ? c : { id: `cat-${Date.now()}` }),
+          ...updatedData,
+          name: cleanName,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        };
+        return updatedObj;
+      });
+    });
+
+    if (oldName && oldName !== cleanName) {
+      setCourses((prev) => prev.map((c) => ({
+        ...c,
+        category: c.category === oldName ? cleanName : c.category,
+        categories: c.categories ? c.categories.map((cat) => (cat === oldName ? cleanName : cat)) : c.categories,
+      })));
+      setCurricula((prev) => prev.map((cur) => (cur.category === oldName ? { ...cur, category: cleanName } : cur)));
+      setAssessments((prev) => prev.map((a) => ({
+        ...a,
+        category: a.category === oldName ? cleanName : a.category,
+        categories: a.categories ? a.categories.map((cat) => (cat === oldName ? cleanName : cat)) : a.categories,
+      })));
+      setLibraries((prev) => prev.map((lib) => ({
+        ...lib,
+        domains: (lib.domains || []).map((d) => (d.category === oldName ? { ...d, category: cleanName } : d)),
+      })));
+    }
+
+    return { ok: true, category: updatedObj };
+  }, []);
+
   const renameCompanyCategory = useCallback((oldName, newName) => {
-    const clean = (newName || '').trim();
-    if (!clean || clean === oldName) return;
-    setCompanyCategories((prev) => prev.map((c) => (c === oldName ? clean : c)));
-    setCourses((prev) => prev.map((c) => ({
-      ...c,
-      category: c.category === oldName ? clean : c.category,
-      categories: c.categories ? c.categories.map((cat) => (cat === oldName ? clean : cat)) : c.categories,
-    })));
-    setCurricula((prev) => prev.map((cur) => (cur.category === oldName ? { ...cur, category: clean } : cur)));
-    setAssessments((prev) => prev.map((a) => ({
-      ...a,
-      category: a.category === oldName ? clean : a.category,
-      categories: a.categories ? a.categories.map((cat) => (cat === oldName ? clean : cat)) : a.categories,
-    })));
-    setLibraries((prev) => prev.map((lib) => ({
-      ...lib,
-      domains: (lib.domains || []).map((d) => (d.category === oldName ? { ...d, category: clean } : d)),
-    })));
-  }, []);
+    return updateCompanyCategory(oldName, { name: newName });
+  }, [updateCompanyCategory]);
 
-  // Xóa 1 Category khỏi danh sách chuẩn. UI phải tự tính usage count và chỉ
-  // gọi hàm này khi = 0 (chặn xóa khi đang dùng) — action ở đây không tự
-  // kiểm tra lại để tránh trùng logic 2 nơi.
-  const deleteCompanyCategory = useCallback((name) => {
-    setCompanyCategories((prev) => prev.filter((c) => c !== name));
+  const deleteCompanyCategory = useCallback((idOrName) => {
+    setCompanyCategoryObjects((prev) =>
+      prev.filter((c) => (typeof c === 'string' ? c !== idOrName : (c.id !== idOrName && c.name !== idOrName)))
+    );
   }, []);
 
   // -------------------------------------------------------------------------
@@ -2094,9 +2161,12 @@ export function CourseStoreProvider({ children }) {
         assessmentAttempts,
         recordAssessmentAttempt,
         companyCategories,
+        companyCategoryObjects,
         addCompanyCategory,
+        updateCompanyCategory,
         renameCompanyCategory,
         deleteCompanyCategory,
+        getCategoryMeta: (name) => getCategoryMetadata(name, companyCategoryObjects),
         accessFor,
         enrollCourse,
         // Trung Tâm Chi Phí (Cost Center)

@@ -896,6 +896,17 @@ export default function AdminCourseBuilder() {
   // có canBeAssignedToClass) — thay cho trainersDirectory cũ chỉ 4 hồ sơ tĩnh.
   const eligibleTrainers = teachingEligibleUsers();
 
+  const qScope = searchParams.get('scope');
+  const qDeliveryType = searchParams.get('deliveryType');
+  const qOnlineClassType = searchParams.get('onlineClassType');
+
+  // Khóa mới có bị giới hạn theo phân hệ mở từ Catalog không?
+  // - Bấm từ tab Online Class -> isOnlineScoped = true (chỉ tạo Tự học / Lớp Live, không thể tạo Trực tiếp)
+  // - Bấm từ tab Classroom hoặc role Trainer -> isClassroomScoped = true (chỉ tạo Trực tiếp, không thể tạo Online)
+  // - Bấm từ tab All Class hoặc chỉnh sửa khóa đã tạo -> isOnlineScoped = false, isClassroomScoped = false (toàn quyền chọn cả 3)
+  const isOnlineScoped = isNew && (qScope === 'online' || (qDeliveryType === 'ONLINE_ELEARNING' && qScope !== 'all' && qScope !== 'classroom'));
+  const isClassroomScoped = isTrainerOnly || (isNew && (qScope === 'classroom' || (qDeliveryType === 'IN_PERSON_CLASSROOM' && qScope !== 'all' && qScope !== 'online')));
+
   // Khóa mới do Trainer/L&D tạo phải bắt đầu ở dạng Trực tiếp với chính họ là
   // giảng viên — createBlankCourse() mặc định Online nên phải ghi đè ở đây.
   function withRoleDefaults(course) {
@@ -906,8 +917,6 @@ export default function AdminCourseBuilder() {
     const base = { ...course, createdBy: authUser?.userId };
     // Bấm "Create New Course" từ 1 trong 3 tab Learning Objects/Online Class/
     // Classroom trên Catalog thì tự chọn sẵn đúng hình thức đào tạo tương ứng.
-    const qDeliveryType = searchParams.get('deliveryType');
-    const qOnlineClassType = searchParams.get('onlineClassType');
     if (!isTrainerOnly && qDeliveryType) {
       return {
         ...base,
@@ -1491,7 +1500,12 @@ export default function AdminCourseBuilder() {
   return (
     <>
       <div className="page-crumb" style={{ marginBottom: 6 }}>
-        <Link to="/admin/courses" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Courses</Link> / {isNew ? 'New course' : draft.title}
+        <Link to="/admin/courses" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Courses</Link> / {
+          !isNew ? draft.title :
+          isOnlineScoped ? 'Tạo Khóa Học Trực Tuyến (Online Course)' :
+          isClassroomScoped ? 'Tạo Khóa Đào Tạo Trực Tiếp (In-Person Workshop)' :
+          'Tạo Khóa Học Mới (All Modes)'
+        }
       </div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: 12 }}>
         <div>
@@ -1565,125 +1579,27 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {isTrainerOnly ? (
-        <div className="card card-pad" style={{ marginBottom: 16, background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1.5px solid #93c5fd', borderRadius: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--blue, #2563eb)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 8px rgba(37,99,235,0.25)', flexShrink: 0 }}>
-                <i className="ti ti-school" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 14.5, color: '#1e3a8a' }}>Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành (In-Person Workshop)</div>
-                <div style={{ fontSize: 12, color: '#2563eb', marginTop: 2 }}>
-                  Giảng viên / L&amp;D chỉ tạo được khóa Trực Tiếp và tự động là người đứng lớp: <strong>{authUser.fullName}</strong> (Chính bạn &middot; Quản trị lớp học và quét mã QR Điểm danh trực tiếp)
-                </div>
-              </div>
-            </div>
-            <Badge tone="blue" icon="ti-lock">Quyền Hạn: Giảng Viên / L&amp;D (Chỉ Mở Lớp Trực Tiếp)</Badge>
-          </div>
-        </div>
-      ) : (
+      {/* SCOPED CREATION / DELIVERY MODE SELECTOR */}
+      {isOnlineScoped ? (
+        /* CASE 1: ONLINE CLASS SCOPED CREATION -> ONLY SHOW 2 ONLINE TYPES (E-LEARNING / VIRTUAL CLASS) */
         <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
-              <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
-              1. Hình Thức Đào Tạo (Delivery Mode)
-            </div>
-            <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
-              {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
-            </Badge>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', onlineClassType: draft.onlineClassType || 'E_LEARNING' })}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-                padding: '14px 16px',
-                borderRadius: 8,
-                border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
-                background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft, #f0fdf4)' : '#fff',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail, #15803d)' : 'var(--paper-sunken)', color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                <i className="ti ti-device-laptop" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
-                  Khóa Học Trực Tuyến (Online E-learning)
-                </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                  Học viên tự học qua Video, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm hoặc Lớp Zoom/Teams.
-                </div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => patch({
-                deliveryType: 'IN_PERSON_CLASSROOM',
-                modality: 'CLASSROOM_LAB',
-                format: 'Store Practical Lab / ILT',
-                trainerId: draft.trainerId || eligibleTrainers[0]?.userId,
-                trainerName: draft.trainerName || eligibleTrainers[0]?.fullName,
-                venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
-                venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
-                scheduleDate: draft.scheduleDate || '2026-08-28',
-                scheduleTime: draft.scheduleTime || '08:30 - 11:30 (3.0 hours)',
-                maxCapacity: draft.maxCapacity || 25,
-              })}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-                padding: '14px 16px',
-                borderRadius: 8,
-                border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue, #2563eb)' : '1px solid var(--line)',
-                background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft, #eff6ff)' : '#fff',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue, #2563eb)' : 'var(--paper-sunken)', color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                <i className="ti ti-chalkboard" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#1e40af' : 'var(--ink)', marginBottom: 2 }}>
-                  Khóa Đào Tạo Trực Tiếp (In-Person Workshop)
-                </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                  Học tập trung tại xưởng/phòng thực hành có Giảng viên (Trainer) &amp; Điểm danh Live QR.
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CLASS TYPE SELECTOR (FOR ONLINE COURSES) */}
-      {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
-        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
             <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
               <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
-              2. Phân Loại Khóa Trực Tuyến (Class Type)
+              1. Phân Loại Khóa Trực Tuyến (Online Class Type)
             </div>
-            <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
-              {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'Tự Học (Self-Paced)' : 'Lớp Live Zoom/Teams'}
-            </Badge>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Badge tone="sage" icon="ti-lock">Chỉ Áp Dụng: Khóa Trực Tuyến</Badge>
+              <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
+                {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '🌐 Tự Học (E-Learning)' : '📹 Lớp Live Zoom/Teams'}
+              </Badge>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
             <button
               type="button"
-              onClick={() => patch({ onlineClassType: 'E_LEARNING', ...deriveModalityFormat(draft.deliveryType, 'E_LEARNING') })}
+              onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', onlineClassType: 'E_LEARNING', ...deriveModalityFormat('ONLINE_ELEARNING', 'E_LEARNING') })}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
                 border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
@@ -1705,31 +1621,206 @@ export default function AdminCourseBuilder() {
               </div>
             </button>
 
-            <button
-              type="button"
-              onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat(draft.deliveryType, 'VIRTUAL_CLASS') })}
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
-                border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
-                background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
-                cursor: 'pointer', textAlign: 'left',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber, #d97706)' : 'var(--paper-sunken)', color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                <i className="ti ti-video" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
-                  Lớp Học Trực Tuyến Live (Virtual Classroom)
+            {canCreateVirtualClass && (
+              <button
+                type="button"
+                onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat('ONLINE_ELEARNING', 'VIRTUAL_CLASS') })}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
+                  border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
+                  background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
+                  cursor: 'pointer', textAlign: 'left',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber, #d97706)' : 'var(--paper-sunken)', color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                  <i className="ti ti-video" />
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                  Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
+                    Lớp Học Trực Tuyến Live (Virtual Classroom)
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            )}
           </div>
         </div>
+      ) : isClassroomScoped ? (
+        /* CASE 2: CLASSROOM / IN-PERSON SCOPED CREATION -> ONLY SHOW IN-PERSON WORKSHOP */
+        <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--blue-soft, #eff6ff)', border: '1.5px solid var(--blue, #2563eb)', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--blue, #2563eb)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 8px rgba(37,99,235,0.25)', flexShrink: 0 }}>
+                <i className="ti ti-chalkboard" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14.5, color: '#1e40af' }}>
+                  Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành (In-Person Workshop)
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                  {isTrainerOnly
+                    ? `Giảng viên phụ trách: ${authUser.fullName} (Chính bạn · Quản trị lớp học và quét mã QR Điểm danh trực tiếp)`
+                    : 'Đào tạo tập trung tại cơ sở/xưởng có Giảng viên (Trainer) & Quản trị điểm danh Live QR.'}
+                </div>
+              </div>
+            </div>
+            <Badge tone="blue" icon="ti-lock">Chỉ Áp Dụng: Lớp Trực Tiếp (In-Person)</Badge>
+          </div>
+        </div>
+      ) : (
+        /* CASE 3: ALL CLASS / MULTI-MODAL CREATION -> SHOW FULL CHOICE OF ALL 3 FORMS */
+        <>
+          <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+                <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                1. Hình Thức Đào Tạo (Delivery Mode)
+              </div>
+              <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
+                {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => patch({ deliveryType: 'ONLINE_ELEARNING', modality: 'SCORM_PACKAGE', format: 'SCORM 2004', onlineClassType: draft.onlineClassType || 'E_LEARNING' })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '14px 16px',
+                  borderRadius: 8,
+                  border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
+                  background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail, #15803d)' : 'var(--paper-sunken)', color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                  <i className="ti ti-device-laptop" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                    Khóa Học Trực Tuyến (Online E-learning)
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    Học viên tự học qua Video, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm hoặc Lớp Zoom/Teams.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => patch({
+                  deliveryType: 'IN_PERSON_CLASSROOM',
+                  modality: 'CLASSROOM_LAB',
+                  format: 'Store Practical Lab / ILT',
+                  trainerId: draft.trainerId || eligibleTrainers[0]?.userId,
+                  trainerName: draft.trainerName || eligibleTrainers[0]?.fullName,
+                  venueId: draft.venueId || meetingRoomsAndLabs[2]?.id || 'lab-ap-fresh',
+                  venue: draft.venue || meetingRoomsAndLabs[2]?.name || 'Fresh Food & Bakery Practical Lab (MM An Phu)',
+                  scheduleDate: draft.scheduleDate || '2026-08-28',
+                  scheduleTime: draft.scheduleTime || '08:30 - 11:30 (3.0 hours)',
+                  maxCapacity: draft.maxCapacity || 25,
+                })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '14px 16px',
+                  borderRadius: 8,
+                  border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue, #2563eb)' : '1px solid var(--line)',
+                  background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft, #eff6ff)' : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue, #2563eb)' : 'var(--paper-sunken)', color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                  <i className="ti ti-chalkboard" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#1e40af' : 'var(--ink)', marginBottom: 2 }}>
+                    Khóa Đào Tạo Trực Tiếp (In-Person Workshop)
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    Học tập trung tại xưởng/phòng thực hành có Giảng viên (Trainer) &amp; Điểm danh Live QR.
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* CLASS TYPE SELECTOR (FOR ONLINE COURSES IN ALL CLASS MODE) */}
+          {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
+            <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+                  <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
+                  2. Phân Loại Khóa Trực Tuyến (Class Type)
+                </div>
+                <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
+                  {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'Tự Học (Self-Paced)' : 'Lớp Live Zoom/Teams'}
+                </Badge>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => patch({ onlineClassType: 'E_LEARNING', ...deriveModalityFormat(draft.deliveryType, 'E_LEARNING') })}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
+                    border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
+                    background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail, #15803d)' : 'var(--paper-sunken)', color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                    <i className="ti ti-player-play" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                      E-Learning (Tự Học Theo Tiến Độ)
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                      Học viên tự học theo Module/Bài học (SCORM, Video, Slide PPT, PDF) kèm bài thi trắc nghiệm.
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => patch({ onlineClassType: 'VIRTUAL_CLASS', ...deriveModalityFormat(draft.deliveryType, 'VIRTUAL_CLASS') })}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
+                    border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
+                    background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber, #d97706)' : 'var(--paper-sunken)', color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#fff' : 'var(--ink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                    <i className="ti ti-video" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
+                      Lớp Học Trực Tuyến Live (Virtual Classroom)
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                      Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* GLOBAL VALIDATION ERROR BANNER */}

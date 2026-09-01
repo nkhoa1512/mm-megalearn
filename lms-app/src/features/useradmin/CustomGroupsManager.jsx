@@ -46,9 +46,19 @@ export default function CustomGroupsManager() {
     language,
   } = useCourseStore();
 
-  // Search & Filter
+  // Search & Filter State
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, DYNAMIC, MANUAL, FILE_IMPORT
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [customGroupGroupBy, setCustomGroupGroupBy] = useState('NONE');
+  const [showGroupFilters, setShowGroupFilters] = useState(false);
+  const [collapsedGroupSections, setCollapsedGroupSections] = useState({});
+
+  const CUSTOM_GROUP_GROUP_BY_OPTIONS = [
+    { id: 'NONE', label: 'Không gộp nhóm' },
+    { id: 'TYPE', label: 'Theo Hình Thức' },
+    { id: 'CATEGORY', label: 'Theo Lĩnh Vực / Danh Mục' },
+  ];
 
   // View Members Modal
   const [viewMembersGroup, setViewMembersGroup] = useState(null);
@@ -105,15 +115,64 @@ export default function CustomGroupsManager() {
   const filteredGroups = useMemo(() => {
     return customGroups.filter((g) => {
       const matchType = typeFilter === 'ALL' || g.type === typeFilter;
+      const matchCategory = categoryFilter === 'ALL' || (g.category || 'SPECIAL_COHORT') === categoryFilter;
       const q = search.toLowerCase();
       const matchSearch =
         !search.trim() ||
         (g.title && g.title.toLowerCase().includes(q)) ||
         (g.code && g.code.toLowerCase().includes(q)) ||
         (g.description && g.description.toLowerCase().includes(q));
-      return matchType && matchSearch;
+      return matchType && matchCategory && matchSearch;
     });
-  }, [customGroups, typeFilter, search]);
+  }, [customGroups, typeFilter, categoryFilter, search]);
+
+  const activeGroupFiltersCount = (typeFilter !== 'ALL' ? 1 : 0) + (categoryFilter !== 'ALL' ? 1 : 0);
+
+  function handleClearAllGroupFilters() {
+    setSearch('');
+    setTypeFilter('ALL');
+    setCategoryFilter('ALL');
+  }
+
+  function toggleGroupSectionCollapse(secId) {
+    setCollapsedGroupSections((prev) => ({ ...prev, [secId]: !prev[secId] }));
+  }
+
+  const groupedCustomGroups = useMemo(() => {
+    if (customGroupGroupBy === 'NONE') return null;
+    const map = {};
+    filteredGroups.forEach((grp) => {
+      let key = 'OTHER';
+      let title = 'Khác';
+      let icon = 'ti-folder';
+
+      if (customGroupGroupBy === 'TYPE') {
+        key = grp.type || 'DYNAMIC';
+        if (key === 'DYNAMIC') {
+          title = '🏢 Nhóm Theo Cơ Cấu (Dynamic)';
+          icon = 'ti-binary-tree';
+        } else if (key === 'MANUAL') {
+          title = '👤 Nhóm Chọn User Thủ Công';
+          icon = 'ti-users';
+        } else {
+          title = '📄 Nhóm Import Từ File (Template)';
+          icon = 'ti-file-spreadsheet';
+        }
+      } else if (customGroupGroupBy === 'CATEGORY') {
+        key = grp.category || 'SPECIAL_COHORT';
+        const cat = CATEGORY_OPTIONS.find((c) => c.id === key);
+        title = cat ? cat.label : 'Nhóm Đặc Thù / Chuyên Biệt';
+        icon = 'ti-tag';
+      }
+
+      if (!map[key]) {
+        map[key] = { id: key, title, icon, groups: [] };
+      }
+      map[key].groups.push(grp);
+    });
+
+    return Object.values(map);
+  }, [filteredGroups, customGroupGroupBy]);
 
   // Members resolved for the currently viewed group
   const currentGroupMembers = useMemo(() => {
@@ -385,31 +444,30 @@ export default function CustomGroupsManager() {
         </div>
       </div>
 
-      {/* 2. SEARCH & ACTION TOOLBAR */}
+      {/* 2. SEARCH & ACTION TOOLBAR (ENTERPRISE 2-ROW) */}
       <div
-        className="card card-pad"
+        className="card"
         style={{
           background: '#fff',
           border: '1px solid var(--line)',
           borderRadius: 12,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12,
+          padding: '16px 20px',
+          marginBottom: 16,
         }}
       >
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
-          <div style={{ position: 'relative', minWidth: 260, flex: 1 }}>
+        {/* Row 1: Search + Group By + Filter Toggle + Action Buttons */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          {/* Search Input */}
+          <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
             <i
               className="ti ti-search"
               style={{
                 position: 'absolute',
-                left: 10,
+                left: 12,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: 'var(--ink-faint)',
-                fontSize: 14,
+                fontSize: 15,
               }}
             />
             <input
@@ -418,199 +476,389 @@ export default function CustomGroupsManager() {
               placeholder="Tìm kiếm nhóm theo Tên, Mã ID, Mô tả..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: 32, fontSize: 13 }}
+              style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+              >
+                <i className="ti ti-x" />
+              </button>
+            )}
           </div>
 
-          <select
-            className="field-select"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={{ width: 220, fontSize: 13 }}
-          >
-            <option value="ALL">-- Tất cả loại nhóm --</option>
-            <option value="DYNAMIC">🏢 Nhóm Theo Cơ Cấu (Dynamic)</option>
-            <option value="MANUAL">👤 Nhóm Chọn User</option>
-            <option value="FILE_IMPORT">📄 Nhóm Import Từ File (Template)</option>
-          </select>
-        </div>
+          {/* Right controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Group By Select */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken, #F8FAFC)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <select
+                value={customGroupGroupBy}
+                onChange={(e) => setCustomGroupGroupBy(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: 12.5,
+                  fontWeight: customGroupGroupBy !== 'NONE' ? 700 : 500,
+                  color: customGroupGroupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {CUSTOM_GROUP_GROUP_BY_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Button variant="outline" size="sm" icon="ti-download" onClick={handleDownloadTemplate}>
-            Tải File Mẫu (CSV)
-          </Button>
-          <Button variant="primary" size="sm" icon="ti-plus" onClick={handleOpenAdd}>
-            + Tạo Nhóm Mới
-          </Button>
-        </div>
-      </div>
-
-      {/* 3. GROUPS TABLE */}
-      <div className="card" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>TÊN NHÓM &amp; MÔ TẢ</th>
-                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 140 }}>MÃ ID</th>
-                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 180 }}>HÌNH THỨC</th>
-                <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700, width: 150 }}>THÀNH VIÊN</th>
-                <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 170 }}>CẬP NHẬT (LAST PROCESSED)</th>
-                <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, width: 150 }}>THAO TÁC</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredGroups.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-faint)' }}>
-                    <i className="ti ti-folder-off" style={{ fontSize: 32, display: 'block', marginBottom: 8 }} />
-                    Không tìm thấy nhóm người dùng nào phù hợp.
-                  </td>
-                </tr>
-              ) : (
-                filteredGroups.map((grp) => {
-                  const members = resolveGroupMembers(grp, users);
-                  const memberCount = grp.memberCount !== undefined ? grp.memberCount : members.length;
-                  const tagColor = grp.badgeColor || '#0EA5E9';
-
-                  return (
-                    <tr
-                      key={grp.id}
-                      style={{
-                        borderBottom: '1px solid var(--line)',
-                        fontSize: 13,
-                        transition: 'background 0.15s ease',
-                      }}
-                    >
-                      {/* Title & Description */}
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                          <span
-                            style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: '50%',
-                              background: tagColor,
-                              marginTop: 5,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <div>
-                            <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 13.5, marginBottom: 2 }}>
-                              {grp.title || grp.name}
-                            </div>
-                            {grp.description && (
-                              <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                                {grp.description}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Code / ID */}
-                      <td style={{ padding: '12px 14px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'monospace',
-                            fontSize: 11.5,
-                            background: '#F1F5F9',
-                            color: '#334155',
-                            padding: '3px 8px',
-                            borderRadius: 6,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {grp.code || grp.id}
-                        </span>
-                      </td>
-
-                      {/* Type */}
-                      <td style={{ padding: '12px 14px' }}>
-                        {grp.type === 'DYNAMIC' ? (
-                          <Badge tone="purple" icon="ti-binary-tree">Theo Cơ Cấu</Badge>
-                        ) : grp.type === 'FILE_IMPORT' ? (
-                          <Badge tone="amber" icon="ti-file-spreadsheet">Import File</Badge>
-                        ) : (
-                          <Badge tone="blue" icon="ti-user-check">Chọn User</Badge>
-                        )}
-                      </td>
-
-                      {/* Member Count & View Button */}
-                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => setViewMembersGroup(grp)}
-                          style={{
-                            background: '#EFF6FF',
-                            border: '1px solid #BFDBFE',
-                            borderRadius: 20,
-                            padding: '3px 10px',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: '#1E40AF',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 5,
-                          }}
-                          title="Bấm để xem danh sách thành viên chi tiết"
-                        >
-                          <i className="ti ti-users" style={{ fontSize: 13 }} />
-                          <span>{memberCount} học viên</span>
-                        </button>
-                      </td>
-
-                      {/* Last Processed */}
-                      <td style={{ padding: '12px 14px', color: 'var(--ink-soft)', fontSize: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <i className="ti ti-clock" style={{ color: 'var(--ink-faint)' }} />
-                          <span>{grp.lastProcessed || '10:05 AM 8/29/2026'}</span>
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="ti-users"
-                            onClick={() => setViewMembersGroup(grp)}
-                            title="Xem danh sách thành viên"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="ti-edit"
-                            onClick={() => handleOpenEdit(grp)}
-                            title="Chỉnh sửa nhóm"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="ti-copy"
-                            onClick={() => duplicateCustomGroup(grp.id)}
-                            title="Nhân bản nhóm"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="ti-trash"
-                            onClick={() => setDeleteConfirm({ isOpen: true, group: grp })}
-                            style={{ color: '#E11D48' }}
-                            title="Xóa nhóm"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+            {/* Filter Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowGroupFilters(!showGroupFilters)}
+              className={`btn btn-sm ${activeGroupFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+              style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+            >
+              <i className="ti ti-filter" />
+              <span>Bộ Lọc</span>
+              {activeGroupFiltersCount > 0 && (
+                <span style={{ background: '#fff', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                  {activeGroupFiltersCount}
+                </span>
               )}
-            </tbody>
-          </table>
+              <i className={`ti ${showGroupFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+            </button>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Button variant="outline" size="sm" icon="ti-download" onClick={handleDownloadTemplate} style={{ height: 38 }}>
+                Tải File Mẫu (CSV)
+              </Button>
+              <Button variant="primary" size="sm" icon="ti-plus" onClick={handleOpenAdd} style={{ height: 38 }}>
+                + Tạo Nhóm Mới
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Row 2: Collapsible Filter Grid with Top Labels */}
+        {showGroupFilters && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+              {/* Filter 1: Hình Thức Nhóm */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Hình Thức Nhóm (Type)
+                </label>
+                <select
+                  className="field-select"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    borderColor: typeFilter !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                    background: typeFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                    fontWeight: typeFilter !== 'ALL' ? 700 : 500,
+                  }}
+                >
+                  <option value="ALL">Tất cả hình thức</option>
+                  <option value="DYNAMIC">🏢 Nhóm Theo Cơ Cấu (Dynamic)</option>
+                  <option value="MANUAL">👤 Nhóm Chọn User Thủ Công</option>
+                  <option value="FILE_IMPORT">📄 Nhóm Import Từ File (Template)</option>
+                </select>
+              </div>
+
+              {/* Filter 2: Danh Mục / Phân Loại */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Lĩnh Vực / Danh Mục (Category)
+                </label>
+                <select
+                  className="field-select"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 12.5,
+                    borderRadius: 6,
+                    borderColor: categoryFilter !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
+                    background: categoryFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                    fontWeight: categoryFilter !== 'ALL' ? 700 : 500,
+                  }}
+                >
+                  <option value="ALL">Tất cả danh mục ({CATEGORY_OPTIONS.length})</option>
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Reset Filters */}
+            {activeGroupFiltersCount > 0 && (
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--ink-soft)', paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
+                <span>Đang áp dụng <strong>{activeGroupFiltersCount}</strong> tiêu chí lọc</span>
+                <button
+                  type="button"
+                  onClick={handleClearAllGroupFilters}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#E11D48',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 12,
+                  }}
+                >
+                  <i className="ti ti-trash-x" />
+                  Xóa tất cả bộ lọc
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* 3. GROUPS TABLE & GROUPED ACCORDIONS */}
+      {(() => {
+        function renderGroupsTable(groupsToRender) {
+          return (
+            <div className="card" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>TÊN NHÓM &amp; MÔ TẢ</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 140 }}>MÃ ID</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 180 }}>HÌNH THỨC</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700, width: 150 }}>THÀNH VIÊN</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 170 }}>CẬP NHẬT (LAST PROCESSED)</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, width: 150 }}>THAO TÁC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupsToRender.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-faint)' }}>
+                          <i className="ti ti-folder-off" style={{ fontSize: 32, display: 'block', marginBottom: 8 }} />
+                          Không tìm thấy nhóm người dùng nào phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      groupsToRender.map((grp) => {
+                        const members = resolveGroupMembers(grp, users);
+                        const memberCount = grp.memberCount !== undefined ? grp.memberCount : members.length;
+                        const tagColor = grp.badgeColor || '#0EA5E9';
+
+                        return (
+                          <tr
+                            key={grp.id}
+                            style={{
+                              borderBottom: '1px solid var(--line)',
+                              fontSize: 13,
+                              transition: 'background 0.15s ease',
+                            }}
+                          >
+                            {/* Title & Description */}
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <span
+                                  style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    background: tagColor,
+                                    marginTop: 5,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <div>
+                                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 13.5, marginBottom: 2 }}>
+                                    {grp.title || grp.name}
+                                  </div>
+                                  {grp.description && (
+                                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                                      {grp.description}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Code / ID */}
+                            <td style={{ padding: '12px 14px' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontSize: 11.5,
+                                  background: '#F1F5F9',
+                                  color: '#334155',
+                                  padding: '3px 8px',
+                                  borderRadius: 6,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {grp.code || grp.id}
+                              </span>
+                            </td>
+
+                            {/* Type */}
+                            <td style={{ padding: '12px 14px' }}>
+                              {grp.type === 'DYNAMIC' ? (
+                                <Badge tone="purple" icon="ti-binary-tree">Theo Cơ Cấu</Badge>
+                              ) : grp.type === 'FILE_IMPORT' ? (
+                                <Badge tone="amber" icon="ti-file-spreadsheet">Import File</Badge>
+                              ) : (
+                                <Badge tone="blue" icon="ti-user-check">Chọn User</Badge>
+                              )}
+                            </td>
+
+                            {/* Member Count & View Button */}
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => setViewMembersGroup(grp)}
+                                style={{
+                                  background: '#EFF6FF',
+                                  border: '1px solid #BFDBFE',
+                                  borderRadius: 20,
+                                  padding: '3px 10px',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: '#1E40AF',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                }}
+                                title="Bấm để xem danh sách thành viên chi tiết"
+                              >
+                                <i className="ti ti-users" style={{ fontSize: 13 }} />
+                                <span>{memberCount} học viên</span>
+                              </button>
+                            </td>
+
+                            {/* Last Processed */}
+                            <td style={{ padding: '12px 14px', color: 'var(--ink-soft)', fontSize: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <i className="ti ti-clock" style={{ color: 'var(--ink-faint)' }} />
+                                <span>{grp.lastProcessed || '10:05 AM 8/29/2026'}</span>
+                              </div>
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon="ti-users"
+                                  onClick={() => setViewMembersGroup(grp)}
+                                  title="Xem danh sách thành viên"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon="ti-edit"
+                                  onClick={() => handleOpenEdit(grp)}
+                                  title="Chỉnh sửa nhóm"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon="ti-copy"
+                                  onClick={() => duplicateCustomGroup(grp.id)}
+                                  title="Nhân bản nhóm"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon="ti-trash"
+                                  onClick={() => setDeleteConfirm({ isOpen: true, group: grp })}
+                                  style={{ color: '#E11D48' }}
+                                  title="Xóa nhóm"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        }
+
+        if (customGroupGroupBy === 'NONE') {
+          return renderGroupsTable(filteredGroups);
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {groupedCustomGroups.map((sec) => {
+              const isCollapsed = collapsedGroupSections[sec.id];
+              return (
+                <div
+                  key={sec.id}
+                  className="card"
+                  style={{
+                    background: '#fff',
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  {/* Section Header */}
+                  <div
+                    onClick={() => toggleGroupSectionCollapse(sec.id)}
+                    style={{
+                      padding: '12px 18px',
+                      background: 'var(--paper-sunken, #F8FAFC)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <i className={`ti ${sec.icon}`} style={{ fontSize: 18, color: 'var(--blue, #005BAA)' }} />
+                      <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                        {sec.title}
+                      </span>
+                      <Badge tone="blue">
+                        {sec.groups.length} nhóm
+                      </Badge>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-soft)' }}>
+                      <span style={{ fontSize: 12 }}>{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                      <i className={`ti ${isCollapsed ? 'ti-chevron-down' : 'ti-chevron-up'}`} />
+                    </div>
+                  </div>
+
+                  {/* Section Content */}
+                  {!isCollapsed && renderGroupsTable(sec.groups)}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* 4. MODAL: VIEW GROUP MEMBERS */}
