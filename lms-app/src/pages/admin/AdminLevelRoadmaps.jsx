@@ -15,6 +15,7 @@ import {
 import { Button, Modal, Badge } from '../../features/common/ui';
 import VisualRoadmapTimeline from '../../features/roadmaps/VisualRoadmapTimeline';
 import { getCourseImage, COURSE_IMAGE_PRESETS } from '../../data/courseImages';
+import CourseImagePickerStudio from '../../features/common/CourseImagePickerStudio';
 
 function labelForDivision(id) {
   return divisions.find((d) => d.id === id)?.name || id;
@@ -868,24 +869,17 @@ export default function AdminLevelRoadmaps() {
 
       {/* MODAL: TÙY CHỈNH ẢNH MỐC LỘ TRÌNH */}
       {imageModalCourse && (
-        <Modal isOpen={Boolean(imageModalCourse)} onClose={() => setImageModalCourse(null)} title="Tùy Chỉnh Ảnh Mốc Lộ Trình" subtitle={imageModalCourse.title} size="md">
-          <div style={{ marginBottom: 14 }}>
-            <label className="field-label">Nhập URL hình ảnh mới</label>
-            <input type="text" className="field-input" value={customImageUrl} onChange={(e) => setCustomImageUrl(e.target.value)} placeholder="https://images.unsplash.com/..." style={{ width: '100%', marginBottom: 10 }} />
-          </div>
+        <Modal isOpen={Boolean(imageModalCourse)} onClose={() => setImageModalCourse(null)} title="Tùy Chỉnh Ảnh Mốc Lộ Trình" subtitle={imageModalCourse.title} size="lg">
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--ink)' }}>Hoặc chọn ảnh đại diện phù hợp từ thư viện MMVN:</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-              {COURSE_IMAGE_PRESETS.map((preset) => {
-                const isSelected = customImageUrl === preset.url;
-                return (
-                  <button key={preset.id} type="button" onClick={() => { setCustomImageUrl(preset.url); handleSaveMilestoneImage(preset.url); }} style={{ padding: 4, borderRadius: 6, border: isSelected ? '2px solid var(--blue)' : '1px solid var(--line)', background: isSelected ? '#eff6ff' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <img src={preset.url} alt={preset.label} style={{ width: '100%', height: 48, objectFit: 'cover', borderRadius: 4, marginBottom: 4 }} />
-                    <span style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--ink)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <CourseImagePickerStudio
+              imageUrl={customImageUrl}
+              onChange={(url) => setCustomImageUrl(url)}
+              courseTitle={imageModalCourse.title}
+              courseCode={imageModalCourse.code}
+              courseCategory={imageModalCourse.domain || imageModalCourse.category}
+              courseType={imageModalCourse.courseType}
+              estimatedHours={imageModalCourse.estimatedHours || '2.0h'}
+            />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button variant="outline" onClick={() => setImageModalCourse(null)}>Hủy</Button>
