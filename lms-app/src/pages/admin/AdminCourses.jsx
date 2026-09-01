@@ -61,13 +61,74 @@ const CATALOG_TABS = [
 ];
 
 const COURSE_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không Gộp Nhóm' },
+  { id: 'NONE', label: 'Không gộp nhóm' },
   { id: 'CATEGORY', label: 'Lĩnh Vực (Category)' },
   { id: 'ORG_UNIT', label: 'Phòng Ban & Khối' },
   { id: 'LEVEL', label: 'Cấp Bậc' },
   { id: 'LIFECYCLE_STATUS', label: 'Trạng Thái Vòng Đời' },
   { id: 'MODALITY', label: 'Hình Thức Đào Tạo' },
 ];
+
+const CURRICULUM_GROUP_BY_OPTIONS = [
+  { id: 'NONE', label: 'Không gộp nhóm' },
+  { id: 'CATEGORY', label: 'Theo Lĩnh Vực (Category)' },
+  { id: 'STATUS', label: 'Theo Trạng Thái' },
+  { id: 'ASSIGNMENT', label: 'Theo Đối Tượng Phân Bổ' },
+];
+
+function buildCurriculumGroups(curriculaList, groupByOption) {
+  if (!groupByOption || groupByOption === 'NONE') return null;
+  const groupsMap = new Map();
+
+  curriculaList.forEach((cur) => {
+    let key = 'OTHER';
+    let label = 'Khác';
+    let icon = 'ti-folder';
+
+    if (groupByOption === 'CATEGORY') {
+      key = cur.category || 'Chung';
+      label = key;
+      icon = 'ti-category';
+    } else if (groupByOption === 'STATUS') {
+      key = cur.status || 'DRAFT';
+      label = key === 'PUBLISHED' ? 'Đã Phát Hành (Published)' : 'Bản Nháp (Draft)';
+      icon = key === 'PUBLISHED' ? 'ti-circle-check' : 'ti-file-pencil';
+    } else if (groupByOption === 'ASSIGNMENT') {
+      const count = (cur.assignments || []).length;
+      if (count === 0) {
+        key = 'UNASSIGNED';
+        label = 'Chưa Phân Bổ';
+        icon = 'ti-target-off';
+      } else {
+        const types = new Set((cur.assignments || []).map((a) => a.targetType));
+        if (types.has('ALL_ENTERPRISE')) {
+          key = 'ENTERPRISE';
+          label = 'Toàn Doanh Nghiệp (All Associates)';
+          icon = 'ti-world';
+        } else if (types.has('BU') || types.has('DIVISION') || types.has('DEPT')) {
+          key = 'ORG_UNIT';
+          label = 'Theo Khối & Phòng Ban';
+          icon = 'ti-building';
+        } else if (types.has('STORE')) {
+          key = 'STORE';
+          label = 'Theo Cửa Hàng / Store';
+          icon = 'ti-building-store';
+        } else {
+          key = 'CUSTOM';
+          label = 'Theo Nhóm Tùy Chỉnh / Cá Nhân';
+          icon = 'ti-users';
+        }
+      }
+    }
+
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, { key, label, icon, items: [] });
+    }
+    groupsMap.get(key).items.push(cur);
+  });
+
+  return Array.from(groupsMap.values());
+}
 
 function emptyCurriculumDraft(defaultCat = 'Food Safety & Hygiene') {
   return { id: `CUR-${Date.now()}`, title: '', description: '', category: defaultCat, courseIds: [], status: 'PUBLISHED', assignments: [], certificateTemplateId: null };
@@ -183,7 +244,21 @@ export default function AdminCourses() {
   const [groupBy, setGroupBy] = useState('NONE');
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [page, setPage] = useState(1);
+  const [courseViewMode, setCourseViewMode] = useState('TABLE'); // 'TABLE' | 'GRID'
   const pageSize = 15;
+
+  // Curriculum Filter & Group By states
+  const [curriculumSearch, setCurriculumSearch] = useState('');
+  const [selectedCurriculumCategory, setSelectedCurriculumCategory] = useState('ALL');
+  const [selectedCurriculumStatus, setSelectedCurriculumStatus] = useState('ALL');
+  const [selectedCurriculumAssignment, setSelectedCurriculumAssignment] = useState('ALL');
+  const [curriculumGroupBy, setCurriculumGroupBy] = useState('NONE');
+  const [curriculumViewMode, setCurriculumViewMode] = useState('GRID'); // 'GRID' | 'TABLE'
+  const [collapsedCurriculumGroups, setCollapsedCurriculumGroups] = useState(new Set());
+
+  const [showCourseFilters, setShowCourseFilters] = useState(true);
+  const [showCurriculumFilters, setShowCurriculumFilters] = useState(true);
+  const [showAssessmentFilters, setShowAssessmentFilters] = useState(true);
 
   const [editingCurriculum, setEditingCurriculum] = useState(null);
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
@@ -269,6 +344,44 @@ export default function AdminCourses() {
 
   function toggleAssessmentGroup(key) {
     setCollapsedAssessmentGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  // Curriculum Filter & Group computation
+  const filteredCurricula = useMemo(() => {
+    return (visibleCurricula || []).filter((cur) => {
+      if (selectedCurriculumCategory && selectedCurriculumCategory !== 'ALL' && cur.category !== selectedCurriculumCategory) {
+        return false;
+      }
+      if (selectedCurriculumStatus && selectedCurriculumStatus !== 'ALL' && cur.status !== selectedCurriculumStatus) {
+        return false;
+      }
+      if (selectedCurriculumAssignment === 'ASSIGNED' && (!cur.assignments || cur.assignments.length === 0)) {
+        return false;
+      }
+      if (selectedCurriculumAssignment === 'UNASSIGNED' && cur.assignments && cur.assignments.length > 0) {
+        return false;
+      }
+      if (curriculumSearch.trim()) {
+        const q = curriculumSearch.toLowerCase();
+        const matchTitle = (cur.title || '').toLowerCase().includes(q);
+        const matchDesc = (cur.description || '').toLowerCase().includes(q);
+        const matchCat = (cur.category || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchCat) return false;
+      }
+      return true;
+    });
+  }, [visibleCurricula, selectedCurriculumCategory, selectedCurriculumStatus, selectedCurriculumAssignment, curriculumSearch]);
+
+  const curriculumGroups = useMemo(() => {
+    return buildCurriculumGroups(filteredCurricula, curriculumGroupBy);
+  }, [filteredCurricula, curriculumGroupBy]);
+
+  function toggleCurriculumGroup(key) {
+    setCollapsedCurriculumGroups((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
@@ -477,6 +590,300 @@ export default function AdminCourses() {
     );
   }
 
+  function renderCourseGrid(rows) {
+    return (
+      <div className="grid grid-3" style={{ gap: 14 }}>
+        {rows.map((c) => {
+          const hasParticipants = courseHasParticipants(c);
+          const canManage = canManageCourse(c);
+          const badge = courseFormatBadge(c);
+          const lifecycle = computeLifecycleStatus(c);
+          const isMineAndOpen = lifecycle === 'OPEN' && enrolledCourseIdSet.has(c.id);
+          const lifecycleMeta = (isFullAdmin || isAdmin)
+            ? (isMineAndOpen
+              ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
+              : LIFECYCLE_STATUS_META[lifecycle])
+            : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
+          const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
+          const myAccess = accessFor ? accessFor(c, currentUser) : { canAccess: true, state: ACCESS_STATE.OPEN };
+          const rowPricing = pricingOf(c);
+          const courseImg = getCourseImage(c);
+
+          return (
+            <div
+              key={c.id}
+              className="card card-interactive"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                overflow: 'hidden',
+              }}
+            >
+              <div>
+                {/* Banner image with overlay badges */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 130,
+                    background: 'var(--paper-sunken)',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => (hideAllocationDetails ? navigate(`/learner/courses/${c.id}`) : setViewingCourse(c))}
+                >
+                  <img
+                    src={courseImg}
+                    alt={c.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    <Badge tone={badge.tone}>{badge.icon} {badge.label}</Badge>
+                    <Badge tone={lifecycleMeta.tone}>{lifecycleMeta.label}</Badge>
+                  </div>
+                  <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
+                    {rowPricing.isFree ? (
+                      <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+                    ) : (
+                      <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(rowPricing.price)}</Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Body info */}
+                <div style={{ padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{c.code}</span>
+                    <span>&middot;</span>
+                    <Badge tone="slate" size="sm">{(c.categories && c.categories.join(', ')) || c.category}</Badge>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: 'var(--ink)',
+                      margin: '0 0 8px 0',
+                      lineHeight: 1.35,
+                      cursor: 'pointer',
+                      minHeight: 38,
+                    }}
+                    onClick={() => (hideAllocationDetails ? navigate(`/learner/courses/${c.id}`) : setViewingCourse(c))}
+                    title={c.title}
+                  >
+                    {c.title}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10, flexWrap: 'wrap' }}>
+                    <span><i className="ti ti-folders" style={{ marginRight: 4 }} />{c.modules?.length || 2} modules</span>
+                    <span>&middot;</span>
+                    <span><i className="ti ti-clock" style={{ marginRight: 4 }} />{c.estimatedDuration || c.estimatedHours || '2h'}</span>
+                    <CourseTypeBadge courseType={c.courseType} />
+                  </div>
+
+                  {isFullAdmin && (
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '5px 8px', borderRadius: 6, marginBottom: 8 }}>
+                      <i className="ti ti-target" style={{ marginRight: 4, color: 'var(--rail)' }} />
+                      {c.courseType === 'MANDATORY'
+                        ? (asgCount > 0 ? `${asgCount} đối tượng phân bổ` : (c.assignment?.targetLabel || 'Assigned Scope'))
+                        : 'All MMVN Associates (Catalog)'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--line)', background: 'var(--paper-sunken)' }}>
+                {canManage ? (
+                  <>
+                    <Button size="sm" variant="outline" icon="ti-edit" onClick={() => navigate(`/admin/courses/${c.id}`)}>
+                      Edit
+                    </Button>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {!hideAllocationDetails && (
+                        <Button size="sm" variant="ghost" icon="ti-list-details" onClick={() => setViewingCourse(c)}>
+                          Chi Tiết
+                        </Button>
+                      )}
+                      <ActionsMenu
+                        label="Thao tác khác"
+                        items={[
+                          !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Chi Tiết & Phân Bổ', onClick: () => setViewingCourse(c) },
+                          myAccess.canAccess ? {
+                            key: 'learn',
+                            icon: 'ti-player-play',
+                            label: '🚀 Vào Học Bài',
+                            onClick: () => navigate(`/learner/courses/${c.id}`),
+                          } : null,
+                          c.status === 'DRAFT' && { key: 'publish', icon: 'ti-upload', label: 'Publish', onClick: () => publish(c) },
+                          {
+                            key: 'delete',
+                            icon: 'ti-trash',
+                            label: 'Delete',
+                            variant: 'danger',
+                            disabled: hasParticipants,
+                            onClick: () => remove(c),
+                          },
+                        ].filter(Boolean)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant={myAccess.canAccess ? "primary" : "outline"}
+                    icon={myAccess.canAccess ? "ti-player-play" : "ti-eye"}
+                    onClick={() => navigate(`/learner/courses/${c.id}`)}
+                    style={{ width: '100%' }}
+                  >
+                    {isAdmin ? 'Xem Khóa Học' : (myAccess.canAccess ? 'Vào Học Ngay' : 'Xem Chi Tiết')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function renderCurriculumGrid(items) {
+    return (
+      <div className="grid grid-3" style={{ gap: 14 }}>
+        {items.map((cur) => {
+          const asgCount = (cur.assignments || []).length;
+          const asgSummary = assignmentTargetSummary(cur);
+          return (
+            <div key={cur.id} className="card card-pad card-interactive" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
+                  <Badge tone={cur.status === 'PUBLISHED' ? 'sage' : 'rail'}>{cur.status === 'PUBLISHED' ? 'Published' : 'Draft'}</Badge>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, minHeight: 34 }}>{cur.description}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
+                  <span>&middot;</span>
+                  <span>{(cur.courseIds || []).length} khóa E-Learning</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 12 }}>
+                  <i className="ti ti-target" style={{ color: asgCount > 0 ? 'var(--rail)' : 'var(--ink-faint)', marginRight: 5 }} />
+                  <strong>Phân bổ:</strong> {asgSummary}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+                <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
+                  {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Xem Chi Tiết' : 'Chi Tiết & Phân Bổ'}
+                </Button>
+                {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
+                {isCurriculumAdmin && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    icon="ti-trash"
+                    onClick={() => { if (window.confirm(`Xóa giáo trình "${cur.title}"?`)) deleteCurriculum(cur.id); }}
+                  >
+                    Xóa
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {items.length === 0 && (
+          <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+            <i className="ti ti-books" aria-hidden="true" />
+            <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Bạn chưa được phân bổ giáo trình nào.' : 'Không tìm thấy giáo trình nào phù hợp với bộ lọc.'}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderCurriculumTable(items) {
+    return (
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Tên Giáo Trình</th>
+              <th style={{ width: 180 }}>Lĩnh Vực</th>
+              <th style={{ width: 140, textAlign: 'center' }}>Số Khóa E-Learning</th>
+              <th>Đối Tượng Phân Bổ</th>
+              <th style={{ width: 110 }}>Trạng Thái</th>
+              <th style={{ width: 180, textAlign: 'right' }}>Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((cur) => {
+              const asgSummary = assignmentTargetSummary(cur);
+              return (
+                <tr key={cur.id}>
+                  <td>
+                    <div
+                      style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', cursor: 'pointer' }}
+                      onClick={() => setViewingCurriculum(cur)}
+                    >
+                      {cur.title}
+                    </div>
+                    {cur.description && (
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {cur.description}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 600 }}>
+                    {(cur.courseIds || []).length} khóa
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <i className="ti ti-target" style={{ color: (cur.assignments || []).length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }} />
+                      <span>{asgSummary}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <Badge tone={cur.status === 'PUBLISHED' ? 'sage' : 'rail'}>
+                      {cur.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                    </Badge>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                      <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
+                        {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Chi Tiết' : 'Chi Tiết & Phân Bổ'}
+                      </Button>
+                      {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
+                      {isCurriculumAdmin && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          icon="ti-trash"
+                          onClick={() => { if (window.confirm(`Xóa giáo trình "${cur.title}"?`)) deleteCurriculum(cur.id); }}
+                        >
+                          Xóa
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {items.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--ink-soft)' }}>
+                  <i className="ti ti-books" style={{ fontSize: 24, marginBottom: 8, display: 'block', color: 'var(--ink-faint)' }} />
+                  Không tìm thấy giáo trình nào phù hợp với bộ lọc.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   function saveCurriculum(draft) {
     const exists = curricula.some((c) => c.id === draft.id);
     const now = new Date().toISOString().slice(0, 10);
@@ -563,146 +970,479 @@ export default function AdminCourses() {
 
       {isCurriculum ? (
         <>
-          <div className="card card-pad" style={{ marginBottom: 16, fontSize: 12.5, color: 'var(--ink-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <i className="ti ti-info-circle" style={{ color: 'var(--rail)', marginRight: 6 }} />
-              Giáo trình (Curriculum) tập hợp nhiều khóa <strong>E-Learning tự học</strong> thành một lộ trình có cấu trúc. Bạn có thể phân bổ giáo trình cho <strong>BU, Division, Department, Sub-Department, Store hoặc User cụ thể</strong>.
-            </div>
-            {isCurriculumAdmin && (
-              <Button variant="primary" icon="ti-plus" size="sm" onClick={() => setEditingCurriculum(emptyCurriculumDraft(companyCategories[0]))}>
-                Tạo Giáo Trình Mới
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-3" style={{ gap: 14 }}>
-            {visibleCurricula.map((cur) => {
-              const asgCount = (cur.assignments || []).length;
-              const asgSummary = assignmentTargetSummary(cur);
-              return (
-                <div key={cur.id} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
-                      <Badge tone={cur.status === 'PUBLISHED' ? 'sage' : 'rail'}>{cur.status === 'PUBLISHED' ? 'Published' : 'Draft'}</Badge>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, minHeight: 34 }}>{cur.description}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
-                      <span>&middot;</span>
-                      <span>{(cur.courseIds || []).length} khóa E-Learning</span>
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 12 }}>
-                      <i className="ti ti-target" style={{ color: asgCount > 0 ? 'var(--rail)' : 'var(--ink-faint)', marginRight: 5 }} />
-                      <strong>Phân bổ:</strong> {asgSummary}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-                    <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                      {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Xem Chi Tiết' : 'Chi Tiết & Phân Bổ'}
-                    </Button>
-                    {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
-                    {isCurriculumAdmin && (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        icon="ti-trash"
-                        onClick={() => { if (window.confirm(`Xóa giáo trình "${cur.title}"?`)) deleteCurriculum(cur.id); }}
+          {/* Curriculum Filter & Search & Group By Bar */}
+          {(() => {
+            const activeCurriculumFiltersCount = (selectedCurriculumCategory !== 'ALL' ? 1 : 0) + (selectedCurriculumStatus !== 'ALL' ? 1 : 0) + (selectedCurriculumAssignment !== 'ALL' ? 1 : 0);
+            return (
+              <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
+                {/* Row 1: Search + Group By + Filters Toggle + View Mode Switcher */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  {/* Search Input */}
+                  <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 240 }}>
+                    <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                    <input
+                      type="text"
+                      className="field-input"
+                      style={{ paddingLeft: 36, paddingRight: curriculumSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                      placeholder="Tìm kiếm giáo trình theo tên, mô tả..."
+                      value={curriculumSearch}
+                      onChange={(e) => setCurriculumSearch(e.target.value)}
+                    />
+                    {curriculumSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCurriculumSearch('')}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
                       >
-                        Xóa
-                      </Button>
+                        <i className="ti ti-x" />
+                      </button>
                     )}
                   </div>
+
+                  {/* Right controls */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Group By Select */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <select
+                        value={curriculumGroupBy}
+                        onChange={(e) => setCurriculumGroupBy(e.target.value)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          fontSize: 12.5,
+                          fontWeight: curriculumGroupBy !== 'NONE' ? 700 : 500,
+                          color: curriculumGroupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        {CURRICULUM_GROUP_BY_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCurriculumFilters(!showCurriculumFilters)}
+                      className={`btn btn-sm ${activeCurriculumFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+                      style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+                    >
+                      <i className="ti ti-filter" />
+                      <span>Bộ Lọc</span>
+                      {activeCurriculumFiltersCount > 0 && (
+                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                          {activeCurriculumFiltersCount}
+                        </span>
+                      )}
+                      <i className={`ti ${showCurriculumFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+                    </button>
+
+                    {/* View Mode Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                      <button
+                        type="button"
+                        onClick={() => setCurriculumViewMode('GRID')}
+                        className={`btn btn-sm ${curriculumViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                        title="Dạng Lưới (Grid View)"
+                      >
+                        <i className="ti ti-layout-grid" />
+                        <span>Lưới</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurriculumViewMode('TABLE')}
+                        className={`btn btn-sm ${curriculumViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                        title="Dạng Bảng (List View)"
+                      >
+                        <i className="ti ti-list" />
+                        <span>Bảng</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-            {visibleCurricula.length === 0 && (
-              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-                <i className="ti ti-books" aria-hidden="true" />
-                <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Bạn chưa được phân bổ giáo trình nào.' : 'Chưa có giáo trình nào.'}</p>
+
+                {/* Row 2: Filter Grid with Top Labels */}
+                {showCurriculumFilters && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                      {/* Filter 1: Lĩnh Vực */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Lĩnh Vực (Category)
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedCurriculumCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedCurriculumCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedCurriculumCategory !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedCurriculumCategory !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedCurriculumCategory}
+                          onChange={(e) => setSelectedCurriculumCategory(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          {companyCategories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Filter 2: Trạng Thái */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Trạng Thái Phát Hành
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedCurriculumStatus !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedCurriculumStatus !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedCurriculumStatus !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedCurriculumStatus !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedCurriculumStatus}
+                          onChange={(e) => setSelectedCurriculumStatus(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả trạng thái</option>
+                          <option value="PUBLISHED">Published (Phát hành)</option>
+                          <option value="DRAFT">Draft (Bản nháp)</option>
+                        </select>
+                      </div>
+
+                      {/* Filter 3: Phân Bổ */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Đối Tượng Phân Bổ
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedCurriculumAssignment !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedCurriculumAssignment !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedCurriculumAssignment !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedCurriculumAssignment !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedCurriculumAssignment}
+                          onChange={(e) => setSelectedCurriculumAssignment(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả phân bổ</option>
+                          <option value="ASSIGNED">Đã phân bổ</option>
+                          <option value="UNASSIGNED">Chưa phân bổ</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Active Filter Summary Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                        Hiển thị <strong>{filteredCurricula.length}</strong> / {visibleCurricula.length} giáo trình
+                      </div>
+                      {(curriculumSearch || activeCurriculumFiltersCount > 0 || curriculumGroupBy !== 'NONE') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="ti-x"
+                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          onClick={() => {
+                            setCurriculumSearch('');
+                            setSelectedCurriculumCategory('ALL');
+                            setSelectedCurriculumStatus('ALL');
+                            setSelectedCurriculumAssignment('ALL');
+                            setCurriculumGroupBy('NONE');
+                          }}
+                        >
+                          Xóa tất cả bộ lọc
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
+
+          {/* Curriculum Content: Grouped or Flat */}
+          {curriculumGroups ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {curriculumGroups.map((g) => {
+                const collapsed = collapsedCurriculumGroups.has(g.key);
+                return (
+                  <div key={g.key} className="card" style={{ overflow: 'hidden' }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleCurriculumGroup(g.key)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'var(--paper-sunken)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
+                        <i className={`ti ${collapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} aria-hidden="true" />
+                        {g.icon && <i className={`ti ${g.icon}`} aria-hidden="true" />}
+                        <span>{g.label}</span>
+                        <Badge tone="slate">{g.items.length}</Badge>
+                      </span>
+                    </button>
+                    {!collapsed && (
+                      <div style={{ padding: curriculumViewMode === 'GRID' ? 14 : 0 }}>
+                        {curriculumViewMode === 'GRID' ? renderCurriculumGrid(g.items) : renderCurriculumTable(g.items)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {curriculumGroups.length === 0 && (
+                <div className="empty-state">
+                  <i className="ti ti-books" aria-hidden="true" />
+                  <p>Không tìm thấy giáo trình nào phù hợp với bộ lọc.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            curriculumViewMode === 'GRID' ? renderCurriculumGrid(filteredCurricula) : renderCurriculumTable(filteredCurricula)
+          )}
         </>
       ) : isAssessment ? (
         <>
           {/* Assessment Filter & Search Bar */}
-          <div className="card card-pad" style={{ marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: 220, flexShrink: 0 }}>
-                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 10, color: 'var(--ink-faint)', fontSize: 14 }} />
-                <input
-                  type="text"
-                  className="field-input"
-                  style={{ paddingLeft: 32, height: 34, fontSize: 12, width: '100%' }}
-                  placeholder="Tìm kiếm assessment, mã..."
-                  value={assessmentSearch}
-                  onChange={(e) => setAssessmentSearch(e.target.value)}
-                />
+          {(() => {
+            const activeAssessmentFiltersCount = (selectedAssessmentCategory !== 'ALL' ? 1 : 0) + (selectedAssessmentType !== 'ALL' ? 1 : 0) + (selectedAssessmentFormat !== 'ALL' ? 1 : 0) + (selectedAssessmentStatus !== 'ALL' ? 1 : 0);
+            return (
+              <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
+                {/* Row 1: Search + Group By + Filters Toggle */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  {/* Search Input */}
+                  <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 240 }}>
+                    <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                    <input
+                      type="text"
+                      className="field-input"
+                      style={{ paddingLeft: 36, paddingRight: assessmentSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                      placeholder="Tìm kiếm assessment theo tên, mã bài thi..."
+                      value={assessmentSearch}
+                      onChange={(e) => setAssessmentSearch(e.target.value)}
+                    />
+                    {assessmentSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setAssessmentSearch('')}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                      >
+                        <i className="ti ti-x" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Right controls */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Group By Select */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <select
+                        value={assessmentGroupBy}
+                        onChange={(e) => setAssessmentGroupBy(e.target.value)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          fontSize: 12.5,
+                          fontWeight: assessmentGroupBy !== 'NONE' ? 700 : 500,
+                          color: assessmentGroupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        {ASSESSMENT_GROUP_BY_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowAssessmentFilters(!showAssessmentFilters)}
+                      className={`btn btn-sm ${activeAssessmentFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+                      style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+                    >
+                      <i className="ti ti-filter" />
+                      <span>Bộ Lọc</span>
+                      {activeAssessmentFiltersCount > 0 && (
+                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                          {activeAssessmentFiltersCount}
+                        </span>
+                      )}
+                      <i className={`ti ${showAssessmentFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Row 2: Filter Grid with Top Labels */}
+                {showAssessmentFilters && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                      {/* Filter 1: Lĩnh Vực */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Lĩnh Vực (Category)
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedAssessmentCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedAssessmentCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedAssessmentCategory !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedAssessmentCategory !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedAssessmentCategory}
+                          onChange={(e) => setSelectedAssessmentCategory(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          {companyCategories.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Filter 2: Loại Hình */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Loại Hình (Type)
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedAssessmentType !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedAssessmentType !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedAssessmentType !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedAssessmentType !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedAssessmentType}
+                          onChange={(e) => setSelectedAssessmentType(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả loại hình</option>
+                          <option value={ASSESSMENT_TYPES.QUIZ}>📝 Quiz</option>
+                          <option value={ASSESSMENT_TYPES.ASSIGNMENT}>📂 Assignment</option>
+                          <option value={ASSESSMENT_TYPES.SURVEY}>📊 Survey</option>
+                        </select>
+                      </div>
+
+                      {/* Filter 3: Hình Thức */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Hình Thức Phân Phối
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedAssessmentFormat !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedAssessmentFormat !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedAssessmentFormat !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedAssessmentFormat !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedAssessmentFormat}
+                          onChange={(e) => setSelectedAssessmentFormat(e.target.value)}
+                        >
+                          <option value="ALL">Tất cả hình thức</option>
+                          <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Độc Lập (Standalone)</option>
+                          <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Gắn Khóa Học (Course)</option>
+                        </select>
+                      </div>
+
+                      {/* Filter 4: Trạng Thái (Full Admin) */}
+                      {isFullAdmin && (
+                        <div>
+                          <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                            Trạng Thái
+                          </label>
+                          <select
+                            className="field-select"
+                            style={{
+                              width: '100%',
+                              height: 38,
+                              fontSize: 12.5,
+                              borderRadius: 6,
+                              background: selectedAssessmentStatus !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                              borderColor: selectedAssessmentStatus !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                              color: selectedAssessmentStatus !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                              fontWeight: selectedAssessmentStatus !== 'ALL' ? 700 : 500,
+                            }}
+                            value={selectedAssessmentStatus}
+                            onChange={(e) => setSelectedAssessmentStatus(e.target.value)}
+                          >
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="PUBLISHED">Published</option>
+                            <option value="DRAFT">Draft</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Active Filter Summary Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                        Hiển thị <strong>{filteredAssessments.length}</strong> / {visibleAssessments.length} bài assessment
+                      </div>
+                      {(assessmentSearch || activeAssessmentFiltersCount > 0 || assessmentGroupBy !== 'NONE') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="ti-x"
+                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          onClick={() => {
+                            setAssessmentSearch('');
+                            setSelectedAssessmentCategory('ALL');
+                            setSelectedAssessmentType('ALL');
+                            setSelectedAssessmentFormat('ALL');
+                            setSelectedAssessmentStatus('ALL');
+                            setAssessmentGroupBy('NONE');
+                          }}
+                        >
+                          Xóa tất cả bộ lọc
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 170 }}
-                value={selectedAssessmentCategory}
-                onChange={(e) => setSelectedAssessmentCategory(e.target.value)}
-              >
-                <option value="ALL">Mọi Lĩnh Vực</option>
-                {companyCategories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 140 }}
-                value={selectedAssessmentType}
-                onChange={(e) => setSelectedAssessmentType(e.target.value)}
-              >
-                <option value="ALL">Mọi Loại Hình</option>
-                <option value={ASSESSMENT_TYPES.QUIZ}>📝 Quiz</option>
-                <option value={ASSESSMENT_TYPES.ASSIGNMENT}>📂 Assignment</option>
-                <option value={ASSESSMENT_TYPES.SURVEY}>📊 Survey</option>
-              </select>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 160 }}
-                value={selectedAssessmentFormat}
-                onChange={(e) => setSelectedAssessmentFormat(e.target.value)}
-              >
-                <option value="ALL">Mọi Hình Thức</option>
-                <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Độc Lập (Standalone)</option>
-                <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Gắn Khóa Học (Course)</option>
-              </select>
-
-              {isFullAdmin && (
-                <select
-                  className="field-select"
-                  style={{ height: 34, fontSize: 12, width: 130 }}
-                  value={selectedAssessmentStatus}
-                  onChange={(e) => setSelectedAssessmentStatus(e.target.value)}
-                >
-                  <option value="ALL">Mọi Trạng Thái</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="DRAFT">Draft</option>
-                </select>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Gộp nhóm:</span>
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 160 }}
-                value={assessmentGroupBy}
-                onChange={(e) => setAssessmentGroupBy(e.target.value)}
-              >
-                {ASSESSMENT_GROUP_BY_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Assessment List / Grouped View */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -971,71 +1711,215 @@ export default function AdminCourses() {
       ) : (
         <>
           {/* Filter & Search Bar */}
-          <div className="card card-pad" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: 240, flexShrink: 0 }}>
-                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: 10, color: 'var(--ink-faint)', fontSize: 14 }} />
-                <input
-                  type="text"
-                  className="field-input"
-                  style={{ paddingLeft: 32, height: 34, fontSize: 12.5, width: '100%' }}
-                  placeholder={language === 'en' ? 'Search by title, code...' : 'Tìm kiếm theo tên, mã khóa...'}
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                />
+          {(() => {
+            const activeCourseFiltersCount = (selectedCategory !== 'ALL' ? 1 : 0) + (selectedType !== 'ALL' ? 1 : 0) + (selectedLifecycle !== 'ALL' ? 1 : 0);
+            return (
+              <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
+                {/* Row 1: Search + Group By + Filters Toggle + View Mode Switcher */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  {/* Search Input */}
+                  <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 240 }}>
+                    <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+                    <input
+                      type="text"
+                      className="field-input"
+                      style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+                      placeholder={language === 'en' ? 'Search course by title, code, keyword...' : 'Tìm kiếm theo tên khóa học, mã khóa, từ khóa...'}
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                    />
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() => { setSearch(''); setPage(1); }}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+                      >
+                        <i className="ti ti-x" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Right controls */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Group By Select */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <select
+                        value={groupBy}
+                        onChange={(e) => setGroupBy(e.target.value)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          fontSize: 12.5,
+                          fontWeight: groupBy !== 'NONE' ? 700 : 500,
+                          color: groupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                      >
+                        {COURSE_GROUP_BY_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filter Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseFilters(!showCourseFilters)}
+                      className={`btn btn-sm ${activeCourseFiltersCount > 0 ? 'btn-primary' : 'btn-outline'}`}
+                      style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
+                    >
+                      <i className="ti ti-filter" />
+                      <span>Bộ Lọc</span>
+                      {activeCourseFiltersCount > 0 && (
+                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                          {activeCourseFiltersCount}
+                        </span>
+                      )}
+                      <i className={`ti ${showCourseFilters ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{ fontSize: 12, marginLeft: 2 }} />
+                    </button>
+
+                    {/* View Mode Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
+                      <button
+                        type="button"
+                        onClick={() => setCourseViewMode('TABLE')}
+                        className={`btn btn-sm ${courseViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                        title="Dạng Bảng (List View)"
+                      >
+                        <i className="ti ti-list" />
+                        <span>Bảng</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCourseViewMode('GRID')}
+                        className={`btn btn-sm ${courseViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
+                        title="Dạng Lưới (Grid View)"
+                      >
+                        <i className="ti ti-layout-grid" />
+                        <span>Lưới</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Filter Grid with Top Labels */}
+                {showCourseFilters && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+                      {/* Filter 1: Lĩnh Vực */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Lĩnh Vực (Category)
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedCategory !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedCategory !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedCategory}
+                          onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+                        >
+                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          {companyCategories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Filter 2: Loại Khóa Học */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Loại Khóa Học
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedType !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedType !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedType !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedType !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedType}
+                          onChange={(e) => { setSelectedType(e.target.value); setPage(1); }}
+                        >
+                          <option value="ALL">Tất cả loại hình</option>
+                          <option value="MANDATORY">Bắt buộc tuân thủ (Mandatory)</option>
+                          <option value="OPTIONAL">Tự chọn nâng cao (Optional)</option>
+                        </select>
+                      </div>
+
+                      {/* Filter 3: Trạng Thái Vòng Đời */}
+                      <div>
+                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Trạng Thái Vòng Đời
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 12.5,
+                            borderRadius: 6,
+                            background: selectedLifecycle !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedLifecycle !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedLifecycle !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedLifecycle !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedLifecycle}
+                          onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
+                        >
+                          <option value="ALL">Tất cả trạng thái</option>
+                          {Object.entries(isFullAdmin ? LIFECYCLE_STATUS_META : PERSONAL_LIFECYCLE_STATUS_META).map(([key, meta]) => (
+                            <option key={key} value={key}>{meta.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Active Filter Summary Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                        Hiển thị <strong>{groups ? filtered.length : paginated.length}</strong> / <strong>{filtered.length}</strong> khóa học
+                      </div>
+                      {(search || activeCourseFiltersCount > 0 || groupBy !== 'NONE') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="ti-x"
+                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          onClick={() => {
+                            setSearch('');
+                            setSelectedCategory('ALL');
+                            setSelectedType('ALL');
+                            setSelectedLifecycle('ALL');
+                            setGroupBy('NONE');
+                            setPage(1);
+                          }}
+                        >
+                          Xóa tất cả bộ lọc
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }}
-                value={selectedCategory}
-                onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-              >
-                <option value="ALL">{language === 'en' ? `All Categories (${companyCategories.length})` : `Tất Cả Danh Mục (${companyCategories.length})`}</option>
-                {companyCategories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }}
-                value={selectedType}
-                onChange={(e) => { setSelectedType(e.target.value); setPage(1); }}
-              >
-                <option value="ALL">All Types (Mandatory &amp; Elective)</option>
-                <option value="MANDATORY">Mandatory Compliance</option>
-                <option value="OPTIONAL">Optional Elective</option>
-              </select>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 170, flexShrink: 0 }}
-                value={selectedLifecycle}
-                onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
-              >
-                <option value="ALL">Tất Cả Trạng Thái</option>
-                {Object.entries(isFullAdmin ? LIFECYCLE_STATUS_META : PERSONAL_LIFECYCLE_STATUS_META).map(([key, meta]) => (
-                  <option key={key} value={key}>{meta.label}</option>
-                ))}
-              </select>
-
-              <select
-                className="field-select"
-                style={{ height: 34, fontSize: 12, width: 190, flexShrink: 0 }}
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value)}
-              >
-                {COURSE_GROUP_BY_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Showing <strong>{groups ? filtered.length : paginated.length}</strong> of <strong>{filtered.length}</strong> matched courses
-            </div>
-          </div>
+            );
+          })()}
 
           {groups ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1054,25 +1938,29 @@ export default function AdminCourses() {
                         <Badge tone="slate">{g.items.length}</Badge>
                       </span>
                     </button>
-                    {!collapsed && renderCourseTable(g.items)}
+                    {!collapsed && (
+                      courseViewMode === 'GRID'
+                        ? <div style={{ padding: 14 }}>{renderCourseGrid(g.items)}</div>
+                        : renderCourseTable(g.items)
+                    )}
                   </div>
                 );
               })}
               {groups.length === 0 && (
-                <div className="empty-state"><p>No courses match the current filters.</p></div>
+                <div className="empty-state"><p>Không tìm thấy khóa học nào phù hợp với bộ lọc.</p></div>
               )}
             </div>
           ) : (
             <>
-              {renderCourseTable(paginated)}
+              {courseViewMode === 'GRID' ? renderCourseGrid(paginated) : renderCourseTable(paginated)}
               {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 10 }}>
                   <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                    Page <strong>{page}</strong> of <strong>{totalPages}</strong> ({filtered.length} courses total)
+                    Trang <strong>{page}</strong> / <strong>{totalPages}</strong> ({filtered.length} khóa học)
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                      &larr; Previous
+                      &larr; Trước
                     </Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
@@ -1090,10 +1978,10 @@ export default function AdminCourses() {
                           }}
                         >
                           {p}
-</button>
+                        </button>
                       ))}
                     <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                      Next &rarr;
+                      Sau &rarr;
                     </Button>
                   </div>
                 </div>

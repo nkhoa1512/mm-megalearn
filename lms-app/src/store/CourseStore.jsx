@@ -962,8 +962,18 @@ export function CourseStoreProvider({ children }) {
 
   const addCompanyCategory = useCallback((name) => {
     const clean = (name || '').trim();
-    if (!clean) return;
-    setCompanyCategories((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+    if (!clean) return { ok: false, reason: 'Tên danh mục không được để trống' };
+    let alreadyExists = false;
+    setCompanyCategories((prev) => {
+      if (prev.some((c) => c.toLowerCase() === clean.toLowerCase())) {
+        alreadyExists = true;
+        return prev;
+      }
+      return [clean, ...prev];
+    });
+    return alreadyExists
+      ? { ok: false, reason: `Danh mục "${clean}" đã tồn tại.` }
+      : { ok: true, name: clean };
   }, []);
 
   // Đổi tên 1 Category: cascade sang MỌI nơi đang giữ đúng tên cũ (Course,
