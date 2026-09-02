@@ -728,11 +728,14 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
     CURRICULUM_ACCESS_MODE,
   } = await import('../src/utils/curriculumAssignment');
   const {
-    complianceByStore,
-    regionalComplianceRate,
-    headcountInScope,
-    skillGapRows,
-  } = await import('../src/utils/hrbpAnalytics');
+    PORTFOLIO_MODE,
+    resolveHrbpPortfolio,
+    usersInPortfolio,
+    portfolioComplianceRate,
+    complianceByDivision,
+    skillGapByUnit,
+  } = await import('../src/utils/hrbpRules');
+  const { userEnrollmentsMap } = await import('../src/data/mockData');
   const HrbpCurriculumTab = (await import('../src/pages/hrbp/HrbpCurriculumTab')).default;
 
   // Referential Integrity: 100% of referenced course IDs must exist in real courses catalog
@@ -787,14 +790,34 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
   const buckets = hrbpCurriculumBuckets(curricula, hrbpUser, []);
   check('hrbpCurriculumBuckets returns mine and proposed buckets', Array.isArray(buckets.mine) && Array.isArray(buckets.proposed));
 
-  // Analytics
-  const storeList = complianceByStore(allUsers(), {}, courses);
-  check('complianceByStore derives compliance for 8 stores', storeList.length === 8 && storeList.every((s) => s.overall > 0));
-  const rate = regionalComplianceRate(allUsers(), {}, courses);
-  check('regionalComplianceRate returns reasonable percentage', typeof rate === 'number' && rate >= 80 && rate <= 100);
-  check('headcountInScope returns headcount', headcountInScope(allUsers()) >= 100);
-  const gaps = skillGapRows(undefined, allUsers());
-  check('skillGapRows returns non-empty gap list', Array.isArray(gaps) && gaps.length > 0);
+  // HRBP analytics — derived by src/utils/hrbpRules.js. The retired hrbpAnalytics
+  // module invented 85/90/92% defaults whenever an enrollment record was missing;
+  // the rules engine reports the missing record instead. See scripts/verify-hrbp.jsx
+  // for the full HRBP rule suite.
+  const hrbpPortfolio = resolveHrbpPortfolio(hrbpUser, PORTFOLIO_MODE.OPERATIONS);
+  check('the HRBP portfolio resolves to the 23 operations divisions', hrbpPortfolio.divisions.length === 23);
+
+  const hrbpScoped = usersInPortfolio(allUsers(), hrbpPortfolio);
+  check('the HRBP portfolio narrows headcount below the company total',
+    hrbpScoped.length > 0 && hrbpScoped.length < allUsers().length);
+
+  const hrbpRate = portfolioComplianceRate(allUsers(), userEnrollmentsMap, hrbpPortfolio);
+  check('portfolio compliance is a real percentage over real headcount',
+    typeof hrbpRate.compliancePercent === 'number' &&
+    hrbpRate.compliancePercent >= 0 && hrbpRate.compliancePercent <= 100 &&
+    hrbpRate.headcount === hrbpScoped.length);
+  check('compliance is not invented when enrollments are absent',
+    portfolioComplianceRate(allUsers(), {}, hrbpPortfolio).compliancePercent === 0);
+
+  const hrbpDivisions = complianceByDivision(allUsers(), userEnrollmentsMap, hrbpPortfolio);
+  check('a compliance row is produced for every division in the portfolio', hrbpDivisions.length === 23);
+  check('an empty division is banded NO_HEADCOUNT rather than assumed compliant',
+    hrbpDivisions.filter((d) => d.headcount === 0).every((d) => d.band === 'NO_HEADCOUNT'));
+
+  const hrbpGaps = skillGapByUnit(allUsers(), userEnrollmentsMap, courses, hrbpPortfolio);
+  check('competency gaps are derived per division and domain with affected headcount',
+    Array.isArray(hrbpGaps) && hrbpGaps.length > 0 &&
+    hrbpGaps.every((c) => c.headcount > 0 && c.affected <= c.headcount && c.gap <= -5));
 
   // Link repairs & Trainers
   check('trainerUserIdFor(tr-01) is USR-9003', trainerUserIdFor('tr-01') === 'USR-9003');

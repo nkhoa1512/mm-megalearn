@@ -4,18 +4,43 @@ import {
   hrbpUser,
   retailStores,
   allUsers,
+  enrollmentsForUser,
 } from '../../data/mockData';
 import { useCourseStore } from '../../store/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 import HrbpCurriculumTab from './HrbpCurriculumTab';
-import {
-  complianceByStore,
-  regionalComplianceRate,
-  headcountInScope,
-  skillGapRows,
-} from '../../utils/hrbpAnalytics';
 import { getCurriculumProgress } from '../../utils/curriculumAssignment';
+import {
+  PORTFOLIO_MODE,
+  resolveHrbpPortfolio,
+  usersInPortfolio,
+  complianceForUser,
+  complianceByDivision,
+  portfolioComplianceRate,
+  skillGapByUnit,
+  unmeasuredDomainsByUnit,
+  formalLearningScore,
+  deriveReadiness,
+  ninePlacementsForPortfolio,
+  benchStrength,
+  mentorConcentration,
+  interventionSla,
+} from '../../utils/hrbpRules';
+import {
+  PortfolioBar,
+  HrbpKpiRow,
+  ComplianceMatrix,
+  ComplianceCourseBreakdown,
+  GapCellTable,
+  SlaBadge,
+  NineBoxGrid,
+  BenchStrengthPanel,
+  ReadinessCell,
+  BlendCell,
+  HrbpRuleReference,
+  RuleTag,
+} from './HrbpInsights';
 
 const TAB_PATH = {
   SKILL_GAP: '/hrbp',
@@ -55,6 +80,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   }
 
   const [transcriptUser, setTranscriptUser] = useState(null);
+
+  // BR-HRBP-001 — the portfolio an HRBP is accountable for. Every figure on this
+  // page is computed over this scope, never over the whole company by default.
+  const [portfolioMode, setPortfolioMode] = useState(PORTFOLIO_MODE.OPERATIONS);
+  const [selectedBoxKey, setSelectedBoxKey] = useState(null);
 
   // Tab 1: Intervention Modal States
   const [interventionModal, setInterventionModal] = useState(false);
@@ -196,30 +226,141 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   function handleSendSgmNudge(e) {
     e.preventDefault();
     if (!nudgeModal) return;
-    sendComplianceNudge(nudgeModal.storeId || nudgeModal.code || nudgeModal.store, {
-      storeName: nudgeModal.store,
+    sendComplianceNudge(nudgeModal.id || nudgeModal.code, {
+      storeName: nudgeModal.name || nudgeModal.store,
       sgmName: 'Store General Manager (SGM)',
       deadline: nudgeDeadline,
       message: nudgeMessage || `Requires 100% completion of the mandatory food safety/HACCP and fire safety certifications before ${nudgeDeadline}.`,
     });
     setNudgeModal(null);
-    showToast(`⚠️ Formal alert sent to the Store General Manager of ${nudgeModal.store}!`);
+    showToast(`⚠️ Formal alert sent to the Store General Manager of ${nudgeModal.name || nudgeModal.store}!`);
   }
 
-  // Real store compliance list & analytics derived from store users
-  const storeComplianceList = useMemo(
-    () => complianceByStore(users, enrollments, courses),
-    [users, enrollments, courses]
+  // =========================================================================
+  // DERIVED HRBP INTELLIGENCE — every figure below comes from src/utils/hrbpRules.js
+  // =========================================================================
+  const today = useMemo(() => new Date(), []);
+
+  // The store's `enrollments` is only the session overlay (courses enrolled during
+  // this session). The compliance and competency rules need the full picture, so
+  // the static HRIS matrix is merged underneath it exactly as enrollmentsForUser does.
+  const effectiveEnrollments = useMemo(() => {
+    const map = {};
+    (users || []).forEach((u) => {
+      map[u.userId] = enrollmentsForUser(u, enrollments);
+    });
+    return map;
+  }, [users, enrollments]);
+
+  const portfolio = useMemo(
+    () => resolveHrbpPortfolio(currentUser || hrbpUser, portfolioMode),
+    [currentUser, portfolioMode]
   );
 
-  const overallComplianceRate = useMemo(
-    () => regionalComplianceRate(users, enrollments, courses),
-    [users, enrollments, courses]
+  const scopedUsers = useMemo(() => usersInPortfolio(users, portfolio), [users, portfolio]);
+
+  const complianceSummary = useMemo(
+    () => portfolioComplianceRate(users, effectiveEnrollments, portfolio),
+    [users, effectiveEnrollments, portfolio]
   );
 
-  const skillGapList = useMemo(() => skillGapRows(undefined, users), [users]);
+  const divisionCompliance = useMemo(
+    () => complianceByDivision(users, effectiveEnrollments, portfolio),
+    [users, effectiveEnrollments, portfolio]
+  );
 
-  const headcount = useMemo(() => headcountInScope(users), [users]);
+  const gapCells = useMemo(
+    () => skillGapByUnit(users, effectiveEnrollments, courses, portfolio),
+    [users, effectiveEnrollments, courses, portfolio]
+  );
+
+  const unmeasuredCells = useMemo(
+    () => unmeasuredDomainsByUnit(users, effectiveEnrollments, courses, portfolio),
+    [users, effectiveEnrollments, courses, portfolio]
+  );
+
+  // BR-HRBP-030 → 035 — readiness derived per candidate, with named blockers.
+  const successionDerived = useMemo(() => {
+    const map = {};
+    (successionTalents || []).forEach((talent) => {
+      const candidate = (users || []).find(
+        (u) => u.userId === talent.userId || u.employeeCode === talent.id
+      );
+      const formal = formalLearningScore(talent, {
+        curricula,
+        users,
+        enrollments: effectiveEnrollments,
+        courses,
+        curriculumProgressFn: getCurriculumProgress,
+      });
+      const compliance = candidate
+        ? complianceForUser(candidate, effectiveEnrollments[candidate.userId] || {})
+        : null;
+      map[talent.id] = {
+        formal,
+        compliance,
+        derived: deriveReadiness(talent, {
+          formalScore: formal.score,
+          compliance,
+          alignments: successionAlignments,
+          today,
+        }),
+      };
+    });
+    return map;
+  }, [successionTalents, users, effectiveEnrollments, courses, curricula, successionAlignments, today]);
+
+  const bench = useMemo(() => {
+    const derivedById = {};
+    Object.entries(successionDerived).forEach(([id, v]) => { derivedById[id] = v.derived; });
+    return benchStrength(successionTalents, derivedById);
+  }, [successionTalents, successionDerived]);
+
+  const concentration = useMemo(() => mentorConcentration(successionTalents), [successionTalents]);
+
+  // BR-HRBP-040 → 042 — nine-box placement across the portfolio.
+  const placements = useMemo(
+    () => ninePlacementsForPortfolio(scopedUsers, effectiveEnrollments, courses),
+    [scopedUsers, effectiveEnrollments, courses]
+  );
+
+  // BR-HRBP-060 → 062 — SLA state of every intervention ticket.
+  const slaByTicketId = useMemo(() => {
+    const map = {};
+    (interventions || []).forEach((t) => { map[t.id] = interventionSla(t, today); });
+    return map;
+  }, [interventions, today]);
+
+  const slaBreaches = useMemo(
+    () => Object.values(slaByTicketId).filter((s) => s.state === 'BREACHED').length,
+    [slaByTicketId]
+  );
+
+  const criticalGapCount = useMemo(
+    () => gapCells.filter((c) => c.severity === 'CRITICAL_GAP').length,
+    [gapCells]
+  );
+
+  const overallComplianceRate = complianceSummary.compliancePercent;
+  const headcount = complianceSummary.headcount;
+
+  /** Prefills the L&D intervention form from a derived gap cell (BR-HRBP-022). */
+  function raiseTicketForCell(cell) {
+    setFormUnit(`${cell.domainLabel} — ${cell.divisionName}`);
+    setFormDeptCode(cell.divisionCode || 'OPS');
+    setFormSkill(cell.domainLabel);
+    if (cell.anchorCourseId) {
+      setFormCourseId(cell.anchorCourseId);
+      const c = (courses || []).find((item) => item.id === cell.anchorCourseId);
+      if (c) setFormCourseTitle(c.title);
+    }
+    setFormUrgency(cell.severity === 'CRITICAL_GAP' ? 'HIGH' : 'MEDIUM');
+    setFormImpact(
+      `Actual competency ${cell.actual} against a required standard of ${cell.required} (gap ${cell.gap}). ` +
+      `${cell.affected} of ${cell.headcount} employees in the unit are below standard.`
+    );
+    setInterventionModal(true);
+  }
 
   // Export audit report JSON/CSV
   function handleExportAuditReport() {
@@ -269,7 +410,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <Badge tone="blue" icon="ti-users">HR Business Partner (Level 2)</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Strategic HR Business Partner: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Responsible for: Store Operations Division, Southern Region
+            Strategic HR Business Partner: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Accountable for <strong>{portfolio.label}</strong> &middot; {headcount} employees in scope
           </p>
         </div>
 
@@ -278,54 +419,29 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         </Button>
       </div>
 
-      {/* Quick KPI stats */}
-      <div className="grid grid-4" style={{ marginBottom: 20 }}>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-shield-check" />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>{overallComplianceRate}%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Compliance Rate<br />Regional Training</div>
-          </div>
-        </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-chart-pie" />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>
-              {successionTalents.length} Candidate
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Succession Planning<br />(Talent Pool)</div>
-          </div>
-        </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-alert-triangle" />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>{interventions.length}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Intervention Request<br />L&amp;D Monitoring</div>
-          </div>
-        </div>
-        <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="stat-icon-badge" style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', width: 40, height: 40, fontSize: 20 }}>
-            <i className="ti ti-users" />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{headcount}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Employees in scope<br />Responsible HRBP</div>
-          </div>
-        </div>
-      </div>
+      {/* PORTFOLIO SCOPE — BR-HRBP-001/002/003 */}
+      <PortfolioBar
+        portfolio={portfolio}
+        mode={portfolioMode}
+        onModeChange={setPortfolioMode}
+        headcount={headcount}
+        totalHeadcount={(users || []).length}
+      />
+
+      {/* KPI ROW — every figure derived, none invented */}
+      <HrbpKpiRow
+        compliance={complianceSummary}
+        criticalGapCells={criticalGapCount}
+        bench={bench}
+        slaBreaches={slaBreaches}
+      />
 
       {/* TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'SKILL_GAP', label: 'Competency Gap & L&D Recommendations (Skill Gap Matrix)', icon: 'ti-chart-dots', count: `${interventions.length} Ticket` },
-          { id: 'SUCCESSION', label: 'Succession Planning & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: `${successionTalents.length} successors` },
-          { id: 'COMPLIANCE', label: 'Mandatory Compliance Map By Store (Regional Heatmap)', icon: 'ti-shield-check', count: `${overallComplianceRate}%` },
+          { id: 'SKILL_GAP', label: 'Competency Gap & L&D Interventions', icon: 'ti-chart-dots', count: `${gapCells.length} gaps · ${interventions.length} tickets` },
+          { id: 'SUCCESSION', label: 'Succession, Nine-Box & Bench Strength', icon: 'ti-git-branch', count: `${successionTalents.length} successors` },
+          { id: 'COMPLIANCE', label: 'Mandatory Compliance By Division', icon: 'ti-shield-check', count: `${overallComplianceRate}%` },
           { id: 'CURRICULUM', label: 'Curriculum & Talent Nomination', icon: 'ti-books', count: `${(curricula || []).filter(c => c.status === 'PUBLISHED').length} curricula` },
         ].map((tab) => (
           <button
@@ -357,75 +473,14 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         ))}
       </div>
 
-      {/* TAB 1: REGIONAL SKILL GAP MATRIX & L&D INTERVENTION */}
+      {/* TAB 1: DERIVED COMPETENCY GAP & L&D INTERVENTION (BR-HRBP-020 → 024) */}
       {activeTab === 'SKILL_GAP' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <div className="section-label" style={{ marginBottom: 12 }}>
-              Competency Gap Matrix Requiring Intervention By Division / Sub-Department:
-            </div>
-
-            <div className="grid grid-2" style={{ gap: 16 }}>
-              {skillGapList.map((item, idx) => (
-                <div key={idx} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{item.unit}</div>
-                        <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, marginTop: 2 }}>{item.skill}</div>
-                      </div>
-                      <Badge tone={item.gap <= -15 ? 'rust' : 'amber'}>Gap: {item.gap}%</Badge>
-                    </div>
-
-                    <div style={{ margin: '12px 0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                        <span>Actual competency: <strong>{item.current}%</strong></span>
-                        <span>Required standard: <strong>{item.required}%</strong></span>
-                      </div>
-                      <ProgressBar value={item.current} tone={item.current >= 80 ? 'sage' : item.current >= 70 ? 'amber' : 'rust'} size="sm" />
-                    </div>
-
-                    <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 10px', lineHeight: 1.45 }}>
-                      <strong>Business impact:</strong> {item.impact}
-                    </p>
-                    <div style={{ fontSize: 12, color: 'var(--rail)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Recommended course: <strong>{item.recommendedCourse}</strong></span>
-                      <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Trainer: {item.trainer}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon="ti-eye"
-                      onClick={() => navigate(`/courses/${item.recommendedCourseId}`)}
-                    >
-                      View Course
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      icon="ti-send"
-                      onClick={() => {
-                        setFormUnit(item.unit);
-                        setFormDeptCode(item.deptCode);
-                        setFormSkill(item.skill);
-                        setFormCourseId(item.recommendedCourseId);
-                        setFormCourseTitle(item.recommendedCourse);
-                        setFormUrgency(item.gap <= -15 ? 'HIGH' : 'MEDIUM');
-                        setFormImpact(item.impact);
-                        setFormTrainer(item.trainer);
-                        setInterventionModal(true);
-                      }}
-                    >
-                      Send The L&amp;D Request
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <GapCellTable
+            cells={gapCells}
+            unmeasured={unmeasuredCells}
+            onRaiseTicket={raiseTicketForCell}
+          />
 
           {/* TABLE OF ACTIVE INTERVENTION TICKETS */}
           <div className="card card-pad">
@@ -434,8 +489,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 <div style={{ fontSize: 15, fontWeight: 800 }}>
                   Intervention Requests Sent To L&amp;D ({interventions.length} requests)
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-                  Tracks whether the L&amp;D department has picked up the reported skill gaps and how far the training scheduling has progressed.
+                <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '2px 0 0', maxWidth: 760 }}>
+                  The HRBP raises the gap; this table is the accountability record of whether L&amp;D acted on it.
+                  A ticket is due within 7 days when raised urgent, 14 when moderate and 30 when scheduled, counted from
+                  submission. A breached urgent ticket escalates to the L&amp;D Director. <RuleTag id="BR-HRBP-060" />
                 </p>
               </div>
             </div>
@@ -452,6 +509,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     <th>Sub-Department &amp; Division</th>
                     <th>Skills &amp; Recommended Courses</th>
                     <th>Urgency</th>
+                    <th style={{ width: 150 }}>SLA</th>
                     <th>Submitted On</th>
                     <th>Handling Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -471,13 +529,16 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       <td>
                         <div style={{ fontSize: 13, fontWeight: 600 }}>{itv.skill}</div>
                         <div style={{ fontSize: 12, color: 'var(--rail)' }}>
-                          Locked: {itv.courseTitle}
+                          Course: {itv.courseTitle}
                         </div>
                       </td>
                       <td>
                         <Badge tone={itv.urgency === 'HIGH' ? 'rust' : itv.urgency === 'MEDIUM' ? 'amber' : 'blue'}>
                           {itv.urgency === 'HIGH' ? '🔴 Urgent' : itv.urgency === 'MEDIUM' ? '🟡 Moderate' : '🔵 Normal'}
                         </Badge>
+                      </td>
+                      <td>
+                        <SlaBadge sla={slaByTicketId[itv.id]} />
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                         {itv.requestedAt}
@@ -520,7 +581,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* TAB 2: SUCCESSION PIPELINE & 70-20-10 */}
       {activeTab === 'SUCCESSION' && (() => {
         const filteredTalents = successionTalents.filter((t) => {
-          if (successionReadinessFilter !== 'ALL' && t.readiness !== successionReadinessFilter) return false;
+          // BR-HRBP-033 — filter on the readiness the rules derive, not on the stored entry.
+          const derivedReadiness = successionDerived[t.id]?.derived?.readiness || t.readiness;
+          if (successionReadinessFilter !== 'ALL' && derivedReadiness !== successionReadinessFilter) return false;
           if (successionSearch) {
             const q = successionSearch.toLowerCase().trim();
             const nameMatch = t.name?.toLowerCase().includes(q);
@@ -535,24 +598,36 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', borderColor: 'var(--sage)' }}>
+            <div className="card card-pad" style={{ background: 'var(--sage-soft)', borderColor: 'var(--sage)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--sage-soft-text)' }}>
-                    Store Operations Succession Talent Pool
+                    Succession Talent Pool
                   </div>
-                  <p style={{ fontSize: 13, color: '#14532D', margin: '4px 0 0' }}>
-                    Tracks 70-20-10 competency development progress for candidates succeeding into Store General Manager (SGM) and category counter manager roles.
+                  <p style={{ fontSize: 13, color: 'var(--sage-soft-text)', margin: '4px 0 0', maxWidth: 760 }}>
+                    Of the 70-20-10 model the platform measures exactly one component: the 10% formal learning, derived from the
+                    curriculum assigned to each candidate. The 70% on-the-job and 20% mentoring figures are captured by the HRBP
+                    in the 1-on-1 review and are labelled as such throughout. <RuleTag id="BR-HRBP-030" />
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <Badge tone="sage">{successionTalents.length} Employee Trong Talent Pool</Badge>
+                  <Badge tone="sage">{successionTalents.length} in the talent pool</Badge>
                   <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
                     Nominate A New Candidate
                   </Button>
                 </div>
               </div>
             </div>
+
+            {/* BENCH STRENGTH — BR-HRBP-050/051/052 */}
+            <BenchStrengthPanel bench={bench} concentration={concentration} />
+
+            {/* NINE-BOX TALENT GRID — BR-HRBP-040/041/042 */}
+            <NineBoxGrid
+              placements={placements}
+              selectedBoxKey={selectedBoxKey}
+              onSelectBox={setSelectedBoxKey}
+            />
 
             {/* STANDARDIZED FILTER TOOLBAR */}
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
@@ -644,8 +719,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                   <th>High-Potential Employees</th>
                   <th>Current Job Title &amp; Store</th>
                   <th>Target Succession Role</th>
-                  <th style={{ width: 140 }}>Readiness Level</th>
-                  <th style={{ minWidth: 160 }}>70-20-10 Progress</th>
+                  <th style={{ width: 230 }}>Derived readiness &amp; blockers</th>
+                  <th style={{ minWidth: 220 }}>70-20-10 blend</th>
                   <th style={{ textAlign: 'right' }}>HRBP Operations</th>
                 </tr>
               </thead>
@@ -708,20 +783,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       })()}
                     </td>
                     <td>
-                      <Badge tone={talent.readiness === 'READY_NOW' ? 'sage' : talent.readiness === 'READY_IN_6_MONTHS' ? 'amber' : 'blue'}>
-                        {talent.readinessLabel || talent.readiness}
-                      </Badge>
+                      <ReadinessCell derived={successionDerived[talent.id]?.derived} />
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <ProgressBar value={talent.progress702010} tone={talent.progress702010 >= 80 ? 'sage' : 'blue'} size="sm" />
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 32 }}>{talent.progress702010}%</span>
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
-                        70% OJT: {talent.ojt70 || 70}% &middot; 20% Mentor: {talent.mentoring20 || 70}% &middot; 10% Locked: {talent.formal10 || 70}%
-                      </div>
+                      <BlendCell
+                        derived={successionDerived[talent.id]?.derived}
+                        formal={successionDerived[talent.id]?.formal}
+                      />
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -833,17 +901,18 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         );
       })()}
 
-      {/* TAB 3: REGIONAL COMPLIANCE MAP & NUDGE */}
+      {/* TAB 3: MANDATORY COMPLIANCE BY DIVISION (BR-HRBP-010 → 013) */}
       {activeTab === 'COMPLIANCE' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
-                Mandatory Training Compliance Rate By Store Branch (Regional Compliance Heatmap)
+                Mandatory training compliance across {portfolio.label}
               </div>
-              <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
-                Monitors the % completion of legally mandated certifications (HACCP, fire safety, occupational safety, POS security).
-                Click a store to drill down into the list of overdue employees.
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0', maxWidth: 780 }}>
+                Compliance is measured, never assumed: only a completed mandatory course counts, and an employee with no
+                enrollment record at all is scored zero and raised as a coverage failure rather than quietly averaged away.
+                {' '}<RuleTag id="BR-HRBP-010" /> <RuleTag id="BR-HRBP-011" />
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -852,63 +921,45 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 icon="ti-download"
                 onClick={handleExportAuditReport}
               >
-                Export The Compliance Report (JSON/Audit)
+                Export the compliance report (JSON / audit)
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-3" style={{ gap: 16 }}>
-            {storeComplianceList.map((st, idx) => (
-              <div
-                key={idx}
-                className="card card-pad"
-                style={{
-                  borderColor: st.overall < 85 ? 'var(--rust)' : st.overall >= 95 ? 'var(--sage)' : 'var(--line)',
-                  background: st.overall < 85 ? 'var(--rust-soft)' : 'var(--paper-raised)',
-                  cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onClick={() => setStoreDrilldown(st)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{st.store}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{st.region} &middot; {st.totalStaff} employees</div>
-                  </div>
-                  <Badge tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'}>
-                    {st.overall}%
-                  </Badge>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--ink-soft)' }}>ATTP &amp; HACCP:</span>
-                    <strong>{st.haccp}%</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--ink-soft)' }}>Fire Safety &amp; Occupational Safety:</span>
-                    <strong>{st.pccc}%</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--ink-soft)' }}>POS &amp; Information Security:</span>
-                    <strong>{st.sec}%</strong>
-                  </div>
-                </div>
-
-                <ProgressBar value={st.overall} tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'} size="sm" />
-
-                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px dashed var(--line)' }}>
-                  <span style={{ fontSize: 12, color: st.overdueCount > 10 ? 'var(--rust)' : 'var(--ink-soft)', fontWeight: 600 }}>
-                    <i className="ti ti-alert-circle" style={{ marginRight: 4 }} />
-                    {st.overdueCount} employees overdue
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
-                    Details &rarr;
-                  </span>
-                </div>
+          <div className="grid grid-4" style={{ gap: 16 }}>
+            <div className="card card-pad" style={{ padding: '12px 16px' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: complianceSummary.compliancePercent >= 88 ? 'var(--sage)' : 'var(--rust)' }}>
+                {complianceSummary.compliancePercent}%
               </div>
-            ))}
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Portfolio compliance</div>
+            </div>
+            <div className="card card-pad" style={{ padding: '12px 16px' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>{complianceSummary.coveragePercent}%</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Course coverage (assigned)</div>
+            </div>
+            <div className="card card-pad" style={{ padding: '12px 16px' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rust)' }}>{complianceSummary.nonCompliantPeople}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Employees outstanding</div>
+            </div>
+            <div className="card card-pad" style={{ padding: '12px 16px' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>
+                {divisionCompliance.filter((d) => d.escalate).length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Divisions to escalate <RuleTag id="BR-HRBP-013" /></div>
+            </div>
           </div>
+
+          <ComplianceMatrix
+            rows={divisionCompliance}
+            onDrilldown={(row) => setStoreDrilldown(row)}
+            onNudge={(row) => {
+              setNudgeModal(row);
+              setNudgeMessage(
+                `${row.name} is at ${row.compliancePercent}% mandatory training compliance with ${row.nonCompliantPeople} ` +
+                `of ${row.headcount} employees outstanding. Please direct the counters to close the outstanding mandatory courses.`
+              );
+            }}
+          />
 
           {/* NUDGES LOG TABLE */}
           {complianceNudges.length > 0 && (
@@ -1223,16 +1274,21 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: DRILLDOWN STORE COMPLIANCE ASSOCIATES */}
       {storeDrilldown && (
         <Modal
-          title={`Training Compliance Detail: ${storeDrilldown.store}`}
+          title={`Mandatory compliance detail: ${storeDrilldown.name}`}
+          subtitle={`${storeDrilldown.code} · ${storeDrilldown.location} · ${storeDrilldown.headcount} employees`}
           onClose={() => setStoreDrilldown(null)}
           size="lg"
         >
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8, gap: 16, flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Store-wide compliance rate: {storeDrilldown.overall}%</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>
+                  Compliance {storeDrilldown.compliancePercent}% &middot; Coverage {storeDrilldown.coveragePercent}%
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                  Total headcount: {storeDrilldown.totalStaff} &middot; Employees with overdue certifications: <strong>{storeDrilldown.overdueCount}</strong>
+                  {storeDrilldown.fullyCompliant} of {storeDrilldown.headcount} fully compliant &middot;{' '}
+                  <strong>{storeDrilldown.nonCompliantPeople}</strong> outstanding
+                  {storeDrilldown.overduePeople > 0 && <> &middot; {storeDrilldown.overduePeople} carrying an overdue course</>}
                 </div>
               </div>
               <Button
@@ -1241,59 +1297,81 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 icon="ti-bell"
                 onClick={() => {
                   setNudgeModal(storeDrilldown);
-                  setNudgeMessage(`Requires the Store General Manager of ${storeDrilldown.store} to urgently direct the counters to complete fire safety and HACCP training for ${storeDrilldown.overdueCount} overdue employees.`);
+                  setNudgeMessage(
+                    `${storeDrilldown.name} is at ${storeDrilldown.compliancePercent}% mandatory training compliance ` +
+                    `with ${storeDrilldown.nonCompliantPeople} of ${storeDrilldown.headcount} employees outstanding.`
+                  );
                 }}
               >
-                Send An Alert To The SGM
+                Send an alert to the SGM
               </Button>
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-              Employees With Incomplete / Overdue Certifications:
+              Completion by mandatory course
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <ComplianceCourseBreakdown row={storeDrilldown} />
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Employees with an outstanding mandatory course
             </div>
 
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               <table className="table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Employee Code &amp; Full Name</th>
-                    <th>Counter / Sub-Department</th>
-                    <th>Certifications Not Passed</th>
-                    <th>Original Deadline</th>
-                    <th>Status</th>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Outstanding mandatory courses</th>
+                    <th style={{ width: 110 }}>Compliance</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(() => {
-                    const storeUsers = (users || []).filter((u) => u.storeId === storeDrilldown.id);
-                    const list = storeUsers.length > 0 ? storeUsers.slice(0, 10) : [
-                      { employeeCode: 'MMVN-1042', fullName: 'Minh Tran', departmentName: 'Fresh Bakery Counter (PPF)', userId: 'USR-1042' },
-                      { employeeCode: 'MMVN-2041', fullName: 'Quoc Bao', departmentName: 'Meat Preparation (PPF)', userId: 'USR-2041' },
-                    ];
-                    return list.map((emp, i) => {
-                      const uEnr = enrollments[emp.userId] || {};
-                      const incompleteCourse = (courses || []).find((c) => {
-                        const enr = uEnr[c.id];
-                        return enr && enr.status !== 'COMPLETED';
-                      }) || { title: 'Fresh Counter Food Safety & HACCP' };
-                      const enrInfo = uEnr[incompleteCourse.id] || { status: 'OVERDUE', dueDate: '2026-08-15' };
+                    // BR-HRBP-002 — employees join the org tree through divisionId.
+                    const divisionUsers = (users || []).filter((u) => u.divisionId === storeDrilldown.id);
+                    const rows = divisionUsers
+                      .map((emp) => ({ emp, rec: complianceForUser(emp, effectiveEnrollments[emp.userId] || {}) }))
+                      .filter(({ rec }) => !rec.fullyCompliant)
+                      .sort((a, b) => a.rec.compliancePercent - b.rec.compliancePercent);
+
+                    if (rows.length === 0) {
                       return (
-                        <tr key={emp.userId || i}>
-                          <td>
-                            <strong>{emp.fullName}</strong>
-                            <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.employeeCode || emp.userId}</div>
-                          </td>
-                          <td style={{ fontSize: 12 }}>{emp.departmentName || emp.department || 'Operations'}</td>
-                          <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--rail)' }}>{incompleteCourse.title}</td>
-                          <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{enrInfo.dueDate || '2026-08-30'}</td>
-                          <td>
-                            <Badge tone={enrInfo.status === 'OVERDUE' ? 'rust' : 'amber'}>
-                              {enrInfo.status === 'OVERDUE' ? 'Overdue' : 'In Progress'}
-                            </Badge>
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-soft)', fontSize: 13 }}>
+                            Every employee in this division has completed all mandatory training.
                           </td>
                         </tr>
                       );
-                    });
+                    }
+
+                    return rows.slice(0, 25).map(({ emp, rec }) => (
+                      <tr key={emp.userId}>
+                        <td>
+                          <strong>{emp.fullName}</strong>
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.employeeCode || emp.userId}</div>
+                        </td>
+                        <td style={{ fontSize: 12 }}>{emp.departmentName || 'Operations'}</td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {rec.lines.filter((l) => !l.compliant).map((line) => (
+                              <div key={line.courseId} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Badge
+                                  tone={line.state === 'NOT_ASSIGNED' ? 'rust' : line.state === 'OVERDUE' ? 'rust' : 'amber'}
+                                  size="sm"
+                                >
+                                  {line.state === 'NOT_ASSIGNED' ? 'Never assigned' : line.state === 'OVERDUE' ? 'Overdue' : line.state === 'NOT_STARTED' ? 'Not started' : 'In progress'}
+                                </Badge>
+                                <span style={{ color: 'var(--ink-soft)' }}>{line.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: 13, fontWeight: 700, color: 'var(--rust)' }}>{rec.compliancePercent}%</td>
+                      </tr>
+                    ));
                   })()}
                 </tbody>
               </table>
@@ -1309,14 +1387,14 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: SEND SGM COMPLIANCE WARNING */}
       {nudgeModal && (
         <Modal
-          title={`Send A Compliance Alert To The Store General Manager (SGM): ${nudgeModal.store}`}
+          title={`Send a compliance alert to the Store General Manager: ${nudgeModal.name || nudgeModal.store}`}
           onClose={() => setNudgeModal(null)}
           size="md"
         >
           <form onSubmit={handleSendSgmNudge}>
             <div style={{ marginBottom: 12 }}>
               <label className="field-label">Store Branch:</label>
-              <input className="field-input" value={nudgeModal.store} disabled />
+              <input className="field-input" value={nudgeModal.name || nudgeModal.store} disabled />
             </div>
 
             <div style={{ marginBottom: 12 }}>
@@ -1352,6 +1430,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       )}
 
       {/* USER TRANSCRIPT DRILL-DOWN MODAL */}
+      {/* BUSINESS RULE REFERENCE — every figure above cites one of these */}
+      <HrbpRuleReference />
+
       <UserTranscriptModal
         targetUser={transcriptUser}
         isOpen={Boolean(transcriptUser)}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useCourseStore } from '../../store/CourseStore';
 import { personaForRole, notifications } from '../../data/mockData';
 import { normalizeRole, roleDefinition, hasCapability, ROLE_HOME, ROLE_ORDER } from '../../data/roles';
@@ -51,7 +51,18 @@ const ROLE_WORK_NAV = {
     { to: '/trainer/reports', label: 'CSAT & Teaching Quality Report', labelVi: 'CSAT & Teaching Quality Report', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
   ],
   hrbp: [
-    { to: '/hrbp', label: 'Talent & Compliance Analytics', labelVi: 'Talent & Compliance Analytics', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },
+    {
+      to: '/hrbp',
+      label: 'Talent & Compliance Analytics',
+      labelVi: 'Talent & Compliance Analytics',
+      labelEn: 'Talent & Compliance Analytics',
+      icon: 'ti-chart-radar',
+      end: true,
+      // The four tabs of HrbpDashboard live under /hrbp and all belong to this item.
+      // /hrbp/catalog is a different page with its own entry below, so it is not listed
+      // here — otherwise prefix matching would highlight both items at once.
+      activePaths: ['/hrbp', '/hrbp/succession', '/hrbp/compliance', '/hrbp/curriculum'],
+    },
     { to: '/hrbp/catalog', label: 'Full Course Catalog', labelVi: 'Full Course Catalog', labelEn: 'Full Course Catalog', icon: 'ti-database' },
     { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
   ],
@@ -75,6 +86,7 @@ const ROLE_WORK_NAV = {
 
 export default function AppHeader({ role, onRoleChange, title, crumb }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const {
     currentUser: authUser,
     approvals,
@@ -164,6 +176,10 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
   function renderNavItem(item) {
     const badge = item.approvalBadge ? (pendingApprovalCount > 0 ? String(pendingApprovalCount) : null) : item.badge;
     const displayLabel = language === 'en' ? (item.labelEn || item.label) : (item.labelVi || item.label);
+    // An item may own several routes (a page with tabs). Where it does, ownership is
+    // listed explicitly rather than left to prefix matching, which cannot tell a tab of
+    // this page apart from a sibling nav item nested under the same path.
+    const ownsCurrentPath = item.activePaths ? item.activePaths.includes(pathname) : null;
     return (
       <NavLink
         key={item.to}
@@ -171,7 +187,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
         end={item.end}
         title={displayLabel}
         onClick={() => setNavOpen(false)}
-        className={({ isActive }) => `app-nav-item ${isActive ? 'active' : ''}`}
+        className={({ isActive }) => `app-nav-item ${(ownsCurrentPath ?? isActive) ? 'active' : ''}`}
       >
         <i className={`ti ${item.icon}`} aria-hidden="true" />
         <span style={{ flex: 1 }}>{displayLabel}</span>
