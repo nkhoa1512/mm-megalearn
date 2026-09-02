@@ -33,6 +33,7 @@ import { levelTitle, levelValue, normalizeLevel, checkCourseAccessRule } from '.
 import { normalizeRole, managedRolesOf, canManage, roleDefinition, hasCapability } from './roles';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 import { canonicalizeCategory } from '../utils/courseCatalog';
+import { withHrProfile } from './hrProfile';
 
 export { UNIVERSAL_COMPLIANCE_COURSE_IDS } from './generated100Data';
 export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
@@ -93,7 +94,7 @@ export const demoUsers = generated100Users;
 export const managerUser = demoUsers[1]; // David Tran (Store Department Manager - Level 4)
 export const currentUser = demoUsers[3]; // Minh Tran (Junior Bakery Associate - Level 7)
 
-export const sysAdminUser = {
+export const sysAdminUser = withHrProfile({
   userId: 'USR-9001',
   employeeCode: 'MMVN-9001',
   fullName: 'Tran Quoc Bao (IT)',
@@ -104,10 +105,10 @@ export const sysAdminUser = {
   levelTitle: levelTitle('1'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-it', divisionCode: 'IT', divisionName: 'Information Technology',
-  departmentId: 'dept-itf', departmentCode: 'ITF', departmentName: 'IT Infrastructure & POS Security',
-  subDepartmentId: 'sub-itf-hw', subDepartmentCode: 'SUB-ITF-HW', subDepartmentName: 'Hạ Tầng Mạng Siêu Thị & Data Center (Network Infra)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-mis', divisionCode: 'MIS', divisionName: 'MIS',
+  departmentId: 'dept-mis-dept', departmentCode: 'MIS', departmentName: 'MIS',
+  subDepartmentId: 'sub-scm-lw', subDepartmentCode: 'SUB-SCM-LW', subDepartmentName: 'Logistics & Warehouse',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
   managerId: null,
@@ -116,9 +117,9 @@ export const sysAdminUser = {
   avatar: 'TB',
   badgeTone: 'rust',
   description: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
-};
+});
 
-export const userAdminUser = {
+export const userAdminUser = withHrProfile({
   userId: 'USR-9002',
   employeeCode: 'MMVN-9002',
   fullName: 'Pham Thanh Thao (User Admin)',
@@ -129,10 +130,10 @@ export const userAdminUser = {
   levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
-  departmentId: 'dept-cb', departmentCode: 'C&B', departmentName: 'Compensation, Benefits & HR Ops',
-  subDepartmentId: 'sub-cb-sys', subDepartmentCode: 'SUB-CB-SYS', subDepartmentName: 'Quản Trị Dữ Liệu Nhân Sự & Phân Quyền (HR Master Data & User Admin)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
+  departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
+  subDepartmentId: 'sub-hrd-hrbpho', subDepartmentCode: 'SUB-HRBP-HO', subDepartmentName: 'HR - HRBP HO',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
   managerId: 'USR-9001',
@@ -140,10 +141,10 @@ export const userAdminUser = {
   yearsOfService: 5.1,
   avatar: 'PT',
   badgeTone: 'blue',
-  description: 'Quản trị hồ sơ 100+ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp tại các chi nhánh.',
-};
+  description: 'Quản trị hồ sơ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp tại các chi nhánh.',
+});
 
-export const trainerHungUser = {
+export const trainerHungUser = withHrProfile({
   userId: 'USR-9003',
   employeeCode: 'MMVN-9003',
   fullName: 'Nguyen Van Hung (Master Trainer)',
@@ -154,10 +155,10 @@ export const trainerHungUser = {
   levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
-  departmentId: 'dept-lod', departmentCode: 'L&OD', departmentName: 'Learning & Org Development',
-  subDepartmentId: 'sub-lod-store', subDepartmentCode: 'SUB-LOD-STORE', subDepartmentName: 'Học Viện Đào Tạo Siêu Thị & Thực Hành Tay Nghề (Store Academy)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
+  departmentId: 'dept-hrd-lod', departmentCode: 'HR_LOD', departmentName: 'HR - Learning & Organizational Development',
+  subDepartmentId: 'sub-hrd-sfnl', subDepartmentCode: 'SUB-SF-NL', subDepartmentName: 'SF National Learning',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
   managerId: 'USR-9004',
@@ -166,9 +167,9 @@ export const trainerHungUser = {
   avatar: 'NH',
   badgeTone: 'sage',
   description: 'Tạo khóa học thực hành, đứng lớp tại xưởng siêu thị và chiếu Live QR cho học viên điểm danh.',
-};
+});
 
-export const trainerThanhUser = {
+export const trainerThanhUser = withHrProfile({
   userId: 'USR-9005',
   employeeCode: 'MMVN-9005',
   fullName: 'Vu Duc Thanh (HSE Trainer)',
@@ -179,10 +180,10 @@ export const trainerThanhUser = {
   levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-lp', divisionCode: 'LP', divisionName: 'Loss Prevention & Quality Assurance',
-  departmentId: 'dept-lp', departmentCode: 'LP', departmentName: 'Loss Prevention & Security',
-  subDepartmentId: 'sub-lp-hse', subDepartmentCode: 'SUB-LP-HSE', subDepartmentName: 'An Toàn Lao Động & Phòng Cháy Chữa Cháy (HSE & Safety)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-lpqa', divisionCode: 'LP-QA', divisionName: 'LP-QA',
+  departmentId: 'dept-lpqa-lp', departmentCode: 'LP', departmentName: 'Loss Prevention',
+  subDepartmentId: 'sub-df-chh-1010', subDepartmentCode: 'SUB-CHH', subDepartmentName: 'Cosmetics & Household & HBA',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
   managerId: 'USR-9004',
@@ -191,9 +192,9 @@ export const trainerThanhUser = {
   avatar: 'VT',
   badgeTone: 'sage',
   description: 'Đứng lớp diễn tập PCCC, sơ cấp cứu và an toàn xe nâng tại các sân thực hành chi nhánh.',
-};
+});
 
-export const trainerQuangUser = {
+export const trainerQuangUser = withHrProfile({
   userId: 'USR-9006',
   employeeCode: 'MMVN-9006',
   fullName: 'Tran Minh Quang (SGM Mentor)',
@@ -204,10 +205,10 @@ export const trainerQuangUser = {
   levelTitle: levelTitle('2'),
   branch: 'OPERATIONS',
   branchName: 'Khối Vận hành Siêu thị (Operations)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-opt', divisionCode: 'OPT', divisionName: 'Operations Executive',
-  departmentId: 'dept-ops-s', departmentCode: 'OPS-S', departmentName: 'Store Operations South',
-  subDepartmentId: 'sub-ops-s-store', subDepartmentCode: 'SUB-OPS-S1', subDepartmentName: 'Vận Hành Siêu Thị Khu Vực TP.HCM (HCM Stores Ops)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-opt', divisionCode: 'Operations', divisionName: 'Operations',
+  departmentId: 'dept-opt-sm', departmentCode: 'OPS_SM', departmentName: 'Operations - Store Management',
+  subDepartmentId: 'sub-opt-sm-south', subDepartmentCode: 'SUB-OPS-SOU', subDepartmentName: 'Regional Operations (South)',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
   managerId: 'USR-9001',
@@ -216,12 +217,12 @@ export const trainerQuangUser = {
   avatar: 'TQ',
   badgeTone: 'sage',
   description: 'Mentor lộ trình kế nhiệm SGM và giảng dạy Quản trị P&L siêu thị (khóa Level 2).',
-};
+});
 
 export const trainerUser = trainerHungUser;
 export const allTrainers = [trainerHungUser, trainerThanhUser, trainerQuangUser];
 
-export const hrbpUser = {
+export const hrbpUser = withHrProfile({
   userId: 'USR-9004',
   employeeCode: 'MMVN-9004',
   fullName: 'Le Thi Mai (HRBP)',
@@ -232,10 +233,10 @@ export const hrbpUser = {
   levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
   branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-  divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
-  departmentId: 'dept-hrbp', departmentCode: 'HRBP', departmentName: 'HR Business Partnering',
-  subDepartmentId: 'sub-hrbp-ops', subDepartmentCode: 'SUB-HRBP-OPS', subDepartmentName: 'HRBP Khối Vận Hành Siêu Thị (Operations HRBP)',
+  businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+  divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
+  departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
+  subDepartmentId: 'sub-hrd-hrbpho', subDepartmentCode: 'SUB-HRBP-HO', subDepartmentName: 'HR - HRBP HO',
   areaId: 'area-south', areaName: 'Khu vực Miền Nam',
   storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
   managerId: 'USR-9002',
@@ -244,7 +245,7 @@ export const hrbpUser = {
   avatar: 'LM',
   badgeTone: 'blue',
   description: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ đào tạo theo vùng.',
-};
+});
 
 // Sarah Nguyen (USR-0001) là L&D Director trong thang mới: role `trainer`, Level 2.
 // Giữ tên export `adminUser` để các màn hình cũ tiếp tục biên dịch được.
@@ -976,18 +977,73 @@ export function isCourseAssignedToUser(course, user, overlay = null) {
   return Boolean(enrollmentsForUser(user, overlay)[course.id]);
 }
 
-// "My Learning" list for a given user: dynamically merges user-specific enrollments
+// Returns true when `user` is targeted by any assignment in `course`
+export function isUserAssignedToCourse(course, user, customGroups = []) {
+  if (!user || !course) return false;
+  const asgList = course.assignments || (course.assignment ? [course.assignment] : []);
+  return asgList.some((a) => {
+    if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+    if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+    if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+    if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+    if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+    if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+    if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+    return false;
+  });
+}
+
+// "My Learning" list for a given user: dynamically merges user-specific enrollments and direct assignments
 export function myLearningCourses(courseList, user, overlay = null) {
   if (!user) return [];
   const enrollments = enrollmentsForUser(user, overlay);
   return (courseList || [])
-    .filter((c) => Boolean(enrollments[c.id]))
+    .filter((c) => {
+      if (enrollments[c.id]) return true;
+      const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+      return asgList.some((a) => {
+        if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+        if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+        if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+        if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+        if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+        return false;
+      });
+    })
     .map((c) => {
       const userEnrollment = enrollments[c.id];
+      const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+      const matchedAsg = asgList.find((a) => {
+        if (a.assignmentType === 'USER' && (a.targetId === user.userId || a.targetId === user.employeeCode)) return true;
+        if (a.assignmentType === 'SUBDEPARTMENT' && (user.subDepartmentId === a.targetId || user.subDepartmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DEPARTMENT' && (user.departmentId === a.targetId || user.departmentCode === a.targetId)) return true;
+        if (a.assignmentType === 'DIVISION' && (user.divisionId === a.targetId || user.divisionCode === a.targetId)) return true;
+        if (a.assignmentType === 'STORE' && (user.storeId === a.targetId || user.storeCode === a.targetId)) return true;
+        if (a.assignmentType === 'BUSINESS_UNIT' && (user.businessUnitId === a.targetId || user.businessUnitCode === a.targetId)) return true;
+        if (a.assignmentType === 'LEVEL' && String(user.level) === String(a.targetId)) return true;
+        return false;
+      });
+
+      const fallbackEnrollment = matchedAsg ? {
+        status: 'NOT_STARTED',
+        progressPercent: 0,
+        score: null,
+        isMandatory: true,
+        dueDate: matchedAsg.dueDate || null,
+        enrolledAt: matchedAsg.assignedAt || new Date().toISOString().slice(0, 10),
+        enrolledVersion: c.currentVersion || 'v1.0',
+        enrolledVia: 'MANDATORY_ASSIGNMENT',
+      } : {};
+
       return {
         ...c,
+        courseType: matchedAsg ? 'MANDATORY' : c.courseType,
+        isDirectlyAssigned: Boolean(matchedAsg),
         enrollment: {
           ...(c.enrollment || {}),
+          ...fallbackEnrollment,
           ...userEnrollment,
         },
       };
@@ -1081,6 +1137,15 @@ export function createBlankCourse() {
     maxCapacity: 25,
     enrolledStudents: [],
     prerequisites: [],
+    syllabus: [
+      { step: 'Phần 1: Giới thiệu & Chuẩn bị An toàn (30 phút)', detail: 'Phổ biến quy tắc an toàn, mục tiêu khóa học và kiểm tra trang thiết bị.' },
+      { step: 'Phần 2: Hướng dẫn Thao tác & Thực hành Trực tiếp (90 phút)', detail: 'Thực hành thao tác chuẩn theo quy trình vận hành SOP.' },
+      { step: 'Phần 3: Đánh giá Kết quả & Giải đáp Thắc mắc (60 phút)', detail: 'Tổng kết bài học, kiểm tra kỹ năng và hoàn tất bảng điểm danh.' },
+    ],
+    materials: [
+      { id: 'mat-1', name: 'Tài Liệu Hướng Dẫn Vận Hành Chuẩn (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-2', name: 'Slide Bài Giảng Thực Hành & Tình Huống (PPT)', type: 'PPT', size: '6.8 MB', url: '#' },
+    ],
     configuration: {
       assessmentEnabled: false,
       questionBankSize: 0,
@@ -1092,8 +1157,12 @@ export function createBlankCourse() {
       randomizeAnswers: true,
       showCorrectAnswers: 'AFTER_FINAL_ATTEMPT',
       certificateEnabled: false,
+      validityPeriodMonths: 12,
+      recertificationWarningDays: 30,
+      recertificationMethod: 'RETAKE_FULL_COURSE',
       completionRule: 'Complete all required lessons.',
     },
+
     assignment: null,
     modules: [],
     enrollment: null,
@@ -1340,17 +1409,34 @@ export function applyAssessmentAttempt(course, { score, passed, answered }) {
   return recomputeEnrollment(next);
 }
 
-export function deriveCertificates(courseList, user) {
+// `certificateTemplates` (từ CourseStore) là tùy chọn — khi khóa có
+// configuration.certificateTemplateId khớp 1 template trong thư viện, các
+// field signerName/signerTitle/issuerOrg của template đó thay thế mặc định
+// trên CertificateModal; ngày cấp vẫn luôn lấy từ enrollment.completedAt của
+// từng học viên (auto khớp ngày hoàn thành, không đổi theo template).
+export function deriveCertificates(courseList, user, overlay = null, certificateTemplates = []) {
   if (!user) return [];
-  const list = myLearningCourses(courseList, user);
+  const list = myLearningCourses(courseList, user, overlay);
   const derived = list
     .filter((c) => c.enrollment?.status === 'COMPLETED' && c.configuration?.certificateEnabled)
     .map((c) => {
       const attempts = c.assessmentAttempts || [];
       const passingAttempt = [...attempts].reverse().find((a) => a.passed);
-      const issueDate = c.enrollment.completedAt || '2026-07-15';
-      const validUntil = new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + 1)).toISOString().slice(0, 10);
+      const issueDate = c.enrollment.completedAt || '2025-08-10';
+      const validityMonths = c.configuration?.validityPeriodMonths !== undefined ? parseInt(c.configuration.validityPeriodMonths, 10) : 12;
+      const isLifetime = validityMonths === 0;
+
+      // Hạn tái cấp: lấy từ enrollment (nếu vừa thi lại) hoặc tính theo chu kỳ
+      const validUntil = isLifetime ? null : (c.enrollment.validUntil || (
+        c.id === 'CRS-FSH-001' ? '2026-08-15' // Kịch bản mẫu: Quá hạn 13 ngày -> Trạng thái RECERTIFICATION_REQUIRED
+        : c.id === 'CRS-CS-002' ? '2026-09-10' // Kịch bản mẫu: Cận hạn 13 ngày -> Trạng thái DUE_SOON
+        : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + (validityMonths / 12 || 1))).toISOString().slice(0, 10)
+      ));
       const cleanEmpCode = (user.employeeCode || 'EMP-1042').replace('MMVN-', '');
+      const template = (c.configuration?.certificateTemplateId
+        ? certificateTemplates.find((t) => t.id === c.configuration.certificateTemplateId)
+        : null) || certificateTemplates.find((t) => t.category === c.category || (c.categories && c.categories.includes(t.category))) || certificateTemplates[0] || null;
+
       return {
         id: `CERT-MMVN-${(c.code || c.id).toUpperCase()}-${cleanEmpCode}`,
         courseId: c.id,
@@ -1360,18 +1446,22 @@ export function deriveCertificates(courseList, user) {
         completionDate: issueDate,
         issueDate: issueDate,
         validUntil: validUntil,
+        isLifetime: isLifetime,
+        validityPeriodMonths: validityMonths,
         isCompliance: c.courseType === 'MANDATORY',
         score: c.enrollment.score || (passingAttempt ? passingAttempt.score : 90),
-        issuer: 'MM Mega Market Vietnam - Learning & Organizational Development',
+        issuer: template?.issuerOrg || 'MM Mega Market Vietnam - Learning & Organizational Development',
         verificationUrl: `https://megalearn.mmvietnam.com/verify/CERT-MMVN-${c.code || 'LMS'}-${cleanEmpCode}`,
         recipientName: user.fullName,
         recipientPosition: user.position,
         department: orgPathLabel(user),
+        template,
       };
     });
 
   return derived;
 }
+
 
 
 
@@ -1671,14 +1761,59 @@ export function weeklyStudyHours(user) {
 
 export const notifications = {
   learnerInbox: [
-    { id: 1, type: 'COURSE_ASSIGNED', title: 'New mandatory course assigned', message: 'Risk Management Awareness has been assigned to your Division, due Sep 15.', time: '2h ago', unread: true },
-    { id: 2, type: 'DEADLINE_REMINDER', title: 'Due in 12 days', message: 'Information Security Awareness is due Sep 30.', time: '1d ago', unread: true },
-    { id: 3, type: 'COURSE_UNFINISHED', title: 'Continue learning', message: 'You have not continued Corporate Orientation in 6 days.', time: '5d ago', unread: false },
+    { 
+      id: 1, 
+      type: 'COURSE_ASSIGNED', 
+      title: 'New mandatory course assigned',
+      titleVi: 'Khóa học bắt buộc mới được phân bổ',
+      titleEn: 'New mandatory course assigned',
+      message: 'Risk Management Awareness has been assigned to your Division, due Sep 15.', 
+      messageVi: 'Khóa Quản Trị Rủi Ro & Tuân Thủ đã được gán cho đơn vị của bạn, hạn chót 15/09.',
+      messageEn: 'Risk Management Awareness has been assigned to your Division, due Sep 15.',
+      time: '2h ago',
+      timeVi: '2 giờ trước',
+      timeEn: '2h ago',
+      tagVi: 'Bắt buộc',
+      tagEn: 'Mandatory',
+      unread: true 
+    },
+    { 
+      id: 2, 
+      type: 'DEADLINE_REMINDER', 
+      title: 'Due in 12 days', 
+      titleVi: 'Sắp đến hạn trong 12 ngày',
+      titleEn: 'Due in 12 days',
+      message: 'Information Security Awareness is due Sep 30.', 
+      messageVi: 'Khóa Nhận Thức An Toàn Thông Tin cần hoàn thành trước ngày 30/09.',
+      messageEn: 'Information Security Awareness is due Sep 30.',
+      time: '1d ago',
+      timeVi: '1 ngày trước',
+      timeEn: '1d ago',
+      tagVi: 'Hạn chót',
+      tagEn: 'Deadline',
+      unread: true 
+    },
+    { 
+      id: 3, 
+      type: 'COURSE_UNFINISHED', 
+      title: 'Continue learning', 
+      titleVi: 'Nhắc nhở tiếp tục học tập',
+      titleEn: 'Continue learning reminder',
+      message: 'You have not continued Corporate Orientation in 6 days.', 
+      messageVi: 'Bạn chưa tiếp tục học khóa Hội Nhập Doanh Nghiệp trong 6 ngày qua.',
+      messageEn: 'You have not continued Corporate Orientation in 6 days.',
+      time: '5d ago',
+      timeVi: '5 ngày trước',
+      timeEn: '5d ago',
+      tagVi: 'Tiến độ',
+      tagEn: 'Progress',
+      unread: false 
+    },
   ],
   managerAlerts: [
-    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', time: '3h ago' },
-    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', time: '1d ago' },
-    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', time: '2d ago' },
+    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', messageVi: 'Lisa Wang chưa hoàn thành khóa Quản Trị Rủi Ro đúng hạn.', time: '3h ago', timeVi: '3 giờ trước' },
+    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', messageVi: 'John Doe không có hoạt động học tập trong 15 ngày.', time: '1d ago', timeVi: '1 ngày trước' },
+    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', messageVi: 'Mike Chen chưa đạt bài kiểm tra An Toàn Thông Tin sau 3 lần thi.', time: '2d ago', timeVi: '2 ngày trước' },
   ],
 };
 
@@ -1935,6 +2070,12 @@ export const classroomSessions = [
     trainerId: trainerHungUser.userId,
     trainerName: trainerHungUser.fullName,
     trainerTitle: 'Master Trainer (L&OD)',
+    coTrainerIds: [userAdminUser.userId, trainerThanhUser.userId],
+    coTrainerNames: [userAdminUser.fullName, trainerThanhUser.fullName],
+    coTrainers: [
+      { id: userAdminUser.userId, userId: userAdminUser.userId, fullName: userAdminUser.fullName, name: userAdminUser.fullName, role: 'useradmin', title: 'HR Master Data & User Admin' },
+      { id: trainerThanhUser.userId, userId: trainerThanhUser.userId, fullName: trainerThanhUser.fullName, name: trainerThanhUser.fullName, role: 'trainer', title: 'Loss Prevention & HSE Director' },
+    ],
     trainerRating: 4.9,
     date: '2026-08-28',
     time: '08:30 - 11:30 (3.0 hours)',
@@ -1944,15 +2085,28 @@ export const classroomSessions = [
     enrolledCount: 21,
     status: 'UPCOMING',
     isEnrolled: true,
-    attendanceStatus: 'PENDING_CHECKIN', // PENDING_CHECKIN, CHECKED_IN, ABSENT
+    attendanceStatus: 'PENDING_CHECKIN',
     qrToken: 'MMVN-QR-ILT001-20260828',
     description: 'Hands-on sanitation and sterilization of dough mixers, oven pressure calibration, and mechanical jam handling compliant with Gold HACCP standards.',
     prerequisiteCourse: 'Food Safety & Hygiene Standards (HACCP)',
     prerequisiteCourseId: 'CRS-FSH-001',
+    syllabus: [
+      { step: 'Phần 1: Chuẩn bị & Phổ biến Quy định An toàn Vệ sinh (30 phút)', detail: 'Quy tắc vệ sinh Gold HACCP, kiểm tra nhiệt độ lõi tủ mát bảo quản nguyên liệu tươi.' },
+      { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
+      { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
+    ],
+    materials: [
+      { id: 'mat-fsh-1', name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-fsh-2', name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT', size: '8.1 MB', url: '#' },
+      { id: 'mat-fsh-3', name: 'Biểu mẫu Checklist Kiểm tra Tiêu chuẩn Vệ sinh ATTP (PDF)', type: 'PDF', size: '1.1 MB', url: '#' },
+    ],
     enrolledStudents: [
       { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
       { id: 'MMVN-1078', name: 'Sarah Johnson', position: 'Pastry Chef Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
-      { id: 'MMVN-2041', name: 'Quoc Bao', position: 'Store Fresh Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2041', name: 'Quoc Bao', position: 'Store Fresh Associate', store: 'MM An Phu', attendance: 'PENDING' },
+      { id: 'MMVN-2055', name: 'Nguyen Van An', position: 'Bakery Assistant', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2068', name: 'Tran Thi Binh', position: 'Fresh Counter Lead', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2089', name: 'Le Hoang Nam', position: 'Food Prep Associate', store: 'MM An Phu', attendance: 'ABSENT' },
     ],
   },
   {
@@ -1964,6 +2118,11 @@ export const classroomSessions = [
     trainerId: trainerThanhUser.userId,
     trainerName: trainerThanhUser.fullName,
     trainerTitle: 'Loss Prevention & HSE Director',
+    coTrainerIds: [hrbpUser.userId],
+    coTrainerNames: [hrbpUser.fullName],
+    coTrainers: [
+      { id: hrbpUser.userId, userId: hrbpUser.userId, fullName: hrbpUser.fullName, name: hrbpUser.fullName, role: 'hrbp', title: 'HR Business Partner Lead' },
+    ],
     trainerRating: 4.92,
     date: '2026-09-05',
     time: '14:00 - 17:00 (3.0 hours)',
@@ -1978,7 +2137,22 @@ export const classroomSessions = [
     description: 'Hands-on gas fire suppression, fire blanket deployment, and peak-hour customer evacuation protocols in hypermarkets.',
     prerequisiteCourse: 'Workplace Health, Safety & Environment (HSE)',
     prerequisiteCourseId: 'CRS-HSE-019',
-    enrolledStudents: [],
+    syllabus: [
+      { step: 'Phần 1: Nhận diện Nguồn nhiệt & Các cấp độ Báo cháy (45 phút)', detail: 'Nhận biết 4 loại đám cháy (A, B, C, F), phân biệt bình chữa cháy CO2 và Bột ABC.' },
+      { step: 'Phần 2: Diễn tập Dập lửa & Vận hành Vòi cứu hỏa tại Bãi tập (75 phút)', detail: 'Thực hành rút chốt an toàn, hướng vòi dập tắt khay xăng cháy và rải cuộn vòi nước áp lực.' },
+      { step: 'Phần 3: Sơ tán Khách hàng & Kỹ thuật Sơ cấp cứu Căn bản (60 phút)', detail: 'Quy trình dẫn đường thoát hiểm khu vực đông người, ép tim ngoài lồng ngực CPR và băng bó vết thương.' },
+    ],
+    materials: [
+      { id: 'mat-hse-1', name: 'Sổ Tay An Toàn PCCC & Kế Hoạch Thoát Hiểm Siêu Thị 2026 (PDF)', type: 'PDF', size: '3.5 MB', url: '#' },
+      { id: 'mat-hse-2', name: 'Slide Bài Giảng: Kỹ Thuật Sử Dụng Bình Khí CO2 & Vòi Cứu Hỏa (PPT)', type: 'PPT', size: '12.0 MB', url: '#' },
+      { id: 'mat-hse-3', name: 'Sơ Đồ Lối Thoát Nạn & Vị Trí Hộp Cứu Hỏa Từng Chi Nhánh (PDF)', type: 'PDF', size: '4.2 MB', url: '#' },
+    ],
+    enrolledStudents: [
+      { id: 'MMVN-1120', name: 'Carlos Reyes', position: 'Warehouse Associate', store: 'MM Thang Long', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1155', name: 'Nguyen Thi Huong', position: 'Floor Supervisor', store: 'MM Thang Long', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1188', name: 'Pham Van Long', position: 'Security Guard', store: 'MM Thang Long', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1204', name: 'Hoang Van Duc', position: 'Forklift Operator', store: 'MM Thang Long', attendance: 'PENDING' },
+    ],
   },
   {
     id: 'ilt-003',
@@ -1986,12 +2160,15 @@ export const classroomSessions = [
     title: 'Webinar: POS Terminal Information Security & Anti-Phishing Tactics',
     category: 'Information Security',
     modality: 'ONLINE_WEBINAR',
-    // Minh họa System Admin cũng đứng lớp khi được phân công — chủ đề bảo mật
-    // thông tin khớp đúng chuyên môn IT/Cybersecurity của SysAdmin.
     trainerId: sysAdminUser.userId,
     trainerName: sysAdminUser.fullName,
     trainerTitle: 'Lead IT Systems Administrator & Cybersecurity Lead',
-    trainerRating: 4.85,
+    coTrainerIds: [userAdminUser.userId],
+    coTrainerNames: [userAdminUser.fullName],
+    coTrainers: [
+      { id: userAdminUser.userId, userId: userAdminUser.userId, fullName: userAdminUser.fullName, name: userAdminUser.fullName, role: 'useradmin', title: 'HR Master Data & User Admin' },
+    ],
+    trainerRating: 4.83,
     date: '2026-08-15',
     time: '10:00 - 11:30 (1.5 hours)',
     venueId: 'room-ho-dia',
@@ -2005,7 +2182,21 @@ export const classroomSessions = [
     description: 'Case analysis of 5 phishing incidents identified in Q3/2026 and immediate POS workstation isolation protocols.',
     prerequisiteCourse: 'Information Security & Data Protection Awareness',
     prerequisiteCourseId: 'CRS-ISA-011',
-    enrolledStudents: [],
+    syllabus: [
+      { step: 'Phần 1: Xu hướng Tấn công Lừa đảo & Giả mạo Email Đối tác (30 phút)', detail: 'Phân tích các email mạo danh nhà cung cấp yêu cầu thay đổi tài khoản ngân hàng thụ hưởng.' },
+      { step: 'Phần 2: Quy trình Cách ly Khẩn cấp Máy POS Khi Bị Mã Độc (30 phút)', detail: 'Thao tác rút cáp mạng LAN, cô lập máy trạm POS và báo cáo sự cố lên SOC IT Security qua hotline.' },
+      { step: 'Phần 3: Hỏi đáp Trực tuyến & Bài tập Tình huống Trắc nghiệm (30 phút)', detail: 'Học viên làm bài quiz tương tác trên MS Teams và giải đáp thắc mắc bảo mật dữ liệu khách hàng.' },
+    ],
+    materials: [
+      { id: 'mat-sec-1', name: 'Hướng Dẫn Phòng Chống Phishing & Lừa Đảo Chuyển Tiền (PDF)', type: 'PDF', size: '1.8 MB', url: '#' },
+      { id: 'mat-sec-2', name: 'Slide Webinar: Bảo Mật Đầu Cuối Hệ Thống Thanh Toán POS (PPT)', type: 'PPT', size: '9.4 MB', url: '#' },
+    ],
+    enrolledStudents: [
+      { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1078', name: 'Sarah Johnson', position: 'Pastry Chef Associate', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1120', name: 'Carlos Reyes', position: 'Warehouse Associate', store: 'MM Thang Long', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1301', name: 'Doan Van Binh', position: 'IT Support Specialist', store: 'MM Head Office', attendance: 'CONFIRMED' },
+    ],
   },
   {
     id: 'ilt-004',
@@ -2013,11 +2204,14 @@ export const classroomSessions = [
     title: 'Store Practical Lab: High-Speed POS Checkout & Customer Complaint Handling',
     category: 'Frontline Excellence',
     modality: 'OFFLINE_STORE',
-    // Minh họa HRBP cũng đứng lớp khi được phân công — chủ đề xử lý khiếu nại
-    // khách hàng gắn liền với năng lực People Partnering của HRBP.
     trainerId: hrbpUser.userId,
     trainerName: hrbpUser.fullName,
     trainerTitle: 'HR Business Partner - Head of People Partnering',
+    coTrainerIds: [trainerHungUser.userId],
+    coTrainerNames: [trainerHungUser.fullName],
+    coTrainers: [
+      { id: trainerHungUser.userId, userId: trainerHungUser.userId, fullName: trainerHungUser.fullName, name: trainerHungUser.fullName, role: 'trainer', title: 'Master Trainer (L&OD)' },
+    ],
     trainerRating: 4.85,
     date: '2026-09-12',
     time: '09:00 - 12:00 (3.0 hours)',
@@ -2032,7 +2226,114 @@ export const classroomSessions = [
     description: 'High-speed barcode scanning on physical POS units, digital voucher processing, and L.A.S.T customer complaint resolution.',
     prerequisiteCourse: 'Store Operations Excellence & Planogram Compliance',
     prerequisiteCourseId: 'CRS-STOPS-037',
-    enrolledStudents: [],
+    syllabus: [
+      { step: 'Phần 1: Kỹ thuật Quét Mã Barcode Tốc Độ Cao & Xử lý Voucher (60 phút)', detail: 'Tư thế đứng chuẩn công thái học, góc quét tia laser và thao tác áp voucher giảm giá trên POS.' },
+      { step: 'Phần 2: Ứng dụng Nguyên tắc L.A.S.T Xử lý Phàn nàn Khách hàng (75 phút)', detail: 'Lắng nghe (Listen) - Đồng cảm (Apologize) - Giải quyết (Solve) - Cảm ơn (Thank). Thực hành đóng vai khách hàng khó tính.' },
+      { step: 'Phần 3: Thi đua Tính giờ Quét 20 Món Hàng Giả Lập & Tổng kết (45 phút)', detail: 'Thử thách quét hàng chuẩn không lỗi trong 90 giây và trao huy hiệu Thu Ngân Siêu Tốc.' },
+    ],
+    materials: [
+      { id: 'mat-pos-1', name: 'SOP-CAS-01: Quy Trình Thao Tác Chuẩn Quầy Thu Ngân POS (PDF)', type: 'PDF', size: '2.9 MB', url: '#' },
+      { id: 'mat-pos-2', name: 'Slide Kỹ Năng Giao Tiếp & Xử Lý Tình Huống Khách Hàng (PPT)', type: 'PPT', size: '7.8 MB', url: '#' },
+      { id: 'mat-pos-3', name: 'Bảng Tra Cứu Mã PLU Rau Củ Quả & Hàng Cân Tươi Sống (PDF)', type: 'PDF', size: '1.5 MB', url: '#' },
+    ],
+    enrolledStudents: [
+      { id: 'MMVN-1402', name: 'Vu Thi Lan', position: 'Cashier Staff', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1405', name: 'Pham Hong Nhung', position: 'Cashier Staff', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-1412', name: 'Le Quoc Thang', position: 'Customer Service Associate', store: 'MM An Phu', attendance: 'PENDING' },
+    ],
+  },
+  {
+    id: 'ilt-005',
+    code: 'WS-ADM-05',
+    title: 'Executive Workshop: MMVN Corporate Culture, Labor Code & Master Data Governance',
+    category: 'Corporate Orientation',
+    modality: 'OFFLINE_STORE',
+    trainerId: userAdminUser.userId,
+    trainerName: userAdminUser.fullName,
+    trainerTitle: 'HR Master Data & User Administration Lead',
+    coTrainerIds: [trainerHungUser.userId, hrbpUser.userId],
+    coTrainerNames: [trainerHungUser.fullName, hrbpUser.fullName],
+    coTrainers: [
+      { id: trainerHungUser.userId, userId: trainerHungUser.userId, fullName: trainerHungUser.fullName, name: trainerHungUser.fullName, role: 'trainer', title: 'Master Trainer (L&OD)' },
+      { id: hrbpUser.userId, userId: hrbpUser.userId, fullName: hrbpUser.fullName, name: hrbpUser.fullName, role: 'hrbp', title: 'HR Business Partner Lead' },
+    ],
+    trainerRating: 4.88,
+    date: '2026-09-08',
+    time: '13:30 - 16:30 (3.0 hours)',
+    venueId: 'room-ho-dia',
+    venue: 'Diamond Training Hall - MM Mega Market Head Office (An Phu)',
+    maxCapacity: 35,
+    enrolledCount: 28,
+    status: 'UPCOMING',
+    isEnrolled: false,
+    attendanceStatus: 'NOT_REGISTERED',
+    qrToken: 'MMVN-QR-ILT005-20260908',
+    description: 'Orientation on MM Mega Market Vietnam core values, employee handbooks, labor regulations, and HR organizational structure governance.',
+    prerequisiteCourse: 'Corporate Orientation & MMVN Cultural Values',
+    prerequisiteCourseId: 'CRS-CULT-093',
+    syllabus: [
+      { step: 'Phần 1: Giới thiệu Sứ Mệnh, Tầm Nhìn & 5 Giá Trị Cốt Lõi MMVN (45 phút)', detail: 'Lịch sử phát triển MM Mega Market VN, quy chuẩn đạo đức doanh nghiệp và chính sách nhân sự.' },
+      { step: 'Phần 2: Quy Chế Lao Động, Quyền Lợi & Nghĩa Vụ Người Lao Động (75 phút)', detail: 'Chế độ bảo hiểm, thời giờ làm việc, an toàn vệ sinh lao động và quy trình giải quyết quyền lợi.' },
+      { step: 'Phần 3: Hướng Dẫn Sử Dụng Cổng Đào Tạo MM MegaLearn & Q&A (60 phút)', detail: 'Tra cứu lộ trình cấp bậc, đăng ký khóa học và giải đáp trực tiếp các chính sách đãi ngộ.' },
+    ],
+    materials: [
+      { id: 'mat-adm-1', name: 'Sổ Tay Nhân Viên MM Mega Market Vietnam 2026 (PDF)', type: 'PDF', size: '4.8 MB', url: '#' },
+      { id: 'mat-adm-2', name: 'Slide Giới Thiệu Văn Hóa Doanh Nghiệp & Quy Định Nội Bộ (PPT)', type: 'PPT', size: '15.2 MB', url: '#' },
+      { id: 'mat-adm-3', name: 'Cẩm Nang Quyền Lợi & Chế Độ Bảo Hiểm Nhân Sự MMVN (PDF)', type: 'PDF', size: '2.1 MB', url: '#' },
+    ],
+    enrolledStudents: [
+      { id: 'MMVN-2001', name: 'Nguyen Van An', position: 'Store Associate', store: 'MM Binh Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2002', name: 'Tran Thi Binh', position: 'Customer Service Lead', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2003', name: 'Le Hoang Nam', position: 'Department Manager', store: 'MM Hiep Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2004', name: 'Pham Minh Chau', position: 'L&OD Specialist', store: 'MM Head Office', attendance: 'PENDING' },
+      { id: 'MMVN-2005', name: 'Doan Van Binh', position: 'IT Support Specialist', store: 'MM Head Office', attendance: 'CONFIRMED' },
+      { id: 'MMVN-2006', name: 'Hoang Kim Oanh', position: 'HR Assistant', store: 'MM Head Office', attendance: 'CONFIRMED' },
+    ],
+  },
+  {
+    id: 'ilt-006',
+    code: 'WS-SGM-06',
+    title: 'Store Leadership Seminar: Retail P&L Governance & SGM Operational Strategy',
+    category: 'Leadership & Management',
+    modality: 'OFFLINE_STORE',
+    trainerId: trainerQuangUser.userId,
+    trainerName: trainerQuangUser.fullName,
+    trainerTitle: 'Senior Store General Manager (SGM) & Retail Strategy Mentor',
+    coTrainerIds: [userAdminUser.userId, trainerThanhUser.userId],
+    coTrainerNames: [userAdminUser.fullName, trainerThanhUser.fullName],
+    coTrainers: [
+      { id: userAdminUser.userId, userId: userAdminUser.userId, fullName: userAdminUser.fullName, name: userAdminUser.fullName, role: 'useradmin', title: 'HR Master Data & User Admin' },
+      { id: trainerThanhUser.userId, userId: trainerThanhUser.userId, fullName: trainerThanhUser.fullName, name: trainerThanhUser.fullName, role: 'trainer', title: 'Loss Prevention & HSE Director' },
+    ],
+    trainerRating: 4.96,
+    date: '2026-09-18',
+    time: '09:00 - 16:30 (6.5 hours)',
+    venueId: 'room-ho-pla',
+    venue: 'Platinum Executive Conference Room - MM Mega Market Head Office',
+    maxCapacity: 30,
+    enrolledCount: 24,
+    status: 'UPCOMING',
+    isEnrolled: false,
+    attendanceStatus: 'NOT_REGISTERED',
+    qrToken: 'MMVN-QR-ILT006-20260918',
+    description: 'In-depth analysis of hypermarket P&L statements, margin enhancement, shrinkage mitigation, and multi-department store coordination.',
+    prerequisiteCourse: 'Store General Manager P&L Governance & Budget Ownership',
+    prerequisiteCourseId: 'CRS-SUCC-107',
+    syllabus: [
+      { step: 'Phần 1: Cấu Trúc Báo Cáo P&L Siêu Thị & Phân Tích Điểm Hòa Vốn (120 phút)', detail: 'Bóc tách chi phí vận hành (OPEX), tối ưu hóa biên lợi nhuận gộp theo từng ngành hàng.' },
+      { step: 'Phần 2: Chiến Lược Kiểm Soát Thất Thoát & Giảm Hủy Hàng Tươi Sống (120 phút)', detail: 'Phân tích chỉ số Shrinkage, quy trình quản trị chuỗi cung ứng và luân chuyển hàng hóa.' },
+      { step: 'Phần 3: Thực Hành Lập Kế Hoạch Kinh Doanh Quý Cho Siêu Thị Mẫu (150 phút)', detail: 'Các nhóm Store Manager lập ngân sách P&L giả định và bảo vệ trước Hội đồng Mentor.' },
+    ],
+    materials: [
+      { id: 'mat-sgm-1', name: 'Mô Hình Tài Chính P&L Siêu Thị Chuẩn MMVN (Excel / PDF)', type: 'PDF', size: '3.6 MB', url: '#' },
+      { id: 'mat-sgm-2', name: 'Slide Chiến Lược Quản Trị Vận Hành Dành Cho SGM (PPT)', type: 'PPT', size: '18.4 MB', url: '#' },
+    ],
+    enrolledStudents: [
+      { id: 'MMVN-3001', name: 'Vu Duc Thang', position: 'Store Manager', store: 'MM An Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-3002', name: 'Nguyen Thi Mai', position: 'Store Manager', store: 'MM Binh Phu', attendance: 'CONFIRMED' },
+      { id: 'MMVN-3003', name: 'Tran Van Bach', position: 'Deputy Store Manager', store: 'MM Thang Long', attendance: 'CONFIRMED' },
+      { id: 'MMVN-3004', name: 'Le Thi Thu', position: 'Section Manager', store: 'MM Da Nang', attendance: 'PENDING' },
+    ],
   },
 ];
 

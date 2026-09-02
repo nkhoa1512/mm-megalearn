@@ -1,330 +1,348 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useRef, useState } from 'react';
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Badge, Button } from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
+// @ts-ignore
+import { levelValue } from '../data/levelSystem';
+// @ts-ignore
+import { currentUser as fallbackUser } from '../data/mockData';
+// @ts-ignore
 import { getCourseImage } from '../data/courseImages';
+import { Badge, Button } from '../components/ui';
+import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState } from '../components/layout';
+
+const QUICK_PROMPTS = [
+  'Quy chuẩn nhiệt độ tủ ủ bột quầy bánh?',
+  'Quy trình ứng phó sự cố PCCC siêu thị?',
+  'Điểm đạt bài thi cuối khóa là bao nhiêu?',
+  'Tôi nên học khóa nào tiếp theo?',
+];
 
 export default function AiLearningHubScreen() {
   const navigation = useNavigation<any>();
-  const { currentUser, courses: allCourses, enrollCourse } = useCourseStore();
-  const user = currentUser;
+  const { courses: allCourses, currentUser: authUser, enrollCourse } = useCourseStore();
+  const user = authUser || fallbackUser;
 
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'tutor'>('recommendations');
+  const [tab, setTab] = useState<'RECOMMEND' | 'TUTOR'>('RECOMMEND');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
-  // AI Chatbot messages
   const [messages, setMessages] = useState<any[]>([
     {
       id: 1,
       sender: 'bot',
-      text: `Xin chào ${user.fullName}! Tôi là Trợ lý AI Đào tạo MM MegaLearn. Bạn có thể hỏi tôi bất kỳ thắc mắc nào về quy chuẩn an toàn thực phẩm HACCP, PCCC, hoặc ôn tập câu hỏi trắc nghiệm trước khi thi.`,
+      text: `Xin chào ${user.fullName}! Tôi là Trợ lý AI Đào tạo MM MegaLearn. Bạn có thể hỏi tôi về kiến thức bài học, quy chuẩn an toàn thực phẩm HACCP, hoặc ôn tập trước kỳ thi.`,
       time: 'Vừa xong',
     },
   ]);
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
-  // Recommendations filtered from uncompleted courses
-  const recommendedCourses = allCourses.filter((c: any) => {
-    const isCompleted = c.enrollment?.status === 'COMPLETED';
-    if (isCompleted) return false;
-    if (categoryFilter === 'ALL') return true;
-    if (categoryFilter === 'FRESH_FOOD') return c.category === 'Food Safety & Hygiene' || c.code?.startsWith('FSH');
-    if (categoryFilter === 'STORE_OPS') return c.category === 'Store Operations' || c.code?.startsWith('SOE');
-    if (categoryFilter === 'SAFETY') return c.category === 'Health & Safety' || c.code?.startsWith('HSE');
-    return true;
-  }).slice(0, 6);
+  const recommended = useMemo(() => {
+    const uncompleted = allCourses.filter((c: any) => {
+      const isCompleted = c.enrollment?.status === 'COMPLETED';
+      // Thang cấp bậc đảo ngược: số càng nhỏ càng cao, nên levelValue > 4 là dưới cấp Quản lý.
+      const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && levelValue(user.level) > 4;
+      return !isCompleted && !isManagerCourse;
+    });
 
-  const handleSendMessage = (textToSend?: string) => {
-    const text = textToSend || inputText;
-    if (!text.trim()) return;
+    return uncompleted.filter((c: any) => {
+      switch (categoryFilter) {
+        case 'FRESH_FOOD':
+          return c.domain === 'Food Safety & Hygiene' || c.code?.startsWith('FSH') || c.code?.startsWith('COLD');
+        case 'STORE_OPS':
+          return c.domain === 'Store Operations' || c.code?.startsWith('STOPS');
+        case 'SAFETY':
+          return c.domain === 'Health & Safety' || c.code?.startsWith('HSE') || c.code?.startsWith('ISA');
+        case 'DIGITAL':
+          return c.domain === 'E-Commerce' || c.code?.startsWith('ECOM') || c.code?.startsWith('MERCH');
+        default:
+          return true;
+      }
+    });
+  }, [allCourses, user, categoryFilter]);
 
-    const userMsg = { id: Date.now(), sender: 'user', text, time: 'Vừa xong' };
-    setMessages((prev) => [...prev, userMsg]);
+  function send(textToSend?: string) {
+    const text = (textToSend || inputText).trim();
+    if (!text) return;
+
+    setMessages((prev) => [...prev, { id: Date.now(), sender: 'user', text, time: 'Vừa xong' }]);
     if (!textToSend) setInputText('');
     setIsTyping(true);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
 
     setTimeout(() => {
-      let reply = '';
-      const lower = text.toLowerCase();
-      if (lower.includes('haccp') || lower.includes('vệ sinh') || lower.includes('nhiệt độ') || lower.includes('bánh')) {
-        reply = '🥖 Quy Chuẩn An Toàn Thực Phẩm Quầy Bánh (SOP-OMD-04):\n• Tủ ủ bột: Duy trì nhiệt độ 28°C – 32°C, độ ẩm 80-85%.\n• Lò nướng: Kiểm tra cảm biến nhiệt trước mỗi ca nướng.\n• Ghi nhật ký: Ghi nhiệt độ vào Biểu mẫu SOP-OMD-04B mỗi 120 phút.';
-      } else if (lower.includes('pccc') || lower.includes('cháy') || lower.includes('thoát hiểm')) {
-        reply = '🔥 Quy Trình PCCC Siêu Thị (HSE-PCCC-02):\n1. Bấm chuông báo cháy khẩn cấp.\n2. Sử dụng bình khí CO2 (cho điện) hoặc bình Bọt Foam (cho xưởng nướng).\n3. Hướng dẫn khách hàng di chuyển theo đèn Exit ra Khu tập kết bãi xe.';
-      } else if (lower.includes('bài thi') || lower.includes('điểm đạt')) {
-        reply = '🎯 Thông Tin Bài Thi Đánh Giá (Final Assessment):\n• Điểm đạt chuẩn là 80% (đúng 4/5 câu).\n• Tối đa 3 lần thi lại.\n• Thời gian làm bài tiêu chuẩn 15 phút. Chúc bạn thi tốt!';
-      } else {
-        reply = '💡 Giải Đáp Từ AI Tutor:\nNội dung câu hỏi của bạn đã được đối soát với các khóa học và quy chuẩn đào tạo hiện hành của MM Mega Market. Bạn có thể xem các khóa học được gợi ý tại Tab "Gợi Ý Khóa Học".';
-      }
-
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, sender: 'bot', text: reply, time: 'Vừa xong' },
+        { id: Date.now() + 1, sender: 'bot', text: aiReply(text), time: 'Vừa xong' },
       ]);
       setIsTyping(false);
-    }, 600);
-  };
-
-  const quickPrompts = [
-    'Quy chuẩn nhiệt độ bảo quản thịt tươi?',
-    'Quy trình PCCC & thoát hiểm khẩn cấp?',
-    'Điều kiện điểm đạt bài thi cuối khóa?',
-  ];
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
+    }, 650);
+  }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header Bar */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 8 }}>
-          <Ionicons name="arrow-back" size={22} color="#1E293B" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>
-            AI Learning Hub &amp; Trợ Lý AI
-          </Text>
-          <Text style={{ fontSize: 11, color: '#64748B' }}>
-            Gợi ý đào tạo cá nhân hóa &middot; Hỏi đáp quy chuẩn nghiệp vụ
-          </Text>
-        </View>
-      </View>
+    <Screen title="AI Learning Hub" subtitle="Trợ lý AI đào tạo doanh nghiệp" back scroll={false}>
+      <View style={{ flex: 1, padding: 14 }}>
+        <Segmented
+          options={[
+            { value: 'RECOMMEND', label: '💡 Gợi ý khóa học' },
+            { value: 'TUTOR', label: '🤖 Gia sư AI' },
+          ]}
+          value={tab}
+          onChange={(v) => setTab(v as any)}
+        />
 
-      {/* Tabs Switcher */}
-      <View style={{ flexDirection: 'row', backgroundColor: '#FFFFFF', paddingHorizontal: 16, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <TouchableOpacity
-          onPress={() => setActiveTab('recommendations')}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            alignItems: 'center',
-            borderBottomWidth: 2,
-            borderColor: activeTab === 'recommendations' ? '#009E49' : 'transparent',
-          }}
-        >
-          <Text style={{ fontSize: 12.5, fontWeight: '700', color: activeTab === 'recommendations' ? '#009E49' : '#64748B' }}>
-            Gợi Ý Khóa Học ({recommendedCourses.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setActiveTab('tutor')}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            alignItems: 'center',
-            borderBottomWidth: 2,
-            borderColor: activeTab === 'tutor' ? '#009E49' : 'transparent',
-          }}
-        >
-          <Text style={{ fontSize: 12.5, fontWeight: '700', color: activeTab === 'tutor' ? '#009E49' : '#64748B' }}>
-            Hỏi Đáp Cùng AI Tutor
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* TAB 1: RECOMMENDATIONS */}
-      {activeTab === 'recommendations' && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-          {/* Categories */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 14 }}>
-            {[
-              { id: 'ALL', label: 'Tất Cả Khóa Gợi Ý' },
-              { id: 'FRESH_FOOD', label: 'An Toàn Tươi Sống & HACCP' },
-              { id: 'STORE_OPS', label: 'Vận Hành Quầy Kệ' },
-              { id: 'SAFETY', label: 'An Toàn Lao Động & PCCC' },
-            ].map((cat) => {
-              const isActive = categoryFilter === cat.id;
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => setCategoryFilter(cat.id)}
-                  style={{
-                    backgroundColor: isActive ? '#009E49' : '#FFFFFF',
-                    borderColor: isActive ? '#009E49' : '#E2E8F0',
-                    borderWidth: 1,
-                    borderRadius: 20,
-                    paddingVertical: 6,
-                    paddingHorizontal: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: isActive ? '#FFFFFF' : '#475569' }}>
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Cards List */}
-          <View style={{ gap: 12 }}>
-            {recommendedCourses.map((course: any) => (
-              <View
-                key={course.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 14,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 3,
-                  elevation: 1,
-                }}
-              >
-                <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                  <Image
-                    source={{ uri: getCourseImage(course) }}
-                    style={{ width: 64, height: 64, borderRadius: 8, marginRight: 12, backgroundColor: '#CBD5E1' }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', marginBottom: 2 }} numberOfLines={2}>
-                      {course.title}
-                    </Text>
-                    <Text style={{ fontSize: 10.5, color: '#64748B' }}>
-                      {course.code} &middot; {course.category || course.domain} &middot; {course.estimatedDuration || '3h'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* AI Rationale Box */}
-                <View style={{ backgroundColor: '#F0FDFA', borderRadius: 8, padding: 8, borderWidth: 1, borderColor: '#CCFBF1', marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start' }}>
-                  <Ionicons name="sparkles" size={13} color="#0F766E" style={{ marginRight: 6, marginTop: 1 }} />
-                  <Text style={{ fontSize: 11, color: '#0F766E', lineHeight: 15, flex: 1 }}>
-                    Đề xuất cho vị trí {user.position}: Cần thiết để chuẩn hóa kỹ năng thực hành và kiểm tra an toàn thực phẩm.
-                  </Text>
-                </View>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon="book"
-                  onPress={() => {
-                    enrollCourse(course.id, user);
-                    navigation.navigate('CourseOverview', { course, courseId: course.id });
-                  }}
-                >
-                  Ghi Danh &amp; Bắt Đầu Học
-                </Button>
+        {tab === 'RECOMMEND' ? (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+            <Card style={{ backgroundColor: COLORS.purpleSoft, borderColor: '#DDD6FE' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <Ionicons name="sparkles" size={18} color={COLORS.purple} style={{ marginRight: 9 }} />
+                <Text style={{ fontSize: 11.5, color: COLORS.purple, flex: 1, lineHeight: 17 }}>
+                  AI phân tích chức danh <Text style={{ fontWeight: '800' }}>{user.position}</Text> (
+                  {user.branchName || 'Khối Vận hành Siêu thị'}) để gợi ý các khóa chưa hoàn thành từ kho bài giảng L&D.
+                </Text>
               </View>
-            ))}
-          </View>
-        </ScrollView>
-      )}
+            </Card>
 
-      {/* TAB 2: AI TUTOR CHATBOT */}
-      {activeTab === 'tutor' && (
-        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-          <ScrollView style={{ flex: 1, padding: 16 }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-            {/* Quick Prompts */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', marginBottom: 8, textTransform: 'uppercase' }}>
-              Gợi Ý Câu Hỏi Nhanh:
+            <ChipRow
+              options={[
+                { value: 'ALL', label: 'Tất cả' },
+                { value: 'FRESH_FOOD', label: 'Thực phẩm tươi' },
+                { value: 'STORE_OPS', label: 'Vận hành quầy' },
+                { value: 'SAFETY', label: 'An toàn & PCCC' },
+                { value: 'DIGITAL', label: 'Số hóa & TMĐT' },
+              ]}
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+            />
+
+            <Text style={{ fontSize: 11.5, color: COLORS.inkFaint, marginBottom: 10 }}>
+              {recommended.length} khóa học phù hợp
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-              {quickPrompts.map((p, i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => handleSendMessage(p)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E2E8F0',
-                    borderRadius: 14,
-                    paddingVertical: 5,
-                    paddingHorizontal: 10,
-                  }}
-                >
-                  <Text style={{ fontSize: 11, color: '#009E49', fontWeight: '600' }}>💡 {p}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
 
-            {/* Messages */}
-            <View style={{ gap: 12 }}>
-              {messages.map((m) => {
-                const isBot = m.sender === 'bot';
-                return (
+            {recommended.length === 0 ? (
+              <EmptyState
+                icon="checkmark-done-outline"
+                title="Không có gợi ý mới"
+                hint="Bạn đã hoàn thành hầu hết khóa học trong nhóm này."
+              />
+            ) : (
+              recommended.slice(0, 20).map((course: any) => (
+                <Card
+                  key={course.id}
+                  onPress={() => navigation.navigate('CourseOverview', { courseId: course.id })}
+                  style={{ padding: 12 }}
+                >
+                  <View style={{ flexDirection: 'row', marginBottom: 9 }}>
+                    <Image
+                      source={{ uri: getCourseImage(course) }}
+                      style={{ width: 52, height: 52, borderRadius: 8, backgroundColor: COLORS.sunken, marginRight: 11 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, lineHeight: 17 }} numberOfLines={2}>
+                        {course.title}
+                      </Text>
+                      <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 3 }} numberOfLines={1}>
+                        {course.code} · {course.category || course.domain}
+                      </Text>
+                    </View>
+                  </View>
+
                   <View
-                    key={m.id}
                     style={{
-                      alignSelf: isBot ? 'flex-start' : 'flex-end',
-                      maxWidth: '85%',
-                      backgroundColor: isBot ? '#FFFFFF' : '#009E49',
-                      borderRadius: 16,
-                      padding: 12,
-                      borderWidth: isBot ? 1 : 0,
-                      borderColor: '#E2E8F0',
-                      shadowColor: '#000',
-                      shadowOpacity: 0.04,
-                      shadowRadius: 2,
-                      elevation: 1,
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      backgroundColor: COLORS.purpleSoft,
+                      borderRadius: 8,
+                      padding: 9,
+                      marginBottom: 10,
                     }}
                   >
-                    {isBot && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Ionicons name="sparkles" size={13} color="#009E49" style={{ marginRight: 4 }} />
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#009E49' }}>AI Tutor MM MegaLearn</Text>
-                      </View>
-                    )}
-                    <Text style={{ fontSize: 12.5, color: isBot ? '#1E293B' : '#FFFFFF', lineHeight: 18 }}>
-                      {m.text}
+                    <Ionicons name="bulb-outline" size={13} color={COLORS.purple} style={{ marginRight: 7, marginTop: 1 }} />
+                    <Text style={{ fontSize: 11, color: COLORS.purple, flex: 1, lineHeight: 16 }}>
+                      {aiReason(course, user)}
                     </Text>
                   </View>
-                );
-              })}
-              {isTyping && (
-                <Text style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>
-                  AI Tutor đang soạn câu trả lời...
-                </Text>
-              )}
-            </View>
-          </ScrollView>
 
-          {/* Input Bar */}
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-            <TextInput
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon="add-outline"
+                    onPress={() => {
+                      enrollCourse(course.id, user);
+                      navigation.navigate('CourseOverview', { courseId: course.id });
+                    }}
+                  >
+                    Ghi danh & vào học
+                  </Button>
+                </Card>
+              ))
+            )}
+          </ScrollView>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              ref={scrollRef}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 12 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {messages.map((msg) => (
+                <View
+                  key={msg.id}
+                  style={{
+                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '86%',
+                    backgroundColor: msg.sender === 'user' ? COLORS.rail : COLORS.paper,
+                    borderWidth: msg.sender === 'user' ? 0 : 1,
+                    borderColor: COLORS.line,
+                    borderRadius: 14,
+                    padding: 12,
+                    marginBottom: 9,
+                  }}
+                >
+                  {msg.sender === 'bot' && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                      <Ionicons name="sparkles" size={13} color={COLORS.purple} style={{ marginRight: 5 }} />
+                      <Text style={{ fontSize: 10.5, fontWeight: '800', color: COLORS.purple }}>AI TUTOR</Text>
+                    </View>
+                  )}
+                  <Text
+                    style={{
+                      fontSize: 12.5,
+                      color: msg.sender === 'user' ? '#FFFFFF' : COLORS.ink,
+                      lineHeight: 19,
+                    }}
+                  >
+                    {msg.text}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 9.5,
+                      color: msg.sender === 'user' ? 'rgba(255,255,255,0.7)' : COLORS.inkFaint,
+                      marginTop: 5,
+                    }}
+                  >
+                    {msg.time}
+                  </Text>
+                </View>
+              ))}
+
+              {isTyping && (
+                <View
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: COLORS.paper,
+                    borderWidth: 1,
+                    borderColor: COLORS.line,
+                    borderRadius: 14,
+                    paddingHorizontal: 14,
+                    paddingVertical: 11,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: COLORS.inkFaint }}>AI đang soạn câu trả lời…</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Quick prompts */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 9, maxHeight: 40 }}>
+              {QUICK_PROMPTS.map((p) => (
+                <TouchableOpacity
+                  key={p}
+                  onPress={() => send(p)}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 7,
+                    paddingHorizontal: 12,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: '#DDD6FE',
+                    backgroundColor: COLORS.purpleSoft,
+                    marginRight: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.purple }}>{p}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Composer */}
+            <View
               style={{
-                flex: 1,
-                backgroundColor: '#F1F5F9',
-                borderRadius: 20,
-                paddingHorizontal: 14,
-                height: 40,
-                fontSize: 12.5,
-                color: '#1E293B',
-                marginRight: 8,
-              }}
-              placeholder="Nhập câu hỏi quy chuẩn, kiến thức bài học..."
-              placeholderTextColor="#94A3B8"
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={() => handleSendMessage()}
-            />
-            <TouchableOpacity
-              onPress={() => handleSendMessage()}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: '#009E49',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: 'row',
+                alignItems: 'flex-end',
+                backgroundColor: COLORS.paper,
+                borderWidth: 1,
+                borderColor: COLORS.line,
+                borderRadius: 12,
+                paddingHorizontal: 11,
+                paddingVertical: 5,
               }}
             >
-              <Ionicons name="send" size={16} color="#FFFFFF" />
-            </TouchableOpacity>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Hỏi AI về bài học, SOP, kỳ thi…"
+                placeholderTextColor={COLORS.inkFaint}
+                multiline
+                style={{ flex: 1, paddingVertical: 8, fontSize: 13, color: COLORS.ink, maxHeight: 90 }}
+              />
+              <TouchableOpacity
+                onPress={() => send()}
+                disabled={!inputText.trim()}
+                activeOpacity={0.8}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  backgroundColor: inputText.trim() ? COLORS.purple : COLORS.sunken,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 3,
+                  marginLeft: 6,
+                }}
+              >
+                <Ionicons name="send" size={15} color={inputText.trim() ? '#FFFFFF' : COLORS.inkFaint} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      )}
-    </SafeAreaView>
+        )}
+      </View>
+    </Screen>
   );
+}
+
+/** Cùng bộ tri thức SOP với AiLearningHub.jsx của bản web. */
+function aiReply(text: string) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes('haccp') || lower.includes('vệ sinh') || lower.includes('nhiệt độ') || lower.includes('bánh')) {
+    return `🥖 Quy chuẩn an toàn thực phẩm quầy bánh (SOP-OMD-04):\n\n• Tủ ủ bột: duy trì 28°C – 32°C, độ ẩm 80–85%.\n• Lò nướng đối lưu: kiểm tra cảm biến nhiệt trước mỗi ca.\n• Ghi nhật ký nhiệt độ vào biểu mẫu SOP-OMD-04B mỗi 120 phút.\n• Sự cố: lệch quá ±3°C thì dừng mẻ mới và báo Trưởng ca ngay.`;
+  }
+  if (lower.includes('pccc') || lower.includes('cháy') || lower.includes('thoát hiểm') || lower.includes('bình')) {
+    return `🔥 Quy trình ứng phó sự cố PCCC siêu thị (HSE-PCCC-02):\n\n1. Bấm chuông báo cháy khẩn cấp gần nhất.\n2. Dùng bình CO2 cho thiết bị điện, bình bọt Foam cho khu vực dầu mỡ.\n3. Hướng dẫn khách theo đèn Exit dạ quang ra khu vực tập kết an toàn số 1 tại bãi đỗ xe.`;
+  }
+  if (lower.includes('bài thi') || lower.includes('trắc nghiệm') || lower.includes('điểm đạt') || lower.includes('thi')) {
+    return `🎯 Thông tin bài thi đánh giá cuối khóa:\n\n• Điểm đạt chuẩn 80%.\n• Tối đa 3 lần thi lại.\n• Thời gian làm bài tiêu chuẩn 15 phút.\n\nChúc bạn ôn tập tốt!`;
+  }
+  return `💡 Giải đáp từ AI Tutor MM MegaLearn:\n\nCâu hỏi của bạn đã được đối soát với các khóa học và quy chuẩn đào tạo hiện hành của MM Mega Market. Hãy mở tab "Gợi ý khóa học" để xem và vào học trực tiếp các khóa liên quan.`;
+}
+
+function aiReason(course: any, user: any) {
+  if (course.code?.startsWith('FSH') || course.domain === 'Food Safety & Hygiene') {
+    return `Đề xuất cho vị trí ${user.position}: cần thiết để đáp ứng tiêu chuẩn kiểm định an toàn vệ sinh thực phẩm HACCP tại xưởng chế biến.`;
+  }
+  if (course.code?.startsWith('COLD') || course.domain === 'Cold Chain') {
+    return 'Bổ trợ nghiệp vụ bảo quản hàng lạnh và chống sốc nhiệt cho nhóm sản phẩm tươi sống.';
+  }
+  if (course.code?.startsWith('HSE') || course.domain === 'Health & Safety') {
+    return 'Khóa tuân thủ bắt buộc định kỳ về PCCC và an toàn lao động cho khối Vận hành.';
+  }
+  if (course.code?.startsWith('STOPS') || course.domain === 'Store Operations') {
+    return 'Chuẩn hóa kỹ năng vận hành quầy kệ, chống hao hụt và nâng cao trải nghiệm khách hàng.';
+  }
+  return 'Khóa tự chọn nâng cao năng lực chuyên môn trong danh mục đào tạo của Ban L&D.';
 }

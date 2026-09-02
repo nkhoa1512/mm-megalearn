@@ -1,269 +1,413 @@
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  Modal as RNModal,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Badge, Button, ProgressBar } from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
-import { levelDefinition, nextLevelUp, normalizeLevel } from '../data/levelSystem';
+// @ts-ignore
+import { levelDefinition } from '../data/levelSystem';
+// @ts-ignore
 import { getCourseImage } from '../data/courseImages';
+import { Badge, Button, ProgressBar } from '../components/ui';
+import { Screen, Card, COLORS, EmptyState } from '../components/layout';
+
+const TABS = [
+  { id: 'CURRENT', label: 'Hiện tại', icon: 'location-outline' },
+  { id: 'SUCCESSION', label: 'Kế cận', icon: 'arrow-up-circle-outline' },
+  { id: 'SELF_PROPOSED', label: 'Chuyên đề', icon: 'list-outline' },
+  { id: 'RECOMMENDED', label: 'Gợi ý', icon: 'sparkles-outline' },
+];
 
 export default function RoadmapScreen() {
   const navigation = useNavigation<any>();
-  const { currentUser, courses: allCourses, myCourses } = useCourseStore();
-  const user = currentUser;
-  const userLevel = normalizeLevel(user?.level || 7);
-  const nextLvl = nextLevelUp(userLevel);
+  const {
+    currentUser: user,
+    getUserRoadmapTabs,
+    requestRoadmapPromotion,
+    levelAdvanceRequestsFor,
+    enrollCourse,
+  } = useCourseStore();
 
-  const [activeTab, setActiveTab] = useState<'HIEN_TAI' | 'KE_CAN' | 'DE_XUAT' | 'GOI_Y'>('HIEN_TAI');
+  const [activeTab, setActiveTab] = useState('CURRENT');
+  const [requestState, setRequestState] = useState<null | 'ok' | 'not-ready'>(null);
 
-  const tabs = [
-    { id: 'HIEN_TAI', label: `Định Biên Level ${userLevel}`, icon: 'map' },
-    { id: 'KE_CAN', label: `Kế Cận Level ${nextLvl}`, icon: 'git-network' },
-    { id: 'DE_XUAT', label: 'Chuyên Đề Mở Rộng', icon: 'options' },
-    { id: 'GOI_Y', label: 'Gợi Ý AI', icon: 'sparkles' },
-  ];
+  const roadmap = getUserRoadmapTabs(user);
+  const levelDef = levelDefinition(user?.level);
 
-  return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header Bar */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 8 }}>
-          <Ionicons name="arrow-back" size={22} color="#1E293B" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>
-            Trục Lộ Trình &amp; Khung Năng Lực
-          </Text>
-          <Text style={{ fontSize: 11, color: '#64748B' }}>
-            Chuẩn hóa chức danh theo cấp bậc và kế hoạch phát triển cá nhân
-          </Text>
-        </View>
-      </View>
-
-      {/* Horizontal Tabs Bar */}
-      <View style={{ backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                onPress={() => setActiveTab(tab.id as any)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 12,
-                  paddingHorizontal: 12,
-                  borderBottomWidth: 2,
-                  borderColor: isActive ? '#009E49' : 'transparent',
-                }}
-              >
-                <Ionicons name={tab.icon as any} size={15} color={isActive ? '#009E49' : '#64748B'} style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#009E49' : '#64748B' }}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Content Area */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {activeTab === 'HIEN_TAI' && <CurrentRoadmap userLevel={userLevel} />}
-        {activeTab === 'KE_CAN' && <SuccessionRoadmap nextLvl={nextLvl} />}
-        {activeTab === 'DE_XUAT' && <SuggestedRoadmap />}
-        {activeTab === 'GOI_Y' && <RecommendedCourses />}
-      </ScrollView>
-    </SafeAreaView>
+  const alreadyRequested = (levelAdvanceRequestsFor(user) || []).some(
+    (a: any) => a.requestType === 'ROADMAP_PROMOTION' && a.userId === user?.userId && a.status === 'PENDING'
   );
-}
 
-// 1. LỘ TRÌNH ĐỊNH BIÊN HIỆN TẠI
-function CurrentRoadmap({ userLevel }: { userLevel: number }) {
-  const navigation = useNavigation<any>();
-  const [selectedMilestone, setSelectedMilestone] = useState<any>(null);
+  function openCourse(course: any) {
+    navigation.navigate('CourseOverview', { courseId: course.id });
+  }
 
-  const milestones = [
-    { title: 'XUẤT PHÁT', desc: 'Bắt đầu lộ trình chuẩn hóa chuyên môn', status: 'start', image: null },
-    { title: 'CHẶNG 1', desc: 'Food Safety & Hygiene Standards (HACCP)', status: 'in_progress', image: 'https://images.unsplash.com/photo-1574629810360-7efbb1925845?w=150&h=150&fit=crop', code: 'FSH-001', progress: 47 },
-    { title: 'CHẶNG 2', desc: 'Fresh Meat & Cold Chain Storage', status: 'pending', image: 'https://images.unsplash.com/photo-1607006411066-574d6c701d81?w=150&h=150&fit=crop', code: 'FSH-002', progress: 0 },
-    { title: 'CHẶNG 3', desc: 'Seafood Quality Inspection & Sanitation', status: 'pending', image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=150&h=150&fit=crop', code: 'FSH-003', progress: 0 },
-    { title: 'CHẶNG 4', desc: 'Bakery & Confectionery Sanitation Protocols', status: 'pending', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=150&h=150&fit=crop', code: 'FSH-004', progress: 0 },
-    { title: 'VỀ ĐÍCH', desc: 'Đạt chuẩn 100% Năng lực Level 7', status: 'finish', image: null },
-  ];
+  function joinTrack(track: any) {
+    track.milestones.forEach(({ course, completed }: any) => {
+      if (!completed) enrollCourse(course.id, user);
+    });
+  }
+
+  function requestPromotion() {
+    const result = requestRoadmapPromotion(user);
+    setRequestState(result.ok ? 'ok' : 'not-ready');
+  }
 
   return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E293B' }}>Định Biên Level {userLevel}</Text>
-        <Badge tone="amber">1/5 Hoàn Thành</Badge>
-      </View>
-
-      <View style={{ gap: 12 }}>
-        {milestones.map((ms, idx) => {
-          const isStart = ms.status === 'start';
-          const isFinish = ms.status === 'finish';
+    <Screen
+      title="Lộ Trình Học Tập"
+      subtitle={`${levelDef.emoji} Level ${user?.level} · ${levelDef.shortVi}`}
+    >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+        {TABS.map((tab) => {
+          const active = tab.id === activeTab;
           return (
             <TouchableOpacity
-              key={idx}
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-              onPress={() => {
-                if (!isStart && !isFinish) {
-                  setSelectedMilestone(ms);
-                }
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.8}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 8,
+                paddingHorizontal: 13,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: active ? COLORS.rail : COLORS.line,
+                backgroundColor: active ? COLORS.rail : COLORS.paper,
+                marginRight: 7,
               }}
-              activeOpacity={0.7}
             >
-              <View style={{ alignItems: 'center', marginRight: 12 }}>
-                {isStart ? (
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="flag" size={18} color="#FFFFFF" />
-                  </View>
-                ) : isFinish ? (
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="trophy" size={18} color="#FFFFFF" />
-                  </View>
-                ) : (
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F5F9', overflow: 'hidden', borderWidth: 1, borderColor: '#CBD5E1' }}>
-                    {ms.image && <Image source={{ uri: ms.image }} style={{ width: '100%', height: '100%' }} />}
-                  </View>
-                )}
-              </View>
-
-              <View style={{ flex: 1, paddingVertical: 6, borderBottomWidth: idx < milestones.length - 1 ? 1 : 0, borderColor: '#F1F5F9' }}>
-                <Text style={{ fontSize: 10.5, fontWeight: '800', color: isStart ? '#2563EB' : isFinish ? '#D97706' : '#64748B' }}>
-                  {ms.title}
-                </Text>
-                <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>
-                  {ms.desc}
-                </Text>
-                {ms.progress !== undefined && (
-                  <View style={{ marginTop: 4 }}>
-                    <ProgressBar value={ms.progress} size="sm" tone={ms.progress > 0 ? 'amber' : 'sage'} />
-                  </View>
-                )}
-              </View>
+              <Ionicons name={tab.icon as any} size={14} color={active ? '#FFFFFF' : COLORS.inkSoft} />
+              <Text
+                style={{ fontSize: 12, fontWeight: '700', color: active ? '#FFFFFF' : COLORS.inkSoft, marginLeft: 5 }}
+              >
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
-      {/* MILESTONE MODAL */}
-      {selectedMilestone && (
-        <RNModal visible={Boolean(selectedMilestone)} transparent animationType="slide" onRequestClose={() => setSelectedMilestone(null)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 6 }}>{selectedMilestone.desc}</Text>
-              <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 14 }}>
-                Khóa học chuẩn hóa chuyên môn thuộc khung Level {userLevel}.
+      {activeTab === 'CURRENT' && (
+        <>
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
+              <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.ink }}>
+                Định biên Level {roadmap.level}
               </Text>
-              <Button
-                variant="primary"
-                onPress={() => {
-                  const courseId = selectedMilestone.code ? `CRS-${selectedMilestone.code}` : 'CRS-FSH-001';
-                  setSelectedMilestone(null);
-                  navigation.navigate('CourseOverview', { courseId });
-                }}
-              >
-                Vào Học Khóa Này
-              </Button>
+              <Badge tone={roadmap.current.done ? 'sage' : 'amber'} size="sm">
+                {roadmap.current.percent}% hoàn thành
+              </Badge>
             </View>
-          </View>
-        </RNModal>
+            <ProgressBar value={roadmap.current.percent} tone={roadmap.current.done ? 'sage' : 'rail'} />
+          </Card>
+
+          <Timeline milestones={roadmap.current.milestones} onOpen={openCourse} />
+        </>
       )}
-    </View>
+
+      {activeTab === 'SUCCESSION' &&
+        (!roadmap.nextLevel ? (
+          <EmptyState
+            icon="trophy-outline"
+            title="Đã ở cấp bậc cao nhất"
+            hint="Bạn đang ở Level 1 — không còn lộ trình kế cận phía trên."
+          />
+        ) : (
+          <>
+            <Card
+              style={{
+                backgroundColor: roadmap.succession.locked ? COLORS.redSoft : COLORS.greenSoft,
+                borderColor: roadmap.succession.locked ? '#FECACA' : '#A7F3D0',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <Ionicons
+                  name={roadmap.succession.locked ? 'lock-closed' : 'sparkles'}
+                  size={19}
+                  color={roadmap.succession.locked ? COLORS.red : COLORS.green}
+                  style={{ marginRight: 10 }}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: roadmap.succession.locked ? '#991B1B' : '#166534',
+                    flex: 1,
+                    lineHeight: 17,
+                    fontWeight: '600',
+                  }}
+                >
+                  {roadmap.succession.locked
+                    ? `Bạn phải hoàn thành 100% lộ trình hiện tại (Level ${roadmap.level}) để tham gia lộ trình kế cận.`
+                    : `Đã hoàn thành định biên Level ${roadmap.level}. Lộ trình kế cận Level ${roadmap.nextLevel} đã mở khóa!`}
+                </Text>
+              </View>
+            </Card>
+
+            <Card>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
+                <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.ink }}>
+                  Kế cận Level {roadmap.nextLevel}
+                </Text>
+                <Badge tone={roadmap.succession.percent >= 100 ? 'sage' : 'amber'} size="sm">
+                  {roadmap.succession.percent}%
+                </Badge>
+              </View>
+              <ProgressBar value={roadmap.succession.percent} tone={roadmap.succession.percent >= 100 ? 'sage' : 'rail'} />
+            </Card>
+
+            <Timeline milestones={roadmap.succession.milestones} locked={roadmap.succession.locked} onOpen={openCourse} />
+
+            {roadmap.succession.unlocked && (
+              <Card>
+                {roadmap.succession.percent >= 100 ? (
+                  alreadyRequested || requestState === 'ok' ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="time" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
+                      <Text style={{ fontSize: 12, color: COLORS.greenDark, fontWeight: '700', flex: 1, lineHeight: 17 }}>
+                        Hồ sơ đề xuất thăng cấp đang chờ User Admin / System Admin duyệt.
+                      </Text>
+                    </View>
+                  ) : (
+                    <Button variant="primary" icon="trophy-outline" onPress={requestPromotion}>
+                      Gửi hồ sơ đề xuất đánh giá thăng cấp
+                    </Button>
+                  )
+                ) : (
+                  <Text style={{ fontSize: 12, color: COLORS.inkSoft, lineHeight: 17 }}>
+                    Hoàn thành 100% các khóa ở trên để mở nút đề xuất thăng cấp.
+                  </Text>
+                )}
+                {requestState === 'not-ready' && (
+                  <Text style={{ fontSize: 11.5, color: COLORS.red, marginTop: 8, lineHeight: 16 }}>
+                    Chưa đủ điều kiện gửi hồ sơ. Hãy hoàn tất toàn bộ khóa học của lộ trình kế cận.
+                  </Text>
+                )}
+              </Card>
+            )}
+          </>
+        ))}
+
+      {activeTab === 'SELF_PROPOSED' && (
+        <>
+          <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <Ionicons name="git-branch" size={18} color={COLORS.rail} style={{ marginRight: 9 }} />
+              <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
+                Lộ trình chuyên đề tự chọn được cá nhân hóa theo Phòng ban (
+                {user?.departmentName || user?.departmentCode || 'Bộ phận'}), chức danh và cấp bậc hiện tại của bạn.
+              </Text>
+            </View>
+          </Card>
+
+          {roadmap.selfProposed.tracks.length === 0 ? (
+            <EmptyState icon="file-tray-outline" title="Chưa có chuyên đề phù hợp cấp bậc hiện tại" />
+          ) : (
+            roadmap.selfProposed.tracks.map((track: any) => (
+              <Card key={track.id}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <View
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      backgroundColor: COLORS.railSoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 11,
+                    }}
+                  >
+                    <Ionicons name="school-outline" size={18} color={COLORS.rail} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.ink, lineHeight: 19 }}>
+                      {track.titleVi}
+                    </Text>
+                    <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 3, lineHeight: 16 }}>
+                      {track.description}
+                    </Text>
+                  </View>
+                </View>
+
+                {track.joined ? (
+                  <View style={{ marginBottom: 11 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <Text style={{ fontSize: 11, color: COLORS.inkFaint }}>Tiến độ chuyên đề</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: COLORS.rail }}>{track.percent}%</Text>
+                    </View>
+                    <ProgressBar value={track.percent} tone={track.percent >= 100 ? 'sage' : 'rail'} size="sm" />
+                  </View>
+                ) : (
+                  <Button size="sm" variant="primary" icon="add-outline" style={{ marginBottom: 11 }} onPress={() => joinTrack(track)}>
+                    Bắt đầu chuyên đề này
+                  </Button>
+                )}
+
+                <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.inkFaint, marginBottom: 7 }}>
+                  {track.milestones.length} khóa học trong lộ trình
+                </Text>
+                {track.milestones.map(({ course, completed, status }: any) => (
+                  <TouchableOpacity
+                    key={course.id}
+                    onPress={() => openCourse(course)}
+                    activeOpacity={0.75}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: completed
+                        ? COLORS.greenSoft
+                        : status === 'IN_PROGRESS'
+                        ? COLORS.amberSoft
+                        : COLORS.sunken,
+                      borderWidth: 1,
+                      borderColor: completed ? '#BBF7D0' : status === 'IN_PROGRESS' ? '#FDE68A' : COLORS.line,
+                      borderRadius: 8,
+                      padding: 9,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <Ionicons
+                      name={completed ? 'checkmark-circle' : status === 'IN_PROGRESS' ? 'time' : 'book-outline'}
+                      size={15}
+                      color={completed ? COLORS.green : status === 'IN_PROGRESS' ? COLORS.amber : COLORS.inkFaint}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={{ fontSize: 11.5, color: COLORS.ink, flex: 1, lineHeight: 16 }} numberOfLines={2}>
+                      {course.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </Card>
+            ))
+          )}
+        </>
+      )}
+
+      {activeTab === 'RECOMMENDED' && (
+        <>
+          <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <Ionicons name="sparkles" size={18} color={COLORS.amber} style={{ marginRight: 9 }} />
+              <Text style={{ fontSize: 11.5, color: '#B45309', flex: 1, lineHeight: 17 }}>
+                Gợi ý dựa trên cấp bậc, khối công tác hiện tại và các khóa học bạn chưa hoàn thành.
+              </Text>
+            </View>
+          </Card>
+
+          {roadmap.recommended.length === 0 ? (
+            <EmptyState
+              icon="checkmark-done-outline"
+              title="Không có gợi ý mới"
+              hint="Bạn đã hoàn thành hầu hết các khóa phù hợp với vị trí hiện tại."
+            />
+          ) : (
+            roadmap.recommended.map((course: any) => (
+              <Card key={course.id} onPress={() => openCourse(course)} style={{ padding: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Image
+                    source={{ uri: getCourseImage(course) }}
+                    style={{ width: 52, height: 52, borderRadius: 8, backgroundColor: COLORS.sunken, marginRight: 11 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, lineHeight: 17 }} numberOfLines={2}>
+                      {course.title}
+                    </Text>
+                    <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 3 }} numberOfLines={1}>
+                      {course.code} · {course.category || course.domain}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.inkFaint} />
+                </View>
+              </Card>
+            ))
+          )}
+        </>
+      )}
+    </Screen>
   );
 }
 
-// 2. LỘ TRÌNH KẾ CẬN (LEVEL TIẾP THEO)
-function SuccessionRoadmap({ nextLvl }: { nextLvl: any }) {
+/** Dòng thời gian các cột mốc khóa học — thay cho VisualRoadmapTimeline của web. */
+function Timeline({
+  milestones = [],
+  locked = false,
+  onOpen,
+}: {
+  milestones: any[];
+  locked?: boolean;
+  onOpen: (course: any) => void;
+}) {
+  if (!milestones.length) {
+    return <EmptyState icon="map-outline" title="Lộ trình chưa có khóa học nào" />;
+  }
+
   return (
     <View>
-      <View style={{ backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A', marginBottom: 14, flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="lock-closed" size={16} color="#D97706" style={{ marginRight: 8 }} />
-        <Text style={{ fontSize: 11.5, color: '#92400E', fontWeight: '600', flex: 1 }}>
-          Chương trình kế cận Level {nextLvl}. Bạn cần gửi đơn xin phê duyệt để được học trước các môn này.
-        </Text>
-      </View>
+      {milestones.map(({ course, completed, status }: any, idx: number) => {
+        const isLast = idx === milestones.length - 1;
+        const dotColor = locked
+          ? COLORS.inkFaint
+          : completed
+          ? COLORS.green
+          : status === 'IN_PROGRESS'
+          ? COLORS.amber
+          : COLORS.line;
 
-      <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-        <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', marginBottom: 12 }}>
-          Các Môn Học Quy Hoạch Kế Cận Level {nextLvl}:
-        </Text>
+        return (
+          <View key={course.id} style={{ flexDirection: 'row' }}>
+            {/* Rail */}
+            <View style={{ width: 30, alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: completed && !locked ? COLORS.green : COLORS.paper,
+                  borderWidth: 2,
+                  borderColor: dotColor,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {locked ? (
+                  <Ionicons name="lock-closed" size={10} color={COLORS.inkFaint} />
+                ) : completed ? (
+                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                ) : (
+                  <Text style={{ fontSize: 9.5, fontWeight: '900', color: COLORS.inkFaint }}>{idx + 1}</Text>
+                )}
+              </View>
+              {!isLast && <View style={{ width: 2, flex: 1, backgroundColor: COLORS.line, marginVertical: 2 }} />}
+            </View>
 
-        {[
-          { code: 'LEAD-01', title: 'Kỹ Năng Quản Lý Đội Ngũ Tuyến Đầu', duration: '4h' },
-          { code: 'OPS-02', title: 'Tối Ưu Hao Hụt & Kiểm Soát Tồn Kho', duration: '3h' },
-          { code: 'CS-03', title: 'Xử Lý Khiếu Nại Phức Tạp & Trải Nghiệm Khách Hàng', duration: '3h' },
-        ].map((c, i) => (
-          <View key={i} style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-              <Ionicons name="lock-closed" size={14} color="#D97706" />
+            {/* Card */}
+            <View style={{ flex: 1, paddingBottom: 10 }}>
+              <TouchableOpacity
+                onPress={() => !locked && onOpen(course)}
+                activeOpacity={locked ? 1 : 0.8}
+                style={{
+                  backgroundColor: COLORS.paper,
+                  borderWidth: 1,
+                  borderColor: COLORS.line,
+                  borderRadius: 12,
+                  padding: 12,
+                  opacity: locked ? 0.65 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, lineHeight: 18 }} numberOfLines={2}>
+                  {course.title}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
+                  <Badge tone={completed ? 'sage' : status === 'IN_PROGRESS' ? 'amber' : 'slate'} size="sm">
+                    {completed ? 'Hoàn thành' : status === 'IN_PROGRESS' ? 'Đang học' : 'Chưa bắt đầu'}
+                  </Badge>
+                  <Text style={{ fontSize: 10.5, color: COLORS.inkFaint }}>{course.code}</Text>
+                </View>
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#1E293B' }}>{c.title}</Text>
-              <Text style={{ fontSize: 10.5, color: '#64748B' }}>{c.code} &middot; {c.duration}</Text>
-            </View>
-            <Badge tone="amber" size="sm">Cần Xin Duyệt</Badge>
           </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// 3. CHUYÊN ĐỀ TỰ CHỌN
-function SuggestedRoadmap() {
-  const tracks = [
-    { title: 'Chuỗi Cung Ứng & Logistics Siêu Thị', desc: 'Vận hành kho lạnh và tối ưu vận tải giao nhận.', icon: 'bus', count: 3 },
-    { title: 'Bán Lẻ Số & Thương Mại Điện Tử MM', desc: 'Quy trình xử lý đơn hàng đa kênh Omnichannel.', icon: 'globe', count: 2 },
-    { title: 'Văn Hóa Phục Vụ Tận Tâm (CS Mindset)', desc: 'Nghệ thuật thấu hiểu và xử lý khiếu nại khách hàng.', icon: 'heart', count: 2 },
-  ];
-
-  return (
-    <View style={{ gap: 10 }}>
-      {tracks.map((t, idx) => (
-        <View key={idx} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-              <Ionicons name={t.icon as any} size={18} color="#009E49" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B' }}>{t.title}</Text>
-              <Text style={{ fontSize: 11, color: '#64748B' }}>{t.desc}</Text>
-            </View>
-          </View>
-          <Badge tone="slate" size="sm">{t.count} Khóa Tự Chọn</Badge>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// 4. KHÓA HỌC GỢI Ý AI
-function RecommendedCourses() {
-  const navigation = useNavigation<any>();
-  return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' }}>
-      <Ionicons name="sparkles" size={36} color="#7C3AED" style={{ marginBottom: 8 }} />
-      <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', textAlign: 'center' }}>
-        Trợ Lý AI Gợi Ý Khóa Học Cá Nhân Hóa
-      </Text>
-      <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 4, marginBottom: 14 }}>
-        Hệ thống AI tự động phân tích chức danh của bạn để đề xuất các bài giảng nâng cao chuyên môn phù hợp nhất.
-      </Text>
-      <Button variant="primary" icon="sparkles" onPress={() => navigation.navigate('AiLearningHub')}>
-        Mở AI Learning Hub
-      </Button>
+        );
+      })}
     </View>
   );
 }

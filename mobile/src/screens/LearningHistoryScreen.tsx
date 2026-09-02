@@ -1,197 +1,208 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo, useState } from 'react';
+import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { Badge } from '../components/ui';
 import { useCourseStore } from '../store/CourseStore';
-import { getUserLearningHistory, totalLearningHours } from '../data/mockData';
+// @ts-ignore
+import {
+  currentUser as fallbackUser,
+  getUserLearningHistory,
+  orgPathLabel,
+  totalLearningHours,
+} from '../data/mockData';
+import { Badge } from '../components/ui';
+import { Screen, Card, COLORS, ChipRow, EmptyState } from '../components/layout';
+
+const TYPE_META: Record<string, { label: string; tone: string; icon: string; color: string }> = {
+  ASSESSMENT: { label: 'Bài sát hạch', tone: 'amber', icon: 'create-outline', color: COLORS.amber },
+  LESSON: { label: 'Bài học / SOP', tone: 'rail', icon: 'book-outline', color: COLORS.rail },
+  CLASSROOM_CHECKIN: { label: 'Điểm danh QR', tone: 'blue', icon: 'qr-code-outline', color: COLORS.blue },
+};
 
 export default function LearningHistoryScreen() {
-  const navigation = useNavigation<any>();
-  const { currentUser, courses: allCourses, myEnrollments } = useCourseStore();
-  const user = currentUser;
+  const { currentUser: authUser, courses: allCourses, enrollments } = useCourseStore();
+  const user = authUser || fallbackUser;
 
-  const historyLogs = getUserLearningHistory(user);
-  const learningHours = totalLearningHours(allCourses, user) || 12.5;
+  const logs = useMemo(() => getUserLearningHistory(user), [user]);
+  const learningHours = totalLearningHours(allCourses, user, enrollments);
 
-  const [selectedType, setSelectedType] = useState('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [type, setType] = useState('ALL');
+  const [search, setSearch] = useState('');
 
-  const filtered = historyLogs.filter((log: any) => {
-    const matchType = selectedType === 'ALL' || log.type === selectedType;
-    const matchSearch =
-      !searchQuery ||
-      log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.moduleTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (log.auditCode && log.auditCode.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchType && matchSearch;
-  });
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return logs.filter((log: any) => {
+      if (type !== 'ALL' && log.type !== type) return false;
+      if (!q) return true;
+      return (
+        (log.title || '').toLowerCase().includes(q) ||
+        (log.moduleTitle || '').toLowerCase().includes(q) ||
+        (log.auditCode || '').toLowerCase().includes(q)
+      );
+    });
+  }, [logs, type, search]);
 
-  const totalAssessments = historyLogs.filter((l: any) => l.type === 'ASSESSMENT').length;
-  const assessmentScores = historyLogs
-    .filter((l: any) => l.type === 'ASSESSMENT' && l.score != null)
-    .map((l: any) => l.score);
-  const avgScore = assessmentScores.length > 0
-    ? Math.round(assessmentScores.reduce((a: number, b: number) => a + b, 0) / assessmentScores.length)
-    : 92;
-
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'ASSESSMENT':
-        return <Badge tone="amber" icon="trophy" size="sm">Bài Đánh Giá</Badge>;
-      case 'CLASSROOM_CHECKIN':
-        return <Badge tone="blue" icon="qr-code" size="sm">Quét QR Lớp Học</Badge>;
-      case 'LESSON':
-      default:
-        return <Badge tone="rail" icon="book" size="sm">Bài Học &amp; SOP</Badge>;
-    }
-  };
+  const assessments = logs.filter((l: any) => l.type === 'ASSESSMENT');
+  const scores = assessments.filter((l: any) => l.score != null).map((l: any) => l.score);
+  const avgScore = scores.length ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 8 }}>
-          <Ionicons name="arrow-back" size={22} color="#1E293B" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>
-            Nhật Ký &amp; Kiểm Toán Học Tập
-          </Text>
-          <Text style={{ fontSize: 11, color: '#64748B' }}>
-            Hồ sơ kiểm toán bất biến &middot; Kiểm định bởi Ban HRD &amp; Internal Audit
-          </Text>
-        </View>
-      </View>
+    <Screen title="Lịch Sử Học Tập" subtitle={orgPathLabel(user)} back scroll={false}>
+      <FlatList
+        data={filtered}
+        keyExtractor={(l: any) => l.id}
+        contentContainerStyle={{ padding: 14, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View>
+            <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <Ionicons name="finger-print" size={19} color={COLORS.rail} style={{ marginRight: 10 }} />
+                <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
+                  Nhật ký bất biến ghi nhận mọi lần hoàn thành bài học, lượt thi và điểm danh lớp trực tiếp — phục vụ
+                  kiểm toán nội bộ & HRD.
+                </Text>
+              </View>
+            </Card>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {/* 1. STAT TILES */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
-          <View style={{ width: '48%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 10 }}>
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '700' }}>Tổng Sự Kiện Đã Lưu</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1E293B', marginTop: 2 }}>{historyLogs.length} Bản ghi</Text>
-          </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+              <MiniStat label="Sự kiện đã ghi" value={`${logs.length}`} color={COLORS.ink} />
+              <MiniStat label="Tổng giờ học" value={`${learningHours.toFixed(1)}h`} color={COLORS.blue} />
+              <MiniStat label="Lượt sát hạch" value={`${assessments.length}`} color={COLORS.amber} />
+              <MiniStat label="Điểm trung bình" value={avgScore ? `${avgScore}%` : '—'} color={COLORS.green} />
+            </View>
 
-          <View style={{ width: '48%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 10 }}>
-            <Text style={{ fontSize: 11, color: '#047857', fontWeight: '700' }}>Điểm Đánh Giá TB</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#009E49', marginTop: 2 }}>{avgScore}%</Text>
-          </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: COLORS.paper,
+                borderWidth: 1,
+                borderColor: COLORS.line,
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                marginBottom: 10,
+              }}
+            >
+              <Ionicons name="search" size={15} color={COLORS.inkFaint} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Tìm theo tên bài học hoặc mã kiểm toán…"
+                placeholderTextColor={COLORS.inkFaint}
+                style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 13, color: COLORS.ink }}
+              />
+              {!!search && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Ionicons name="close-circle" size={16} color={COLORS.inkFaint} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-          <View style={{ width: '48%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12 }}>
-            <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700' }}>Kỳ Sát Hạch Đã Thi</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706', marginTop: 2 }}>{totalAssessments} Lượt</Text>
-          </View>
-
-          <View style={{ width: '48%', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12 }}>
-            <Text style={{ fontSize: 11, color: '#1E40AF', fontWeight: '700' }}>Tổng Giờ Tích Lũy</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#2563EB', marginTop: 2 }}>{learningHours.toFixed(1)}h</Text>
-          </View>
-        </View>
-
-        {/* 2. SEARCH & FILTER */}
-        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 14 }}>
-          {/* Search Box */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 8, paddingHorizontal: 8, height: 36, marginBottom: 10 }}>
-            <Ionicons name="search" size={14} color="#94A3B8" style={{ marginRight: 6 }} />
-            <TextInput
-              placeholder="Tìm theo tên bài học, mã kiểm toán..."
-              placeholderTextColor="#94A3B8"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={{ flex: 1, fontSize: 12, color: '#1E293B', padding: 0 }}
+            <ChipRow
+              options={[
+                { value: 'ALL', label: 'Tất cả', count: logs.length },
+                { value: 'ASSESSMENT', label: 'Sát hạch', count: assessments.length },
+                {
+                  value: 'LESSON',
+                  label: 'Bài học',
+                  count: logs.filter((l: any) => l.type === 'LESSON').length,
+                },
+                {
+                  value: 'CLASSROOM_CHECKIN',
+                  label: 'Điểm danh',
+                  count: logs.filter((l: any) => l.type === 'CLASSROOM_CHECKIN').length,
+                },
+              ]}
+              value={type}
+              onChange={setType}
             />
           </View>
-
-          {/* Filter Chips */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-            {[
-              { id: 'ALL', label: 'Tất Cả' },
-              { id: 'ASSESSMENT', label: 'Bài Đánh Giá' },
-              { id: 'LESSON', label: 'Bài Học & SOP' },
-              { id: 'CLASSROOM_CHECKIN', label: 'Quét QR Lớp Học' },
-            ].map((f) => {
-              const isActive = selectedType === f.id;
-              return (
-                <TouchableOpacity
-                  key={f.id}
-                  onPress={() => setSelectedType(f.id)}
+        }
+        ListEmptyComponent={<EmptyState icon="time-outline" title="Chưa có bản ghi phù hợp" />}
+        renderItem={({ item }: { item: any }) => {
+          const meta = TYPE_META[item.type] || TYPE_META.LESSON;
+          return (
+            <Card style={{ borderLeftWidth: 3, borderLeftColor: meta.color, padding: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
                   style={{
-                    backgroundColor: isActive ? '#009E49' : '#F1F5F9',
-                    paddingVertical: 5,
-                    paddingHorizontal: 10,
-                    borderRadius: 14,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    backgroundColor: `${meta.color}18`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 10,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#FFFFFF' : '#475569' }}>
-                    {f.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* 3. ACTIVITY LOG LIST */}
-        <View style={{ gap: 10 }}>
-          {filtered.length === 0 ? (
-            <View style={{ padding: 32, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-              <Ionicons name="document-text-outline" size={36} color="#94A3B8" style={{ marginBottom: 6 }} />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>Không tìm thấy bản ghi kiểm toán phù hợp</Text>
-            </View>
-          ) : (
-            filtered.map((log: any) => (
-              <View
-                key={log.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 14,
-                  padding: 14,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.03,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  {getTypeBadge(log.type)}
-                  <Text style={{ fontSize: 10, color: '#94A3B8', fontFamily: 'monospace' }}>
-                    {log.auditCode || 'AUDIT-LOG'}
-                  </Text>
+                  <Ionicons name={meta.icon as any} size={16} color={meta.color} />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, lineHeight: 17 }} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: COLORS.inkSoft, marginTop: 3 }} numberOfLines={2}>
+                    {item.moduleTitle}
+                  </Text>
 
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', marginBottom: 2 }}>
-                  {log.title}
-                </Text>
-                <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 8 }}>
-                  {log.moduleTitle}
-                </Text>
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderColor: '#F1F5F9', paddingTop: 8, alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {log.score != null && (
-                      <Badge tone="sage" size="sm">Điểm: {log.score}%</Badge>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
+                    <Badge tone={meta.tone as any} size="sm">
+                      {meta.label}
+                    </Badge>
+                    {item.score != null && (
+                      <Badge tone={item.passed ? 'sage' : 'rust'} size="sm">
+                        {item.score}% {item.passed ? 'Đạt' : 'Chưa đạt'}
+                      </Badge>
                     )}
-                    {log.attempt && (
-                      <Text style={{ fontSize: 10.5, color: '#64748B' }}>Lần thi #{log.attempt}</Text>
+                    {!!item.attempt && (
+                      <Badge tone="slate" size="sm">
+                        Lần {item.attempt}
+                      </Badge>
                     )}
                   </View>
-                  <Text style={{ fontSize: 10.5, color: '#94A3B8' }}>{log.timestamp || '2026-08-28'}</Text>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap', gap: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="time-outline" size={11} color={COLORS.inkFaint} />
+                      <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginLeft: 3 }}>{item.timestamp}</Text>
+                    </View>
+                    {!!item.timeSpent && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="hourglass-outline" size={11} color={COLORS.inkFaint} />
+                        <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginLeft: 3 }}>{item.timeSpent}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {!!item.auditCode && (
+                    <Text style={{ fontSize: 10, color: COLORS.inkFaint, marginTop: 5 }}>🔒 {item.auditCode}</Text>
+                  )}
                 </View>
               </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            </Card>
+          );
+        }}
+      />
+    </Screen>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View
+      style={{
+        width: '47.6%',
+        flexGrow: 1,
+        backgroundColor: COLORS.paper,
+        borderWidth: 1,
+        borderColor: COLORS.line,
+        borderRadius: 12,
+        padding: 11,
+        marginBottom: 6,
+      }}
+    >
+      <Text style={{ fontSize: 10.5, fontWeight: '800', color: COLORS.inkFaint }}>{label.toUpperCase()}</Text>
+      <Text style={{ fontSize: 19, fontWeight: '900', color, marginTop: 3 }}>{value}</Text>
+    </View>
   );
 }

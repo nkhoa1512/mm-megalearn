@@ -1,7 +1,7 @@
 // ===========================================================================
-// MM Mega Market Vietnam (MMVN) - 100 Enterprise Users & 100 Enterprise Courses
-// Coherent, Cross-Referenced Multi-Persona Dataset (Completed, In-Progress,
-// Not-Started, Overdue, Failed) with Dual Hierarchy (Operations & Supporting)
+// MM Mega Market Vietnam (MMVN) - 100+ Enterprise Users & 100+ Enterprise Courses
+// Coherent, Cross-Referenced Multi-Persona Dataset with Strict Dual Hierarchy
+// (User -> Sub-Department -> Department -> Division -> Business Unit)
 // ===========================================================================
 
 import {
@@ -13,8 +13,6 @@ import {
   clusters,
   operationsAreas,
   storeTypes,
-  storeDepartments,
-  storeSections,
 } from './orgHierarchy';
 import {
   checkCourseAccessRule,
@@ -24,9 +22,10 @@ import {
   levelValue,
 } from './levelSystem';
 import { getCourseImage } from './courseImages';
+import { withHrProfile } from './hrProfile';
 
 // ---------------------------------------------------------------------------
-// 1. GENERATE 100 REALISTIC ENTERPRISE USERS (WITH FULL TALENT PROFILES)
+// 1. GENERATE 100+ REALISTIC ENTERPRISE USERS (WITH FULL TALENT PROFILES)
 // ---------------------------------------------------------------------------
 
 const FIRST_NAMES = [
@@ -41,50 +40,9 @@ const LAST_NAMES = [
   'Do', 'Ho', 'Ngo', 'Duong', 'Ly', 'Doan', 'Truong', 'Dinh', 'Lam', 'Ha'
 ];
 
-const POSITIONS_BY_DEPT = {
-  PPF: ['Bakery Section Specialist', 'Pastry Chef Associate', 'Line Cook Specialist', 'Dough Prep Associate', 'Meat Processing Lead', 'Butcher Specialist', 'Deli Counter Associate'],
-  MIE: ['Dairy & Frozen Specialist', 'Chilled Foods Inspector', 'Cold Storage Supervisor', 'Ice Cream Section Lead'],
-  UF: ['Fresh Produce Inspector', 'Fruit & Veg Section Lead', 'Organic Sourcing Associate', 'Produce Display Lead'],
-  DF: ['Dry Grocery Specialist', 'Beverage & Snack Merchandiser', 'Packaged Goods Inventory Clerk', 'Cereal Section Lead'],
-  SC: ['Logistics & Warehouse Specialist', 'Forklift Operations Lead', 'Inbound Receiving Clerk', 'Cross-Docking Coordinator', 'Fleet Dispatch Specialist'],
-  OPX: ['Store Operations Supervisor', 'Floor Operations Assistant', 'Cashier Team Leader', 'POS Terminal Supervisor', 'Customer Service Specialist'],
-  QA: ['Quality Assurance Lead Inspector', 'Food Hygiene Auditor', 'Vendor Compliance Specialist', 'HACCP Testing Specialist'],
-  SOP: ['Store SOP Compliance Officer', 'Audit Trail Specialist', 'Standardization Lead'],
-  'L&OD': ['L&D Program Director', 'Organizational Development Specialist', 'Instructional Designer', 'Corporate Trainer Lead'],
-  HRBP: ['HR Business Partner - Retail Stores', 'HRBP - Supply Chain & Logistics', 'Senior People Partner'],
-  'C&B': ['Compensation & Benefits Specialist', 'Payroll Compliance Officer', 'Labor Insurance Lead'],
-  TA: ['Talent Acquisition Specialist', 'Retail Recruiter Lead', 'Campus Recruitment Associate'],
-  LP: ['Loss Prevention Lead Officer', 'Store Security Specialist', 'CCTV & Surveillance Lead', 'Shrink Investigation Officer'],
-  FA: ['Senior Financial Analyst', 'Management Accountant', 'Store CAPEX Controller'],
-  CTRL: ['Senior General Accountant', 'Accounts Payable Specialist', 'Store Audit Reconciliation Clerk'],
-  TRE: ['Corporate Treasury Specialist', 'Cash Flow & Banking Lead'],
-  MIS: ['Cybersecurity Defense Lead', 'IT Infrastructure Compliance Officer', 'Enterprise Applications Specialist'],
-  ECOM: ['Omnichannel Fulfillment Lead', 'Online Order Processing Specialist', 'Last-Mile Delivery Coordinator', 'E-Commerce Merchandiser'],
-  MKT: ['Brand Campaign Specialist', 'Trade Marketing Executive', 'Digital Media Specialist', 'In-Store Promotion Lead'],
-  PRC: ['Pricing & Margin Analyst', 'Commercial Strategy Specialist', 'Promotions Pricing Coordinator'],
-  CDD: ['B2B Sales Development Lead', 'Key Account Executive', 'Horeca Channel Specialist'],
-  IA: ['Senior Internal Auditor', 'Financial & Operational Audit Specialist', 'Compliance Risk Inspector'],
-  RSK: ['Enterprise Risk Officer', 'Business Continuity Specialist', 'Operational Risk Analyst'],
-  LG: ['Senior Legal Counsel', 'Contract & Regulatory Specialist', 'Corporate Compliance Lead'],
-  PROP: ['Facilities & Property Maintenance Lead', 'HVAC & Refrigeration Technician', 'Energy Management Specialist'],
-  TU: ['Trade Union Committee Member', 'Employee Welfare Coordinator'],
-};
-
-// Mã nhân viên của 6 persona neo; dãy sinh tự động phải tránh trùng các mã này.
 const ANCHOR_EMP_NUMS = new Set([1, 245, 312, 1042, 1250, 2041]);
 
-// Không còn gò cứng ở 100 nhân sự — kho dữ liệu mở rộng để phủ đủ 2 Business
-// Unit x nhiều Division/Department/Sub-Department x 7 cấp bậc mà không bị
-// rối (thiếu người ở một số ô của Ma Trận Lộ Trình Đa Tầng). Tỉ lệ Manager /
-// Trainer / Level bậc thấp giữ đúng hình tháp tổ chức bán lẻ thực tế, tính
-// theo % tổng quân số thay vì mốc chỉ số cứng, nên tăng/giảm TOTAL_USER_COUNT
-// vẫn cho ra một đội hình cân đối.
-const TOTAL_USER_COUNT = 260;
-const GENERATED_BAND_SIZE = TOTAL_USER_COUNT - 6; // trừ 6 persona neo (anchor)
-const MANAGER_BAND_START = 6;
-const MANAGER_BAND_END = MANAGER_BAND_START + Math.max(8, Math.round(GENERATED_BAND_SIZE * 0.10));
-const TRAINER_BAND_END = MANAGER_BAND_END + Math.max(4, Math.round(GENERATED_BAND_SIZE * 0.04));
-const CASUAL_BAND_START = MANAGER_BAND_START + Math.round(GENERATED_BAND_SIZE * 0.85);
+const TOTAL_USER_COUNT = 150;
 
 export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i) => {
   const rawEmpNum = 1001 + i;
@@ -101,35 +59,20 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       email: 'sarah.nguyen@mmvietnam.com',
       role: 'trainer',
       position: 'Head of Division - HR Director & L&D Faculty Lead',
+      title: 'Head of Division - HR Director',
       level: '2',
       levelTitle: levelTitle('2'),
       branch: 'SUPPORTING',
       branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-hrd', divisionCode: 'HRD', divisionName: 'Human Resource & L&OD',
-      departmentId: 'dept-lod', departmentCode: 'L&OD', departmentName: 'Learning & Org Dev',
-      subDepartmentId: 'sub-lod-lead', subDepartmentCode: 'SUB-LOD-LEAD', subDepartmentName: 'Đào Tạo Lãnh Đạo & Kỹ Năng Mềm (Leadership Development)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
-      managerId: null,
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
+      departmentId: 'dept-hrd-lod', departmentCode: 'HR_LOD', departmentName: 'HR - Learning & Organizational Development',
+      subDepartmentId: 'sub-hrd-sfnl', subDepartmentCode: 'SUB-SF-NL', subDepartmentName: 'SF National Learning',
       status: 'ACTIVE',
       yearsOfService: 7.5,
-      joinDate: '2019-03-01',
       avatar: 'SN',
       badgeTone: 'ai',
-      description: 'Supreme L&D Authority across all 16 MMVN Divisions, 8 Stores & Talent Pipelines',
-      pastPositions: [
-        { role: 'Senior Talent Development Manager', period: '2019 - 2022', org: 'MMVN Head Office' },
-        { role: 'L&OD Specialist', period: '2017 - 2019', org: 'BigC Regional HQ' },
-      ],
-      projects: ['Thánh Gióng Leadership Pipeline 2024-2026', 'MMVN Digital Learning LMS Transformation', 'SAP SuccessFactors HRIS Rollout'],
-      talentProfile: {
-        potential: 'TOP_EXECUTIVE',
-        successorFor: 'Chief People Officer (CPO)',
-        readiness: 'READY_NOW',
-        mentor: 'BOM Chairman',
-        skills: ['Strategic L&D', 'Retail Workforce Planning', 'Succession Architecture', 'Kirkpatrick ROI Evaluation'],
-      },
+      description: 'Supreme L&D Authority across all 42 MMVN Divisions, Stores & Talent Pipelines',
     };
   }
   if (i === 1) {
@@ -139,80 +82,46 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       fullName: 'David Tran',
       email: 'david.tran@mmvietnam.com',
       role: 'manager',
-      position: 'Department Manager - Fresh Food & Bakery',
+      position: 'Store Department Manager - Fresh Food',
+      title: 'Store Department Manager',
       level: '4',
       levelTitle: levelTitle('4'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
-      departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
-      subDepartmentId: 'sub-ppf-lead', subDepartmentCode: 'SUB-PPF-MGT', subDepartmentName: 'Ban Quản Lý & Giám Sát Chế Biến Tươi (Fresh Operations Management)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
-      clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
-      storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
-      sectionId: 'sec-bakery', sectionName: 'Bakery & Confectionery Section',
-      managerId: 'USR-0001',
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phú)',
+      departmentId: 'dept-1010-ff', departmentCode: 'FF_ST', departmentName: 'Fresh Food_ST',
+      subDepartmentId: 'sub-ff-bakery-1010', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Bakery',
+      storeName: '1010_AP (MM An Phú)',
       status: 'ACTIVE',
       yearsOfService: 4.8,
-      joinDate: '2021-10-15',
       avatar: 'DT',
-      badgeTone: 'amber',
-      description: 'Manages Fresh Food Department & Mentors 14 Bakery & Meat Specialists at MM An Phú',
-      pastPositions: [
-        { role: 'Bakery Shift Supervisor', period: '2021 - 2023', org: 'MM Mega Market Bình Phú' },
-        { role: 'Senior Pastry Chef', period: '2019 - 2021', org: 'BigC Thăng Long' },
-      ],
-      projects: ['An Phú Flagship HACCP Gold Standard Certification', 'In-Store Live Baking Workshop Lead', 'Store Shrinkage Reduction Initiative'],
-      talentProfile: {
-        potential: 'HIGH_POTENTIAL',
-        successorFor: 'Store Deputy General Manager (Deputy SGM)',
-        readiness: 'READY_IN_6_MONTHS',
-        mentor: 'Trần Minh Quang (SGM MM An Phú)',
-        skills: ['HACCP Certified Lead', 'Store P&L Optimization', 'Team Coaching (20%)', 'Fresh Food Merchandising'],
-      },
+      badgeTone: 'teal',
+      description: 'Quản lý vận hành ngành hàng thực phẩm tươi sống MM An Phú',
     };
   }
   if (i === 2) {
     return {
       userId: 'USR-0312',
       employeeCode: 'MMVN-0312',
-      fullName: 'Le Hoang Nam',
-      email: 'nam.le@mmvietnam.com',
+      fullName: 'Hoang Nguyen',
+      email: 'hoang.nguyen@mmvietnam.com',
       role: 'manager',
-      position: 'Store Operations Supervisor & Frontline Lead',
-      level: '5',
-      levelTitle: levelTitle('5'),
+      position: 'Customer Service Section Manager',
+      title: 'Customer Service Section Manager',
+      level: '4',
+      levelTitle: levelTitle('4'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-opt', divisionCode: 'OPT', divisionName: 'Operations',
-      departmentId: 'dept-ops-s', departmentCode: 'OPS-S', departmentName: 'Store Operations South',
-      subDepartmentId: 'sub-ops-s-store', subDepartmentCode: 'SUB-OPS-S1', subDepartmentName: 'Vận Hành Siêu Thị Khu Vực TP.HCM (HCM Stores Ops)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
-      clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
-      storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
-      sectionId: 'sec-pos', sectionName: 'Checkout Lanes & POS Cashiers',
-      managerId: 'USR-0245',
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-1013-tl', divisionCode: '1013_TL', divisionName: '1013_TL (MM Thăng Long)',
+      departmentId: 'dept-1013-cs', departmentCode: 'CS_ST', departmentName: 'Customer Service_ST',
+      subDepartmentId: 'sub-cs-fo-1013', subDepartmentCode: 'SUB-FO', subDepartmentName: 'Front Office',
+      storeName: '1013_TL (MM Thăng Long)',
       status: 'ACTIVE',
-      yearsOfService: 3.2,
-      joinDate: '2023-06-01',
-      avatar: 'LN',
-      badgeTone: 'blue',
-      description: 'Manages Store Floor, POS Terminals, Customer Care & Cashier Squad',
-      pastPositions: [
-        { role: 'POS Cashier Lead', period: '2023 - 2024', org: 'MM An Phú' },
-      ],
-      projects: ['Self-Checkout Terminal Deployment 2025', 'Customer Service CSAT 95+ Drive'],
-      talentProfile: {
-        potential: 'EMERGING_LEADER',
-        successorFor: 'Store Operations Department Manager',
-        readiness: 'READY_IN_1_YEAR',
-        mentor: 'David Tran',
-        skills: ['POS Operations', 'Frontline Conflict Resolution', 'Shrinkage Mitigation', 'Shift Scheduling'],
-      },
+      yearsOfService: 5.2,
+      avatar: 'HN',
+      badgeTone: 'teal',
     };
   }
   if (i === 3) {
@@ -222,185 +131,95 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       fullName: 'Minh Tran',
       email: 'minh.tran@mmvietnam.com',
       role: 'learner',
-      position: 'Junior Bakery Associate (Nhân viên tuyến đầu quầy bánh)',
+      position: 'Junior Bakery Associate',
+      title: 'Junior Bakery Associate',
       level: '7',
       levelTitle: levelTitle('7'),
       branch: 'OPERATIONS',
       branchName: 'Khối Vận hành (Operations / Stores)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
-      departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
-      subDepartmentId: 'sub-bakery', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Quầy Bánh Tươi & Bánh Mì (Bakery & Confectionery)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
-      clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
-      storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
-      sectionId: 'sec-bakery', sectionName: 'Bakery & Confectionery Section',
-      managerId: 'USR-0245',
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phú)',
+      departmentId: 'dept-1010-ff', departmentCode: 'FF_ST', departmentName: 'Fresh Food_ST',
+      subDepartmentId: 'sub-ff-bakery-1010', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Bakery',
+      storeName: '1010_AP (MM An Phú)',
       status: 'ACTIVE',
-      yearsOfService: 2.1,
-      joinDate: '2024-07-10',
+      yearsOfService: 1.2,
       avatar: 'MT',
-      badgeTone: 'sage',
-      description: 'Fast-track candidate in Thánh Gióng Leadership Pipeline; Enrolled in HACCP, Cold Chain & 10/20/70 OJT',
-      pastPositions: [
-        { role: 'Junior Bakery Associate', period: '2024 - 2025', org: 'MM Mega Market Hiệp Phú' },
-      ],
-      projects: ['European Sourdough Artisan Line Trial', 'MMVN Bread Quality Standardization 2025'],
-      talentProfile: {
-        potential: 'HIGH_POTENTIAL',
-        successorFor: 'Bakery Shift Supervisor',
-        readiness: 'READY_IN_6_MONTHS',
-        mentor: 'David Tran',
-        skills: ['Artisan Baking', 'HACCP Compliance', 'Stock Management', 'Peer Mentoring'],
-      },
+      badgeTone: 'blue',
+      description: 'Nhân viên chế biến bánh tươi quầy Bakery chi nhánh An Phú',
     };
   }
   if (i === 4) {
     return {
       userId: 'USR-1250',
       employeeCode: 'MMVN-1250',
-      fullName: 'Thanh Pham',
-      email: 'thanh.pham@mmvietnam.com',
-      role: 'learner',
-      position: 'Logistics & Inbound DC Specialist',
-      level: '6',
-      levelTitle: levelTitle('6'),
+      fullName: 'Linh Hoang',
+      email: 'linh.hoang@mmvietnam.com',
+      role: 'hrbp',
+      position: 'HRBP Lead - Head Office',
+      title: 'HRBP Lead',
+      level: '2',
+      levelTitle: levelTitle('2'),
       branch: 'SUPPORTING',
-      branchName: 'Khối Chức năng Hỗ trợ (Supply Chain DC)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-scm', divisionCode: 'SCM', divisionName: 'Supply Chain Management',
-      departmentId: 'dept-ssp', departmentCode: 'SSP', departmentName: 'Supply Chain Strategy & Planning',
-      subDepartmentId: 'sub-scm-forklift', subDepartmentCode: 'SUB-SCM-FORK', subDepartmentName: 'Lái Xe Nâng & Xếp Dỡ Kho DC (Forklift & Stacking Ops)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeId: null, storeName: 'Regional Distribution Center (Bình Dương DC)',
-      managerId: 'USR-0245',
-      status: 'TRANSFER',
-      yearsOfService: 1.6,
-      joinDate: '2025-01-15',
-      avatar: 'TP',
-      badgeTone: 'rail',
-      description: 'Transferred from MM Đà Nẵng to Regional DC; Completing Cross-docking & Forklift Safety Certification',
-      pastPositions: [
-        { role: 'Goods Receiving Associate', period: '2024 - 2025', org: 'MM Mega Market Đà Nẵng' },
-      ],
-      projects: ['WMS Warehouse Management System Upgrade 2025'],
-      talentProfile: {
-        potential: 'CORE_PERFORMER',
-        successorFor: 'Inbound Shift Team Leader',
-        readiness: 'READY_IN_1_YEAR',
-        mentor: 'Đặng Thanh Mai',
-        skills: ['Cross-Docking', 'Cold Storage Logistics', 'Inventory Optimization', 'Forklift Safety'],
-      },
+      branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
+      departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
+      subDepartmentId: 'sub-hrd-hrbpho', subDepartmentCode: 'SUB-HRBP-HO', subDepartmentName: 'HR - HRBP HO',
+      status: 'ACTIVE',
+      yearsOfService: 6.1,
+      avatar: 'LH',
+      badgeTone: 'purple',
     };
   }
   if (i === 5) {
     return {
       userId: 'USR-2041',
       employeeCode: 'MMVN-2041',
-      fullName: 'Quoc Bao',
-      email: 'bao.quoc@mmvietnam.com',
+      fullName: 'Kim Vu',
+      email: 'kim.vu@mmvietnam.com',
       role: 'learner',
-      position: 'Store Fresh Food Associate (New Joiner)',
-      level: '7',
-      levelTitle: levelTitle('7'),
-      branch: 'OPERATIONS',
-      branchName: 'Khối Vận hành (Operations / Stores)',
-      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN',
-      divisionId: 'div-omd', divisionCode: 'OMD', divisionName: 'Merchandise',
-      departmentId: 'dept-ppf', departmentCode: 'PPF', departmentName: 'Processed Fresh Food',
-      subDepartmentId: 'sub-meat', subDepartmentCode: 'SUB-MEAT', subDepartmentName: 'Sơ Chế Thịt & Gia Cầm (Meat & Poultry Processing)',
-      areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-      storeTypeId: 'st-cc', storeTypeName: 'Cash & Carry Hypermarket',
-      clusterId: 'clus-hcm-east', clusterName: 'Cluster TP.HCM Đông',
-      storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
-      sectionId: 'sec-meat', sectionName: 'Meat & Poultry Section',
-      managerId: 'USR-0245',
-      status: 'NEW_JOINER',
-      yearsOfService: 0.2,
-      joinDate: '2026-06-20',
-      avatar: 'QB',
+      position: 'Loss Prevention Specialist',
+      title: 'Loss Prevention Specialist',
+      level: '6',
+      levelTitle: levelTitle('6'),
+      branch: 'SUPPORTING',
+      branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+      businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
+      divisionId: 'div-lpqa', divisionCode: 'LP-QA', divisionName: 'LP-QA',
+      departmentId: 'dept-lpqa-lp', departmentCode: 'LP', departmentName: 'Loss Prevention',
+      subDepartmentId: 'sub-df-chh-1010', subDepartmentCode: 'SUB-CHH', subDepartmentName: 'Cosmetics & Household & HBA',
+      status: 'ACTIVE',
+      yearsOfService: 2.8,
+      avatar: 'KV',
       badgeTone: 'slate',
-      description: 'Newly onboarded; completing Store Operations Onboarding Track and Food Hygiene Basics',
-      pastPositions: [],
-      projects: ['Store Onboarding Induction 2026'],
-      talentProfile: {
-        potential: 'NEW_HIRE',
-        successorFor: 'Senior Meat Associate',
-        readiness: 'DEVELOPING',
-        mentor: 'Minh Tran',
-        skills: ['Basic Food Handling', 'Hygiene Standards', 'Customer Greeting'],
-      },
     };
   }
 
-  // Generate diverse staff for remaining 94 employees
-  const isOperations = i % 3 !== 0; // ~67% Operations, 33% Supporting Functions
-  const branch = isOperations ? 'OPERATIONS' : 'SUPPORTING';
-  const branchName = isOperations ? 'Khối Vận hành (Operations / Stores)' : 'Khối Chức năng Hỗ trợ (Head Office)';
+  // Pick sub-department in cyclic round-robin
+  const subDept = subDepartments[(i - 6) % subDepartments.length] || subDepartments[0];
+  const dept = departments.find((d) => d.id === subDept.departmentId) || departments[0];
+  const div = divisions.find((d) => d.id === dept.divisionId) || divisions[0];
 
-  const assignedStore = isOperations ? retailStores[i % retailStores.length] : null;
-  const storeName = isOperations ? assignedStore.name : 'Head Office (An Phú)';
-  const areaId = isOperations ? assignedStore.areaId : 'area-south';
-  const areaName = areaId === 'area-north' ? 'Khu vực Miền Bắc' : areaId === 'area-central' ? 'Khu vực Miền Trung' : 'Khu vực Miền Nam';
+  const fName = FIRST_NAMES[(i * 3 + 7) % FIRST_NAMES.length];
+  const lName = LAST_NAMES[(i * 2 + 5) % LAST_NAMES.length];
+  const fullName = `${fName} ${lName}`;
+  const email = `${fName.toLowerCase()}.${lName.toLowerCase()}${empNum}@mmvietnam.com`;
 
-  const divIndex = i % divisions.length;
-  const div = divisions[divIndex];
-  const divDepts = departments.filter((d) => d.divisionId === div.id);
-  const dept = divDepts.length > 0 ? divDepts[i % divDepts.length] : departments[0];
+  // Determine Level: mostly 7, 6, 5, some 4, 3, 2
+  let level = '7';
+  if (i % 25 === 0) level = '2';
+  else if (i % 15 === 0) level = '3';
+  else if (i % 9 === 0) level = '4';
+  else if (i % 4 === 0) level = '5';
+  else if (i % 2 === 0) level = '6';
 
-  const deptSubDepts = subDepartments.filter((s) => s.departmentId === dept.id);
-  const subDept = deptSubDepts.length > 0 ? deptSubDepts[i % deptSubDepts.length] : null;
-
-  const firstName = FIRST_NAMES[i % FIRST_NAMES.length];
-  const lastName = LAST_NAMES[(i * 3 + 7) % LAST_NAMES.length];
-  const fullName = `${lastName} ${firstName}`;
-  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@mmvietnam.com`;
-
-  // Determine Job Level (7 = thấp nhất, 1 = cao nhất) & System Role
-  let level = '6';
   let role = 'learner';
-  let managerId = 'USR-0245';
+  if (level === '2') role = (i % 2 === 0) ? 'hrbp' : 'trainer';
+  else if (level === '3') role = 'trainer';
+  else if (level === '4') role = 'manager';
 
-  if (i >= MANAGER_BAND_START && i < MANAGER_BAND_END) {
-    // Trưởng bộ phận & giám sát ca -> role Manager
-    level = (i % 2 === 0) ? '4' : '5';
-    role = 'manager';
-    managerId = 'USR-0001';
-  } else if (i >= MANAGER_BAND_END && i < TRAINER_BAND_END) {
-    // Trưởng ngành hàng kiêm Master Trainer -> role Trainer / L&D
-    level = '3';
-    role = 'trainer';
-    managerId = 'USR-0001';
-  } else if (i >= CASUAL_BAND_START) {
-    // Casual Labor & Internship của thang cũ đều quy về cấp thấp nhất (Level 7)
-    level = '7';
-    managerId = 'USR-0312';
-  } else if (i % 5 === 0) {
-    level = '7';
-    managerId = 'USR-0245';
-  } else if (i % 7 === 0) {
-    level = '5';
-    managerId = 'USR-0245';
-  }
-
-  const userLevelTitle = levelTitle(level);
-
-  const deptPositions = POSITIONS_BY_DEPT[dept.code] || [
-    `${dept.name} Specialist`,
-    `${dept.name} Associate`,
-    `${dept.name} Officer`,
-    `${dept.name} Lead`,
-  ];
-  const position = deptPositions[i % deptPositions.length];
-  const initials = `${lastName.charAt(0)}${firstName.charAt(0)}`.toUpperCase();
-
-  // Diverse realistic statuses
-  const status = (i === 15 || i === 28 || i % 47 === 0) ? 'TRANSFER'
-    : (i === 22 || i === 45 || i === 70 || i % 53 === 0) ? 'NEW_JOINER'
-    : (i === TOTAL_USER_COUNT - 1 || i % 61 === 0) ? 'INACTIVE'
-    : 'ACTIVE';
-  const yearsOfService = Number((0.3 + (i * 0.12) % 6.5).toFixed(1));
+  const title = `${subDept.name} Specialist`;
 
   return {
     userId,
@@ -408,48 +227,34 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
     fullName,
     email,
     role,
-    position,
+    position: title,
+    title,
     level,
-    levelTitle: userLevelTitle,
-    branch,
-    branchName,
+    levelTitle: levelTitle(level),
+    branch: div.branch || 'SUPPORTING',
+    branchName: div.branch === 'OPERATIONS' ? 'Khối Vận hành (Operations / Stores)' : 'Khối Chức năng Hỗ trợ (Head Office)',
     businessUnitId: 'bu-mmvn',
     businessUnitCode: 'MMVN',
+    businessUnitName: 'MM Mega Market Vietnam',
     divisionId: div.id,
     divisionCode: div.code,
     divisionName: div.name,
     departmentId: dept.id,
     departmentCode: dept.code,
     departmentName: dept.name,
-    subDepartmentId: subDept?.id || null,
-    subDepartmentCode: subDept?.code || null,
-    subDepartmentName: subDept?.name || null,
-    areaId,
-    areaName,
-    storeId: assignedStore?.id || null,
-    storeName,
-    clusterId: assignedStore?.clusterId || null,
-    storeTypeId: assignedStore?.typeId || null,
-    managerId,
-    status,
-    yearsOfService,
-    joinDate: `202${Math.max(0, 6 - Math.floor(yearsOfService))}-0${(i % 9) + 1}-15`,
-    avatar: initials,
-    badgeTone: role === 'trainer' ? 'sage' : role === 'manager' ? 'amber' : 'rail',
-    description: `${position} in ${div.code}/${dept.code} - ${storeName} (${levelShortLabel(level)})`,
-    pastPositions: yearsOfService > 1.5 ? [
-      { role: `Associate - ${dept.name}`, period: '2023 - 2024', org: storeName }
-    ] : [],
-    projects: [`MMVN Annual Operational Audit ${2024 + (i % 2)}`],
-    talentProfile: {
-      potential: level === '3' || level === '4' ? 'HIGH_POTENTIAL' : 'CORE_PERFORMER',
-      successorFor: level === '7' ? `${position} (Level 6 Specialist)` : `${dept.name} Manager`,
-      readiness: level === '7' ? 'READY_IN_1_YEAR' : 'READY_IN_6_MONTHS',
-      mentor: 'David Tran',
-      skills: ['Operational SOPs', 'Customer Centricity', 'Safety Standards'],
-    },
+    subDepartmentId: subDept.id,
+    subDepartmentCode: subDept.code,
+    subDepartmentName: subDept.name,
+    storeName: div.branch === 'OPERATIONS' ? div.name : 'Head Office (An Phú)',
+    status: 'ACTIVE',
+    yearsOfService: +(1 + (i % 8) * 0.8).toFixed(1),
+    avatar: `${fName[0]}${lName[0]}`,
+    badgeTone: level === '2' ? 'purple' : level === '3' ? 'ai' : level === '4' ? 'teal' : level === '5' ? 'amber' : 'blue',
   };
-});
+})
+  // Bổ sung hồ sơ HR (Personnel Number, Cost center, Entry Date, Gender,
+  // Date of birth, HO/Store, Location) theo quy tắc tất định — xem hrProfile.js.
+  .map(withHrProfile);
 
 // ---------------------------------------------------------------------------
 // 2. GENERATE 100 ENTERPRISE COURSES (WITH SCORM, PPT, EXTERNAL LINKS)
@@ -713,12 +518,39 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
 
     const isClassroom = tpl.modality === 'CLASSROOM_LAB';
     const deliveryType = isClassroom ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING';
-    const trainerId = isClassroom ? (idx % 2 === 0 ? 'tr-01' : 'tr-03') : null;
-    const trainerName = isClassroom ? (idx % 2 === 0 ? 'Nguyen Van Hung' : 'Vu Duc Thanh') : null;
-    const venue = isClassroom ? (idx % 2 === 0 ? 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' : 'HSE Fire & Emergency Drill Grounds (MM Thang Long)') : null;
-    const venueId = isClassroom ? (idx % 2 === 0 ? 'lab-ap-fresh' : 'lab-tl-fire') : null;
+    
+    // Phân bổ giảng viên đủ chuẩn đứng lớp: L&D, HSE, SGM, User Admin, HRBP, SysAdmin
+    const TEACHING_POOL = [
+      { id: 'USR-9003', name: 'Nguyễn Văn Hùng', venueId: 'lab-ap-fresh', venue: 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' },
+      { id: 'USR-9005', name: 'Vũ Đức Thành', venueId: 'lab-tl-fire', venue: 'HSE Fire & Emergency Drill Grounds - MM Mega Market Thang Long' },
+      { id: 'USR-9006', name: 'Trần Minh Quang', venueId: 'room-ho-pla', venue: 'Platinum Executive Conference Room - MM Head Office' },
+      { id: 'USR-9002', name: 'Phạm Thanh Thảo', venueId: 'room-ho-dia', venue: 'Diamond Training Hall - MM Mega Market Head Office' },
+      { id: 'USR-9004', name: 'Lê Thị Mai', venueId: 'lab-ap-pos', venue: 'Cashier & Frontline Service Lab - MM Mega Market An Phu' },
+      { id: 'USR-9001', name: 'Trần Hoàng Long', venueId: 'room-ho-dia', venue: 'Microsoft Teams Live Studio (An Phu Head Office)' },
+    ];
+    const assignedPersona = TEACHING_POOL[(idx + courseCounter) % TEACHING_POOL.length];
+    const trainerId = isClassroom ? assignedPersona.id : null;
+    const trainerName = isClassroom ? assignedPersona.name : null;
+    const venue = isClassroom ? assignedPersona.venue : null;
+    const venueId = isClassroom ? assignedPersona.venueId : null;
     const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
     const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
+
+    // Phân bổ từ 2 đến 3 Giảng viên Đồng giảng & Trợ giảng (Tổng ban giảng huấn 3 - 4 người)
+    const coTrainerCount = (idx % 2 === 0) ? 2 : 3;
+    const coTrainers = isClassroom ? Array.from({ length: coTrainerCount }, (_, cIdx) => {
+      const p = TEACHING_POOL[(idx + courseCounter + 1 + cIdx) % TEACHING_POOL.length];
+      return {
+        id: p.id,
+        userId: p.id,
+        name: p.name,
+        fullName: p.name,
+        role: 'trainer',
+        title: 'Giảng Viên / Trợ Giảng',
+      };
+    }) : [];
+    const coTrainerIds = isClassroom ? coTrainers.map((t) => t.id) : [];
+    const coTrainerNames = isClassroom ? coTrainers.map((t) => t.name) : [];
 
     const targetLevel = resolveCourseTargetLevel(tpl.codePrefix, idx);
     const targetLevelTitle = `Level ${targetLevel}: ${levelTitle(targetLevel)}`;
@@ -779,6 +611,9 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       published: true,
       trainerId,
       trainerName,
+      coTrainerIds,
+      coTrainerNames,
+      coTrainers,
       venue,
       venueId,
       scheduleDate,
@@ -786,11 +621,44 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       maxCapacity: isClassroom ? 25 : 500,
       description: `Comprehensive MMVN standard training module for ${title}. Aligned with retail excellence and regulatory compliance.`,
       prerequisites: idx > 0 && idx % 3 === 0 ? [`CRS-${tpl.codePrefix}-${String(courseCounter - 1).padStart(3, '0')}`] : [],
+      syllabus: isClassroom ? [
+        { step: `Phần 1: Chuẩn bị & Phổ biến Quy định (${title}) (30 phút)`, detail: 'Kiểm tra điều kiện thực hành, tiêu chuẩn an toàn Gold HACCP/SOP và phổ biến mục tiêu buổi học.' },
+        { step: `Phần 2: Thao tác Vận hành & Hướng dẫn Thực tế tại Xưởng (90 phút)`, detail: 'Giảng viên thị phạm thao tác, học viên thực hành trực tiếp trên thiết bị/công cụ thực tế.' },
+        { step: `Phần 3: Đánh giá Kết quả & Điểm danh Live QR (60 phút)`, detail: 'Kiểm tra sản phẩm thực hành, tổng kết bài học, giải đáp thắc mắc và quét QR điểm danh.' },
+      ] : [
+        { step: 'Phần 1: Kiến thức Nền tảng & Khung Tiêu chuẩn MMVN', detail: 'Tìm hiểu tổng quan quy định, nguyên tắc cốt lõi và các chỉ số tuân thủ nghiệp vụ.' },
+        { step: 'Phần 2: Quy trình Thao tác Chuẩn (SOP) & Xử lý Tình huống', detail: 'Hướng dẫn từng bước thực thi nghiệp vụ và các lưu ý phòng ngừa rủi ro sai sót.' },
+        { step: 'Phần 3: Bài Thi Đánh Giá Năng Lực Cuối Khóa', detail: 'Thực hiện bài kiểm tra trắc nghiệm để hoàn tất khóa học và nhận chứng chỉ/XP.' },
+      ],
+      materials: [
+        { id: `mat-doc-${courseId}`, name: `SOP-MMVN-${tpl.codePrefix}: Hướng Dẫn Vận Hành & Tiêu Chuẩn Nghiệp Vụ (PDF)`, type: 'PDF', size: '2.8 MB', url: '#' },
+        { id: `mat-ppt-${courseId}`, name: `Slide Bài Giảng Đào Tạo & Tình Huống: ${title} (PPT)`, type: 'PPT', size: '7.5 MB', url: '#' },
+        { id: `mat-chk-${courseId}`, name: `Biểu Mẫu Checklist Đánh Giá Thực Hành (PDF)`, type: 'PDF', size: '1.2 MB', url: '#' },
+      ],
       configuration: {
         assessmentEnabled: true,
         maxAttempts: 3,
         passingScorePercent: tpl.passScore,
         certificateEnabled: true,
+        certificateTemplateId:
+          tpl.category === 'Food Safety & Hygiene' ? 'CERTTPL-FSH-001' :
+          tpl.category === 'Health & Safety' ? 'CERTTPL-HSE-001' :
+          tpl.category === 'Retail Operations' ? 'CERTTPL-OPS-001' :
+          tpl.category === 'Supply Chain & Logistics' ? 'CERTTPL-SCM-001' :
+          tpl.category === 'Customer Service' ? 'CERTTPL-CS-001' :
+          tpl.category === 'Leadership & Management' ? 'CERTTPL-LEAD-001' :
+          tpl.category === 'Digital & Technology' ? 'CERTTPL-TECH-001' :
+          tpl.category === 'Compliance & Ethics' ? 'CERTTPL-COMP-001' :
+          tpl.category === 'Fresh Food Processing' ? 'CERTTPL-FRESH-001' :
+          tpl.category === 'Financial Management' ? 'CERTTPL-FIN-001' :
+          'CERTTPL-OPS-001',
+        validityPeriodMonths:
+          tpl.category === 'Customer Service' || tpl.category === 'Digital & Technology' ? 0 :
+          tpl.category === 'Leadership & Management' ? 36 :
+          tpl.category === 'Food Safety & Hygiene' || tpl.category === 'Health & Safety' || tpl.category === 'Compliance & Ethics' || tpl.category === 'Fresh Food Processing' ? 12 :
+          24,
+        recertificationWarningDays: 30,
+        recertificationMethod: tpl.isMandatory ? 'RETAKE_FULL_COURSE' : 'ASSESSMENT_ONLY',
         questionBankSize: 20,
         questionsPerAttempt: 5,
         version: versionNumber,

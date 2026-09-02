@@ -1,9 +1,11 @@
 import { targetOptionsFor, assignmentTypeLabel } from '../data/assignmentTargets';
 import { hasCapability, normalizeRole } from '../data/roles';
+import { DEFAULT_CUSTOM_GROUPS, isUserInCustomGroup } from '../data/customGroupsData';
 
 /**
  * Kiểm tra xem một giáo trình (Curriculum) có được phân bổ cho người dùng `user` hay không.
  * Đối chiếu theo danh sách `curriculum.assignments`:
+ * - GROUP: khớp nếu `user` thuộc Custom Group chỉ định
  * - BUSINESS_UNIT: khớp `user.businessUnitId` hoặc 'ALL' / 'bu-mmvn'
  * - DIVISION: khớp `user.divisionId` hoặc `user.divisionCode`
  * - DEPARTMENT: khớp `user.departmentId` hoặc `user.departmentCode`
@@ -16,7 +18,7 @@ import { hasCapability, normalizeRole } from '../data/roles';
  * - ROLE: khớp `user.role`
  * - USER: khớp `user.userId` hoặc `user.employeeCode`
  */
-export function isCurriculumAssignedToUser(curriculum, user) {
+export function isCurriculumAssignedToUser(curriculum, user, customGroupsList = null) {
   if (!curriculum || !user) return { isAssigned: false, assignment: null };
   const assignments = curriculum.assignments || [];
   if (assignments.length === 0) return { isAssigned: false, assignment: null };
@@ -44,6 +46,14 @@ export function isCurriculumAssignedToUser(curriculum, user) {
 
     let matched = false;
     switch (type) {
+      case 'GROUP': {
+        const groups = (customGroupsList && customGroupsList.length > 0) ? customGroupsList : DEFAULT_CUSTOM_GROUPS;
+        const targetGroup = groups.find((g) => g.id === targetId || g.code === targetId);
+        if (targetGroup) {
+          matched = isUserInCustomGroup(user, targetGroup);
+        }
+        break;
+      }
       case 'BUSINESS_UNIT':
         matched = targetId === 'ALL' || targetId === 'bu-mmvn' || targetId === uBu;
         break;

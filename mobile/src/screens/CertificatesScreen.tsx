@@ -1,270 +1,211 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Badge, Button, CertificateModal } from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
-import { deriveCertificates } from '../data/mockData';
+// @ts-ignore
+import { currentUser as fallbackUser, deriveCertificates } from '../data/mockData';
+// @ts-ignore
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../utils/recertification';
+import { Badge, Button, CertificateModal } from '../components/ui';
+import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow } from '../components/layout';
 
 export default function CertificatesScreen() {
   const navigation = useNavigation<any>();
-  const { currentUser, courses: allCourses, myEnrollments } = useCourseStore();
-  const user = currentUser;
+  const { courses, currentUser: authUser, enrollments, certificateTemplates } = useCourseStore();
+  const user = authUser || fallbackUser;
 
-  const rawCertificates = useMemo(() => deriveCertificates(allCourses, user), [allCourses, user]);
   const [selectedCert, setSelectedCert] = useState<any>(null);
-  const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'DUE_SOON' | 'EXPIRED'>('ALL');
+  const [filter, setFilter] = useState('ALL');
 
-  // Enriched certificates with recertification
   const certificates = useMemo(() => {
-    return rawCertificates.map((cert: any) => {
-      const course = allCourses.find((c: any) => c.id === cert.courseId);
-      const recert = computeCourseRecertification(course, course?.enrollment, cert);
-      return {
-        ...cert,
-        recert,
-      };
+    const raw = deriveCertificates(courses, user, enrollments, certificateTemplates);
+    return raw.map((cert: any) => {
+      const course = courses.find((c: any) => c.id === cert.courseId);
+      return { ...cert, course, recert: computeCourseRecertification(course, course?.enrollment, cert) };
     });
-  }, [rawCertificates, allCourses]);
+  }, [courses, user, enrollments, certificateTemplates]);
 
-  const activeCount = certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.ACTIVE).length;
+  const isLifetime = (c: any) => c.isLifetime || c.validityPeriodMonths === 0 || !c.validUntil;
+
+  const activeCount = certificates.filter(
+    (c: any) => c.recert.state === RECERTIFICATION_STATE.ACTIVE && !isLifetime(c)
+  ).length;
+  const lifetimeCount = certificates.filter(isLifetime).length;
   const dueSoonCount = certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.DUE_SOON).length;
   const expiredCount = certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.EXPIRED).length;
 
   const filtered = useMemo(() => {
-    if (filterTab === 'ACTIVE') return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.ACTIVE);
-    if (filterTab === 'DUE_SOON') return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.DUE_SOON);
-    if (filterTab === 'EXPIRED') return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.EXPIRED);
-    return certificates;
-  }, [certificates, filterTab]);
+    switch (filter) {
+      case 'ACTIVE':
+        return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.ACTIVE && !isLifetime(c));
+      case 'LIFETIME':
+        return certificates.filter(isLifetime);
+      case 'DUE_SOON':
+        return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.DUE_SOON);
+      case 'EXPIRED':
+        return certificates.filter((c: any) => c.recert.state === RECERTIFICATION_STATE.EXPIRED);
+      default:
+        return certificates;
+    }
+  }, [certificates, filter]);
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header Bar */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E293B' }}>
-          Chứng Chỉ Số &amp; Lịch Tái Cấp Định Kỳ
-        </Text>
-        <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>
-          Chứng chỉ điện tử chính thức của MMVN &middot; {certificates.length} chứng chỉ đã nhận
-        </Text>
+    <Screen title="Chứng Chỉ Số" subtitle={`${certificates.length} chứng chỉ đã nhận`} back>
+      <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <Ionicons name="shield-checkmark" size={19} color={COLORS.rail} style={{ marginRight: 10 }} />
+          <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
+            Chứng chỉ số chính thức của MM Mega Market Việt Nam, cấp tự động sau khi hoàn thành khóa học, có mã QR xác
+            thực và cảnh báo tái cấp định kỳ.
+          </Text>
+        </View>
+      </Card>
+
+      {/* Status tiles */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+        <StatusTile label="Còn hạn" value={activeCount} color={COLORS.green} />
+        <StatusTile label="Vĩnh viễn" value={lifetimeCount} color={COLORS.blue} />
+        <StatusTile label="Cận hạn" value={dueSoonCount} color={COLORS.amber} />
+        <StatusTile label="Hết hạn" value={expiredCount} color={COLORS.red} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {/* 1. METRIC TILES */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
-          <TouchableOpacity
-            style={{
-              width: '48%',
-              backgroundColor: '#FFFFFF',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: filterTab === 'ALL' ? '#009E49' : '#E2E8F0',
-              padding: 12,
-              marginBottom: 10,
-            }}
-            onPress={() => setFilterTab('ALL')}
-          >
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '700' }}>Tổng Số Chứng Chỉ</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1E293B', marginTop: 2 }}>{certificates.length}</Text>
-          </TouchableOpacity>
+      <ChipRow
+        options={[
+          { value: 'ALL', label: 'Tất cả', count: certificates.length },
+          { value: 'ACTIVE', label: 'Còn hạn', count: activeCount },
+          { value: 'LIFETIME', label: 'Vĩnh viễn', count: lifetimeCount },
+          { value: 'DUE_SOON', label: 'Cận hạn', count: dueSoonCount },
+          { value: 'EXPIRED', label: 'Hết hạn', count: expiredCount },
+        ]}
+        value={filter}
+        onChange={setFilter}
+      />
 
-          <TouchableOpacity
-            style={{
-              width: '48%',
-              backgroundColor: '#FFFFFF',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: filterTab === 'ACTIVE' ? '#009E49' : '#E2E8F0',
-              padding: 12,
-              marginBottom: 10,
-            }}
-            onPress={() => setFilterTab('ACTIVE')}
-          >
-            <Text style={{ fontSize: 11, color: '#047857', fontWeight: '700' }}>Còn Hiệu Lực</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#009E49', marginTop: 2 }}>{activeCount}</Text>
-          </TouchableOpacity>
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon="ribbon-outline"
+          title="Chưa có chứng chỉ trong nhóm này"
+          hint="Hoàn thành khóa học và đạt bài sát hạch để được cấp chứng chỉ số."
+        />
+      ) : (
+        filtered.map((cert: any) => (
+          <CertificateCard
+            key={cert.id}
+            cert={cert}
+            onView={() => setSelectedCert(cert)}
+            onRetake={() => navigation.navigate('AssessmentPlayer', { courseId: cert.courseId })}
+          />
+        ))
+      )}
 
-          <TouchableOpacity
-            style={{
-              width: '48%',
-              backgroundColor: '#FFFFFF',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: filterTab === 'DUE_SOON' ? '#D97706' : '#E2E8F0',
-              padding: 12,
-            }}
-            onPress={() => setFilterTab('DUE_SOON')}
-          >
-            <Text style={{ fontSize: 11, color: '#B45309', fontWeight: '700' }}>Cận Hạn (&le;30 Ngày)</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706', marginTop: 2 }}>{dueSoonCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              width: '48%',
-              backgroundColor: '#FFFFFF',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: filterTab === 'EXPIRED' ? '#DC2626' : '#E2E8F0',
-              padding: 12,
-            }}
-            onPress={() => setFilterTab('EXPIRED')}
-          >
-            <Text style={{ fontSize: 11, color: '#B91C1C', fontWeight: '700' }}>Đã Hết Hạn</Text>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#DC2626', marginTop: 2 }}>{expiredCount}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 2. FILTER TABS */}
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-          {[
-            { id: 'ALL', label: 'Tất Cả' },
-            { id: 'ACTIVE', label: 'Còn Hiệu Lực' },
-            { id: 'DUE_SOON', label: 'Cận Hạn' },
-            { id: 'EXPIRED', label: 'Hết Hạn' },
-          ].map((t) => (
-            <TouchableOpacity
-              key={t.id}
-              onPress={() => setFilterTab(t.id as any)}
-              style={{
-                backgroundColor: filterTab === t.id ? '#009E49' : '#FFFFFF',
-                borderColor: filterTab === t.id ? '#009E49' : '#E2E8F0',
-                borderWidth: 1,
-                borderRadius: 20,
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-              }}
-            >
-              <Text style={{ fontSize: 11.5, fontWeight: '700', color: filterTab === t.id ? '#FFFFFF' : '#475569' }}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* 3. CERTIFICATES LIST */}
-        {filtered.length === 0 ? (
-          <View style={{ padding: 32, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <Ionicons name="ribbon-outline" size={40} color="#94A3B8" style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B', textAlign: 'center' }}>
-              Chưa có chứng chỉ trong danh mục này
-            </Text>
-          </View>
-        ) : (
-          filtered.map((cert: any) => (
-            <View
-              key={cert.id}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: cert.recert.isExpired ? '#FECACA' : cert.recert.isDueSoon ? '#FDE68A' : '#E2E8F0',
-                marginBottom: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.04,
-                shadowRadius: 3,
-                elevation: 1,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    backgroundColor: cert.recert.isExpired ? '#FEE2E2' : cert.recert.isDueSoon ? '#FEF3C7' : '#ECFDF5',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}
-                >
-                  <Ionicons
-                    name="ribbon"
-                    size={24}
-                    color={cert.recert.isExpired ? '#DC2626' : cert.recert.isDueSoon ? '#D97706' : '#009E49'}
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#1E293B', marginBottom: 2 }} numberOfLines={2}>
-                    {cert.courseName}
-                  </Text>
-                  <Text style={{ fontSize: 10.5, color: '#94A3B8', fontFamily: 'monospace' }}>
-                    {cert.id}
-                  </Text>
-                  <View style={{ marginTop: 6 }}>
-                    <Badge tone={cert.recert.badgeTone} size="sm">
-                      {cert.recert.statusLabel}
-                    </Badge>
-                  </View>
-                </View>
-              </View>
-
-              <View style={{ backgroundColor: '#F8FAFC', padding: 10, borderRadius: 8, marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 11, color: '#64748B' }}>Ngày cấp:</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E293B' }}>{cert.issueDate || '2026-08-20'}</Text>
-                </View>
-                {cert.validUntil && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 11, color: '#64748B' }}>Hết hạn:</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: cert.recert.isExpired ? '#DC2626' : '#1E293B' }}>
-                      {cert.validUntil}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  icon="eye"
-                  style={{ flex: 1 }}
-                  onPress={() => setSelectedCert(cert)}
-                >
-                  Xem Chứng Chỉ
-                </Button>
-
-                {cert.recert.needsRecertification && (
-                  <Button
-                    variant="primary"
-                    tone="warning"
-                    size="sm"
-                    icon="refresh"
-                    style={{ flex: 1 }}
-                    onPress={() => navigation.navigate('AssessmentPlayer', { courseId: cert.courseId })}
-                  >
-                    Thi Tái Cấp
-                  </Button>
-                )}
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      {/* CERTIFICATE MODAL */}
       <CertificateModal
-        visible={Boolean(selectedCert)}
+        visible={!!selectedCert}
         certificate={selectedCert}
         onClose={() => setSelectedCert(null)}
         onRetake={() => {
           const courseId = selectedCert?.courseId;
           setSelectedCert(null);
-          navigation.navigate('AssessmentPlayer', { courseId });
+          if (courseId) navigation.navigate('AssessmentPlayer', { courseId });
         }}
       />
-    </SafeAreaView>
+    </Screen>
+  );
+}
+
+function StatusTile({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View
+      style={{
+        width: '47.6%',
+        flexGrow: 1,
+        backgroundColor: COLORS.paper,
+        borderWidth: 1,
+        borderColor: COLORS.line,
+        borderRadius: 12,
+        padding: 11,
+        marginBottom: 6,
+      }}
+    >
+      <Text style={{ fontSize: 10.5, fontWeight: '800', color: COLORS.inkFaint }}>{label.toUpperCase()}</Text>
+      <Text style={{ fontSize: 20, fontWeight: '900', color, marginTop: 3 }}>{value}</Text>
+    </View>
+  );
+}
+
+function CertificateCard({ cert, onView, onRetake }: { cert: any; onView: () => void; onRetake: () => void }) {
+  const state = cert.recert.state;
+  const tone =
+    state === RECERTIFICATION_STATE.EXPIRED ? 'rust' : state === RECERTIFICATION_STATE.DUE_SOON ? 'amber' : 'sage';
+  const accent =
+    state === RECERTIFICATION_STATE.EXPIRED
+      ? COLORS.red
+      : state === RECERTIFICATION_STATE.DUE_SOON
+      ? COLORS.amber
+      : COLORS.green;
+
+  return (
+    <Card onPress={onView} style={{ borderLeftWidth: 4, borderLeftColor: accent }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: '#FEF3C7',
+            borderWidth: 1.5,
+            borderColor: '#FDE68A',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 11,
+          }}
+        >
+          <Ionicons name="ribbon" size={20} color="#D97706" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink, lineHeight: 18 }} numberOfLines={3}>
+            {cert.courseName}
+          </Text>
+          <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 3 }}>{cert.id}</Text>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 9 }}>
+        <Badge tone={tone as any} size="sm">
+          {cert.recert.statusLabel || 'Còn hiệu lực'}
+        </Badge>
+        {!!cert.score && (
+          <Badge tone="blue" size="sm">
+            Điểm {cert.score}%
+          </Badge>
+        )}
+      </View>
+
+      <InfoRow label="Ngày cấp" value={cert.issueDate || '—'} icon="calendar-outline" />
+      <InfoRow
+        label="Hiệu lực đến"
+        value={cert.validUntil || 'Vĩnh viễn'}
+        icon="hourglass-outline"
+        valueColor={state === RECERTIFICATION_STATE.EXPIRED ? COLORS.red : undefined}
+      />
+
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        <Button size="sm" variant="outline" icon="eye-outline" style={{ flex: 1 }} onPress={onView}>
+          Xem chứng chỉ
+        </Button>
+        {cert.recert.needsRecertification && (
+          <Button
+            size="sm"
+            variant="primary"
+            tone={cert.recert.isExpired ? 'danger' : 'primary'}
+            icon="refresh-outline"
+            style={{ flex: 1 }}
+            onPress={onRetake}
+          >
+            Thi tái cấp
+          </Button>
+        )}
+      </View>
+    </Card>
   );
 }

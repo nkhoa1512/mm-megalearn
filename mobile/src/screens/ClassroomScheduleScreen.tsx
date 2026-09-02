@@ -1,253 +1,333 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useMemo, useState } from 'react';
+import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Badge,
-  Button,
-  ProgressBar,
-  QrScannerModal,
-  PostTrainingSurveyModal,
-} from '../components/ui';
 import { useCourseStore } from '../store/CourseStore';
+import { Badge, Button, ProgressBar, Modal as Sheet, QrScannerModal, PostTrainingSurveyModal } from '../components/ui';
+import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow } from '../components/layout';
 
 export default function ClassroomScheduleScreen() {
-  const { classrooms, checkInClassroom, enrollClassroom } = useCourseStore();
-  const [filter, setFilter] = useState('ALL');
+  const navigation = useNavigation<any>();
+  const { classrooms = [], checkInClassroom, enrollClassroom } = useCourseStore();
 
-  // Scanner modal state
+  const [quickFilter, setQuickFilter] = useState('ALL');
+  const [search, setSearch] = useState('');
   const [scanningSession, setScanningSession] = useState<any>(null);
-  // CSAT modal state
+  const [materialsSession, setMaterialsSession] = useState<any>(null);
   const [surveySession, setSurveySession] = useState<any>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const filters = [
-    { id: 'ALL', label: 'Tất Cả Buổi Đào Tạo' },
-    { id: 'MY_SESSIONS', label: 'Lớp Của Tôi' },
-    { id: 'UPCOMING', label: 'Lớp Sắp Diễn Ra' },
-    { id: 'STORE', label: 'Thực Hành Xưởng Siêu Thị' },
-    { id: 'WEBINAR', label: 'Hội Thảo Trực Tuyến' },
-  ];
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return classrooms.filter((s: any) => {
+      if (quickFilter === 'UPCOMING' && !(s.status === 'UPCOMING' || s.status === 'OPEN')) return false;
+      if (quickFilter === 'MY_SESSIONS' && !s.isEnrolled) return false;
+      if (quickFilter === 'STORE' && s.modality !== 'OFFLINE_STORE') return false;
+      if (quickFilter === 'WEBINAR' && s.modality !== 'ONLINE_WEBINAR') return false;
+      if (quickFilter === 'CHECKED_IN' && s.attendanceStatus !== 'CHECKED_IN') return false;
+      if (!q) return true;
+      return (
+        (s.title || '').toLowerCase().includes(q) ||
+        (s.code || '').toLowerCase().includes(q) ||
+        (s.trainerName || '').toLowerCase().includes(q) ||
+        (s.venue || '').toLowerCase().includes(q)
+      );
+    });
+  }, [classrooms, quickFilter, search]);
 
-  const filteredSessions = (classrooms || []).filter((s: any) => {
-    if (filter === 'UPCOMING') return s.status === 'UPCOMING' || s.status === 'OPEN';
-    if (filter === 'MY_SESSIONS') return s.isEnrolled;
-    if (filter === 'STORE') return s.modality === 'OFFLINE_STORE';
-    if (filter === 'WEBINAR') return s.modality === 'ONLINE_WEBINAR';
-    return true;
-  });
+  const filterOptions = useMemo(
+    () => [
+      { value: 'ALL', label: 'Tất cả', count: classrooms.length },
+      { value: 'MY_SESSIONS', label: 'Lớp của tôi', count: classrooms.filter((s: any) => s.isEnrolled).length },
+      {
+        value: 'UPCOMING',
+        label: 'Sắp diễn ra',
+        count: classrooms.filter((s: any) => s.status === 'UPCOMING' || s.status === 'OPEN').length,
+      },
+      { value: 'STORE', label: 'Thực hành', count: classrooms.filter((s: any) => s.modality === 'OFFLINE_STORE').length },
+      { value: 'WEBINAR', label: 'Webinar', count: classrooms.filter((s: any) => s.modality === 'ONLINE_WEBINAR').length },
+      {
+        value: 'CHECKED_IN',
+        label: 'Đã điểm danh',
+        count: classrooms.filter((s: any) => s.attendanceStatus === 'CHECKED_IN').length,
+      },
+    ],
+    [classrooms]
+  );
 
-  const handleScanSuccess = () => {
-    if (scanningSession) {
-      checkInClassroom(scanningSession.id);
-      const doneSession = scanningSession;
-      setScanningSession(null);
-      Alert.alert('Điểm Danh Thành Công!', `Bạn đã điểm danh thành công buổi học "${doneSession.title}".`);
-      // Open CSAT evaluation
-      setTimeout(() => {
-        setSurveySession(doneSession);
-      }, 500);
-    }
-  };
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4500);
+  }
+
+  function handleEnroll(session: any) {
+    enrollClassroom(session.id);
+    showToast(`Đã đăng ký buổi "${session.title}". Nhớ quét QR để điểm danh khi tới lớp.`);
+  }
+
+  function handleScanSuccess() {
+    if (!scanningSession) return;
+    checkInClassroom(scanningSession.id);
+    const session = scanningSession;
+    setScanningSession(null);
+    showToast('Điểm danh thành công! Giảng viên đã ghi nhận sự có mặt của bạn.');
+    // Sau khi điểm danh xong buổi học, mời học viên đánh giá lớp & giảng viên.
+    setTimeout(() => setSurveySession(session), 700);
+  }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E293B' }}>
-          Lớp Đào Tạo Trực Tiếp &amp; Quét QR
-        </Text>
-        <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>
-          Huấn luyện thực hành tại xưởng siêu thị &amp; Webinar trực tuyến
-        </Text>
-      </View>
+    <Screen title="Lớp Thực Hành & Webinar" subtitle={`${classrooms.length} buổi học`} back scroll={false}>
+      <FlatList
+        data={filtered}
+        keyExtractor={(s: any) => s.id}
+        contentContainerStyle={{ padding: 14, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View>
+            {!!toast && (
+              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0', padding: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                  <Ionicons name="checkmark-circle" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 12, color: '#166534', fontWeight: '600', flex: 1, lineHeight: 17 }}>{toast}</Text>
+                </View>
+              </Card>
+            )}
 
-      {/* Top Action Bar: Open Scanner */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
-        <Button
-          variant="outline"
-          icon="scan"
-          onPress={() => setScanningSession(classrooms[0] || { id: 'WS-01', title: 'Thực Hành Vệ Sinh Quầy Bánh', trainerName: 'Nguyen Van Hung' })}
-        >
-          Mở Camera Quét QR Giảng Viên Điểm Danh
-        </Button>
-      </View>
-
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Filters */}
-        <View style={{ backgroundColor: '#FFFFFF', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-            {filters.map((f) => {
-              const isActive = filter === f.id;
-              return (
-                <TouchableOpacity
-                  key={f.id}
-                  onPress={() => setFilter(f.id)}
-                  style={{
-                    backgroundColor: isActive ? '#009E49' : '#F1F5F9',
-                    borderColor: isActive ? '#009E49' : '#E2E8F0',
-                    borderWidth: 1,
-                    borderRadius: 20,
-                    paddingVertical: 6,
-                    paddingHorizontal: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: isActive ? '#FFFFFF' : '#475569' }}>
-                    {f.label}
-                  </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: COLORS.paper,
+                borderWidth: 1,
+                borderColor: COLORS.line,
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                marginBottom: 10,
+              }}
+            >
+              <Ionicons name="search" size={15} color={COLORS.inkFaint} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Tìm buổi học, giảng viên, địa điểm…"
+                placeholderTextColor={COLORS.inkFaint}
+                style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 13, color: COLORS.ink }}
+              />
+              {!!search && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Ionicons name="close-circle" size={16} color={COLORS.inkFaint} />
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+              )}
+            </View>
 
-        {/* Sessions List */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-          {filteredSessions.map((session: any) => {
-            const isCheckedIn = session.attendanceStatus === 'CHECKED_IN';
-            const isEnrolled = session.isEnrolled;
-            const isFull = (session.enrolledCount || 0) >= (session.maxCapacity || 25);
+            <ChipRow options={filterOptions} value={quickFilter} onChange={setQuickFilter} />
+          </View>
+        }
+        ListEmptyComponent={<EmptyState icon="easel-outline" title="Không có buổi học phù hợp" />}
+        renderItem={({ item }: { item: any }) => (
+          <SessionCard
+            session={item}
+            onEnroll={() => handleEnroll(item)}
+            onScan={() => setScanningSession(item)}
+            onMaterials={() => setMaterialsSession(item)}
+            onSurvey={() => setSurveySession(item)}
+          />
+        )}
+      />
 
-            return (
-              <View
-                key={session.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: isCheckedIn ? '#A7F3D0' : '#E2E8F0',
-                  padding: 16,
-                  marginBottom: 12,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 3,
-                  elevation: 1,
-                }}
-              >
-                {/* Header Row */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Badge tone={session.modality === 'OFFLINE_STORE' ? 'amber' : 'blue'} size="sm">
-                      {session.modality === 'OFFLINE_STORE' ? 'Thực Hành Xưởng' : 'Teams Webinar'}
-                    </Badge>
-                    <Text style={{ fontSize: 10.5, color: '#94A3B8', fontWeight: '700' }}>{session.code || session.id}</Text>
-                  </View>
-
-                  {isCheckedIn ? (
-                    <Badge tone="sage" size="sm" icon="checkmark-circle">Đã Điểm Danh</Badge>
-                  ) : isEnrolled ? (
-                    <Badge tone="amber" size="sm" icon="time">Chờ Quét QR</Badge>
-                  ) : (
-                    <Badge tone="slate" size="sm">Mở Đăng Ký</Badge>
-                  )}
-                </View>
-
-                {/* Title & Description */}
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', marginBottom: 4, lineHeight: 20 }}>
-                  {session.title}
-                </Text>
-                <Text style={{ fontSize: 11.5, color: '#64748B', lineHeight: 16, marginBottom: 12 }}>
-                  {session.description || 'Lớp huấn luyện thực tế tuân thủ tiêu chuẩn an toàn MMVN.'}
-                </Text>
-
-                {/* Session Meta */}
-                <View style={{ backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', gap: 6, marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="calendar-outline" size={13} color="#2563EB" style={{ marginRight: 6 }} />
-                    <Text style={{ fontSize: 11.5, color: '#334155', fontWeight: '600' }}>
-                      {session.date || '2026-08-28'} &middot; {session.time || '08:30 - 11:30'}
-                    </Text>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="location-outline" size={13} color="#EF4444" style={{ marginRight: 6 }} />
-                    <Text style={{ fontSize: 11.5, color: '#334155' }} numberOfLines={1}>
-                      {session.venue || 'Xưởng Thực Hành MM An Phú'}
-                    </Text>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="person-outline" size={13} color="#009E49" style={{ marginRight: 6 }} />
-                    <Text style={{ fontSize: 11.5, color: '#334155' }} numberOfLines={1}>
-                      GV: {session.trainerName || 'Nguyen Van Hung (Master Trainer)'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Capacity Progress */}
-                <View style={{ marginBottom: 14 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 10.5, color: '#64748B' }}>
-                      Sĩ số: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{session.enrolledCount || 18}/{session.maxCapacity || 25}</Text> học viên
-                    </Text>
-                    <Text style={{ fontSize: 10.5, color: '#009E49', fontWeight: '700' }}>+150 XP</Text>
-                  </View>
-                  <ProgressBar value={((session.enrolledCount || 18) / (session.maxCapacity || 25)) * 100} size="sm" />
-                </View>
-
-                {/* Action Buttons */}
-                {isCheckedIn ? (
-                  <Button
-                    variant="outline"
-                    icon="star"
-                    size="sm"
-                    onPress={() => setSurveySession(session)}
-                  >
-                    Đánh Giá Khảo Sát Lớp Học (CSAT)
-                  </Button>
-                ) : isEnrolled ? (
-                  <Button
-                    variant="primary"
-                    icon="scan"
-                    size="sm"
-                    onPress={() => setScanningSession(session)}
-                  >
-                    Quét QR Giảng Viên Điểm Danh
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    icon="add"
-                    size="sm"
-                    disabled={isFull}
-                    onPress={() => {
-                      enrollClassroom(session.id);
-                      Alert.alert('Thành Công', `Bạn đã đăng ký tham gia lớp "${session.title}".`);
-                    }}
-                  >
-                    {isFull ? 'Lớp Đã Đầy' : 'Đăng Ký Tham Gia Ngay'}
-                  </Button>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      {/* QR SCANNER MODAL */}
       <QrScannerModal
-        visible={Boolean(scanningSession)}
+        visible={!!scanningSession}
         session={scanningSession}
         onClose={() => setScanningSession(null)}
         onSuccess={handleScanSuccess}
       />
 
-      {/* CSAT SURVEY MODAL */}
+      {/* Syllabus & materials */}
+      <Sheet
+        visible={!!materialsSession}
+        onClose={() => setMaterialsSession(null)}
+        title="Giáo trình & Tài liệu"
+      >
+        {!!materialsSession && (
+          <View style={{ paddingBottom: 16 }}>
+            <Card style={{ backgroundColor: COLORS.sunken, padding: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink }}>{materialsSession.title}</Text>
+              <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 4 }}>
+                {materialsSession.date} · {materialsSession.time}
+              </Text>
+              <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 2 }}>
+                GV {materialsSession.trainerName} · {materialsSession.venue}
+              </Text>
+            </Card>
+
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, marginBottom: 9 }}>
+              Nội dung buổi học
+            </Text>
+            {(materialsSession.syllabus || []).length === 0 ? (
+              <Text style={{ fontSize: 12, color: COLORS.inkFaint, marginBottom: 14 }}>
+                Giảng viên chưa cập nhật giáo trình cho buổi này.
+              </Text>
+            ) : (
+              materialsSession.syllabus.map((step: any, idx: number) => (
+                <View key={idx} style={{ flexDirection: 'row', marginBottom: 12 }}>
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: COLORS.rail,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 10,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10.5, fontWeight: '900', color: '#FFFFFF' }}>{idx + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.ink, lineHeight: 18 }}>
+                      {step.step}
+                    </Text>
+                    <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 3, lineHeight: 16 }}>
+                      {step.detail}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, marginTop: 6, marginBottom: 9 }}>
+              Tài liệu đính kèm
+            </Text>
+            {(materialsSession.materials || []).length === 0 ? (
+              <Text style={{ fontSize: 12, color: COLORS.inkFaint }}>Chưa có tài liệu đính kèm.</Text>
+            ) : (
+              materialsSession.materials.map((mat: any) => (
+                <View
+                  key={mat.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: COLORS.line,
+                    borderRadius: 10,
+                    padding: 11,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Ionicons
+                    name={mat.type === 'PPT' ? 'easel-outline' : 'document-text-outline'}
+                    size={18}
+                    color={mat.type === 'PPT' ? COLORS.amber : COLORS.red}
+                    style={{ marginRight: 10 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.ink, lineHeight: 17 }} numberOfLines={2}>
+                      {mat.name}
+                    </Text>
+                    <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 2 }}>
+                      {mat.type} · {mat.size}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+      </Sheet>
+
       <PostTrainingSurveyModal
-        visible={Boolean(surveySession)}
+        visible={!!surveySession}
         course={surveySession}
         type="CLASSROOM_CSAT"
         onClose={() => setSurveySession(null)}
-        onSubmit={(rating) => {
-          Alert.alert('Cảm Ơn!', `Bạn đã gửi đánh giá CSAT ${rating}/5 sao cho lớp học này.`);
-        }}
+        onSubmit={() => showToast('Cảm ơn bạn đã gửi đánh giá lớp học!')}
       />
-    </SafeAreaView>
+    </Screen>
+  );
+}
+
+function SessionCard({
+  session,
+  onEnroll,
+  onScan,
+  onMaterials,
+  onSurvey,
+}: {
+  session: any;
+  onEnroll: () => void;
+  onScan: () => void;
+  onMaterials: () => void;
+  onSurvey: () => void;
+}) {
+  const isStore = session.modality === 'OFFLINE_STORE';
+  const isCheckedIn = session.attendanceStatus === 'CHECKED_IN';
+  const isCompleted = session.status === 'COMPLETED';
+  const isFull = (session.enrolledCount || 0) >= (session.maxCapacity || 0);
+  const fillPct = Math.round(((session.enrolledCount || 0) / Math.max(1, session.maxCapacity || 1)) * 100);
+
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+        <Badge tone={isStore ? 'rust' : 'blue'} size="sm">
+          {isStore ? '🏪 Thực hành siêu thị' : '💻 Webinar trực tuyến'}
+        </Badge>
+        {isCheckedIn && (
+          <Badge tone="sage" size="sm">
+            ✅ Đã điểm danh
+          </Badge>
+        )}
+        {session.isEnrolled && !isCheckedIn && !isCompleted && (
+          <Badge tone="amber" size="sm">
+            ⏳ Chờ quét QR
+          </Badge>
+        )}
+        {isCompleted && (
+          <Badge tone="slate" size="sm">
+            🏁 Đã kết thúc
+          </Badge>
+        )}
+      </View>
+
+      <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.ink, lineHeight: 19 }} numberOfLines={3}>
+        {session.title}
+      </Text>
+      <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 4 }}>{session.code}</Text>
+
+      <View style={{ marginTop: 10 }}>
+        <InfoRow label="Thời gian" value={`${session.date} · ${session.time}`} icon="calendar-outline" />
+        <InfoRow label="Địa điểm" value={session.venue} icon="location-outline" />
+        <InfoRow label="Giảng viên" value={`${session.trainerName} ⭐ ${session.trainerRating || '—'}`} icon="person-outline" />
+      </View>
+
+      <View style={{ marginTop: 11 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+          <Text style={{ fontSize: 11, color: COLORS.inkFaint }}>Sĩ số lớp</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: isFull ? COLORS.red : COLORS.rail }}>
+            {session.enrolledCount}/{session.maxCapacity} {isFull ? '· Đã đầy' : ''}
+          </Text>
+        </View>
+        <ProgressBar value={fillPct} tone={isFull ? 'rust' : 'rail'} size="sm" />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        <Button size="sm" variant="outline" icon="document-text-outline" style={{ flex: 1 }} onPress={onMaterials}>
+          Giáo trình
+        </Button>
+
+        {isCheckedIn ? (
+          <Button size="sm" variant="outline" icon="star-outline" style={{ flex: 1 }} onPress={onSurvey}>
+            Đánh giá lớp
+          </Button>
+        ) : session.isEnrolled ? (
+          <Button size="sm" variant="primary" icon="qr-code-outline" style={{ flex: 1 }} onPress={onScan}>
+            Quét QR
+          </Button>
+        ) : (
+          <Button size="sm" variant="primary" icon="add-outline" style={{ flex: 1 }} disabled={isFull || isCompleted} onPress={onEnroll}>
+            {isFull ? 'Đã đầy' : 'Đăng ký'}
+          </Button>
+        )}
+      </View>
+    </Card>
   );
 }

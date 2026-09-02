@@ -1,232 +1,252 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Badge, ProgressBar } from '../components/ui';
 import { useCourseStore } from '../store/CourseStore';
+import { Badge, ProgressBar } from '../components/ui';
+import { Screen, Card, COLORS, SectionTitle, Segmented, EmptyState } from '../components/layout';
+
+const TIER_COLOR: Record<string, string> = {
+  Gold: '#D97706',
+  Silver: '#64748B',
+  Bronze: '#B45309',
+  Platinum: '#0F766E',
+};
 
 export default function LeaderboardScreen() {
-  const { gamification, currentUser } = useCourseStore();
-  const [scope, setScope] = useState<'DEPT' | 'COMPANY'>('DEPT');
+  const { gamification } = useCourseStore();
+  const { userStats, badges = [], leaderboard = [] } = gamification || {};
+  const [tab, setTab] = useState<'RANK' | 'BADGES'>('RANK');
 
-  const user = currentUser;
-  const userStats = gamification?.userStats || {
-    points: 1450,
-    nextLevelXp: 2000,
-    currentLevel: 7,
-    levelTitle: 'Chuyên viên Tuyến Đầu',
-    streakDays: 8,
-    rankInDept: 3,
-    rankInCompany: 42,
-  };
+  if (!userStats) {
+    return (
+      <Screen title="Bảng Thi Đua" back>
+        <EmptyState icon="trophy-outline" title="Chưa có dữ liệu thi đua" />
+      </Screen>
+    );
+  }
 
-  const leaderboard = gamification?.leaderboard || [
-    { rank: 1, name: 'Trần Quốc Bảo', department: 'Tươi Sống', level: 6, points: 2850, streak: 15, isCurrent: false, avatar: 'TB' },
-    { rank: 2, name: 'Lê Hoàng Nam', department: 'Thu Ngân', level: 6, points: 2420, streak: 12, isCurrent: false, avatar: 'LN' },
-    { rank: 3, name: user?.fullName || 'Minh Tran', department: 'Quầy Bánh', level: 7, points: 1450, streak: 8, isCurrent: true, avatar: 'MT' },
-    { rank: 4, name: 'Sarah Johnson', department: 'Quầy Bánh', level: 7, points: 1380, streak: 7, isCurrent: false, avatar: 'SJ' },
-    { rank: 5, name: 'Phạm Thị Thảo', department: 'Kiểm Soát QA', level: 7, points: 1220, streak: 5, isCurrent: false, avatar: 'PT' },
-  ];
-
-  const badges = [
-    { id: 'b1', name: 'Chiến Binh HACCP', icon: 'shield-checkmark', tone: 'sage', desc: 'Đạt 100% điểm bài thi An toàn thực phẩm' },
-    { id: 'b2', name: 'Ngọn Lửa Học Tập', icon: 'flame', tone: 'amber', desc: 'Duy trì chuỗi học tập 7 ngày liên tiếp' },
-    { id: 'b3', name: 'Chuyên Gia Tươi Sống', icon: 'ribbon', tone: 'blue', desc: 'Hoàn thành trọn bộ giáo trình Tươi Sống' },
-  ];
-
-  const xpProgress = Math.round((userStats.points / (userStats.nextLevelXp || 2000)) * 100);
+  const xpProgress = Math.round((userStats.points / Math.max(1, userStats.nextLevelXp)) * 100);
+  const earnedBadges = badges.filter((b: any) => b.earned);
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E293B' }}>
-          Bảng Vinh Danh &amp; Thành Tích
-        </Text>
-        <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>
-          Thi đua tích lũy XP, duy trì chuỗi học và thăng hạng kỹ năng
-        </Text>
+    <Screen title="Bảng Thi Đua & Thành Tích" subtitle={`${userStats.points} XP · hạng ${userStats.rankInDept} phòng ban`} back>
+      {/* Level / XP hero */}
+      <Card style={{ backgroundColor: COLORS.rail, borderColor: '#0D9488' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 11 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.85)', fontWeight: '800', letterSpacing: 0.5 }}>
+              BẬC NĂNG LỰC
+            </Text>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: '#FFFFFF', marginTop: 2 }}>
+              Level {userStats.currentLevel}
+            </Text>
+            <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', fontWeight: '600', marginTop: 3 }}>
+              {userStats.levelTitle}
+            </Text>
+          </View>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="trophy" size={20} color="#FFFFFF" />
+          </View>
+        </View>
+
+        <ProgressBar value={xpProgress} tone="amber" size="sm" />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 7 }}>
+          <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.9)' }}>{userStats.points} XP</Text>
+          <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.9)' }}>
+            Còn {Math.max(0, userStats.nextLevelXp - userStats.points)} XP lên cấp
+          </Text>
+        </View>
+      </Card>
+
+      {/* Quick stats */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+        <StatBox icon="flame" label="Chuỗi ngày học" value={`${userStats.streakDays}`} color="#C2410C" />
+        <StatBox icon="podium" label="Hạng phòng ban" value={`#${userStats.rankInDept}`} color={COLORS.rail} />
+        <StatBox icon="business" label="Hạng toàn công ty" value={`#${userStats.rankInCompany}`} color={COLORS.blue} />
+        <StatBox icon="medal" label="Huy hiệu đạt được" value={`${userStats.totalBadgesEarned}`} color={COLORS.amber} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {/* 1. LEVEL & XP CARD */}
-        <View
-          style={{
-            backgroundColor: '#0F766E',
-            borderRadius: 18,
-            padding: 16,
-            marginBottom: 14,
-            shadowColor: '#0F766E',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 8,
-            elevation: 4,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <View>
-              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase' }}>
-                Khung Cấp Bậc Năng Lực
-              </Text>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#FFFFFF', marginTop: 2 }}>
-                Level {userStats.currentLevel} &middot; {userStats.levelTitle}
-              </Text>
-            </View>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="trophy" size={24} color="#FDE68A" />
-            </View>
-          </View>
+      <Segmented
+        options={[
+          { value: 'RANK', label: `🏆 Xếp hạng (${leaderboard.length})` },
+          { value: 'BADGES', label: `🎖 Huy hiệu (${earnedBadges.length}/${badges.length})` },
+        ]}
+        value={tab}
+        onChange={(v) => setTab(v as any)}
+      />
 
-          <View style={{ marginTop: 8 }}>
-            <ProgressBar value={xpProgress} tone="amber" size="md" />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-              <Text style={{ fontSize: 11, color: '#FFFFFF', fontWeight: '700' }}>{userStats.points} XP</Text>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
-                Còn {userStats.nextLevelXp - userStats.points} XP lên Level 6
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 2. STREAK & RANK TILES */}
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-          {/* Streak Card */}
-          <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '700' }}>Chuỗi Học Tập</Text>
-              <Ionicons name="flame" size={18} color="#EA580C" />
-            </View>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: '#EA580C' }}>{userStats.streakDays} Ngày</Text>
-            <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>Duy trì học mỗi ngày</Text>
-          </View>
-
-          {/* Department Rank Card */}
-          <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '700' }}>Hạng Phòng Ban</Text>
-              <Ionicons name="medal" size={18} color="#009E49" />
-            </View>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: '#009E49' }}>Top #{userStats.rankInDept}</Text>
-            <Text style={{ fontSize: 10, color: '#047857', fontWeight: '700', marginTop: 2 }}>▲ Top 5% xuất sắc</Text>
-          </View>
-        </View>
-
-        {/* 3. LEADERBOARD LIST */}
-        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B' }}>
-              Bảng Vàng Tuần Này
-            </Text>
-
-            {/* Scope Switcher */}
-            <View style={{ flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 8, padding: 2 }}>
-              <TouchableOpacity
-                onPress={() => setScope('DEPT')}
-                style={{
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 6,
-                  backgroundColor: scope === 'DEPT' ? '#009E49' : 'transparent',
-                }}
-              >
-                <Text style={{ fontSize: 10.5, fontWeight: '700', color: scope === 'DEPT' ? '#FFFFFF' : '#64748B' }}>Phòng Ban</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setScope('COMPANY')}
-                style={{
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 6,
-                  backgroundColor: scope === 'COMPANY' ? '#009E49' : 'transparent',
-                }}
-              >
-                <Text style={{ fontSize: 10.5, fontWeight: '700', color: scope === 'COMPANY' ? '#FFFFFF' : '#64748B' }}>Toàn Công Ty</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* List rows */}
-          <View style={{ gap: 8 }}>
-            {leaderboard.map((item: any) => {
-              const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : `#${item.rank}`;
-              return (
+      {tab === 'RANK' ? (
+        <>
+          <SectionTitle icon="podium">Bảng xếp hạng học tập</SectionTitle>
+          {leaderboard.map((row: any) => (
+            <Card
+              key={row.rank}
+              style={{
+                padding: 12,
+                backgroundColor: row.isCurrent ? COLORS.greenSoft : COLORS.paper,
+                borderColor: row.isCurrent ? '#A7F3D0' : COLORS.line,
+                borderWidth: row.isCurrent ? 1.5 : 1,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View
-                  key={item.rank}
                   style={{
-                    flexDirection: 'row',
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: rankColor(row.rank),
                     alignItems: 'center',
-                    backgroundColor: item.isCurrent ? '#F0FDF4' : '#F8FAFC',
-                    borderColor: item.isCurrent ? '#A7F3D0' : '#E2E8F0',
-                    borderWidth: 1,
-                    borderRadius: 12,
-                    padding: 10,
+                    justifyContent: 'center',
+                    marginRight: 10,
                   }}
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '800', width: 28, textAlign: 'center' }}>
-                    {medal}
+                  <Text style={{ fontSize: 12, fontWeight: '900', color: row.rank <= 3 ? '#FFFFFF' : COLORS.inkSoft }}>
+                    {row.rank}
                   </Text>
-
-                  <View
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      backgroundColor: item.isCurrent ? '#009E49' : '#475569',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 10,
-                    }}
-                  >
-                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
-                      {item.avatar}
-                    </Text>
-                  </View>
-
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#1E293B' }}>{item.name}</Text>
-                      {item.isCurrent && <Badge tone="sage" size="sm">Bạn</Badge>}
-                    </View>
-                    <Text style={{ fontSize: 10.5, color: '#64748B' }}>
-                      {item.department} &middot; Level {item.level}
-                    </Text>
-                  </View>
-
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#0F766E' }}>{item.points} XP</Text>
-                    <Text style={{ fontSize: 10, color: '#EA580C', fontWeight: '600' }}>🔥 {item.streak}d</Text>
-                  </View>
                 </View>
-              );
-            })}
-          </View>
-        </View>
 
-        {/* 4. BADGES COLLECTION */}
-        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', marginBottom: 12 }}>
-            Huy Hiệu &amp; Danh Hiệu Đã Đạt
-          </Text>
-          <View style={{ gap: 10 }}>
-            {badges.map((b) => (
-              <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                  <Ionicons name={b.icon as any} size={20} color="#009E49" />
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: COLORS.railSoft,
+                    borderWidth: 1,
+                    borderColor: '#99F6E4',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '900', color: COLORS.rail }}>{row.avatar}</Text>
                 </View>
+
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#1E293B' }}>{b.name}</Text>
-                  <Text style={{ fontSize: 11, color: '#64748B' }}>{b.desc}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink }} numberOfLines={1}>
+                      {row.name}
+                    </Text>
+                    {row.isCurrent && (
+                      <View
+                        style={{
+                          marginLeft: 6,
+                          backgroundColor: COLORS.green,
+                          paddingHorizontal: 6,
+                          paddingVertical: 1.5,
+                          borderRadius: 999,
+                        }}
+                      >
+                        <Text style={{ fontSize: 9, fontWeight: '800', color: '#FFFFFF' }}>BẠN</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 2 }} numberOfLines={1}>
+                    {row.department}
+                  </Text>
+                </View>
+
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 13.5, fontWeight: '900', color: COLORS.rail }}>{row.points}</Text>
+                  <Text style={{ fontSize: 9.5, color: COLORS.inkFaint }}>XP · 🔥{row.streak}</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            </Card>
+          ))}
+        </>
+      ) : (
+        <>
+          <SectionTitle icon="medal">Bộ sưu tập huy hiệu</SectionTitle>
+          {badges.map((badge: any) => (
+            <Card
+              key={badge.id}
+              style={{
+                padding: 12,
+                opacity: badge.earned ? 1 : 0.55,
+                borderColor: badge.earned ? TIER_COLOR[badge.tier] || COLORS.line : COLORS.line,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
+                    backgroundColor: badge.earned ? `${TIER_COLOR[badge.tier] || COLORS.rail}20` : COLORS.sunken,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 11,
+                  }}
+                >
+                  <Ionicons
+                    name={badge.earned ? 'medal' : 'lock-closed'}
+                    size={20}
+                    color={badge.earned ? TIER_COLOR[badge.tier] || COLORS.rail : COLORS.inkFaint}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink }}>{badge.name}</Text>
+                    {!!badge.tier && (
+                      <Badge tone={badge.tier === 'Gold' ? 'amber' : badge.tier === 'Platinum' ? 'rail' : 'slate'} size="sm">
+                        {badge.tier}
+                      </Badge>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 4, lineHeight: 16 }}>
+                    {badge.description}
+                  </Text>
+                  {badge.earned && !!badge.earnedDate && (
+                    <Text style={{ fontSize: 10.5, color: COLORS.green, marginTop: 5, fontWeight: '700' }}>
+                      ✓ Đạt ngày {badge.earnedDate}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </Card>
+          ))}
+        </>
+      )}
+    </Screen>
   );
+}
+
+function StatBox({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <View
+      style={{
+        width: '47.6%',
+        flexGrow: 1,
+        backgroundColor: COLORS.paper,
+        borderWidth: 1,
+        borderColor: COLORS.line,
+        borderRadius: 12,
+        padding: 11,
+        marginBottom: 6,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <Text style={{ fontSize: 10, fontWeight: '800', color: COLORS.inkFaint }} numberOfLines={1}>
+          {label.toUpperCase()}
+        </Text>
+        <Ionicons name={icon as any} size={14} color={color} />
+      </View>
+      <Text style={{ fontSize: 19, fontWeight: '900', color }}>{value}</Text>
+    </View>
+  );
+}
+
+function rankColor(rank: number) {
+  if (rank === 1) return '#D97706';
+  if (rank === 2) return '#94A3B8';
+  if (rank === 3) return '#B45309';
+  return COLORS.sunken;
 }

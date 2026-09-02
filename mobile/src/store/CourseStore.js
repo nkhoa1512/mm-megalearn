@@ -12,27 +12,53 @@ import {
   myLearningCourses,
   enrollmentsForUser,
   nextMajorVersion,
+  businessUnits as initialBusinessUnits,
+  divisions as initialDivisions,
+  departments as initialDepartments,
+  subDepartments as initialSubDepartments,
+  jobLevels as initialJobLevels,
+  curricula as initialCurricula,
+  userEnrollmentsMap,
 } from '../data/mockData';
-import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel } from '../data/levelSystem';
+import { checkCourseAccessRule, ACCESS_STATE, normalizeLevel, evaluateUserEligibilityForCourse } from '../data/levelSystem';
 import { normalizeRole, hasCapability } from '../data/roles';
 import { SCOPE_ROADMAP_MATRIX, computeUserRoadmapTabs } from '../data/levelRoadmapMatrix';
 import { publishRoadmapScope } from '../data/roadmapScopeMatrix';
 import { translate, translateDomain, translateStatus, translateDelivery, getLocalizedCourse } from '../data/i18n';
-import { curricula as initialCurricula } from '../data/mockData';
-import { DEFAULT_COMPANY_CATEGORIES } from '../utils/courseCatalog';
-import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+import {
+  DEFAULT_COMPANY_CATEGORIES,
+  DEFAULT_CATEGORY_OBJECTS,
+  normalizeCategory,
+  getCategoryMetadata,
+  generateCategoryCode,
+  courseMatchesCategory,
+} from '../utils/courseCatalog';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
+import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
+import {
+  buildCostCenters,
+  buildEnrollmentTransaction,
+  seedOpeningLedger,
+  summarizeLedger,
+  pricingOf,
+  CURRENCY,
+  TXN_TYPE,
+  TXN_SOURCE,
+} from '../utils/costCenter';
+import { DEFAULT_CERTIFICATE_TEMPLATES } from '../data/certificateTemplatesData';
+import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+import { readCache, writeCache, removeCache } from './persistentCache';
 
 // v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
 // (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
 const AUTH_KEY = 'mm-megalearn-auth-v6';
-const STORAGE_KEY = 'mm-megalearn-courses-v6';
-const CLASSROOM_KEY = 'mm-megalearn-classrooms-v6';
+const STORAGE_KEY = 'mm-megalearn-courses-v11';
+const CLASSROOM_KEY = 'mm-megalearn-classrooms-v11';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
-const USERS_KEY = 'mm-megalearn-users-v6';
+const USERS_KEY = 'mm-megalearn-users-v7';
 // v7: cấu hình lộ trình chuyển từ ma trận Level x Branch phẳng sang Scope Key
 // đa tầng (BU -> Division -> Department -> Sub-Department x Level). Bump key
 // để không nạp nhầm shape cũ từ localStorage.
@@ -41,7 +67,76 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // vực công ty (Category) do System Admin quản lý — hai domain mới, chưa từng
 // tồn tại trước bản Catalog 5-Phân-Hệ này.
 const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
+// Library (Library -> Lĩnh Vực/Domain -> Courses): admin tự tạo Library, thêm
+// các Lĩnh Vực (mỗi Lĩnh Vực gắn 1 Category có sẵn) rồi gán khóa học thủ công
+// vào từng Lĩnh Vực để dễ tra cứu — khác Curriculum ở chỗ chỉ là góc nhìn
+// tham chiếu/tra cứu cho User Admin & System Admin, không có phân bổ/enroll.
+const LIBRARY_KEY = 'mm-megalearn-libraries-v1';
+
+// Dữ liệu mẫu cho vài Library đầu tiên (demo/first-run) — gom sẵn các khóa
+// học seed có trong mockData.js vào Lĩnh Vực đúng Category của chúng, để tab
+// Library không trống trơn khi User Admin/SysAdmin vào lần đầu. Domain nào
+// không có khóa nào khớp thì bỏ qua (không tạo Lĩnh Vực rỗng vô nghĩa).
+function buildSeedLibraries(allCourses) {
+  function domainFor(category, limit = 8) {
+    const courseIds = allCourses.filter((c) => courseMatchesCategory(c, category)).slice(0, limit).map((c) => c.id);
+    return { id: `DOM-SEED-${category.replace(/[^a-zA-Z0-9]/g, '')}`, category, courseIds };
+  }
+  const seedDate = '2026-01-05';
+  return [
+    {
+      id: 'LIB-SEED-HARDSKILL',
+      name: 'Thư Viện Kỹ Năng Cứng Vận Hành',
+      description: 'Gom các khóa học nghiệp vụ chuyên môn theo từng lĩnh vực vận hành cửa hàng & kho vận.',
+      domains: [
+        domainFor('Food Safety & Hygiene'),
+        domainFor('Cold Chain'),
+        domainFor('Store Operations'),
+        domainFor('Loss Prevention & QA'),
+        domainFor('Fresh Food Practice'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+    {
+      id: 'LIB-SEED-LEADERSHIP',
+      name: 'Thư Viện Kỹ Năng Mềm & Quản Trị',
+      description: 'Các khóa học lãnh đạo, dịch vụ khách hàng và tuân thủ đạo đức dành cho cấp quản lý.',
+      domains: [
+        domainFor('Leadership & Management'),
+        domainFor('Customer Service'),
+        domainFor('Compliance & Ethics'),
+        domainFor('Corporate Governance'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+    {
+      id: 'LIB-SEED-DIGITAL',
+      name: 'Thư Viện Chuyển Đổi Số & Chuỗi Cung Ứng',
+      description: 'Khóa học về an ninh thông tin, thương mại điện tử, tài chính và chuỗi cung ứng.',
+      domains: [
+        domainFor('Information Security'),
+        domainFor('Digital & E-Commerce'),
+        domainFor('Supply Chain & Logistics'),
+        domainFor('Finance & Accounting'),
+      ],
+      createdBy: userAdminUser.userId,
+      createdAt: seedDate,
+      updatedAt: seedDate,
+    },
+  ].map((lib) => ({ ...lib, domains: lib.domains.filter((d) => d.courseIds.length > 0) }))
+    .filter((lib) => lib.domains.length > 0);
+}
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
+// Certificate Template: thư viện mẫu chứng chỉ do admin quản lý trước, Course
+// Builder & Curriculum Editor chỉ gắn certificateTemplateId tham chiếu tới
+// đây (không copy dữ liệu) — file đính kèm chỉ lưu metadata (tên/kích thước),
+// không dùng để render; các field còn lại (signerName/signerTitle/issuerOrg)
+// mới thực sự thay thế nội dung mặc định trên CertificateModal.
+const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v4';
 const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
 const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
 const ATTEMPT_KEY = 'mm-megalearn-assessment-attempts-v1';
@@ -49,6 +144,17 @@ const INTERVENTION_KEY = 'mm-megalearn-interventions-v2';
 const SUCCESSION_KEY = 'mm-megalearn-succession-v2';
 const ALIGNMENT_KEY = 'mm-megalearn-alignment-v1';
 const COMPLIANCE_NUDGES_KEY = 'mm-megalearn-nudges-v2';
+const BU_KEY = 'mm-megalearn-bu-v3';
+const DIV_KEY = 'mm-megalearn-div-v4';
+const DEPT_KEY = 'mm-megalearn-dept-v4';
+const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
+const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v4';
+const GROUP_KEY = 'mm-megalearn-groups-v1';
+// Cost Center: chỉ lưu các bút toán PHÁT SINH trong phiên. Sổ cái mở đầu (ngân
+// sách năm + ghi danh lịch sử HRIS) được suy ra lại mỗi lần khởi động từ dữ
+// liệu tĩnh — cùng mô hình overlay với `enrollments`, tránh nhồi vài nghìn
+// dòng giao dịch vào hạn mức localStorage.
+const COST_LEDGER_KEY = 'mm-megalearn-cost-ledger-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
 
@@ -194,14 +300,10 @@ export const DEFAULT_ALIGNMENTS = [
 
 const CourseStoreContext = createContext(null);
 
+// Bản web đọc/ghi thẳng localStorage. Trên React Native, persistentCache giữ
+// nguyên chữ ký đồng bộ đó nhưng nền dưới là AsyncStorage (xem persistentCache.js).
 function loadItem(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    // fallback
-  }
-  return fallback;
+  return readCache(key, fallback);
 }
 
 // Hồ sơ đăng nhập lưu trong localStorage có thể còn role/level của bản cũ hoặc thiếu subDepartment.
@@ -219,6 +321,55 @@ function hydrateUser(user) {
     departmentName: user.departmentName || canonical?.departmentName || null,
     departmentId: user.departmentId || canonical?.departmentId || null,
   };
+}
+
+function hydrateCourses(courseList) {
+  if (!Array.isArray(courseList)) return courseList;
+  const TEACHING_POOL = [
+    { id: 'USR-9003', name: 'Nguyễn Văn Hùng', role: 'trainer', title: 'Master Trainer (L&OD)' },
+    { id: 'USR-9005', name: 'Vũ Đức Thành', role: 'trainer', title: 'Loss Prevention & HSE Director' },
+    { id: 'USR-9006', name: 'Trần Minh Quang', role: 'trainer', title: 'Senior SGM & Mentor' },
+    { id: 'USR-9002', name: 'Phạm Thanh Thảo', role: 'useradmin', title: 'HR Master Data & User Admin' },
+    { id: 'USR-9004', name: 'Lê Thị Mai', role: 'hrbp', title: 'HR Business Partner Lead' },
+    { id: 'USR-9001', name: 'Trần Hoàng Long', role: 'sysadmin', title: 'Lead IT Systems Administrator' },
+  ];
+
+  return courseList.map((c, idx) => {
+    if (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB') {
+      const lead = TEACHING_POOL[idx % TEACHING_POOL.length];
+      const trainerId = c.trainerId || lead.id;
+      const trainerName = c.trainerName || c.instructor || lead.name;
+
+      let coTrainers = c.coTrainers && c.coTrainers.length > 0 ? c.coTrainers : [];
+      if (coTrainers.length === 0) {
+        const coCount = (idx % 2 === 0) ? 2 : 3;
+        coTrainers = Array.from({ length: coCount }, (_, cIdx) => {
+          const p = TEACHING_POOL[(idx + 1 + cIdx) % TEACHING_POOL.length];
+          return {
+            id: p.id,
+            userId: p.id,
+            name: p.name,
+            fullName: p.name,
+            role: p.role,
+            title: p.title,
+          };
+        });
+      }
+      const coTrainerIds = coTrainers.map((t) => t.userId || t.id);
+      const coTrainerNames = coTrainers.map((t) => t.fullName || t.name);
+
+      return {
+        ...c,
+        trainerId,
+        trainerName,
+        instructor: trainerName,
+        coTrainers,
+        coTrainerIds,
+        coTrainerNames,
+      };
+    }
+    return c;
+  });
 }
 
 function todayIso() {
@@ -260,6 +411,10 @@ export function CourseStoreProvider({ children }) {
   // Chồng lên ma trận ghi danh tĩnh của HRIS.
   const [enrollments, setEnrollments] = useState(() => loadItem(ENROLLMENT_KEY, {}));
 
+  // Sổ cái Trung Tâm Chi Phí phát sinh trong phiên (ghi danh mới có/không phí,
+  // điều chỉnh thủ công). Chồng lên sổ cái mở đầu suy ra từ dữ liệu tĩnh.
+  const [costLedgerSession, setCostLedgerSession] = useState(() => loadItem(COST_LEDGER_KEY, []));
+
   // Cấu hình Lộ trình Cấp bậc (Tab 1 "Hiện tại" / Tab 2 "Kế cận" tra cứu chéo
   // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
   const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, SCOPE_ROADMAP_MATRIX));
@@ -269,9 +424,34 @@ export function CourseStoreProvider({ children }) {
   // không sao chép lại module/lesson).
   const [curricula, setCurricula] = useState(() => loadItem(CURRICULUM_KEY, initialCurricula));
 
-  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn, System Admin có thể
+  // Library: admin-managed Library -> Domain(Lĩnh Vực, gắn Category có sẵn) ->
+  // courseIds[] (1 khóa có thể nằm trong nhiều Domain/Library, không loại
+  // trừ lẫn nhau — chỉ là tag tham chiếu, không đổi dữ liệu khóa học gốc).
+  const [libraries, setLibraries] = useState(() => loadItem(LIBRARY_KEY, buildSeedLibraries(initialCourses)));
+
+  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn rich objects, System Admin có thể
   // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
-  const [companyCategories, setCompanyCategories] = useState(() => loadItem(CATEGORY_KEY, DEFAULT_COMPANY_CATEGORIES));
+  const [companyCategoryObjects, setCompanyCategoryObjects] = useState(() => {
+    const loaded = loadItem(CATEGORY_KEY, DEFAULT_CATEGORY_OBJECTS);
+    if (!Array.isArray(loaded)) return DEFAULT_CATEGORY_OBJECTS;
+    return loaded.map((cat) => normalizeCategory(cat, DEFAULT_CATEGORY_OBJECTS));
+  });
+
+  const companyCategories = useMemo(
+    () => companyCategoryObjects.map((c) => (typeof c === 'string' ? c : c.name)),
+    [companyCategoryObjects]
+  );
+
+  // Certificate Template: xem chú thích ở CERT_TEMPLATE_KEY phía trên.
+  const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, DEFAULT_CERTIFICATE_TEMPLATES));
+
+  // Enterprise Org Hierarchy & Job Levels States (BU, Division, Department, Sub-Department, Job Levels)
+  const [businessUnits, setBusinessUnits] = useState(() => loadItem(BU_KEY, initialBusinessUnits));
+  const [divisions, setDivisions] = useState(() => loadItem(DIV_KEY, initialDivisions));
+  const [departments, setDepartments] = useState(() => loadItem(DEPT_KEY, initialDepartments));
+  const [subDepartments, setSubDepartments] = useState(() => loadItem(SUBDEPT_KEY, initialSubDepartments));
+  const [jobLevels, setJobLevels] = useState(() => loadItem(JOBLEVELS_KEY, initialJobLevels));
+  const [customGroups, setCustomGroups] = useState(() => loadItem(GROUP_KEY, DEFAULT_CUSTOM_GROUPS));
 
   // HRBP Strategic Operations states (Interventions, Succession, 1-on-1 Alignments, Compliance Nudges)
   const [interventions, setInterventions] = useState(() => loadItem(INTERVENTION_KEY, DEFAULT_INTERVENTIONS));
@@ -305,38 +485,40 @@ export function CourseStoreProvider({ children }) {
   });
 
   useEffect(() => {
-    try {
-      if (isAuthenticated && currentUser) {
-        localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem(AUTH_KEY);
-      }
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
-      localStorage.setItem(CLASSROOM_KEY, JSON.stringify(classrooms));
-      localStorage.setItem(APPROVAL_KEY, JSON.stringify(approvals));
-      localStorage.setItem(GAMIFICATION_KEY, JSON.stringify(gamification));
-      localStorage.setItem(ACTION_PLAN_KEY, JSON.stringify(actionPlans));
-      localStorage.setItem(ENROLLMENT_KEY, JSON.stringify(enrollments));
-      localStorage.setItem(ROADMAP_KEY, JSON.stringify(roadmapsConfig));
-      localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
-      localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategories));
-      localStorage.setItem(INTERVENTION_KEY, JSON.stringify(interventions));
-      localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
-      localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
-      localStorage.setItem(COMPLIANCE_NUDGES_KEY, JSON.stringify(complianceNudges));
-      localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(assessments));
-      localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify(questionBanks));
-      localStorage.setItem(ATTEMPT_KEY, JSON.stringify(assessmentAttempts));
-      localStorage.setItem(THEME_KEY, JSON.stringify(theme));
-      localStorage.setItem(LANG_KEY, JSON.stringify(language));
-      if (typeof document !== 'undefined') {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-    } catch {
-      // ignore quota / private browsing
+    if (isAuthenticated && currentUser) {
+      writeCache(AUTH_KEY, currentUser);
+    } else {
+      removeCache(AUTH_KEY);
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, roadmapsConfig, curricula, companyCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+    writeCache(USERS_KEY, users);
+    writeCache(STORAGE_KEY, courses);
+    writeCache(CLASSROOM_KEY, classrooms);
+    writeCache(APPROVAL_KEY, approvals);
+    writeCache(GAMIFICATION_KEY, gamification);
+    writeCache(ACTION_PLAN_KEY, actionPlans);
+    writeCache(ENROLLMENT_KEY, enrollments);
+    writeCache(COST_LEDGER_KEY, costLedgerSession);
+    writeCache(ROADMAP_KEY, roadmapsConfig);
+    writeCache(CURRICULUM_KEY, curricula);
+    writeCache(LIBRARY_KEY, libraries);
+    writeCache(CATEGORY_KEY, companyCategoryObjects);
+    writeCache(CERT_TEMPLATE_KEY, certificateTemplates);
+    writeCache(BU_KEY, businessUnits);
+    writeCache(DIV_KEY, divisions);
+    writeCache(DEPT_KEY, departments);
+    writeCache(SUBDEPT_KEY, subDepartments);
+    writeCache(JOBLEVELS_KEY, jobLevels);
+    writeCache(GROUP_KEY, customGroups);
+    writeCache(INTERVENTION_KEY, interventions);
+    writeCache(SUCCESSION_KEY, successionTalents);
+    writeCache(ALIGNMENT_KEY, successionAlignments);
+    writeCache(COMPLIANCE_NUDGES_KEY, complianceNudges);
+    writeCache(ASSESSMENT_KEY, assessments);
+    writeCache(QUESTION_BANK_KEY, questionBanks);
+    writeCache(ATTEMPT_KEY, assessmentAttempts);
+    writeCache(THEME_KEY, theme);
+    writeCache(LANG_KEY, language);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, certificateTemplates, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -425,6 +607,242 @@ export function CourseStoreProvider({ children }) {
     [currentUser]
   );
 
+  /** Thêm nhân viên mới */
+  const addUser = useCallback((newUser) => {
+    const rawNum = Math.floor(1000 + Math.random() * 9000);
+    const id = newUser.userId || `USR-${rawNum}`;
+    const empCode = newUser.employeeCode || `MMVN-${rawNum}`;
+    const created = {
+      userId: id,
+      employeeCode: empCode,
+      fullName: newUser.fullName || 'Nhân Viên Mới',
+      email: newUser.email || `employee_${rawNum}@mmvietnam.com`,
+      position: newUser.position || newUser.title || 'Store Associate',
+      title: newUser.title || newUser.position || 'Store Associate',
+      level: normalizeLevel(newUser.level || '7'),
+      levelTitle: levelTitle(normalizeLevel(newUser.level || '7')),
+      role: normalizeRole(newUser.role || 'learner'),
+      branch: newUser.branch || 'SUPPORTING',
+      branchName: newUser.branchName || (newUser.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+      businessUnitId: newUser.businessUnitId || 'bu-mmvn',
+      businessUnitCode: newUser.businessUnitCode || 'MMVN',
+      divisionId: newUser.divisionId || null,
+      divisionCode: newUser.divisionCode || null,
+      divisionName: newUser.divisionName || null,
+      departmentId: newUser.departmentId || null,
+      departmentCode: newUser.departmentCode || null,
+      departmentName: newUser.departmentName || null,
+      subDepartmentId: newUser.subDepartmentId || null,
+      subDepartmentCode: newUser.subDepartmentCode || null,
+      subDepartmentName: newUser.subDepartmentName || null,
+      storeId: newUser.storeId || null,
+      storeName: newUser.storeName || null,
+      status: 'ACTIVE',
+      yearsOfService: newUser.yearsOfService || 1.0,
+      avatar: (newUser.fullName || 'NV').slice(0, 2).toUpperCase(),
+      badgeTone: 'blue',
+      description: newUser.description || 'Hồ sơ nhân sự MM Mega Market.',
+      ...newUser,
+    };
+    setUsers((prev) => [created, ...prev]);
+    return created;
+  }, []);
+
+  /** Xóa nhân sự khỏi danh mục */
+  const deleteUser = useCallback((userId) => {
+    setUsers((prev) => prev.filter((u) => u.userId !== userId && u.employeeCode !== userId));
+    return { ok: true };
+  }, []);
+
+  /** Import hàng loạt nhân sự từ file CSV / JSON */
+  const importUsers = useCallback((importedUserList) => {
+    if (!Array.isArray(importedUserList) || importedUserList.length === 0) return { addedCount: 0, updatedCount: 0, total: 0 };
+    let added = 0;
+    let updated = 0;
+    setUsers((prev) => {
+      const currentList = [...prev];
+      const newItems = [];
+      importedUserList.forEach((incoming) => {
+        const id = incoming.userId || incoming.employeeCode;
+        const idx = currentList.findIndex((u) => u.userId === id || (u.employeeCode && u.employeeCode === id));
+        const standardized = {
+          userId: id,
+          employeeCode: incoming.employeeCode || id,
+          fullName: incoming.fullName || 'Nhân Viên Mới',
+          email: incoming.email || `${id.toLowerCase()}@mmvietnam.com`,
+          position: incoming.position || incoming.title || 'Specialist',
+          title: incoming.title || incoming.position || 'Specialist',
+          level: normalizeLevel(incoming.level || '7'),
+          levelTitle: levelTitle(normalizeLevel(incoming.level || '7')),
+          role: normalizeRole(incoming.role || 'learner'),
+          branch: incoming.branch || 'SUPPORTING',
+          branchName: incoming.branchName || (incoming.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+          businessUnitId: incoming.businessUnitId || 'bu-mmvn',
+          businessUnitCode: incoming.businessUnitCode || 'MMVN',
+          businessUnitName: incoming.businessUnitName || 'MM Mega Market Vietnam',
+          divisionId: incoming.divisionId || null,
+          divisionCode: incoming.divisionCode || null,
+          divisionName: incoming.divisionName || null,
+          departmentId: incoming.departmentId || null,
+          departmentCode: incoming.departmentCode || null,
+          departmentName: incoming.departmentName || null,
+          subDepartmentId: incoming.subDepartmentId || null,
+          subDepartmentCode: incoming.subDepartmentCode || null,
+          subDepartmentName: incoming.subDepartmentName || null,
+          storeName: incoming.storeName || (incoming.branch === 'OPERATIONS' ? incoming.divisionName || 'Siêu thị MM' : 'Head Office (An Phú)'),
+          status: incoming.status || 'ACTIVE',
+          yearsOfService: incoming.yearsOfService || 1.0,
+          avatar: (incoming.fullName || 'NV').slice(0, 2).toUpperCase(),
+          badgeTone: 'blue',
+          ...incoming,
+        };
+        if (idx >= 0) {
+          currentList[idx] = { ...currentList[idx], ...standardized };
+          updated++;
+        } else {
+          newItems.push(standardized);
+          added++;
+        }
+      });
+      return [...newItems, ...currentList];
+    });
+    return { addedCount: added, updatedCount: updated, total: importedUserList.length };
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Business Units, Divisions, Departments, Sub-Departments CRUD
+  // -------------------------------------------------------------------------
+
+  const addBusinessUnit = useCallback((bu) => {
+    const id = bu.id || `bu-${Date.now()}`;
+    const newBu = { id, code: (bu.code || 'BU').toUpperCase(), name: bu.name || 'New Business Unit', ...bu };
+    setBusinessUnits((prev) => [...prev, newBu]);
+    return newBu;
+  }, []);
+
+  const updateBusinessUnit = useCallback((id, patch) => {
+    setBusinessUnits((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    return { ok: true };
+  }, []);
+
+  const deleteBusinessUnit = useCallback((id) => {
+    setBusinessUnits((prev) => prev.filter((b) => b.id !== id));
+    setDivisions((prev) => prev.filter((d) => d.businessUnitId !== id));
+    return { ok: true };
+  }, []);
+
+  const addDivision = useCallback((div) => {
+    const id = div.id || `div-${Date.now()}`;
+    const newDiv = {
+      id,
+      businessUnitId: div.businessUnitId || 'bu-mmvn',
+      branch: div.branch || 'SUPPORTING',
+      code: div.code || 'DIV',
+      name: div.name || 'New Division',
+      ...div,
+    };
+    setDivisions((prev) => [...prev, newDiv]);
+    return newDiv;
+  }, []);
+
+  const updateDivision = useCallback((id, patch) => {
+    setDivisions((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    return { ok: true };
+  }, []);
+
+  const deleteDivision = useCallback((id) => {
+    setDivisions((prev) => prev.filter((d) => d.id !== id));
+    setDepartments((prev) => prev.filter((dept) => dept.divisionId !== id));
+    return { ok: true };
+  }, []);
+
+  const addDepartment = useCallback((dept) => {
+    const id = dept.id || `dept-${Date.now()}`;
+    const newDept = {
+      id,
+      divisionId: dept.divisionId,
+      code: dept.code || 'DEPT',
+      name: dept.name || 'New Department',
+      ...dept,
+    };
+    setDepartments((prev) => [...prev, newDept]);
+    return newDept;
+  }, []);
+
+  const updateDepartment = useCallback((id, patch) => {
+    setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    return { ok: true };
+  }, []);
+
+  const deleteDepartment = useCallback((id) => {
+    setDepartments((prev) => prev.filter((d) => d.id !== id));
+    setSubDepartments((prev) => prev.filter((sub) => sub.departmentId !== id));
+    return { ok: true };
+  }, []);
+
+  const addSubDepartment = useCallback((subDept) => {
+    const id = subDept.id || `sub-${Date.now()}`;
+    const newSub = {
+      id,
+      departmentId: subDept.departmentId,
+      code: subDept.code || 'SUB',
+      name: subDept.name || 'New Sub-Department',
+      ...subDept,
+    };
+    setSubDepartments((prev) => [...prev, newSub]);
+    return newSub;
+  }, []);
+
+  const updateSubDepartment = useCallback((id, patch) => {
+    setSubDepartments((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    return { ok: true };
+  }, []);
+
+  const deleteSubDepartment = useCallback((id) => {
+    setSubDepartments((prev) => prev.filter((s) => s.id !== id));
+    return { ok: true };
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Job Levels CRUD
+  // -------------------------------------------------------------------------
+
+  const addJobLevel = useCallback((levelObj) => {
+    const lvlStr = String(levelObj.level || '').trim();
+    const newLvl = {
+      id: `lvl-${lvlStr || Date.now()}`,
+      level: lvlStr,
+      rank: Number(lvlStr) || 1,
+      code: levelObj.code || `LVL-${lvlStr}`,
+      emoji: levelObj.emoji || '⭐',
+      title: levelObj.title || `Level ${lvlStr}`,
+      viTitle: levelObj.viTitle || levelObj.title || `Level ${lvlStr}`,
+      shortVi: levelObj.shortVi || levelObj.titleVi || `Level ${lvlStr}`,
+      band: levelObj.band || 'GENERAL',
+      authority: levelObj.authority || 'STANDARD',
+      typicalRoles: levelObj.typicalRoles || ['learner'],
+      descVi: levelObj.descVi || 'Cấp bậc trong hệ thống MM Mega Market.',
+      headcount: levelObj.headcount || 0,
+      colors: levelObj.colors || { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
+      ...levelObj,
+    };
+    setJobLevels((prev) => {
+      const filtered = prev.filter((l) => String(l.level) !== String(newLvl.level));
+      return [...filtered, newLvl].sort((a, b) => Number(a.level) - Number(b.level));
+    });
+    return newLvl;
+  }, []);
+
+  const updateJobLevel = useCallback((levelKey, patch) => {
+    setJobLevels((prev) => prev.map((l) => (l.level === levelKey || l.id === levelKey ? { ...l, ...patch } : l)));
+    return { ok: true };
+  }, []);
+
+  const deleteJobLevel = useCallback((levelKey) => {
+    setJobLevels((prev) => prev.filter((l) => l.level !== levelKey && l.id !== levelKey));
+    return { ok: true };
+  }, []);
+
   const addCourse = useCallback((course) => {
     setCourses((prev) => [...prev, course]);
   }, []);
@@ -447,6 +865,33 @@ export function CourseStoreProvider({ children }) {
 
   const deleteCurriculum = useCallback((curriculumId) => {
     setCurricula((prev) => prev.filter((c) => c.id !== curriculumId));
+  }, []);
+
+  const addLibrary = useCallback((library) => {
+    setLibraries((prev) => [...prev, library]);
+  }, []);
+
+  const updateLibrary = useCallback((libraryId, nextLibrary) => {
+    setLibraries((prev) => prev.map((l) => (l.id === libraryId ? nextLibrary : l)));
+  }, []);
+
+  const deleteLibrary = useCallback((libraryId) => {
+    setLibraries((prev) => prev.filter((l) => l.id !== libraryId));
+  }, []);
+
+  const addCertificateTemplate = useCallback((template) => {
+    setCertificateTemplates((prev) => [...prev, template]);
+  }, []);
+
+  const updateCertificateTemplate = useCallback((templateId, nextTemplate) => {
+    setCertificateTemplates((prev) => prev.map((t) => (t.id === templateId ? nextTemplate : t)));
+  }, []);
+
+  // UI phải tự tính usage (course/curriculum nào đang certificateTemplateId
+  // == templateId) và chỉ gọi khi = 0, giống deleteCompanyCategory ở trên —
+  // action này không tự kiểm tra lại.
+  const deleteCertificateTemplate = useCallback((templateId) => {
+    setCertificateTemplates((prev) => prev.filter((t) => t.id !== templateId));
   }, []);
 
   const assignCurriculum = useCallback((curriculumId, assignmentOrAssignments) => {
@@ -499,7 +944,6 @@ export function CourseStoreProvider({ children }) {
         const currentAsgs = c.assignments || (c.assignment ? [c.assignment] : []);
         return {
           ...c,
-          courseType: 'MANDATORY',
           assignments: [...currentAsgs, ...newAsgs],
           updatedAt: new Date().toISOString().slice(0, 10),
         };
@@ -523,10 +967,103 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
-  const addCompanyCategory = useCallback((name) => {
-    const clean = (name || '').trim();
-    if (!clean) return;
-    setCompanyCategories((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+  const addCompanyCategory = useCallback((categoryInput) => {
+    let catObj;
+    if (typeof categoryInput === 'string') {
+      const clean = categoryInput.trim();
+      if (!clean) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      catObj = {
+        id: `cat-${Date.now()}`,
+        name: clean,
+        code: generateCategoryCode(clean),
+        icon: 'ti-folder',
+        color: '#3b82f6',
+        description: '',
+        coverImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+    } else {
+      const cleanName = (categoryInput.name || '').trim();
+      if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      catObj = {
+        id: categoryInput.id || `cat-${Date.now()}`,
+        name: cleanName,
+        code: categoryInput.code || generateCategoryCode(cleanName),
+        icon: categoryInput.icon || 'ti-folder',
+        color: categoryInput.color || '#3b82f6',
+        description: categoryInput.description || '',
+        coverImage: categoryInput.coverImage || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+        createdAt: categoryInput.createdAt || new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+    }
+
+    let alreadyExists = false;
+    setCompanyCategoryObjects((prev) => {
+      if (prev.some((c) => (typeof c === 'string' ? c : c.name).toLowerCase() === catObj.name.toLowerCase())) {
+        alreadyExists = true;
+        return prev;
+      }
+      return [catObj, ...prev];
+    });
+
+    return alreadyExists
+      ? { ok: false, reason: `Danh mục "${catObj.name}" đã tồn tại.` }
+      : { ok: true, category: catObj, name: catObj.name };
+  }, []);
+
+  const updateCompanyCategory = useCallback((idOrOldName, updatedData) => {
+    const cleanName = (updatedData.name || '').trim();
+    if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+
+    let oldName = '';
+    let updatedObj = null;
+
+    setCompanyCategoryObjects((prev) => {
+      return prev.map((c) => {
+        const isMatch = (typeof c === 'object' && (c.id === idOrOldName || c.name === idOrOldName)) || c === idOrOldName;
+        if (!isMatch) return c;
+
+        oldName = typeof c === 'string' ? c : c.name;
+        updatedObj = {
+          ...(typeof c === 'object' ? c : { id: `cat-${Date.now()}` }),
+          ...updatedData,
+          name: cleanName,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        };
+        return updatedObj;
+      });
+    });
+
+    if (oldName && oldName !== cleanName) {
+      setCourses((prev) => prev.map((c) => ({
+        ...c,
+        category: c.category === oldName ? cleanName : c.category,
+        categories: c.categories ? c.categories.map((cat) => (cat === oldName ? cleanName : cat)) : c.categories,
+      })));
+      setCurricula((prev) => prev.map((cur) => (cur.category === oldName ? { ...cur, category: cleanName } : cur)));
+      setAssessments((prev) => prev.map((a) => ({
+        ...a,
+        category: a.category === oldName ? cleanName : a.category,
+        categories: a.categories ? a.categories.map((cat) => (cat === oldName ? cleanName : cat)) : a.categories,
+      })));
+      setLibraries((prev) => prev.map((lib) => ({
+        ...lib,
+        domains: (lib.domains || []).map((d) => (d.category === oldName ? { ...d, category: cleanName } : d)),
+      })));
+    }
+
+    return { ok: true, category: updatedObj };
+  }, []);
+
+  const renameCompanyCategory = useCallback((oldName, newName) => {
+    return updateCompanyCategory(oldName, { name: newName });
+  }, [updateCompanyCategory]);
+
+  const deleteCompanyCategory = useCallback((idOrName) => {
+    setCompanyCategoryObjects((prev) =>
+      prev.filter((c) => (typeof c === 'string' ? c !== idOrName : (c.id !== idOrName && c.name !== idOrName)))
+    );
   }, []);
 
   // -------------------------------------------------------------------------
@@ -697,9 +1234,109 @@ export function CourseStoreProvider({ children }) {
   const accessFor = useCallback(
     (course, user = currentUser) => {
       const buckets = user === currentUser ? myRequestBuckets : requestBuckets(user);
-      return checkCourseAccessRule(course, user, buckets);
+      const asgList = course?.assignments || (course?.assignment ? [course.assignment] : []);
+      const isDirectlyAssigned = Boolean(
+        asgList.some((a) => {
+          if (a.assignmentType === 'USER' && (a.targetId === user?.userId || a.targetId === user?.employeeCode)) return true;
+          if (a.assignmentType === 'GROUP') {
+            const grp = customGroups.find((g) => g.id === a.targetId);
+            if (grp) {
+              if (a.groupPolicy === 'ELIGIBLE_ONLY') {
+                const evalRes = evaluateUserEligibilityForCourse(user, course);
+                if (!evalRes.isEligible && evalRes.matchType !== 'GAP_ONE_STEP') return false;
+              }
+              return isUserInCustomGroup(user, grp, users);
+            }
+          }
+          if (a.assignmentType === 'SUBDEPARTMENT' && (user?.subDepartmentId === a.targetId || user?.subDepartmentCode === a.targetId)) return true;
+          if (a.assignmentType === 'DEPARTMENT' && (user?.departmentId === a.targetId || user?.departmentCode === a.targetId)) return true;
+          if (a.assignmentType === 'DIVISION' && (user?.divisionId === a.targetId || user?.divisionCode === a.targetId)) return true;
+          if (a.assignmentType === 'STORE' && (user?.storeId === a.targetId || user?.storeCode === a.targetId)) return true;
+          if (a.assignmentType === 'BUSINESS_UNIT' && (user?.businessUnitId === a.targetId || user?.businessUnitCode === a.targetId)) return true;
+          if (a.assignmentType === 'LEVEL' && String(user?.level) === String(a.targetId)) return true;
+          return false;
+        })
+      );
+      return checkCourseAccessRule(course, user, { ...buckets, isDirectlyAssigned });
     },
-    [currentUser, myRequestBuckets, requestBuckets]
+    [currentUser, myRequestBuckets, requestBuckets, customGroups, users]
+  );
+
+  // -------------------------------------------------------------------------
+  // TRUNG TÂM CHI PHÍ (COST CENTER)
+  // -------------------------------------------------------------------------
+
+  /** 42 Division = 42 cost center, ngân sách năm tính theo đầu người thực tế. */
+  const costCenters = useMemo(() => buildCostCenters(divisions, users), [divisions, users]);
+
+  /** Sổ cái mở đầu: cấp ngân sách năm + toàn bộ ghi danh lịch sử từ HRIS. */
+  const openingLedger = useMemo(
+    () => seedOpeningLedger({ costCenters, courses, users, enrollmentMatrix: userEnrollmentsMap }),
+    [costCenters, courses, users]
+  );
+
+  /** Sổ cái hiệu lực = sổ mở đầu + phát sinh trong phiên (trùng id thì phiên thắng). */
+  const costLedger = useMemo(() => {
+    const merged = new Map(openingLedger.map((t) => [t.id, t]));
+    costLedgerSession.forEach((t) => merged.set(t.id, t));
+    return Array.from(merged.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }, [openingLedger, costLedgerSession]);
+
+  const costReport = useMemo(
+    () => summarizeLedger(costLedger, { costCenters, courses }),
+    [costLedger, costCenters, courses]
+  );
+
+  /**
+   * Gán / sửa giá tham gia của khóa học. Ghi thẳng vào `course.pricing` nên tự
+   * động được lưu cùng danh mục khóa học; các bút toán đã ghi vẫn giữ nguyên
+   * giá tại thời điểm ghi danh (không hồi tố).
+   */
+  const updateCoursePricing = useCallback((courseId, pricing) => {
+    setCourses((prev) =>
+      prev.map((c) => {
+        if (c.id !== courseId) return c;
+        const isFree = Boolean(pricing?.isFree);
+        const price = isFree ? 0 : Math.max(0, Number(pricing?.price) || 0);
+        return {
+          ...c,
+          pricing: {
+            isFree: isFree || price === 0,
+            price,
+            currency: pricing?.currency || CURRENCY,
+            costType: pricing?.costType || pricingOf(c).costType,
+            vendor: pricing?.vendor ?? pricingOf(c).vendor,
+            updatedAt: todayIso(),
+          },
+        };
+      })
+    );
+  }, []);
+
+  /** Bút toán thủ công (điều chỉnh ngân sách, hoàn phí, chi phí ngoài hệ thống). */
+  const recordCostTransaction = useCallback(
+    (txn) => {
+      const date = txn.date || todayIso();
+      const center = costCenters.find((c) => c.id === txn.costCenterId);
+      const entry = {
+        ...txn,
+        id: txn.id || `TXN-MAN-${Date.now()}`,
+        date,
+        fiscalYear: Number(date.slice(0, 4)),
+        type: txn.type === TXN_TYPE.INCOME ? TXN_TYPE.INCOME : TXN_TYPE.EXPENSE,
+        source: txn.source || TXN_SOURCE.MANUAL,
+        amount: Math.max(0, Number(txn.amount) || 0),
+        currency: txn.currency || CURRENCY,
+        isFree: false,
+        costCenterId: center?.id || txn.costCenterId || null,
+        costCenterCode: center?.code || txn.costCenterCode || null,
+        costCenterName: center?.name || txn.costCenterName || null,
+        branch: center?.branch || txn.branch || null,
+      };
+      setCostLedgerSession((prev) => [...prev, entry]);
+      return entry;
+    },
+    [costCenters]
   );
 
   /** Ghi danh khóa học cho người đang đăng nhập (chỉ khi quy tắc cấp bậc cho phép). */
@@ -741,9 +1378,24 @@ export function CourseStoreProvider({ children }) {
           },
         };
       });
-      return { ok: true, access };
+
+      // Ghi bút toán chi vào Trung Tâm Chi Phí của học viên. Khóa miễn phí vẫn
+      // ghi 1 dòng 0 đồng để báo cáo đếm được lượt học nội bộ. Bút toán dùng id
+      // tất định theo (user, course) nên ghi danh lại không tính phí hai lần.
+      const txn = buildEnrollmentTransaction({
+        course,
+        user,
+        costCenters,
+        date: todayIso(),
+        enrolledVia: access.state === ACCESS_STATE.APPROVED ? 'LEVEL_ADVANCE_APPROVAL' : 'SELF_ENROLL',
+      });
+      if (txn) {
+        setCostLedgerSession((prev) => (prev.some((t) => t.id === txn.id) ? prev : [...prev, txn]));
+      }
+
+      return { ok: true, access, transaction: txn };
     },
-    [courses, currentUser, accessFor]
+    [courses, currentUser, accessFor, costCenters]
   );
 
   /**
@@ -1084,7 +1736,7 @@ export function CourseStoreProvider({ children }) {
     [approvals, currentUser]
   );
 
-  /** "Khóa học của tôi" đã gộp cả ghi danh phát sinh trong phiên & các khóa thuộc Giáo Trình được gán. */
+  /** "Khóa học của tôi" đã gộp ghi danh, khóa thuộc Giáo Trình & các khóa được Admin/HRBP phân bổ trực tiếp / theo nhóm. */
   const myCourses = useCallback(
     (courseList = courses, user = currentUser) => {
       const base = myLearningCourses(courseList, user, enrollments);
@@ -1102,30 +1754,66 @@ export function CourseStoreProvider({ children }) {
         });
       });
 
-      // Bổ sung thông tin Giáo trình cho các khóa đã có trong danh sách
+      // Quét tất cả các khóa có phân bổ theo Custom Group
+      const groupAssignmentMap = {};
+      (courseList || []).forEach((c) => {
+        const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
+        for (const a of asgList) {
+          if (a.assignmentType === 'GROUP') {
+            const grp = customGroups.find((g) => g.id === a.targetId);
+            if (grp) {
+              let eligible = true;
+              if (a.groupPolicy === 'ELIGIBLE_ONLY') {
+                const evalRes = evaluateUserEligibilityForCourse(user, c);
+                if (!evalRes.isEligible && evalRes.matchType !== 'GAP_ONE_STEP') {
+                  eligible = false;
+                }
+              }
+              if (eligible && isUserInCustomGroup(user, grp, users)) {
+                groupAssignmentMap[c.id] = {
+                  assignment: a,
+                  dueDate: a.dueDate,
+                  assignedAt: a.assignedAt,
+                };
+                break;
+              }
+            }
+          }
+        }
+      });
+
+      // Bổ sung thông tin Giáo trình & Phân bổ nhóm cho các khóa đã có trong base
       const enrichedBase = base.map((c) => {
-        if (curriculumMap[c.id]) {
+        const curMeta = curriculumMap[c.id];
+        const grpMeta = groupAssignmentMap[c.id];
+
+        if (curMeta || grpMeta) {
+          const effectiveDueDate = grpMeta?.dueDate || curMeta?.curriculumDueDate || c.enrollment?.dueDate;
           return {
             ...c,
             courseType: 'MANDATORY',
-            isCurriculum: true,
-            curriculumId: curriculumMap[c.id].curriculumId,
-            curriculumTitle: curriculumMap[c.id].curriculumTitle,
-            curriculumDueDate: curriculumMap[c.id].curriculumDueDate,
+            isCurriculum: Boolean(curMeta),
+            curriculumId: curMeta?.curriculumId,
+            curriculumTitle: curMeta?.curriculumTitle,
+            curriculumDueDate: curMeta?.curriculumDueDate,
+            isDirectlyAssigned: Boolean(grpMeta) || c.isDirectlyAssigned,
+            assignment: grpMeta?.assignment || c.assignment,
             enrollment: {
               ...(c.enrollment || {}),
               isMandatory: true,
-              dueDate: curriculumMap[c.id].curriculumDueDate || c.enrollment?.dueDate,
+              dueDate: effectiveDueDate,
             },
           };
         }
         return c;
       });
 
-      // Tự động gán thêm các khóa học thuộc Giáo trình nếu học viên chưa có ghi danh
+      // Tự động gán thêm các khóa học thuộc Giáo trình & Phân bổ nhóm nếu chưa có trong base
       const extraCourses = [];
+
+      // Từ Giáo trình
       Object.entries(curriculumMap).forEach(([cId, meta]) => {
-        if (!baseIds.has(cId)) {
+        if (!baseIds.has(cId) && !groupAssignmentMap[cId]) {
           const raw = courseList.find((c) => c.id === cId);
           if (raw) {
             extraCourses.push({
@@ -1143,15 +1831,43 @@ export function CourseStoreProvider({ children }) {
                 dueDate: meta.curriculumDueDate,
                 enrolledAt: new Date().toISOString().slice(0, 10),
                 enrolledVersion: raw.currentVersion || 'v1.0',
+                enrolledVia: 'MANDATORY_ASSIGNMENT',
               },
             });
+            baseIds.add(cId);
+          }
+        }
+      });
+
+      // Từ Phân bổ nhóm (Custom Group)
+      Object.entries(groupAssignmentMap).forEach(([cId, meta]) => {
+        if (!baseIds.has(cId)) {
+          const raw = courseList.find((c) => c.id === cId);
+          if (raw) {
+            extraCourses.push({
+              ...raw,
+              courseType: 'MANDATORY',
+              isDirectlyAssigned: true,
+              assignment: meta.assignment,
+              enrollment: {
+                status: 'NOT_STARTED',
+                progressPercent: 0,
+                score: null,
+                isMandatory: true,
+                dueDate: meta.dueDate || null,
+                enrolledAt: meta.assignedAt || new Date().toISOString().slice(0, 10),
+                enrolledVersion: raw.currentVersion || 'v1.0',
+                enrolledVia: 'MANDATORY_ASSIGNMENT',
+              },
+            });
+            baseIds.add(cId);
           }
         }
       });
 
       return [...enrichedBase, ...extraCourses];
     },
-    [courses, currentUser, enrollments, curricula]
+    [courses, currentUser, enrollments, curricula, customGroups, users]
   );
 
   const myEnrollments = useMemo(() => enrollmentsForUser(currentUser, enrollments), [currentUser, enrollments]);
@@ -1238,6 +1954,78 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
+  // Customized User Groups Methods
+  const addCustomGroup = useCallback((group) => {
+    const newId = group.id || `grp-${Date.now()}`;
+    const code = group.code || `GRP-${Date.now().toString().slice(-4)}`;
+    const newGroup = {
+      ...group,
+      id: newId,
+      code,
+      title: group.title || group.name || 'Nhóm Mới',
+      name: group.name || group.title || 'Nhóm Mới',
+      description: group.description || '',
+      type: group.type || 'DYNAMIC',
+      criteria: group.criteria || {},
+      memberUserIds: group.memberUserIds || [],
+      memberCount: group.memberUserIds ? group.memberUserIds.length : (group.memberCount || 0),
+      createdAt: new Date().toISOString(),
+      lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+      createdBy: currentUser ? `${currentUser.userId} (${currentUser.fullName})` : 'User Admin',
+      badgeColor: group.badgeColor || '#0EA5E9',
+    };
+    setCustomGroups((prev) => [newGroup, ...prev]);
+    return newGroup;
+  }, [currentUser]);
+
+  const updateCustomGroup = useCallback((groupId, patch) => {
+    setCustomGroups((prev) => prev.map((g) => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          ...patch,
+          memberCount: patch.memberUserIds ? patch.memberUserIds.length : (patch.memberCount !== undefined ? patch.memberCount : g.memberCount),
+          lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+        };
+      }
+      return g;
+    }));
+  }, []);
+
+  const deleteCustomGroup = useCallback((groupId) => {
+    setCustomGroups((prev) => prev.filter((g) => g.id !== groupId));
+  }, []);
+
+  const duplicateCustomGroup = useCallback((groupId) => {
+    const existing = customGroups.find((g) => g.id === groupId);
+    if (!existing) return null;
+    const dup = {
+      ...existing,
+      id: `grp-${Date.now()}`,
+      code: `${existing.code}_COPY`,
+      title: `${existing.title} (Bản Sao)`,
+      name: `${existing.name || existing.title} (Bản Sao)`,
+      createdAt: new Date().toISOString(),
+      lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+      createdBy: currentUser ? `${currentUser.userId} (${currentUser.fullName})` : 'User Admin',
+    };
+    setCustomGroups((prev) => [dup, ...prev]);
+    return dup;
+  }, [customGroups, currentUser]);
+
+  const getGroupMembers = useCallback((groupId) => {
+    const group = customGroups.find((g) => g.id === groupId);
+    if (!group) return [];
+    return resolveGroupMembers(group, users);
+  }, [customGroups, users]);
+
+  const isUserInGroup = useCallback((userId, groupId) => {
+    const user = users.find((u) => u.userId === userId || u.employeeCode === userId);
+    const group = customGroups.find((g) => g.id === groupId);
+    if (!user || !group) return false;
+    return isUserInCustomGroup(user, group, users);
+  }, [users, customGroups]);
+
   // Talent Profile Modal
   const openTalentProfile = useCallback((user) => {
     setTalentProfileUser(user || currentUser);
@@ -1278,8 +2066,44 @@ export function CourseStoreProvider({ children }) {
         demoUsers,
         users,
         setUsers,
+        addUser,
         updateUser,
+        deleteUser,
+        importUsers,
         promoteUserLevel,
+        businessUnits,
+        setBusinessUnits,
+        addBusinessUnit,
+        updateBusinessUnit,
+        deleteBusinessUnit,
+        divisions,
+        setDivisions,
+        addDivision,
+        updateDivision,
+        deleteDivision,
+        departments,
+        setDepartments,
+        addDepartment,
+        updateDepartment,
+        deleteDepartment,
+        subDepartments,
+        setSubDepartments,
+        addSubDepartment,
+        updateSubDepartment,
+        deleteSubDepartment,
+        jobLevels,
+        setJobLevels,
+        addJobLevel,
+        updateJobLevel,
+        deleteJobLevel,
+        customGroups,
+        setCustomGroups,
+        addCustomGroup,
+        updateCustomGroup,
+        deleteCustomGroup,
+        duplicateCustomGroup,
+        getGroupMembers,
+        isUserInGroup,
         courses,
         addCourse,
         updateCourse,
@@ -1306,6 +2130,14 @@ export function CourseStoreProvider({ children }) {
         addCurriculum,
         updateCurriculum,
         deleteCurriculum,
+        libraries,
+        addLibrary,
+        updateLibrary,
+        deleteLibrary,
+        certificateTemplates,
+        addCertificateTemplate,
+        updateCertificateTemplate,
+        deleteCertificateTemplate,
         assignCurriculum,
         proposeCurriculumAssignment,
         removeCurriculumAssignment,
@@ -1321,9 +2153,20 @@ export function CourseStoreProvider({ children }) {
         assessmentAttempts,
         recordAssessmentAttempt,
         companyCategories,
+        companyCategoryObjects,
         addCompanyCategory,
+        updateCompanyCategory,
+        renameCompanyCategory,
+        deleteCompanyCategory,
+        getCategoryMeta: (name) => getCategoryMetadata(name, companyCategoryObjects),
         accessFor,
         enrollCourse,
+        // Trung Tâm Chi Phí (Cost Center)
+        costCenters,
+        costLedger,
+        costReport,
+        updateCoursePricing,
+        recordCostTransaction,
         enrollments,
         myEnrollments,
         myCourses,
@@ -1378,3 +2221,5 @@ export function useCourseStore() {
   if (!ctx) throw new Error('useCourseStore must be used within a CourseStoreProvider');
   return ctx;
 }
+
+export default CourseStoreProvider;

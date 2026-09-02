@@ -1,570 +1,615 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  TextInput,
-  Modal as RNModal,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { FlatList, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {
-  Badge,
-  ProgressBar,
-  Button,
-  JobLevelBadge,
-  LevelAccessBadge,
-  CourseTypeBadge,
-} from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
+// @ts-ignore
+import { currentUser as fallbackUser, deriveCertificates } from '../data/mockData';
+// @ts-ignore
 import { getCourseImage } from '../data/courseImages';
-import { ACCESS_STATE, normalizeLevel, nextLevelUp } from '../data/levelSystem';
-import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+// @ts-ignore
+import { ACCESS_STATE, levelDefinition, levelShortLabel, nextLevelUp, normalizeLevel } from '../data/levelSystem';
+// @ts-ignore
+import { courseFormatBadge, courseMatchesCategory } from '../utils/courseCatalog';
+// @ts-ignore
 import { computeCourseRecertification } from '../utils/recertification';
-import { deriveCertificates } from '../data/mockData';
+// @ts-ignore
+import { getAssignedCurriculaForUser, getCurriculumProgress } from '../utils/curriculumAssignment';
+import { Badge, ProgressBar, Button, Modal as Sheet } from '../components/ui';
+import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState, SectionTitle, InfoRow } from '../components/layout';
+
+const STATUS_META: Record<string, { tone: string; label: string }> = {
+  IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
+  NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu' },
+  COMPLETED: { tone: 'sage', label: 'Hoàn Thành' },
+  FAILED: { tone: 'rust', label: 'Cần Thi Lại' },
+  OVERDUE: { tone: 'rust', label: 'Quá Hạn' },
+};
 
 export default function CoursesScreen() {
   const navigation = useNavigation<any>();
   const {
-    currentUser,
     courses: allCourses,
+    currentUser: authUser,
+    enrollCourse,
+    accessFor,
+    requestLevelAdvanceApproval,
     myCourses,
     myEnrollments,
     curricula,
-    accessFor,
-    requestLevelAdvanceApproval,
-    enrollCourse,
+    companyCategories,
+    certificateTemplates,
   } = useCourseStore();
 
-  const user = currentUser;
-  const userLevel = normalizeLevel(user?.level || 7);
+  const user = authUser || fallbackUser;
+  const userLevel = normalizeLevel(user.level);
+  const userLevelDef = levelDefinition(userLevel);
   const oneLevelUp = nextLevelUp(userLevel);
 
+  const [tab, setTab] = useState<'MINE' | 'CATALOG'>('MINE');
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('ALL');
-  const [selectedCurriculum, setSelectedCurriculum] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'LEVEL_GATE' | 'CURRICULA' | 'COURSES'>('COURSES');
-
-  // Modal xin học vượt cấp
-  const [requestModal, setRequestModal] = useState<{ open: boolean; course: any }>({
-    open: false,
-    course: null,
-  });
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [gateOpen, setGateOpen] = useState(false);
+  const [requestCourse, setRequestCourse] = useState<any>(null);
   const [justification, setJustification] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
 
-  const enrolledCourses = myCourses(allCourses, user);
-  const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
-  const certificates = useMemo(() => deriveCertificates(allCourses, user), [allCourses, user]);
+  const enrolledCourses = useMemo(() => myCourses(allCourses, user), [allCourses, user, myCourses]);
+  const assignedCurricula = useMemo(
+    () => getAssignedCurriculaForUser(curricula, user),
+    [curricula, user]
+  );
 
-  const recertByCourseId = useMemo(() => {
-    const map: any = {};
+  const certificates = useMemo(
+    () => deriveCertificates(allCourses, user, myEnrollments, certificateTemplates),
+    [allCourses, user, myEnrollments, certificateTemplates]
+  );
+
+  const recertById = useMemo(() => {
+    const map: Record<string, any> = {};
     enrolledCourses.forEach((c: any) => {
-      const cert = certificates.find((cert: any) => cert.courseId === c.id);
-      map[c.id] = computeCourseRecertification(c, c.enrollment, cert);
+      map[c.id] = computeCourseRecertification(
+        c,
+        c.enrollment,
+        certificates.find((cert: any) => cert.courseId === c.id)
+      );
     });
     return map;
   }, [enrolledCourses, certificates]);
 
-  // Access state by ID
+  const sourceList = tab === 'MINE' ? enrolledCourses : allCourses;
+
   const accessById = useMemo(() => {
-    const map: any = {};
-    allCourses.forEach((c: any) => {
+    const map: Record<string, any> = {};
+    sourceList.forEach((c: any) => {
       map[c.id] = accessFor(c, user);
     });
     return map;
-  }, [allCourses, user, accessFor]);
+  }, [sourceList, accessFor, user]);
 
-  const filters = [
-    { id: 'ALL', label: 'Tất Cả', count: enrolledCourses.length },
-    { id: 'IN_PROGRESS', label: 'Đang Học', count: enrolledCourses.filter((c: any) => c.enrollment?.status === 'IN_PROGRESS').length },
-    { id: 'COMPLETED', label: 'Hoàn Thành', count: enrolledCourses.filter((c: any) => c.enrollment?.status === 'COMPLETED').length },
-    { id: 'MANDATORY', label: 'Bắt Buộc', count: enrolledCourses.filter((c: any) => c.courseType === 'MANDATORY').length },
-    { id: 'CURRICULUM', label: 'Theo Giáo Trình', count: enrolledCourses.filter((c: any) => c.isCurriculum || c.curriculumTitle).length },
-    { id: 'RECERTIFICATION', label: 'Cần Tái Cấp', count: enrolledCourses.filter((c: any) => recertByCourseId[c.id]?.needsRecertification).length },
-    { id: 'LEVEL_UP', label: 'Xin Duyệt Vượt Cấp', count: allCourses.filter((c: any) => accessById[c.id]?.state === ACCESS_STATE.REQUESTABLE).length },
-  ];
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return sourceList.filter((c: any) => {
+      const access = accessById[c.id];
+      const s = c.enrollment?.status;
+      const matchStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'RECERTIFICATION' && recertById[c.id]?.needsRecertification) ||
+        (statusFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
+        (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
+        (statusFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS') ||
+        (statusFilter === 'LEVEL_UP' && access?.state === ACCESS_STATE.REQUESTABLE) ||
+        (statusFilter === 'PENDING_APPROVAL' && access?.state === ACCESS_STATE.PENDING_APPROVAL) ||
+        s === statusFilter;
 
-  const filteredCourses = enrolledCourses.filter((c: any) => {
-    const s = c.enrollment?.status;
-    const access = accessById[c.id] || {};
-    const matchStatus =
-      activeFilter === 'ALL' ||
-      (activeFilter === 'RECERTIFICATION' && recertByCourseId[c.id]?.needsRecertification) ||
-      (activeFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
-      (activeFilter === 'CURRICULUM' && (c.isCurriculum || Boolean(c.curriculumTitle))) ||
-      (activeFilter === 'LEVEL_UP' && access.state === ACCESS_STATE.REQUESTABLE) ||
-      s === activeFilter;
+      const matchCategory = courseMatchesCategory(c, categoryFilter);
+      const matchSearch =
+        !q ||
+        (c.title || '').toLowerCase().includes(q) ||
+        (c.code || '').toLowerCase().includes(q) ||
+        (c.category || '').toLowerCase().includes(q) ||
+        (c.domain || '').toLowerCase().includes(q);
 
-    const matchSearch =
-      !search ||
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.code.toLowerCase().includes(search.toLowerCase()) ||
-      (c.category && c.category.toLowerCase().includes(search.toLowerCase()));
+      return matchStatus && matchCategory && matchSearch;
+    });
+  }, [sourceList, accessById, statusFilter, categoryFilter, search, recertById]);
 
-    return matchStatus && matchSearch;
-  });
-
-  const handleOpenRequest = (course: any) => {
-    setRequestModal({ open: true, course });
-    setJustification('');
-  };
-
-  const handleSubmitRequest = () => {
-    if (!requestModal.course) return;
-    const res = requestLevelAdvanceApproval(requestModal.course, justification, user);
-    setRequestModal({ open: false, course: null });
-    if (res.ok) {
-      Alert.alert('Thành Công', `Đã gửi đơn xin học vượt cấp khóa "${requestModal.course.title}" tới Quản lý trực tiếp.`);
-    } else {
-      Alert.alert('Thông Báo', res.reason || 'Có lỗi xảy ra.');
+  const statusOptions = useMemo(() => {
+    if (tab === 'MINE') {
+      return [
+        { value: 'ALL', label: 'Tất cả', count: enrolledCourses.length },
+        { value: 'IN_PROGRESS', label: 'Đang học', count: countBy(enrolledCourses, 'IN_PROGRESS') },
+        { value: 'NOT_STARTED', label: 'Chưa bắt đầu', count: countBy(enrolledCourses, 'NOT_STARTED') },
+        { value: 'COMPLETED', label: 'Hoàn thành', count: countBy(enrolledCourses, 'COMPLETED') },
+        { value: 'OVERDUE', label: 'Quá hạn', count: countBy(enrolledCourses, 'OVERDUE') },
+        {
+          value: 'MANDATORY',
+          label: 'Bắt buộc',
+          count: enrolledCourses.filter((c: any) => c.courseType === 'MANDATORY').length,
+        },
+        {
+          value: 'RECERTIFICATION',
+          label: 'Tái cấp',
+          count: enrolledCourses.filter((c: any) => recertById[c.id]?.needsRecertification).length,
+        },
+      ];
     }
-  };
+    return [
+      { value: 'ALL', label: 'Tất cả', count: allCourses.length },
+      { value: 'MANDATORY', label: 'Bắt buộc' },
+      { value: 'IN_PERSON', label: 'Lớp trực tiếp' },
+      { value: 'VIRTUAL_CLASS', label: 'Lớp online' },
+      { value: 'LEVEL_UP', label: 'Xin vượt cấp' },
+      { value: 'PENDING_APPROVAL', label: 'Chờ duyệt' },
+    ];
+  }, [tab, enrolledCourses, allCourses, recertById]);
+
+  const categoryOptions = useMemo(() => {
+    const names: string[] = [
+      ...new Set(
+        allCourses
+          .flatMap((c: any) => (c.categories && c.categories.length ? c.categories : [c.category]))
+          .filter(Boolean)
+      ),
+    ] as string[];
+    return [
+      { value: 'ALL', label: 'Mọi lĩnh vực' },
+      ...names.sort((a, b) => a.localeCompare(b)).map((n) => ({ value: n, label: n })),
+    ];
+  }, [allCourses]);
+
+  // Tiến độ chương trình của đúng cấp bậc hiện tại — điều kiện để lên cấp kế tiếp.
+  const myLevelCourses = enrolledCourses.filter((c: any) => normalizeLevel(c.targetLevel) === userLevel);
+  const myLevelDone = myLevelCourses.filter((c: any) => c.enrollment?.status === 'COMPLETED').length;
+  const myLevelPct = myLevelCourses.length ? Math.round((myLevelDone / myLevelCourses.length) * 100) : 0;
+
+  const catalogAccess = useMemo(() => allCourses.map((c: any) => accessFor(c, user)), [allCourses, accessFor, user]);
+  const requestableCount = catalogAccess.filter((a: any) => a.state === ACCESS_STATE.REQUESTABLE).length;
+  const pendingCount = catalogAccess.filter((a: any) => a.state === ACCESS_STATE.PENDING_APPROVAL).length;
+  const lockedCount = catalogAccess.filter((a: any) => a.state === ACCESS_STATE.LOCKED_LEVEL_GAP).length;
+
+  function showToast(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(null), 5000);
+  }
+
+  function submitRequest() {
+    if (!requestCourse) return;
+    const result = requestLevelAdvanceApproval(requestCourse, justification, user);
+    const title = requestCourse.title;
+    setRequestCourse(null);
+    setJustification('');
+    showToast(
+      result.ok
+        ? `Đã gửi đơn xin học vượt cấp khóa "${title}" tới Quản lý trực tiếp.`
+        : result.reason || 'Không gửi được đơn xin duyệt.'
+    );
+  }
+
+  function startCourse(course: any, access: any) {
+    if (!access?.canAccess) return;
+    enrollCourse(course.id, user);
+    navigation.navigate('CourseOverview', { courseId: course.id });
+  }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Header */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E293B' }}>
-          Chương Trình Đào Tạo &amp; Khóa Học
-        </Text>
-        <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>
-          {user.fullName} &middot; {user.position} &middot; Level {userLevel}
-        </Text>
+    <Screen
+      title="Khóa Học"
+      subtitle={`${enrolledCourses.length} khóa đang theo dõi · ${levelShortLabel(userLevel)}`}
+      scroll={false}
+    >
+      <FlatList
+        data={filtered}
+        keyExtractor={(c: any) => c.id}
+        contentContainerStyle={{ padding: 14, paddingBottom: 30 }}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        ListHeaderComponent={
+          <View>
+            <Segmented
+              options={[
+                { value: 'MINE', label: `Của tôi (${enrolledCourses.length})` },
+                { value: 'CATALOG', label: `Danh mục (${allCourses.length})` },
+              ]}
+              value={tab}
+              onChange={(v) => {
+                setTab(v as any);
+                setStatusFilter('ALL');
+              }}
+            />
 
-        {/* Search Bar */}
+            {!!toast && (
+              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0', padding: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                  <Ionicons name="checkmark-circle" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 12, color: '#166534', fontWeight: '600', flex: 1, lineHeight: 17 }}>
+                    {toast}
+                  </Text>
+                </View>
+              </Card>
+            )}
+
+            {/* Level gate summary */}
+            <Card onPress={() => setGateOpen(!gateOpen)} style={{ borderLeftWidth: 4, borderLeftColor: COLORS.blue }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="trending-up" size={16} color={COLORS.blue} style={{ marginRight: 7 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink, flex: 1 }}>
+                  Lộ trình vượt cấp tuần tự
+                </Text>
+                <Ionicons name={gateOpen ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.inkFaint} />
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 }}>
+                <Badge tone="rail" size="sm">
+                  {levelShortLabel(userLevel)}
+                </Badge>
+                <Ionicons name="arrow-forward" size={13} color={COLORS.inkFaint} />
+                {oneLevelUp ? (
+                  <Badge tone="blue" size="sm">
+                    {levelShortLabel(oneLevelUp)}
+                  </Badge>
+                ) : (
+                  <Badge tone="sage" size="sm">
+                    Đã ở cấp cao nhất
+                  </Badge>
+                )}
+              </View>
+
+              <View style={{ marginTop: 11 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <Text style={{ fontSize: 11.5, color: COLORS.inkSoft }}>
+                    Chương trình Level {userLevel} · {userLevelDef.titleVi}
+                  </Text>
+                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: COLORS.rail }}>
+                    {myLevelDone}/{myLevelCourses.length} ({myLevelPct}%)
+                  </Text>
+                </View>
+                <ProgressBar value={myLevelPct} tone="rail" size="sm" />
+              </View>
+
+              {gateOpen && (
+                <View style={{ marginTop: 12 }}>
+                  <InfoRow label="Được phép xin vượt 1 cấp" value={`${requestableCount} khóa`} icon="key-outline" />
+                  <InfoRow label="Đơn đang chờ duyệt" value={`${pendingCount} khóa`} icon="time-outline" />
+                  <InfoRow
+                    label="Chặn nhảy cóc ≥ 2 cấp"
+                    value={`${lockedCount} khóa`}
+                    icon="lock-closed-outline"
+                    valueColor={COLORS.red}
+                  />
+                  <Text style={{ fontSize: 11, color: COLORS.inkFaint, marginTop: 9, lineHeight: 16 }}>
+                    Bạn chỉ được xin học vượt đúng 1 cấp so với cấp bậc hiện tại. Đơn xin sẽ gửi tới Quản lý trực tiếp
+                    phê duyệt.
+                  </Text>
+                </View>
+              )}
+            </Card>
+
+            {/* Curricula assigned to the learner */}
+            {tab === 'MINE' && assignedCurricula.length > 0 && (
+              <>
+                <SectionTitle icon="albums">Chương trình được giao ({assignedCurricula.length})</SectionTitle>
+                {assignedCurricula.slice(0, 3).map((cur: any) => {
+                  const progress = getCurriculumProgress(cur, user, myEnrollments, allCourses);
+                  return (
+                    <Card key={cur.id} style={{ padding: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                        <Ionicons name="school" size={15} color={COLORS.purple} style={{ marginRight: 7 }} />
+                        <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.ink, flex: 1 }} numberOfLines={2}>
+                          {cur.title || cur.name}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <ProgressBar value={progress.progressPercent} tone="rail" size="sm" />
+                        </View>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.rail }}>
+                          {progress.completedCourses}/{progress.totalCourses}
+                        </Text>
+                      </View>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Search */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: COLORS.paper,
+                borderWidth: 1,
+                borderColor: COLORS.line,
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                marginTop: 6,
+                marginBottom: 10,
+              }}
+            >
+              <Ionicons name="search" size={15} color={COLORS.inkFaint} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Tìm khóa học, mã khóa, chuyên ngành…"
+                placeholderTextColor={COLORS.inkFaint}
+                style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 13, color: COLORS.ink }}
+              />
+              {!!search && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Ionicons name="close-circle" size={16} color={COLORS.inkFaint} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ChipRow options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+            <ChipRow options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} />
+
+            <Text style={{ fontSize: 11.5, color: COLORS.inkFaint, marginBottom: 10 }}>
+              Hiển thị {filtered.length} khóa học
+            </Text>
+          </View>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon="search-outline"
+            title="Không có khóa học phù hợp"
+            hint="Thử xoá bớt bộ lọc hoặc đổi từ khoá tìm kiếm."
+          />
+        }
+        renderItem={({ item }: { item: any }) => (
+          <CourseRow
+            course={item}
+            access={accessById[item.id]}
+            recert={recertById[item.id]}
+            onOpen={() => navigation.navigate('CourseOverview', { courseId: item.id })}
+            onStart={() => startCourse(item, accessById[item.id])}
+            onRequest={() => {
+              setRequestCourse(item);
+              setJustification('');
+            }}
+            onClassroom={() => navigation.navigate('Classrooms')}
+          />
+        )}
+      />
+
+      {/* Level-advance request sheet */}
+      <Sheet
+        visible={!!requestCourse}
+        onClose={() => setRequestCourse(null)}
+        title="Xin duyệt học vượt cấp"
+      >
+        {!!requestCourse && (
+          <View style={{ paddingBottom: 16 }}>
+            <Card style={{ backgroundColor: COLORS.sunken, padding: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink }}>{requestCourse.title}</Text>
+              <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 3 }}>
+                {requestCourse.code} · Cấp bậc mục tiêu {levelShortLabel(requestCourse.targetLevel)}
+              </Text>
+            </Card>
+
+            <Text style={{ fontSize: 12, color: COLORS.inkSoft, marginBottom: 8, lineHeight: 17 }}>
+              Khóa này thuộc cấp bậc cao hơn cấp hiện tại của bạn ({levelShortLabel(userLevel)}). Nêu lý do để Quản lý
+              trực tiếp xem xét phê duyệt.
+            </Text>
+
+            <TextInput
+              value={justification}
+              onChangeText={setJustification}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              placeholder="VD: Tôi đang được phân công hỗ trợ ca trưởng quầy bánh và cần nắm quy trình cấp cao hơn…"
+              placeholderTextColor={COLORS.inkFaint}
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.line,
+                borderRadius: 10,
+                padding: 11,
+                fontSize: 13,
+                color: COLORS.ink,
+                minHeight: 110,
+                marginBottom: 14,
+                backgroundColor: COLORS.paper,
+              }}
+            />
+
+            <Button
+              variant="primary"
+              icon="paper-plane-outline"
+              disabled={justification.trim().length < 10}
+              onPress={submitRequest}
+            >
+              Gửi đơn xin duyệt
+            </Button>
+            <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, textAlign: 'center', marginTop: 8 }}>
+              Cần ít nhất 10 ký tự lý do.
+            </Text>
+          </View>
+        )}
+      </Sheet>
+    </Screen>
+  );
+}
+
+function CourseRow({
+  course,
+  access,
+  recert,
+  onOpen,
+  onStart,
+  onRequest,
+  onClassroom,
+}: {
+  course: any;
+  access: any;
+  recert: any;
+  onOpen: () => void;
+  onStart: () => void;
+  onRequest: () => void;
+  onClassroom: () => void;
+}) {
+  const enr = course.enrollment;
+  const status = STATUS_META[enr?.status] || null;
+  const format = courseFormatBadge(course);
+  const isInPerson = course.deliveryType === 'IN_PERSON_CLASSROOM' || course.modality === 'CLASSROOM_LAB';
+
+  return (
+    <Card onPress={onOpen} style={{ padding: 12 }}>
+      <View style={{ flexDirection: 'row' }}>
+        <Image
+          source={{ uri: getCourseImage(course) }}
+          style={{ width: 58, height: 58, borderRadius: 9, backgroundColor: COLORS.sunken, marginRight: 11 }}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink, lineHeight: 18 }} numberOfLines={2}>
+            {course.title}
+          </Text>
+          <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 3 }} numberOfLines={1}>
+            {course.code} · {course.category || course.domain} · {course.durationHours || course.duration || '—'}h
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
+            <Badge tone={format.tone as any} size="sm">
+              {format.icon} {format.label}
+            </Badge>
+            {course.courseType === 'MANDATORY' && (
+              <Badge tone="amber" size="sm">
+                Bắt buộc
+              </Badge>
+            )}
+            {!!status && (
+              <Badge tone={status.tone as any} size="sm">
+                {status.label}
+              </Badge>
+            )}
+            {access?.state === ACCESS_STATE.LOCKED_LEVEL_GAP && (
+              <Badge tone="slate" size="sm">
+                ⛔ Khóa cấp bậc
+              </Badge>
+            )}
+            {access?.state === ACCESS_STATE.PENDING_APPROVAL && (
+              <Badge tone="amber" size="sm">
+                ⏳ Chờ duyệt
+              </Badge>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {!!enr && enr.status !== 'COMPLETED' && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <ProgressBar value={enr.progressPercent || 0} tone="rail" size="sm" />
+          </View>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: COLORS.amber }}>{enr.progressPercent || 0}%</Text>
+        </View>
+      )}
+
+      {recert?.needsRecertification && (
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#F1F5F9',
-            borderRadius: 10,
-            paddingHorizontal: 10,
-            height: 38,
-            marginTop: 10,
+            backgroundColor: recert.isExpired ? COLORS.redSoft : COLORS.amberSoft,
+            borderRadius: 8,
+            padding: 8,
+            marginTop: 9,
           }}
         >
-          <Ionicons name="search" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
-          <TextInput
-            placeholder="Tìm theo tên khóa, mã số, nghiệp vụ..."
-            placeholderTextColor="#94A3B8"
-            value={search}
-            onChangeText={setSearch}
-            style={{ flex: 1, fontSize: 12.5, color: '#1E293B', padding: 0 }}
+          <Ionicons
+            name={recert.isExpired ? 'alert-circle' : 'time'}
+            size={14}
+            color={recert.isExpired ? COLORS.red : COLORS.amber}
+            style={{ marginRight: 6 }}
           />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
+          <Text style={{ fontSize: 11, color: COLORS.inkSoft, flex: 1 }} numberOfLines={2}>
+            {recert.statusLabel}
+          </Text>
         </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={{ flexDirection: 'row', backgroundColor: '#FFFFFF', paddingHorizontal: 16, borderBottomWidth: 1, borderColor: '#E2E8F0' }}>
-        {[
-          { id: 'LEVEL_GATE', label: 'Vượt Cấp' },
-          { id: 'CURRICULA', label: 'Giáo Trình' },
-          { id: 'COURSES', label: 'Khóa Học' },
-        ].map(tab => (
-          <TouchableOpacity
-            key={tab.id}
-            onPress={() => setActiveTab(tab.id as any)}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              alignItems: 'center',
-              borderBottomWidth: 2,
-              borderColor: activeTab === tab.id ? '#009E49' : 'transparent',
-            }}
-          >
-            <Text style={{ fontSize: 13, fontWeight: activeTab === tab.id ? '700' : '500', color: activeTab === tab.id ? '#009E49' : '#64748B' }}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {/* 1. LỘ TRÌNH HỌC VƯỢT CẤP TUẦN TỰ (LEVEL GATE BANNER) */}
-        {activeTab === 'LEVEL_GATE' && (
-        <View style={{ padding: 16, paddingBottom: 8 }}>
-          <View style={{ backgroundColor: '#EFF6FF', borderRadius: 14, borderWidth: 1, borderColor: '#BFDBFE', padding: 14 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Ionicons name="shield-checkmark" size={18} color="#2563EB" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E40AF', flex: 1 }}>
-                Lộ Trình Học Vượt Cấp Tuần Tự (Level Gate)
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <View>
-                <Text style={{ fontSize: 10, color: '#64748B', textTransform: 'uppercase', fontWeight: '700' }}>Tiến độ Level {userLevel}</Text>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E40AF' }}>3/13 khóa (23%)</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 10, color: '#64748B', textTransform: 'uppercase', fontWeight: '700' }}>Vượt Cấp (Level {oneLevelUp})</Text>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#D97706' }}>Cần Xin Duyệt</Text>
-              </View>
-            </View>
-            <Text style={{ fontSize: 10.5, color: '#475569', lineHeight: 15 }}>
-              Khóa Level {userLevel} mở tự do. Khóa Level {oneLevelUp} cần gửi đơn xin phê duyệt từ Quản lý. Khóa từ 2 cấp trở lên bị ẩn theo quy chế.
-            </Text>
-          </View>
-        </View>
-        )}
-
-        {/* 2. GIÁO TRÌNH BẮT BUỘC (ASSIGNED CURRICULA) */}
-        {activeTab === 'CURRICULA' && assignedCurricula.length > 0 && (
-          <View style={{ paddingBottom: 12, paddingTop: 16 }}>
-            <View style={{ paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Ionicons name="bookmarks" size={16} color="#009E49" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B' }}>
-                Giáo Trình Bắt Buộc Của Bạn ({assignedCurricula.length})
-              </Text>
-            </View>
-
-            <View style={{ paddingHorizontal: 16, gap: 12 }}>
-              {assignedCurricula.map((curr: any) => (
-                <View
-                  key={curr.id}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: '#E2E8F0',
-                    padding: 14,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 1,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', flex: 1, marginRight: 8 }} numberOfLines={2}>
-                      {curr.title}
-                    </Text>
-                    <Badge tone="amber" size="sm">Bắt Buộc</Badge>
-                  </View>
-                  <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 10, lineHeight: 16 }} numberOfLines={2}>
-                    {curr.description}
-                  </Text>
-
-                  <View style={{ marginBottom: 10 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <Text style={{ fontSize: 10, color: '#64748B' }}>Tiến độ giáo trình:</Text>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#1E293B' }}>
-                        1/{curr.courseIds?.length || 4} khóa (25%)
-                      </Text>
-                    </View>
-                    <ProgressBar value={25} size="sm" />
-                  </View>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon="map"
-                    onPress={() => setSelectedCurriculum(curr)}
-                  >
-                    Xem Chi Tiết Lộ Trình
-                  </Button>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* 3. FILTER TABS & 4. COURSE CARDS LIST */}
-        {activeTab === 'COURSES' && (
-          <>
-        <View style={{ backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingVertical: 10, marginBottom: 12 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-            {filters.map((f) => {
-              const isActive = activeFilter === f.id;
-              return (
-                <TouchableOpacity
-                  key={f.id}
-                  onPress={() => setActiveFilter(f.id)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: isActive ? '#009E49' : '#F1F5F9',
-                    paddingVertical: 6,
-                    paddingHorizontal: 12,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: isActive ? '#009E49' : '#E2E8F0',
-                  }}
-                >
-                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: isActive ? '#FFFFFF' : '#475569' }}>
-                    {f.label}
-                  </Text>
-                  <View
-                    style={{
-                      marginLeft: 6,
-                      backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : '#E2E8F0',
-                      paddingHorizontal: 6,
-                      paddingVertical: 1,
-                      borderRadius: 10,
-                    }}
-                  >
-                    <Text style={{ fontSize: 9.5, fontWeight: '800', color: isActive ? '#FFFFFF' : '#64748B' }}>
-                      {f.count}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* 4. COURSE CARDS LIST */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-          {filteredCourses.length === 0 ? (
-            <View style={{ padding: 32, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-              <Ionicons name="search" size={36} color="#94A3B8" style={{ marginBottom: 8 }} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B', textAlign: 'center' }}>
-                Không tìm thấy khóa học phù hợp
-              </Text>
-              <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 4 }}>
-                Thử đổi từ khóa tìm kiếm hoặc chọn bộ lọc khác.
-              </Text>
-            </View>
-          ) : (
-            filteredCourses.map((course: any) => {
-              const access = accessById[course.id] || {};
-              const recert = recertByCourseId[course.id] || {};
-              const isCompleted = course.enrollment?.status === 'COMPLETED';
-              const isInProgress = course.enrollment?.status === 'IN_PROGRESS';
-              const isLocked = access.state === ACCESS_STATE.REQUESTABLE || access.isLevelLocked;
-
-              return (
-                <View
-                  key={course.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: recert.needsRecertification ? '#FDE68A' : '#E2E8F0',
-                    marginBottom: 12,
-                    overflow: 'hidden',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 3,
-                    elevation: 1,
-                  }}
-                >
-                  {/* Recertification Warning Ribbon */}
-                  {recert.needsRecertification && (
-                    <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="time" size={12} color="#D97706" style={{ marginRight: 4 }} />
-                      <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#92400E' }}>
-                        {recert.statusLabel || 'Cần Sát Hạch Tái Cấp Chứng Chỉ'}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={{ padding: 14 }}>
-                    {/* Top Row: Thumbnail + Info */}
-                    <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                      <Image
-                        source={{ uri: getCourseImage(course) }}
-                        style={{ width: 68, height: 68, borderRadius: 10, marginRight: 12, backgroundColor: '#CBD5E1' }}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#1E293B', marginBottom: 2, lineHeight: 18 }} numberOfLines={2}>
-                          {course.title}
-                        </Text>
-                        <Text style={{ fontSize: 10.5, color: '#64748B' }}>
-                          {course.code} &middot; {course.category || course.domain} &middot; {course.estimatedDuration || '3h'}
-                        </Text>
-                        {course.curriculumTitle && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                            <Ionicons name="bookmarks" size={10} color="#2563EB" style={{ marginRight: 3 }} />
-                            <Text style={{ fontSize: 9.5, color: '#2563EB', fontWeight: '600' }} numberOfLines={1}>
-                              {course.curriculumTitle}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* Badges row */}
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                      <CourseTypeBadge courseType={course.courseType} />
-                      <LevelAccessBadge state={access.state} />
-                      <Badge tone="slate" size="sm">
-                        {course.deliveryType === 'IN_PERSON_CLASSROOM' ? 'Thực Hành Xưởng (ILT)' : 'E-Learning'}
-                      </Badge>
-                    </View>
-
-                    {/* Progress Bar & Status */}
-                    <View style={{ borderTopWidth: 1, borderColor: '#F1F5F9', paddingTop: 10 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: isCompleted ? '#009E49' : isInProgress ? '#D97706' : '#64748B' }}>
-                          {isCompleted ? 'Đã Hoàn Thành' : isInProgress ? 'Đang Học' : 'Chưa Bắt Đầu'}
-                        </Text>
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#1E293B' }}>
-                          {course.enrollment?.progress || 0}%
-                        </Text>
-                      </View>
-                      <ProgressBar value={course.enrollment?.progress || 0} tone={isCompleted ? 'sage' : 'amber'} size="sm" />
-                    </View>
-
-                    {/* Action Button */}
-                    <View style={{ marginTop: 12 }}>
-                      {access.state === ACCESS_STATE.REQUESTABLE ? (
-                        <Button
-                          variant="outline"
-                          tone="warning"
-                          icon="key"
-                          onPress={() => handleOpenRequest(course)}
-                        >
-                          Xin Duyệt Học Vượt Cấp
-                        </Button>
-                      ) : recert.needsRecertification ? (
-                        <Button
-                          variant="primary"
-                          tone="warning"
-                          icon="refresh"
-                          onPress={() => navigation.navigate('AssessmentPlayer', { courseId: course.id })}
-                        >
-                          Làm Bài Thi Tái Cấp
-                        </Button>
-                      ) : isCompleted ? (
-                        <Button
-                          variant="outline"
-                          icon="refresh"
-                          onPress={() => navigation.navigate('CourseOverview', { course, courseId: course.id })}
-                        >
-                          Ôn Tập Lại Bài Giảng
-                        </Button>
-                      ) : course.deliveryType === 'IN_PERSON_CLASSROOM' ? (
-                        <Button
-                          variant="primary"
-                          icon="qr-code"
-                          onPress={() => navigation.navigate('ClassroomsTab')}
-                        >
-                          Xem Lịch &amp; Quét QR Điểm Danh
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          icon={isInProgress ? 'play' : 'book'}
-                          onPress={() => {
-                            enrollCourse(course.id, user);
-                            navigation.navigate('CourseOverview', { course, courseId: course.id });
-                          }}
-                        >
-                          {isInProgress ? 'Tiếp Tục Học' : 'Bắt Đầu Học'}
-                        </Button>
-                      )}
-                    </View>
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
-        </>
-        )}
-      </ScrollView>
-
-      {/* MODAL: CURRICULUM SYLLABUS */}
-      {selectedCurriculum && (
-        <RNModal visible={Boolean(selectedCurriculum)} transparent animationType="slide" onRequestClose={() => setSelectedCurriculum(null)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%', padding: 20 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                <View style={{ flex: 1, marginRight: 10 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>{selectedCurriculum.title}</Text>
-                  <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>{selectedCurriculum.description}</Text>
-                </View>
-                <TouchableOpacity onPress={() => setSelectedCurriculum(null)} style={{ padding: 4 }}>
-                  <Ionicons name="close" size={20} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={{ marginBottom: 20 }}>
-                {(selectedCurriculum.courses || [
-                  { title: 'Food Safety & Hygiene Standards (HACCP)', code: 'FSH-001', duration: '3h', status: '47% Đang học' },
-                  { title: 'Fresh Meat & Cold Chain Storage', code: 'FSH-002', duration: '3h', status: 'Chưa bắt đầu' },
-                  { title: 'Seafood Quality Inspection & Cross-Contamination', code: 'FSH-003', duration: '3h', status: 'Chưa bắt đầu' },
-                ]).map((c: any, i: number) => (
-                  <View key={i} style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 8 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#1E293B', flex: 1 }}>{c.title}</Text>
-                      <Badge tone="sage" size="sm">{c.code}</Badge>
-                    </View>
-                    <Text style={{ fontSize: 11, color: '#64748B' }}>Thời lượng: {c.duration || '3h'}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-
-              <Button variant="primary" onPress={() => setSelectedCurriculum(null)}>
-                Đóng
-              </Button>
-            </View>
-          </View>
-        </RNModal>
       )}
 
-      {/* MODAL: LEVEL ADVANCE REQUEST */}
-      {requestModal.open && (
-        <RNModal visible={requestModal.open} transparent animationType="slide" onRequestClose={() => setRequestModal({ open: false, course: null })}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>Đơn Xin Học Vượt Cấp</Text>
-                <TouchableOpacity onPress={() => setRequestModal({ open: false, course: null })}>
-                  <Ionicons name="close" size={20} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={{ fontSize: 12.5, color: '#475569', marginBottom: 14 }}>
-                Khóa: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{requestModal.course?.title}</Text> (Level {oneLevelUp})
-              </Text>
-
-              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#1E293B', marginBottom: 6 }}>
-                Lý do đề xuất học trước cấp bậc:
-              </Text>
-              <TextInput
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: '#CBD5E1',
-                  padding: 10,
-                  fontSize: 12.5,
-                  color: '#1E293B',
-                  minHeight: 80,
-                  textAlignVertical: 'top',
-                  marginBottom: 16,
-                }}
-                placeholder="Nhập lý do học vượt cấp (ví dụ: đang chuẩn bị quy hoạch kế cận, phục vụ dự án chuyển đổi...)"
-                placeholderTextColor="#94A3B8"
-                multiline
-                value={justification}
-                onChangeText={setJustification}
-              />
-
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Button variant="outline" style={{ flex: 1 }} onPress={() => setRequestModal({ open: false, course: null })}>
-                  Hủy Bỏ
-                </Button>
-                <Button variant="primary" style={{ flex: 1 }} onPress={handleSubmitRequest}>
-                  Gửi Đơn Phê Duyệt
-                </Button>
-              </View>
-            </View>
-          </View>
-        </RNModal>
-      )}
-    </SafeAreaView>
+      <View style={{ marginTop: 10 }}>
+        {renderAction()}
+      </View>
+    </Card>
   );
+
+  function renderAction() {
+    switch (access?.state) {
+      case ACCESS_STATE.LOCKED_LEVEL_GAP:
+        return (
+          <Button size="sm" variant="outline" icon="ban-outline" disabled>
+            Chặn nhảy cóc cấp bậc
+          </Button>
+        );
+      case ACCESS_STATE.PENDING_APPROVAL:
+        return (
+          <Button size="sm" variant="outline" icon="time-outline" disabled>
+            Đang chờ quản lý duyệt
+          </Button>
+        );
+      case ACCESS_STATE.REJECTED:
+      case ACCESS_STATE.REQUESTABLE:
+        return (
+          <Button size="sm" variant="primary" icon="lock-closed-outline" onPress={onRequest}>
+            Xin duyệt vượt cấp
+          </Button>
+        );
+      default:
+        break;
+    }
+
+    if (recert?.needsRecertification) {
+      return (
+        <Button
+          size="sm"
+          variant="primary"
+          tone={recert.isExpired ? 'danger' : 'primary'}
+          icon="refresh-outline"
+          onPress={onOpen}
+        >
+          {recert.actionLabel}
+        </Button>
+      );
+    }
+
+    if (isInPerson) {
+      return (
+        <Button size="sm" variant="primary" icon="calendar-outline" onPress={onClassroom}>
+          Xem lịch & QR điểm danh
+        </Button>
+      );
+    }
+
+    if (enr) {
+      const isCompleted = enr.status === 'COMPLETED';
+      const isFailed = enr.status === 'FAILED';
+      return (
+        <Button
+          size="sm"
+          variant={isCompleted ? 'outline' : 'primary'}
+          icon={isCompleted ? 'refresh-outline' : isFailed ? 'reload-outline' : 'play-outline'}
+          onPress={onOpen}
+        >
+          {isCompleted ? 'Ôn tập lại' : isFailed ? 'Thi lại' : enr.progressPercent > 0 ? 'Học tiếp' : 'Bắt đầu học'}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        size="sm"
+        variant={access?.state === ACCESS_STATE.APPROVED ? 'primary' : 'outline'}
+        icon={access?.state === ACCESS_STATE.APPROVED ? 'play-outline' : 'add-outline'}
+        onPress={onStart}
+      >
+        {access?.state === ACCESS_STATE.APPROVED ? 'Vào học ngay' : 'Đăng ký học'}
+      </Button>
+    );
+  }
+}
+
+function countBy(courses: any[], status: string) {
+  return courses.filter((c) => c.enrollment?.status === status).length;
 }

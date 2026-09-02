@@ -140,3 +140,51 @@ export function formatRelativeDay(dateStr, language = 'vi') {
   }
   return language === 'en' ? `${Math.abs(diffDays)} days ago` : `Đã qua ${Math.abs(diffDays)} ngày`;
 }
+
+/**
+ * Xuất file .ics iCalendar chuẩn cho Outlook, Google Calendar, Apple Calendar
+ */
+export function generateIcsFile(events = [], calendarTitle = 'MM MegaLearn Calendar') {
+  const cleanTitle = calendarTitle.replace(/[^a-zA-Z0-9_\- ]/g, '');
+  const now = new Date();
+  const dtStamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  let icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//MM Mega Market Vietnam//MegaLearn LMS//VI',
+    `X-WR-CALNAME:${calendarTitle}`,
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  events.forEach((ev) => {
+    const { y, m, d } = parseDateString(ev.date || todayDateString());
+    const dateFormatted = `${y}${pad2(m)}${pad2(d)}`;
+    const uid = `${ev.id || Math.random().toString(36).substr(2, 9)}@megalearn.mmvn.com`;
+    const summary = (ev.title || 'Sự kiện đào tạo MM MegaLearn').replace(/,/g, '\\,');
+    const description = `${ev.subtitle || ''} [MM MegaLearn - Cấp Bậc & Đào Tạo]`.replace(/\n/g, '\\n');
+    const location = (ev.venue || 'MM Mega Market LMS').replace(/,/g, '\\,');
+
+    icsContent.push('BEGIN:VEVENT');
+    icsContent.push(`UID:${uid}`);
+    icsContent.push(`DTSTAMP:${dtStamp}`);
+    icsContent.push(`DTSTART;VALUE=DATE:${dateFormatted}`);
+    icsContent.push(`DTEND;VALUE=DATE:${dateFormatted}`);
+    icsContent.push(`SUMMARY:${summary}`);
+    icsContent.push(`DESCRIPTION:${description}`);
+    icsContent.push(`LOCATION:${location}`);
+    icsContent.push('STATUS:CONFIRMED');
+    icsContent.push('END:VEVENT');
+  });
+
+  icsContent.push('END:VCALENDAR');
+  const fullIcs = icsContent.join('\r\n');
+
+  // Trên mobile không có DOM để tạo link tải: trả chuỗi .ics cho màn hình gọi,
+  // màn hình đó dùng Share sheet của hệ điều hành để đẩy sang Lịch/Mail.
+  return {
+    fileName: `${cleanTitle.toLowerCase().replace(/\s+/g, '_')}_schedule.ics`,
+    content: fullIcs,
+  };
+}

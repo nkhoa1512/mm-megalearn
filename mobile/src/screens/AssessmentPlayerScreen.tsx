@@ -1,461 +1,892 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, AppState, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Badge, Button, ProgressBar } from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
-import { drawAssessmentQuestions } from '../data/mockData';
+// @ts-ignore
+import { QUESTION_TYPES, DELIVERY_FORMATS } from '../data/assessmentData';
+// @ts-ignore
+import { getAssessmentAccess } from '../utils/assessmentCatalog';
+// @ts-ignore
+import {
+  applyAssessmentAttempt,
+  drawAssessmentQuestions,
+  resolveCourseView,
+  deriveLessonStatuses,
+} from '../data/mockData';
+// @ts-ignore
+import { computeValidUntilDate } from '../utils/recertification';
+import { Badge, Button, ProgressBar } from '../components/ui';
+import { Screen, Card, COLORS, EmptyState, InfoRow } from '../components/layout';
 
 export default function AssessmentPlayerScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { courseId, assessmentId } = route.params || {};
+
   const {
-    currentUser,
-    courses: allCourses,
-    myEnrollments,
+    courses,
+    assessments,
+    questionBanks,
     saveCourseProgress,
     recordAssessmentAttempt,
+    currentUser: user,
+    accessFor,
+    myEnrollments,
   } = useCourseStore();
 
-  const user = currentUser;
-  const courseId = route.params?.courseId || 'CRS-FSH-001';
+  const standaloneAssessment = assessmentId ? (assessments || []).find((a: any) => a.id === assessmentId) : null;
 
-  const rawCourse = allCourses.find((c: any) => c.id === courseId) || allCourses[0];
-  const cfg = rawCourse?.configuration || {};
-  const timeLimitMinutes = cfg.assessmentTimeLimit || 15;
-  const passingScore = cfg.passingScorePercent || 80;
-  const maxAttempts = cfg.maxAttempts || 3;
+  const rawCourse = !standaloneAssessment && courseId ? courses.find((c: any) => c.id === courseId) : null;
+  const rawEnrollment = rawCourse ? myEnrollments[rawCourse.id] || rawCourse.enrollment : null;
+
+  const course = useMemo(() => {
+    if (!rawCourse) return null;
+    const view = rawEnrollment ? resolveCourseView(rawCourse, rawEnrollment.enrolledVersion) : rawCourse;
+    return { ...rawCourse, modules: deriveLessonStatuses(view.modules, rawEnrollment), enrollment: rawEnrollment };
+  }, [rawCourse, rawEnrollment]);
+
+  const activeAssessment = useMemo(() => {
+    if (standaloneAssessment) return standaloneAssessment;
+    if (!course?.configuration?.assessmentEnabled) return null;
+    return {
+      id: `ASM-CRS-${course.id}`,
+      title: `${course.title} — Bài thi cuối khóa`,
+      description: course.description,
+      type: 'QUIZ',
+      deliveryFormat: DELIVERY_FORMATS.COURSE_LINKED,
+      courseId: course.id,
+      timeLimitMinutes: course.configuration?.assessmentTimeLimit || 15,
+      passingScorePercent: course.configuration?.passingScorePercent || 80,
+      maxAttempts: course.configuration?.maxAttempts || 3,
+      questionsPerAttempt: course.configuration?.questionsPerAttempt || 3,
+      antiCheatSettings: { detectTabSwitch: true, maxTabSwitches: 3, randomizeQuestions: true },
+      feedbackSettings: { showAnswersAfterSubmit: true, showExplanations: true },
+    };
+  }, [standaloneAssessment, course]);
 
   const [phase, setPhase] = useState<'start' | 'in-progress' | 'result'>('start');
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(timeLimitMinutes * 60);
+  const [index, setIndex] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [violations, setViolations] = useState(0);
   const [result, setResult] = useState<any>(null);
-
   const submittedRef = useRef(false);
 
-  // Initialize questions
-  const handleStartExam = () => {
-    const drawn = drawAssessmentQuestions(rawCourse);
-    const sampleQuestions = drawn && drawn.length > 0 ? drawn : [
-      {
-        id: 'Q1',
-        text: 'Nhiệt độ tiêu chuẩn bảo quản thịt tươi sống trong quầy lạnh MM Mega Market là bao nhiêu?',
-        type: 'SINGLE_CHOICE',
-        options: [
-          { id: 'opt1', text: '-2°C đến 2°C', isCorrect: true },
-          { id: 'opt2', text: '5°C đến 8°C', isCorrect: false },
-          { id: 'opt3', text: '10°C đến 15°C', isCorrect: false },
-          { id: 'opt4', text: 'Nhiệt độ phòng', isCorrect: false },
-        ],
-        explanation: 'Thịt tươi sống bắt buộc duy trì trong dải nhiệt độ -2°C đến 2°C để ức chế vi khuẩn phát triển.',
-      },
-      {
-        id: 'Q2',
-        text: 'Quy tắc luân chuyển hàng hóa ưu tiên hạn sử dụng trong siêu thị viết tắt là gì?',
-        type: 'SINGLE_CHOICE',
-        options: [
-          { id: 'opt1', text: 'FEFO (First Expired First Out)', isCorrect: true },
-          { id: 'opt2', text: 'LIFO (Last In First Out)', isCorrect: false },
-          { id: 'opt3', text: 'JIT (Just In Time)', isCorrect: false },
-        ],
-        explanation: 'FEFO là quy tắc xuất trước hàng có hạn sử dụng gần nhất.',
-      },
-      {
-        id: 'Q3',
-        text: 'Khoảng cách lối đi tối thiểu đảm bảo an toàn PCCC và thoát hiểm tại quầy kệ siêu thị là:',
-        type: 'SINGLE_CHOICE',
-        options: [
-          { id: 'opt1', text: '90 cm', isCorrect: true },
-          { id: 'opt2', text: '50 cm', isCorrect: false },
-          { id: 'opt3', text: '60 cm', isCorrect: false },
-        ],
-        explanation: 'Tiêu chuẩn PCCC MMVN quy định lối đi thông thoáng tối thiểu 90cm.',
-      },
-    ];
+  // Các handler dùng ref để timer/AppState luôn gọi được bản mới nhất mà không
+  // phải gắn lại listener sau mỗi lần state đổi.
+  const submitRef = useRef<() => void>(() => {});
 
-    setQuestions(sampleQuestions);
-    setAnswers({});
-    setCurrentQIndex(0);
-    setSecondsLeft(timeLimitMinutes * 60);
-    submittedRef.current = false;
-    setPhase('in-progress');
-  };
-
-  // Timer countdown
-  useEffect(() => {
-    let interval: any;
-    if (phase === 'in-progress' && secondsLeft > 0) {
-      interval = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1 && !submittedRef.current) {
-            handleAutoSubmit();
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
+  const access = useMemo(() => {
+    if (standaloneAssessment) return getAssessmentAccess(standaloneAssessment, user, courses);
+    if (course) {
+      const crsAccess = accessFor(course, user);
+      return {
+        canTake: !crsAccess.isLevelLocked && Boolean(course.configuration?.assessmentEnabled),
+        isLocked: crsAccess.isLevelLocked,
+        reason: crsAccess.reason,
+      };
     }
-    return () => clearInterval(interval);
-  }, [phase, secondsLeft]);
+    return { canTake: false, isLocked: true, reason: 'Không tìm thấy bài đánh giá.' };
+  }, [standaloneAssessment, course, user, courses, accessFor]);
 
-  const handleSelectOption = (questionId: string, optionId: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: optionId,
-    }));
-  };
+  // Chống gian lận: trên mobile không có sự kiện chuyển tab của trình duyệt —
+  // tương đương là app bị đưa xuống nền (AppState rời 'active').
+  useEffect(() => {
+    if (phase !== 'in-progress') return undefined;
+    const maxSwitches = activeAssessment?.antiCheatSettings?.maxTabSwitches || 3;
 
-  const handleAutoSubmit = () => {
-    handleSubmit();
-  };
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') return;
+      setViolations((prev) => {
+        const next = prev + 1;
+        if (next >= maxSwitches && !submittedRef.current) {
+          Alert.alert(
+            'Cảnh báo gian lận',
+            `Bạn đã rời màn hình thi quá ${maxSwitches} lần. Hệ thống tự động thu bài.`
+          );
+          submitRef.current();
+        }
+        return next;
+      });
+    });
 
-  const handleSubmit = () => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
+    return () => sub.remove();
+  }, [phase, activeAssessment]);
 
-    // Calculate score
-    let correctCount = 0;
-    questions.forEach((q) => {
-      const selected = answers[q.id];
-      const correctOpt = q.options?.find((o: any) => o.isCorrect)?.id;
-      if (selected === correctOpt) {
-        correctCount += 1;
+  // Đồng hồ đếm ngược
+  useEffect(() => {
+    if (phase !== 'in-progress') return undefined;
+    const timer = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          if (!submittedRef.current) submitRef.current();
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  if (access.isLocked) {
+    return (
+      <Screen title="Bài đánh giá" back>
+        <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
+          <Ionicons name="lock-closed" size={42} color={COLORS.red} />
+          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.ink, marginTop: 12, textAlign: 'center' }}>
+            Bài đánh giá chưa thể truy cập
+          </Text>
+          <Text style={{ fontSize: 12, color: COLORS.inkSoft, textAlign: 'center', marginTop: 8, marginBottom: 16, lineHeight: 17 }}>
+            {access.reason}
+          </Text>
+          <Button variant="primary" onPress={() => navigation.goBack()}>
+            Quay lại
+          </Button>
+        </Card>
+      </Screen>
+    );
+  }
+
+  if (!activeAssessment) {
+    return (
+      <Screen title="Bài đánh giá" back>
+        <EmptyState icon="alert-circle-outline" title="Bài đánh giá không tồn tại" />
+      </Screen>
+    );
+  }
+
+  function start() {
+    submittedRef.current = false;
+    let drawn: any[] = [];
+
+    if (standaloneAssessment) {
+      let pool: any[] = [];
+      if (standaloneAssessment.questions?.length) pool = [...standaloneAssessment.questions];
+      else if (standaloneAssessment.questionIds?.length)
+        pool = (questionBanks || []).filter((q: any) => standaloneAssessment.questionIds.includes(q.id));
+      else pool = (questionBanks || []).slice(0, 4);
+
+      drawn = standaloneAssessment.antiCheatSettings?.randomizeQuestions
+        ? [...pool].sort(() => 0.5 - Math.random())
+        : [...pool];
+    } else if (course) {
+      drawn = drawAssessmentQuestions(course).map((q: any) => ({
+        ...q,
+        question: q.text || q.question,
+        questionType:
+          q.type === 'MULTIPLE_CHOICE'
+            ? QUESTION_TYPES.MULTIPLE_CHOICE
+            : q.type === 'SHORT_ANSWER'
+            ? QUESTION_TYPES.ESSAY
+            : QUESTION_TYPES.SINGLE_CHOICE,
+      }));
+    }
+
+    const initial: Record<string, any> = {};
+    drawn.forEach((q) => {
+      if ((q.questionType || q.type) === QUESTION_TYPES.ORDERING) {
+        const items = q.options || q.sequenceItems || [];
+        initial[q.id] = [...items].sort(() => 0.5 - Math.random()).map((x: any) => x.id);
       }
     });
 
-    const totalQuestions = questions.length || 1;
-    const finalScore = Math.round((correctCount / totalQuestions) * 100);
-    const passed = finalScore >= passingScore;
+    setQuestions(drawn);
+    setAnswers(initial);
+    setIndex(0);
+    setViolations(0);
+    setSecondsLeft((activeAssessment.timeLimitMinutes || 15) * 60);
+    setResult(null);
+    setPhase('in-progress');
+  }
 
-    const attemptData = {
-      attemptNumber: (rawCourse?.enrollment?.attempts?.length || 0) + 1,
-      score: finalScore,
-      passed,
-      submittedAt: new Date().toISOString().slice(0, 10),
-      totalQuestions,
-      correctCount,
-    };
+  function handleSubmit() {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
 
-    setResult(attemptData);
-    setPhase('result');
+    const totalScore = questions.reduce((s, q) => s + (q.score || 10), 0) || 1;
+    let earnedScore = 0;
+    questions.forEach((q) => {
+      if (isAnswerCorrect(q, answers[q.id])) earnedScore += q.score || 10;
+    });
 
-    // Save attempt and update course progress in store
-    if (rawCourse) {
-      const isCompleted = passed;
-      saveCourseProgress(rawCourse.id, {
-        status: isCompleted ? 'COMPLETED' : 'FAILED',
-        progress: isCompleted ? 100 : 70,
-        score: finalScore,
-      }, user);
+    const scorePercent = Math.round((earnedScore / totalScore) * 100);
+    const passingScore = activeAssessment.passingScorePercent ?? 80;
+    const passed = activeAssessment.type === 'SURVEY' ? true : scorePercent >= passingScore;
+
+    const compMap = new Map<string, { total: number; earned: number }>();
+    questions.forEach((q) => {
+      const comp = q.competency || 'Năng lực tổng quát';
+      if (!compMap.has(comp)) compMap.set(comp, { total: 0, earned: 0 });
+      const item = compMap.get(comp)!;
+      item.total += q.score || 10;
+      if (isAnswerCorrect(q, answers[q.id])) item.earned += q.score || 10;
+    });
+
+    const competencyResults = Array.from(compMap.entries()).map(([name, data]) => {
+      const compPct = Math.round((data.earned / (data.total || 1)) * 100);
+      const curLvl = compPct >= 80 ? 4 : compPct >= 60 ? 3 : 2;
+      const reqLvl = 3;
+      return {
+        competencyName: name,
+        percent: compPct,
+        currentLevel: curLvl,
+        requiredLevel: reqLvl,
+        gap: curLvl - reqLvl,
+        recommendation:
+          curLvl - reqLvl >= 0
+            ? 'Năng lực vững vàng, sẵn sàng nhận nhiệm vụ cao hơn.'
+            : 'Cần tham gia thêm các khóa bổ trợ kỹ năng thực hành.',
+      };
+    });
+
+    const spent = (activeAssessment.timeLimitMinutes || 15) * 60 - secondsLeft;
+    recordAssessmentAttempt({
+      attemptId: `ATT-${Date.now()}`,
+      assessmentId: activeAssessment.id,
+      userId: user?.userId,
+      userName: user?.fullName,
+      userRole: user?.role,
+      userLevel: user?.level,
+      department: user?.departmentName || user?.departmentCode || 'MMVN',
+      startTime: new Date(Date.now() - spent * 1000).toISOString(),
+      endTime: new Date().toISOString(),
+      durationSeconds: spent,
+      violations: { tabSwitches: violations },
+      answers,
+      scoring: {
+        rawScore: earnedScore,
+        maxScore: totalScore,
+        weightedScore: scorePercent,
+        percentage: scorePercent,
+        passed,
+        gradedBy: 'SYSTEM_AUTO',
+      },
+      competencyResult: competencyResults,
+    });
+
+    if (course) {
+      const nowStr = new Date().toISOString().slice(0, 10);
+      const validityMonths =
+        course.configuration?.validityPeriodMonths !== undefined
+          ? parseInt(course.configuration.validityPeriodMonths, 10)
+          : 12;
+      const updatedCourse = applyAssessmentAttempt(course, {
+        score: scorePercent,
+        passed,
+        answered: Object.keys(answers).length,
+      });
+      if (passed) {
+        if (!updatedCourse.enrollment) updatedCourse.enrollment = {};
+        updatedCourse.enrollment.status = 'COMPLETED';
+        updatedCourse.enrollment.progressPercent = 100;
+        updatedCourse.enrollment.completedAt = nowStr;
+        updatedCourse.enrollment.validUntil = computeValidUntilDate(nowStr, validityMonths);
+      }
+      saveCourseProgress(course.id, updatedCourse);
     }
-  };
 
-  const formatTimer = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+    setResult({ score: scorePercent, passed, earnedScore, totalScore, competencyResults });
+    setPhase('result');
+  }
+  submitRef.current = handleSubmit;
+
+  function confirmSubmit() {
+    const unanswered = questions.filter((q) => answers[q.id] === undefined).length;
+    Alert.alert(
+      'Nộp bài thi?',
+      unanswered > 0
+        ? `Bạn còn ${unanswered} câu chưa trả lời. Nộp bài ngay bây giờ?`
+        : 'Bạn đã trả lời tất cả các câu. Nộp bài ngay bây giờ?',
+      [
+        { text: 'Xem lại', style: 'cancel' },
+        { text: 'Nộp bài', style: 'destructive', onPress: handleSubmit },
+      ]
+    );
+  }
+
+  // --- START ---
+  if (phase === 'start') {
+    return (
+      <Screen title="Bài sát hạch" subtitle={activeAssessment.title} back>
+        <Card>
+          <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.ink, lineHeight: 21 }}>
+            {activeAssessment.title}
+          </Text>
+          {!!activeAssessment.description && (
+            <Text style={{ fontSize: 12.5, color: COLORS.inkSoft, marginTop: 7, lineHeight: 18 }}>
+              {activeAssessment.description}
+            </Text>
+          )}
+        </Card>
+
+        <Card>
+          <InfoRow label="Thời gian làm bài" value={`${activeAssessment.timeLimitMinutes} phút`} icon="stopwatch-outline" />
+          <InfoRow
+            label="Điểm chuẩn đạt"
+            value={`${activeAssessment.passingScorePercent}%`}
+            icon="trophy-outline"
+            valueColor={COLORS.green}
+          />
+          <InfoRow label="Số lần thi tối đa" value={`${activeAssessment.maxAttempts} lần`} icon="repeat-outline" />
+          <InfoRow label="Số câu mỗi lượt" value={`${activeAssessment.questionsPerAttempt || '—'} câu`} icon="list-outline" />
+        </Card>
+
+        <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+            <Ionicons name="shield-checkmark" size={19} color={COLORS.amber} style={{ marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#B45309' }}>Quy chế chống gian lận</Text>
+              <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 5, lineHeight: 17 }}>
+                Hệ thống ghi nhận mỗi lần bạn thoát khỏi ứng dụng trong lúc thi. Rời màn hình quá{' '}
+                {activeAssessment.antiCheatSettings?.maxTabSwitches || 3} lần, bài thi sẽ tự động bị thu.
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        <Button variant="primary" size="lg" icon="create-outline" onPress={start}>
+          Bắt đầu làm bài
+        </Button>
+      </Screen>
+    );
+  }
+
+  // --- RESULT ---
+  if (phase === 'result' && result) {
+    return (
+      <Screen title="Kết quả bài thi" back>
+        <Card
+          style={{
+            alignItems: 'center',
+            paddingVertical: 24,
+            backgroundColor: result.passed ? COLORS.greenSoft : COLORS.redSoft,
+            borderColor: result.passed ? '#A7F3D0' : '#FECACA',
+          }}
+        >
+          <View
+            style={{
+              width: 74,
+              height: 74,
+              borderRadius: 37,
+              backgroundColor: result.passed ? COLORS.green : COLORS.red,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <Ionicons name={result.passed ? 'checkmark' : 'close'} size={38} color="#FFFFFF" />
+          </View>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: result.passed ? COLORS.greenDark : '#B91C1C' }}>
+            {result.score}%
+          </Text>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.ink, marginTop: 4 }}>
+            {result.passed ? 'Chúc mừng, bạn đã đạt!' : 'Chưa đạt điểm chuẩn'}
+          </Text>
+          <Text style={{ fontSize: 12, color: COLORS.inkSoft, marginTop: 5, textAlign: 'center' }}>
+            {result.earnedScore}/{result.totalScore} điểm · chuẩn đạt {activeAssessment.passingScorePercent}%
+          </Text>
+        </Card>
+
+        {result.competencyResults?.length > 0 && (
+          <Card>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink, marginBottom: 11 }}>
+              Phân tích năng lực
+            </Text>
+            {result.competencyResults.map((c: any, i: number) => (
+              <View key={i} style={{ marginBottom: i === result.competencyResults.length - 1 ? 0 : 13 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.ink, flex: 1 }} numberOfLines={2}>
+                    {c.competencyName}
+                  </Text>
+                  <Badge tone={c.gap >= 0 ? 'sage' : 'amber'} size="sm">
+                    {c.percent}%
+                  </Badge>
+                </View>
+                <ProgressBar value={c.percent} tone={c.gap >= 0 ? 'sage' : 'amber'} size="sm" />
+                <Text style={{ fontSize: 11, color: COLORS.inkFaint, marginTop: 5, lineHeight: 16 }}>
+                  {c.recommendation}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
+
+        {violations > 0 && (
+          <Card style={{ backgroundColor: COLORS.redSoft, borderColor: '#FECACA' }}>
+            <Text style={{ fontSize: 12, color: '#B91C1C', fontWeight: '700' }}>
+              Ghi nhận {violations} lần rời màn hình thi.
+            </Text>
+          </Card>
+        )}
+
+        {/* Answer review */}
+        {activeAssessment.feedbackSettings?.showAnswersAfterSubmit && (
+          <>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.ink, marginTop: 6, marginBottom: 10 }}>
+              Xem lại đáp án
+            </Text>
+            {questions.map((q, i) => {
+              const correct = isAnswerCorrect(q, answers[q.id]);
+              return (
+                <Card key={q.id} style={{ borderLeftWidth: 3, borderLeftColor: correct ? COLORS.green : COLORS.red }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 7 }}>
+                    <Ionicons
+                      name={correct ? 'checkmark-circle' : 'close-circle'}
+                      size={16}
+                      color={correct ? COLORS.green : COLORS.red}
+                      style={{ marginRight: 7, marginTop: 1 }}
+                    />
+                    <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.ink, flex: 1, lineHeight: 18 }}>
+                      Câu {i + 1}. {q.question || q.text}
+                    </Text>
+                  </View>
+                  {(q.options || []).map((o: any) => (
+                    <View key={o.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3 }}>
+                      <Ionicons
+                        name={o.isCorrect ? 'checkmark' : 'remove'}
+                        size={12}
+                        color={o.isCorrect ? COLORS.green : COLORS.inkFaint}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 11.5,
+                          color: o.isCorrect ? COLORS.greenDark : COLORS.inkSoft,
+                          flex: 1,
+                          fontWeight: o.isCorrect ? '700' : '400',
+                        }}
+                      >
+                        {o.text}
+                      </Text>
+                    </View>
+                  ))}
+                  {activeAssessment.feedbackSettings?.showExplanations && !!q.explanation && (
+                    <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 7, lineHeight: 17, fontStyle: 'italic' }}>
+                      💡 {q.explanation}
+                    </Text>
+                  )}
+                </Card>
+              );
+            })}
+          </>
+        )}
+
+        <View style={{ gap: 9, marginTop: 6 }}>
+          {!result.passed && (
+            <Button variant="primary" icon="reload-outline" onPress={start}>
+              Thi lại
+            </Button>
+          )}
+          <Button
+            variant={result.passed ? 'primary' : 'outline'}
+            icon="arrow-back"
+            onPress={() =>
+              course
+                ? navigation.navigate('CourseOverview', { courseId: course.id })
+                : navigation.goBack()
+            }
+          >
+            {course ? 'Về trang khóa học' : 'Quay lại'}
+          </Button>
+        </View>
+      </Screen>
+    );
+  }
+
+  // --- IN PROGRESS ---
+  const question = questions[index];
+  const answered = questions.filter((q) => answers[q.id] !== undefined).length;
+  const lowTime = secondsLeft <= 60;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Top Bar */}
-      <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity
-          onPress={() => {
-            if (phase === 'in-progress') {
-              Alert.alert('Xác Nhận', 'Bạn có chắc muốn rời bài thi? Kết quả sẽ không được lưu.', [
-                { text: 'Tiếp tục thi', style: 'cancel' },
-                { text: 'Rời phòng thi', onPress: () => navigation.goBack() },
-              ]);
-            } else {
-              navigation.goBack();
-            }
+    <Screen
+      title={`Câu ${index + 1}/${questions.length}`}
+      subtitle={activeAssessment.title}
+      right={
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: lowTime ? COLORS.redSoft : COLORS.sunken,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 999,
           }}
-          style={{ padding: 4, marginRight: 8 }}
         >
-          <Ionicons name="close" size={22} color="#1E293B" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E293B', flex: 1 }} numberOfLines={1}>
-          {rawCourse?.title || 'Bài Đánh Giá Cuối Khóa'}
+          <Ionicons name="stopwatch-outline" size={14} color={lowTime ? COLORS.red : COLORS.inkSoft} />
+          <Text
+            style={{
+              fontSize: 12.5,
+              fontWeight: '900',
+              color: lowTime ? COLORS.red : COLORS.inkSoft,
+              marginLeft: 5,
+            }}
+          >
+            {formatClock(secondsLeft)}
+          </Text>
+        </View>
+      }
+    >
+      <View style={{ marginBottom: 12 }}>
+        <ProgressBar value={(answered / Math.max(1, questions.length)) * 100} tone="rail" size="sm" />
+        <Text style={{ fontSize: 11, color: COLORS.inkFaint, marginTop: 5 }}>
+          Đã trả lời {answered}/{questions.length} câu
         </Text>
       </View>
 
-      {/* PHASE 1: START INTRO */}
-      {phase === 'start' && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
-          <View style={{ alignItems: 'center', marginVertical: 20 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Ionicons name="trophy" size={36} color="#D97706" />
-            </View>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: '#1E293B', textAlign: 'center' }}>
-              BÀI SÁT HẠCH CUỐI KHÓA
-            </Text>
-            <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 4 }}>
-              Đánh giá chuẩn hóa năng lực chuyên môn MM Mega Market
-            </Text>
-          </View>
-
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 20 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', marginBottom: 12 }}>Quy Chế &amp; Thông Tin Bài Thi:</Text>
-            <View style={{ gap: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#64748B' }}>Điểm đạt chuẩn:</Text>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: '#009E49' }}>{passingScore}% trở lên</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#64748B' }}>Thời gian làm bài:</Text>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E293B' }}>{timeLimitMinutes} phút</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#64748B' }}>Số lần thi tối đa:</Text>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E293B' }}>{maxAttempts} lượt</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#64748B' }}>Chống gian lận (Anti-cheat):</Text>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Cảnh báo khi rời màn hình</Text>
-              </View>
-            </View>
-          </View>
-
-          <Button variant="primary" icon="play" size="lg" onPress={handleStartExam}>
-            Bắt Đầu Làm Bài Thi Ngay
-          </Button>
-        </ScrollView>
-      )}
-
-      {/* PHASE 2: IN-PROGRESS EXAM */}
-      {phase === 'in-progress' && (
-        <View style={{ flex: 1 }}>
-          {/* Timer & Progress Header */}
-          <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="help-circle-outline" size={16} color="#64748B" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>
-                Câu {currentQIndex + 1} / {questions.length}
-              </Text>
-            </View>
-
-            <View style={{ backgroundColor: secondsLeft < 60 ? '#FEE2E2' : '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="time" size={14} color={secondsLeft < 60 ? '#DC2626' : '#2563EB'} style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: secondsLeft < 60 ? '#DC2626' : '#2563EB' }}>
-                {formatTimer(secondsLeft)}
-              </Text>
-            </View>
-          </View>
-
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-            {/* Question Card */}
-            {questions[currentQIndex] && (
-              <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', lineHeight: 20, marginBottom: 16 }}>
-                  {currentQIndex + 1}. {questions[currentQIndex].text}
-                </Text>
-
-                {/* Options List */}
-                <View style={{ gap: 10 }}>
-                  {(questions[currentQIndex].options || []).map((opt: any) => {
-                    const isSelected = answers[questions[currentQIndex].id] === opt.id;
-                    return (
-                      <TouchableOpacity
-                        key={opt.id}
-                        onPress={() => handleSelectOption(questions[currentQIndex].id, opt.id)}
-                        style={{
-                          backgroundColor: isSelected ? '#ECFDF5' : '#F8FAFC',
-                          borderColor: isSelected ? '#009E49' : '#E2E8F0',
-                          borderWidth: 1.5,
-                          borderRadius: 12,
-                          padding: 12,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 10,
-                            borderWidth: 2,
-                            borderColor: isSelected ? '#009E49' : '#CBD5E1',
-                            backgroundColor: isSelected ? '#009E49' : 'transparent',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginRight: 10,
-                          }}
-                        >
-                          {isSelected && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' }} />}
-                        </View>
-                        <Text style={{ fontSize: 13, color: isSelected ? '#065F46' : '#334155', fontWeight: isSelected ? '700' : '500', flex: 1 }}>
-                          {opt.text}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            {/* Question Quick Jump Grid */}
-            <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', marginBottom: 10, textTransform: 'uppercase' }}>
-                Danh Sách Câu Hỏi:
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {questions.map((q, idx) => {
-                  const isAnswered = Boolean(answers[q.id]);
-                  const isCurrent = idx === currentQIndex;
-                  return (
-                    <TouchableOpacity
-                      key={q.id}
-                      onPress={() => setCurrentQIndex(idx)}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 8,
-                        backgroundColor: isCurrent ? '#009E49' : isAnswered ? '#ECFDF5' : '#F1F5F9',
-                        borderWidth: 1,
-                        borderColor: isCurrent ? '#009E49' : isAnswered ? '#A7F3D0' : '#E2E8F0',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: isCurrent ? '#FFFFFF' : isAnswered ? '#047857' : '#64748B' }}>
-                        {idx + 1}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Bottom Action Footer */}
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', padding: 16, borderTopWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', gap: 10 }}>
-            <Button
-              variant="outline"
-              size="md"
-              disabled={currentQIndex <= 0}
-              onPress={() => setCurrentQIndex((i) => Math.max(0, i - 1))}
-              style={{ flex: 1 }}
-            >
-              Câu Trước
-            </Button>
-
-            {currentQIndex < questions.length - 1 ? (
-              <Button
-                variant="primary"
-                size="md"
-                onPress={() => setCurrentQIndex((i) => Math.min(questions.length - 1, i + 1))}
-                style={{ flex: 1 }}
-              >
-                Câu Kế Tiếp &rarr;
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                tone="warning"
-                size="md"
-                icon="checkmark-circle"
-                onPress={() => {
-                  Alert.alert('Nộp Bài Thi', 'Bạn có chắc chắn muốn hoàn tất và nộp bài thi này không?', [
-                    { text: 'Xem lại bài', style: 'cancel' },
-                    { text: 'Nộp bài ngay', onPress: handleSubmit },
-                  ]);
-                }}
-                style={{ flex: 1 }}
-              >
-                Nộp Bài Thi
-              </Button>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* PHASE 3: EXAM RESULT */}
-      {phase === 'result' && result && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
-          <View style={{ alignItems: 'center', marginVertical: 20 }}>
-            <View
+      {/* Question navigator */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+        {questions.map((q, i) => {
+          const isCurrent = i === index;
+          const isDone = answers[q.id] !== undefined;
+          return (
+            <TouchableOpacity
+              key={q.id}
+              onPress={() => setIndex(i)}
+              activeOpacity={0.8}
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                backgroundColor: result.passed ? '#ECFDF5' : '#FEF2F2',
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                marginRight: 6,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 14,
-                borderWidth: 3,
-                borderColor: result.passed ? '#009E49' : '#DC2626',
+                backgroundColor: isCurrent ? COLORS.rail : isDone ? COLORS.greenSoft : COLORS.paper,
+                borderWidth: 1,
+                borderColor: isCurrent ? COLORS.rail : isDone ? '#A7F3D0' : COLORS.line,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '800',
+                  color: isCurrent ? '#FFFFFF' : isDone ? COLORS.greenDark : COLORS.inkFaint,
+                }}
+              >
+                {i + 1}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {!!question && (
+        <QuestionCard
+          question={question}
+          value={answers[question.id]}
+          onChange={(v: any) => setAnswers((prev) => ({ ...prev, [question.id]: v }))}
+        />
+      )}
+
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+        <Button
+          variant="outline"
+          icon="chevron-back"
+          style={{ flex: 1 }}
+          disabled={index === 0}
+          onPress={() => setIndex((i) => Math.max(0, i - 1))}
+        >
+          Câu trước
+        </Button>
+        {index < questions.length - 1 ? (
+          <Button
+            variant="primary"
+            icon="chevron-forward"
+            iconPosition="right"
+            style={{ flex: 1 }}
+            onPress={() => setIndex((i) => i + 1)}
+          >
+            Câu tiếp
+          </Button>
+        ) : (
+          <Button variant="primary" icon="send-outline" style={{ flex: 1 }} onPress={confirmSubmit}>
+            Nộp bài
+          </Button>
+        )}
+      </View>
+
+      {index < questions.length - 1 && (
+        <Button variant="ghost" icon="send-outline" style={{ marginTop: 9 }} onPress={confirmSubmit}>
+          Nộp bài sớm
+        </Button>
+      )}
+    </Screen>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Hiển thị một câu hỏi theo đúng kiểu của nó.
+// ---------------------------------------------------------------------------
+function QuestionCard({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const type = question.questionType || question.type;
+  const options = question.options || question.sequenceItems || [];
+
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <Badge tone="rail" size="sm">
+          {QUESTION_TYPE_LABEL[type] || 'Câu hỏi'}
+        </Badge>
+        <Badge tone="slate" size="sm">
+          {question.score || 10} điểm
+        </Badge>
+      </View>
+
+      <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.ink, lineHeight: 20, marginBottom: 14 }}>
+        {question.question || question.text}
+      </Text>
+
+      {type === QUESTION_TYPES.ESSAY ||
+      type === QUESTION_TYPES.SHORT_ANSWER ||
+      type === QUESTION_TYPES.FILL_IN_BLANK ? (
+        <TextInput
+          value={Array.isArray(value) ? value[0] || '' : value || ''}
+          onChangeText={(t) => onChange(t)}
+          multiline={type === QUESTION_TYPES.ESSAY}
+          textAlignVertical={type === QUESTION_TYPES.ESSAY ? 'top' : 'center'}
+          placeholder="Nhập câu trả lời của bạn…"
+          placeholderTextColor={COLORS.inkFaint}
+          style={{
+            borderWidth: 1,
+            borderColor: COLORS.line,
+            borderRadius: 10,
+            padding: 11,
+            fontSize: 13,
+            color: COLORS.ink,
+            minHeight: type === QUESTION_TYPES.ESSAY ? 110 : 44,
+          }}
+        />
+      ) : type === QUESTION_TYPES.RATING_SCALE ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <TouchableOpacity key={star} onPress={() => onChange(star)} activeOpacity={0.7}>
+              <Ionicons name={star <= (value || 0) ? 'star' : 'star-outline'} size={32} color={COLORS.amber} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : type === QUESTION_TYPES.ORDERING ? (
+        <OrderingInput question={question} value={value} onChange={onChange} />
+      ) : type === QUESTION_TYPES.MATCHING ? (
+        <MatchingInput question={question} value={value} onChange={onChange} />
+      ) : (
+        // Nhóm chọn đáp án: SINGLE/MULTIPLE_CHOICE, TRUE_FALSE, YES_NO, SCENARIO…
+        options.map((opt: any) => {
+          const isMulti = type === QUESTION_TYPES.MULTIPLE_CHOICE;
+          const selected = isMulti
+            ? Array.isArray(value) && value.includes(opt.id)
+            : value === opt.id;
+          return (
+            <TouchableOpacity
+              key={opt.id}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (isMulti) {
+                  const cur: string[] = Array.isArray(value) ? value : [];
+                  onChange(cur.includes(opt.id) ? cur.filter((id) => id !== opt.id) : [...cur, opt.id]);
+                } else {
+                  onChange(opt.id);
+                }
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1.5,
+                borderColor: selected ? COLORS.green : COLORS.line,
+                backgroundColor: selected ? COLORS.greenSoft : COLORS.paper,
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 8,
               }}
             >
               <Ionicons
-                name={result.passed ? 'checkmark-circle' : 'close-circle'}
-                size={48}
-                color={result.passed ? '#009E49' : '#DC2626'}
+                name={
+                  isMulti
+                    ? selected
+                      ? 'checkbox'
+                      : 'square-outline'
+                    : selected
+                    ? 'radio-button-on'
+                    : 'radio-button-off'
+                }
+                size={19}
+                color={selected ? COLORS.green : COLORS.inkFaint}
+                style={{ marginRight: 10 }}
               />
-            </View>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: result.passed ? '#047857' : '#991B1B' }}>
-              {result.passed ? 'CHÚC MỪNG! BẠN ĐÃ ĐẠT' : 'CHƯA ĐẠT YÊU CẦU'}
-            </Text>
-            <Text style={{ fontSize: 32, fontWeight: '900', color: '#1E293B', marginVertical: 4 }}>
-              {result.score}%
-            </Text>
-            <Text style={{ fontSize: 12, color: '#64748B' }}>
-              Điểm đạt yêu cầu: {passingScore}% &middot; Đúng {result.correctCount}/{result.totalQuestions} câu hỏi
-            </Text>
-          </View>
-
-          {/* Detailed Question Review */}
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 20 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', marginBottom: 12 }}>
-              Giải Thích Đáp Án Chi Tiết:
-            </Text>
-            <View style={{ gap: 12 }}>
-              {questions.map((q, idx) => {
-                const selected = answers[q.id];
-                const isCorrect = q.options?.find((o: any) => o.id === selected)?.isCorrect;
-                return (
-                  <View key={q.id} style={{ borderBottomWidth: idx < questions.length - 1 ? 1 : 0, borderColor: '#F1F5F9', paddingBottom: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={14} color={isCorrect ? '#009E49' : '#DC2626'} style={{ marginRight: 4 }} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E293B', flex: 1 }}>{idx + 1}. {q.text}</Text>
-                    </View>
-                    {q.explanation && (
-                      <Text style={{ fontSize: 11, color: '#64748B', fontStyle: 'italic', marginLeft: 18 }}>
-                        &bull; {q.explanation}
-                      </Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={{ gap: 10 }}>
-            <Button
-              variant="primary"
-              onPress={() => navigation.navigate('CourseOverview', { courseId: rawCourse?.id })}
-            >
-              Xem Chi Tiết Khóa Học &amp; Chứng Chỉ
-            </Button>
-            {!result.passed && (
-              <Button variant="outline" icon="refresh" onPress={handleStartExam}>
-                Làm Lại Bài Thi (Lượt Còn Lại)
-              </Button>
-            )}
-          </View>
-        </ScrollView>
+              <Text style={{ fontSize: 13, color: COLORS.ink, flex: 1, lineHeight: 19 }}>{opt.text}</Text>
+            </TouchableOpacity>
+          );
+        })
       )}
-    </SafeAreaView>
+    </Card>
   );
+}
+
+/** Sắp xếp thứ tự: mobile không kéo-thả được nên dùng nút lên/xuống. */
+function OrderingInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const items = question.options || question.sequenceItems || [];
+  const order: string[] = Array.isArray(value) ? value : items.map((x: any) => x.id);
+
+  function move(from: number, to: number) {
+    if (to < 0 || to >= order.length) return;
+    const next = [...order];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onChange(next);
+  }
+
+  return (
+    <View>
+      {order.map((id, i) => {
+        const item = items.find((x: any) => x.id === id);
+        return (
+          <View
+            key={id}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: COLORS.line,
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 7,
+              backgroundColor: COLORS.paper,
+            }}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: COLORS.rail,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 9,
+              }}
+            >
+              <Text style={{ fontSize: 10.5, fontWeight: '900', color: '#FFFFFF' }}>{i + 1}</Text>
+            </View>
+            <Text style={{ fontSize: 12.5, color: COLORS.ink, flex: 1, lineHeight: 18 }}>
+              {item?.text || item?.label || id}
+            </Text>
+            <TouchableOpacity onPress={() => move(i, i - 1)} disabled={i === 0} style={{ padding: 5 }}>
+              <Ionicons name="chevron-up" size={17} color={i === 0 ? COLORS.line : COLORS.inkSoft} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => move(i, i + 1)} disabled={i === order.length - 1} style={{ padding: 5 }}>
+              <Ionicons name="chevron-down" size={17} color={i === order.length - 1 ? COLORS.line : COLORS.inkSoft} />
+            </TouchableOpacity>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Ghép cặp: mỗi vế trái là một hàng chip chọn vế phải. */
+function MatchingInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const pairs = question.options || question.pairs || [];
+  const rights: string[] = [...new Set(pairs.map((p: any) => p.right).filter(Boolean))] as string[];
+  const current = value || {};
+
+  return (
+    <View>
+      {pairs.map((p: any) => (
+        <View key={p.id} style={{ marginBottom: 13 }}>
+          <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.ink, marginBottom: 7 }}>
+            {p.left || p.text}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {rights.map((r) => {
+              const selected = current[p.id] === r;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  onPress={() => onChange({ ...current, [p.id]: r })}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 7,
+                    paddingHorizontal: 11,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: selected ? COLORS.green : COLORS.line,
+                    backgroundColor: selected ? COLORS.greenSoft : COLORS.paper,
+                  }}
+                >
+                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: selected ? COLORS.greenDark : COLORS.inkSoft }}>
+                    {r}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const QUESTION_TYPE_LABEL: Record<string, string> = {
+  SINGLE_CHOICE: 'Chọn 1 đáp án',
+  MULTIPLE_CHOICE: 'Chọn nhiều đáp án',
+  TRUE_FALSE: 'Đúng / Sai',
+  YES_NO: 'Có / Không',
+  MATCHING: 'Ghép cặp',
+  ORDERING: 'Sắp xếp thứ tự',
+  FILL_IN_BLANK: 'Điền vào chỗ trống',
+  SHORT_ANSWER: 'Trả lời ngắn',
+  SCENARIO_BASED: 'Tình huống',
+  CASE_STUDY: 'Nghiên cứu tình huống',
+  ESSAY: 'Tự luận',
+  RATING_SCALE: 'Thang điểm',
+};
+
+/** Chấm điểm — giữ nguyên logic của bản web (AssessmentPlayer.jsx). */
+function isAnswerCorrect(question: any, answerValue: any) {
+  if (!question || answerValue === undefined || answerValue === null) return false;
+  const type = question.questionType || question.type;
+
+  if (type === QUESTION_TYPES.RATING_SCALE) return true;
+
+  if (type === QUESTION_TYPES.ESSAY) {
+    const text = Array.isArray(answerValue) ? answerValue[0] || '' : String(answerValue);
+    return text.trim().length >= 5;
+  }
+
+  if (type === QUESTION_TYPES.FILL_IN_BLANK || type === QUESTION_TYPES.SHORT_ANSWER) {
+    const text = (Array.isArray(answerValue) ? answerValue[0] || '' : String(answerValue)).trim().toLowerCase();
+    if (!text) return false;
+    const keywords = (question.correctKeywords || []).map((k: string) => k.trim().toLowerCase());
+    const optTexts = (question.options || []).map((o: any) => (o.text || '').trim().toLowerCase());
+    return keywords.includes(text) || optTexts.includes(text);
+  }
+
+  if (type === QUESTION_TYPES.MATCHING) {
+    if (typeof answerValue !== 'object') return false;
+    const pairs = question.options || question.pairs || [];
+    return pairs.length > 0 && pairs.every((p: any) => answerValue[p.id] === p.right);
+  }
+
+  if (type === QUESTION_TYPES.ORDERING) {
+    if (!Array.isArray(answerValue)) return false;
+    const items = question.options || question.sequenceItems || [];
+    const sortedTarget = [...items]
+      .sort((a: any, b: any) => (a.correctOrder || 0) - (b.correctOrder || 0))
+      .map((s: any) => s.id);
+    return JSON.stringify(answerValue) === JSON.stringify(sortedTarget);
+  }
+
+  const selectedIds = Array.isArray(answerValue) ? answerValue : [answerValue];
+  const correctIds = (question.options || [])
+    .filter((o: any) => o.isCorrect)
+    .map((o: any) => o.id)
+    .sort();
+  const chosen = [...selectedIds].sort();
+  return correctIds.length === chosen.length && correctIds.every((id: string, i: number) => id === chosen[i]);
+}
+
+function formatClock(totalSeconds: number) {
+  const m = Math.floor(Math.max(0, totalSeconds) / 60);
+  const s = Math.max(0, totalSeconds) % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }

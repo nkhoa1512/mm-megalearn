@@ -114,35 +114,247 @@ export function successionMilestonesFor(user, roadmapsConfig, level, userEnrollm
 // cụ thể (gộp từ khóa OPTIONAL theo domain). Hiển thị cho user sẽ được lọc lại
 // theo isCourseVisibleInCatalog để không phá vỡ quy tắc chặn cấp bậc tuần tự.
 // ---------------------------------------------------------------------------
-const SELF_PROPOSED_TRACK_DEFS = [
-  { id: 'track-leadership', titleVi: 'Lãnh Đạo & Quản Trị Nâng Cao', icon: 'ti-crown', description: 'Kỹ năng lãnh đạo, coaching và hoạch định chiến lược dành cho nhân sự muốn phát triển lên vai trò quản lý.', domain: 'Leadership' },
-  { id: 'track-scm', titleVi: 'Chuỗi Cung Ứng & Logistics', icon: 'ti-truck', description: 'Vận hành kho vận, quản trị đội xe và tối ưu chuỗi cung ứng.', domain: 'Supply Chain' },
-  { id: 'track-digital', titleVi: 'Bán Lẻ Số & Thương Mại Điện Tử', icon: 'ti-device-laptop', description: 'Omnichannel, thanh toán số và trải nghiệm khách hàng trực tuyến.', domain: 'E-Commerce' },
-  { id: 'track-merch', titleVi: 'Merchandising & Quản Trị Ngành Hàng', icon: 'ti-shopping-cart', description: 'Đàm phán nhà cung cấp, quản trị danh mục và chiến lược giá.', domain: 'Merchandising' },
-  { id: 'track-culture', titleVi: 'Văn Hóa & Phát Triển Bản Thân', icon: 'ti-heart', description: 'Văn hóa doanh nghiệp, phát triển bền vững và chăm sóc sức khỏe tinh thần.', domain: 'Culture & Onboarding' },
-];
-
-export const SELF_PROPOSED_TRACKS = SELF_PROPOSED_TRACK_DEFS.map((track) => ({
-  ...track,
-  courseIds: generated100Courses.filter((c) => c.domain === track.domain && c.courseType === 'OPTIONAL').map((c) => c.id),
-}));
-
 // ---------------------------------------------------------------------------
-// Tab 4: RECOMMENDED — tính động, không lưu trữ. Ưu tiên khóa cùng Level hoặc
-// Level kế cận, cùng Khối, chưa hoàn thành, chưa nằm trong Tab 1/Tab 2.
+// Tab 3: SELF_PROPOSED_TRACKS — Lộ trình tự đề xuất cá nhân hóa theo Phòng Ban,
+// Vị trí công tác và Cấp bậc của nhân sự.
 // ---------------------------------------------------------------------------
-function recommendCoursesFor(user, courses, userEnrollments, excludeIds) {
+export function generateSelfProposedTracksForUser(user, courses, userEnrollments = {}) {
   const level = user?.level;
+  const divCode = (user?.divisionCode || '').toUpperCase();
+  const deptCode = (user?.departmentCode || '').toUpperCase();
+  const pos = (user?.position || '').toLowerCase();
+
+  const isVisible = (c) => isCourseVisibleInCatalog(level, c.targetLevel);
+  const isCompleted = (id) => userEnrollments[id]?.status === 'COMPLETED';
+  const statusOf = (id) => {
+    if (isCompleted(id)) return 'COMPLETED';
+    return userEnrollments[id]?.status === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'NOT_STARTED';
+  };
+
+  function toMilestones(courseList) {
+    return courseList.map((course) => ({
+      course,
+      status: statusOf(course.id),
+      completed: isCompleted(course.id),
+    }));
+  }
+
+  const isIT = divCode === 'MIS' || deptCode === 'MIS' || deptCode === 'IT' || pos.includes('it') || pos.includes('cyber') || pos.includes('system');
+  const isStoreFresh = divCode === 'OPT' || deptCode === 'BAKERY' || deptCode === 'MEAT' || deptCode === 'SEAFOOD' || pos.includes('bakery') || pos.includes('meat') || pos.includes('fresh') || pos.includes('store') || pos.includes('cashier');
+  const isMerch = divCode === 'OMD' || divCode === 'PRC' || deptCode === 'MERCH' || pos.includes('merchandis') || pos.includes('buyer') || pos.includes('pricing');
+  const isSCM = divCode === 'SCM' || deptCode === 'LOG' || pos.includes('warehouse') || pos.includes('supply') || pos.includes('logistics');
+  const isHRorLOD = divCode === 'HRD' || deptCode === 'L&OD' || deptCode === 'HR' || pos.includes('hr') || pos.includes('trainer') || pos.includes('learning');
+
+  const tracks = [];
+
+  // Track 1: Chuyên Môn Trọng Tâm Phòng Ban (Department Mastery)
+  if (isIT) {
+    const itCourses = courses.filter((c) => (c.domain === 'Information Security' || c.domain === 'E-Commerce' || c.title.toLowerCase().includes('it') || c.title.toLowerCase().includes('security')) && isVisible(c));
+    tracks.push({
+      id: 'track-it-security',
+      titleVi: 'Kiến Trúc An Ninh Thông Tin & Hạ Tầng Số',
+      titleEn: 'Cybersecurity & Digital Infrastructure Mastery',
+      icon: 'ti-shield-lock',
+      description: 'Chuyên đề an ninh mạng, bảo mật dữ liệu khách hàng và tuân thủ hạ tầng số cho nhân sự CNTT.',
+      courseIds: itCourses.slice(0, 4).map((c) => c.id),
+      courses: itCourses.slice(0, 4),
+    });
+  } else if (isStoreFresh) {
+    const foodCourses = courses.filter((c) => (c.domain === 'Food Safety & Hygiene' || c.domain === 'Cold Chain' || c.domain === 'Store Operations') && isVisible(c));
+    tracks.push({
+      id: 'track-fresh-mastery',
+      titleVi: 'Chuyên Gia Chuẩn Hóa Quầy Hàng & HACCP Toàn Diện',
+      titleEn: 'Store Operations & HACCP Excellence',
+      icon: 'ti-meat',
+      description: 'Nâng cao nghiệp vụ kiểm soát nhiệt độ chuỗi lạnh, tiêu chuẩn HACCP và giảm thiểu hao hụt tại quầy.',
+      courseIds: foodCourses.slice(0, 4).map((c) => c.id),
+      courses: foodCourses.slice(0, 4),
+    });
+  } else if (isMerch) {
+    const merchCourses = courses.filter((c) => (c.domain === 'Merchandising' || c.domain === 'Supply Chain') && isVisible(c));
+    tracks.push({
+      id: 'track-merch-mastery',
+      titleVi: 'Đàm Phán Thương Mại & Tối Ưu Biên Lợi Nhuận',
+      titleEn: 'Commercial Negotiation & Margin Strategy',
+      icon: 'ti-shopping-cart',
+      description: 'Kỹ năng đàm phán hợp đồng nhà cung cấp, phân tích biên lợi nhuận và quản trị danh mục hàng hóa.',
+      courseIds: merchCourses.slice(0, 4).map((c) => c.id),
+      courses: merchCourses.slice(0, 4),
+    });
+  } else if (isSCM) {
+    const scmCourses = courses.filter((c) => (c.domain === 'Supply Chain' || c.domain === 'Cold Chain') && isVisible(c));
+    tracks.push({
+      id: 'track-scm-logistics',
+      titleVi: 'Vận Hành Kho Vận & Chuỗi Cung Ứng Tốc Độ Cao',
+      titleEn: 'Fast-Flow Warehouse & SCM Logistics',
+      icon: 'ti-truck',
+      description: 'Tối ưu luồng phân phối cross-docking, an toàn xe nâng và quản trị logistics kho trung tâm.',
+      courseIds: scmCourses.slice(0, 4).map((c) => c.id),
+      courses: scmCourses.slice(0, 4),
+    });
+  } else if (isHRorLOD) {
+    const hrCourses = courses.filter((c) => (c.domain === 'Leadership' || c.domain === 'Culture & Onboarding' || c.domain.includes('Trainer')) && isVisible(c));
+    tracks.push({
+      id: 'track-talent-trainer',
+      titleVi: 'Giảng Viên Nội Bộ Chuẩn Quốc Tế & Coaching 70/20/10',
+      titleEn: 'Master Trainer & Talent Coaching Standards',
+      icon: 'ti-presentation',
+      description: 'Phương pháp sư phạm hiện đại, kỹ năng huấn luyện tại chỗ và phát triển lộ trình kế cận.',
+      courseIds: hrCourses.slice(0, 4).map((c) => c.id),
+      courses: hrCourses.slice(0, 4),
+    });
+  } else {
+    const generalOps = courses.filter((c) => (c.domain === 'Store Operations' || c.domain === 'Customer Service') && isVisible(c));
+    tracks.push({
+      id: 'track-general-ops',
+      titleVi: 'Vận Hành Chuẩn Hóa & Dịch Vụ Khách Hàng Xuất Sắc',
+      titleEn: 'Operations Excellence & Customer Experience',
+      icon: 'ti-building-store',
+      description: 'Kỹ năng phục vụ khách hàng chuyên nghiệp, xử lý tình huống và tối ưu vận hành.',
+      courseIds: generalOps.slice(0, 4).map((c) => c.id),
+      courses: generalOps.slice(0, 4),
+    });
+  }
+
+  // Track 2: Lãnh Đạo & Phát Triển Kỹ Năng Quản Lý (Leadership Track)
+  const leadCourses = courses.filter((c) => (c.domain === 'Leadership' || c.domain.includes('Leadership')) && isVisible(c));
+  if (leadCourses.length > 0) {
+    tracks.push({
+      id: 'track-leadership-growth',
+      titleVi: 'Lãnh Đạo & Quản Trị Đội Ngũ Bán Lẻ Hiện Đại',
+      titleEn: 'Modern Retail Leadership & Team Management',
+      icon: 'ti-crown',
+      description: 'Phát triển năng lực giao việc, giải quyết xung đột, huấn luyện nhân viên và thiết lập mục tiêu KPI.',
+      courseIds: leadCourses.slice(0, 3).map((c) => c.id),
+      courses: leadCourses.slice(0, 3),
+    });
+  }
+
+  // Track 3: Bán Lẻ Số & Chuyển Đổi Công Nghệ (Digital Retail & E-Commerce)
+  const digitalCourses = courses.filter((c) => (c.domain === 'E-Commerce' || c.title.toLowerCase().includes('digital') || c.title.toLowerCase().includes('online') || c.domain === 'Information Security') && isVisible(c));
+  if (digitalCourses.length > 0) {
+    tracks.push({
+      id: 'track-digital-retail',
+      titleVi: 'Bán Lẻ Số & Trải Nghiệm Khách Hàng Đa Kênh (Omnichannel)',
+      titleEn: 'Digital Retail & Omnichannel Customer Experience',
+      icon: 'ti-device-laptop',
+      description: 'Xử lý đơn hàng trực tuyến, thanh toán điện tử và trải nghiệm khách hàng đa nền tảng.',
+      courseIds: digitalCourses.slice(0, 3).map((c) => c.id),
+      courses: digitalCourses.slice(0, 3),
+    });
+  }
+
+  // Track 4: Văn Hóa Doanh Nghiệp, An Toàn & ESG
+  const esgCourses = courses.filter((c) => (c.domain === 'Culture & Onboarding' || c.domain === 'Health & Safety' || c.domain === 'Compliance & Ethics') && isVisible(c));
+  if (esgCourses.length > 0) {
+    tracks.push({
+      id: 'track-esg-culture',
+      titleVi: 'Văn Hóa Doanh Nghiệp, An Toàn Lao Động & ESG',
+      titleEn: 'Corporate Culture, Health Safety & ESG',
+      icon: 'ti-leaf',
+      description: 'Quy tắc ứng xử văn minh, phòng chống cháy nổ PCCC và phát triển chuỗi bán lẻ bền vững.',
+      courseIds: esgCourses.slice(0, 3).map((c) => c.id),
+      courses: esgCourses.slice(0, 3),
+    });
+  }
+
+  return tracks.map((track) => {
+    const milestones = toMilestones(track.courses);
+    const joined = milestones.some((m) => userEnrollments[m.course.id]);
+    const percent = milestones.length === 0
+      ? 0
+      : Math.round((milestones.filter((m) => m.completed).length / milestones.length) * 100);
+    return { ...track, milestones, joined, percent };
+  }).filter((t) => t.milestones.length > 0);
+}
+
+export const SELF_PROPOSED_TRACKS = [];
+
+// ---------------------------------------------------------------------------
+// Tab 4: RECOMMENDED — Gợi ý khóa học thông minh dựa trên Phòng ban, Vị trí & Cấp bậc
+// ---------------------------------------------------------------------------
+export function recommendCoursesFor(user, courses, userEnrollments = {}, excludeIds = []) {
+  const level = user?.level;
+  const divCode = (user?.divisionCode || '').toUpperCase();
+  const deptCode = (user?.departmentCode || '').toUpperCase();
+  const deptName = user?.departmentName || user?.departmentCode || user?.divisionName || 'Bộ phận';
+  const pos = (user?.position || '').toLowerCase();
   const branch = branchForUser(user);
   const nextLevel = nextLevelUp(level);
   const exclude = new Set(excludeIds);
-  return courses
+
+  const isIT = divCode === 'MIS' || deptCode === 'MIS' || deptCode === 'IT' || pos.includes('it') || pos.includes('cyber') || pos.includes('system');
+  const isStoreFresh = divCode === 'OPT' || deptCode === 'BAKERY' || deptCode === 'MEAT' || deptCode === 'SEAFOOD' || pos.includes('bakery') || pos.includes('meat') || pos.includes('fresh') || pos.includes('store') || pos.includes('cashier');
+  const isMerch = divCode === 'OMD' || divCode === 'PRC' || deptCode === 'MERCH' || pos.includes('merchandis') || pos.includes('buyer') || pos.includes('pricing');
+  const isSCM = divCode === 'SCM' || deptCode === 'LOG' || pos.includes('warehouse') || pos.includes('supply') || pos.includes('logistics');
+  const isHRorLOD = divCode === 'HRD' || deptCode === 'L&OD' || deptCode === 'HR' || pos.includes('hr') || pos.includes('trainer') || pos.includes('learning');
+
+  const scoredCourses = courses
     .filter((c) => !exclude.has(c.id))
-    .filter((c) => c.targetLevel === level || c.targetLevel === nextLevel)
-    .filter((c) => branchesForCourse(c).includes(branch))
     .filter((c) => !userEnrollments[c.id] || userEnrollments[c.id].status !== 'COMPLETED')
-    .sort((a, b) => (b.passingScore || 0) - (a.passingScore || 0))
-    .slice(0, 5);
+    .filter((c) => isCourseVisibleInCatalog(level, c.targetLevel))
+    .map((c) => {
+      let score = 0;
+      let reasonTag = `Phù hợp Level ${c.targetLevel}`;
+
+      // 1. Phù hợp Cấp bậc
+      if (c.targetLevel === level) {
+        score += 35;
+        reasonTag = `Đúng chuẩn định biên Level ${level}`;
+      } else if (c.targetLevel === nextLevel) {
+        score += 30;
+        reasonTag = `Phát triển kế cận Level ${nextLevel}`;
+      } else {
+        score += 15;
+      }
+
+      // 2. Phù hợp Ngành nghề & Phòng ban
+      if (isIT) {
+        if (c.domain === 'Information Security' || c.domain === 'E-Commerce' || c.title.toLowerCase().includes('security') || c.title.toLowerCase().includes('it')) {
+          score += 60;
+          reasonTag = `Khuyên dùng cho ${deptName}`;
+        }
+      } else if (isStoreFresh) {
+        if (c.domain === 'Food Safety & Hygiene' || c.domain === 'Cold Chain' || c.domain === 'Store Operations') {
+          score += 60;
+          reasonTag = `Nghiệp vụ quầy hàng ${deptName}`;
+        }
+      } else if (isMerch) {
+        if (c.domain === 'Merchandising' || c.domain === 'Supply Chain' || c.domain === 'E-Commerce') {
+          score += 60;
+          reasonTag = `Chiến lược ngành hàng ${deptName}`;
+        }
+      } else if (isSCM) {
+        if (c.domain === 'Supply Chain' || c.domain === 'Cold Chain') {
+          score += 60;
+          reasonTag = `Vận hành Logistics & Kho`;
+        }
+      } else if (isHRorLOD) {
+        if (c.domain === 'Leadership' || c.domain === 'Culture & Onboarding' || (c.domain || '').includes('Trainer')) {
+          score += 60;
+          reasonTag = `Đào tạo & Phát triển nhân tài`;
+        }
+      } else {
+        if (c.domain === 'Store Operations' || c.domain === 'Customer Service' || c.domain === 'Leadership') {
+          score += 40;
+          reasonTag = `Kỹ năng dịch vụ khách hàng`;
+        }
+      }
+
+      if (branchesForCourse(c).includes(branch)) {
+        score += 15;
+      }
+
+      return {
+        ...c,
+        recommendationScore: score,
+        recommendationReason: reasonTag,
+      };
+    });
+
+  return scoredCourses
+    .sort((a, b) => b.recommendationScore - a.recommendationScore || (b.passingScore || 0) - (a.passingScore || 0))
+    .slice(0, 6);
 }
 
 /**
@@ -182,19 +394,7 @@ export function computeUserRoadmapTabs(user, roadmapsConfig, enrollments, course
     ? 0
     : Math.round((successionMilestones.filter((m) => m.completed).length / successionMilestones.length) * 100);
 
-  const tracks = SELF_PROPOSED_TRACKS.map((track) => {
-    const visibleIds = track.courseIds.filter((id) => {
-      const course = courseById(id);
-      return course && isCourseVisibleInCatalog(level, course.targetLevel);
-    });
-    const milestones = buildMilestones(visibleIds);
-    const joined = milestones.some((m) => userEnrollments[m.course.id]);
-    const percent = milestones.length === 0
-      ? 0
-      : Math.round((milestones.filter((m) => m.completed).length / milestones.length) * 100);
-    return { ...track, milestones, joined, percent };
-  }).filter((track) => track.milestones.length > 0);
-
+  const tracks = generateSelfProposedTracksForUser(user, courses, userEnrollments);
   const recommended = recommendCoursesFor(user, courses, userEnrollments, [...currentIds, ...succession.courseIds]);
 
   return {

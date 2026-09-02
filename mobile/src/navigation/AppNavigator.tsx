@@ -3,27 +3,39 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCourseStore } from '../store/CourseStore';
 
-// Screens
+import LoginScreen from '../screens/LoginScreen';
 import LearnerDashboard from '../screens/LearnerDashboard';
 import CoursesScreen from '../screens/CoursesScreen';
-import ClassroomScheduleScreen from '../screens/ClassroomScheduleScreen';
-import CertificatesScreen from '../screens/CertificatesScreen';
+import LearnerCalendarScreen from '../screens/LearnerCalendarScreen';
+import RoadmapScreen from '../screens/RoadmapScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 import CourseOverviewScreen from '../screens/CourseOverviewScreen';
 import LessonViewerScreen from '../screens/LessonViewerScreen';
 import AssessmentPlayerScreen from '../screens/AssessmentPlayerScreen';
-import RoadmapScreen from '../screens/RoadmapScreen';
-import AiLearningHubScreen from '../screens/AiLearningHubScreen';
-import LearnerCalendarScreen from '../screens/LearnerCalendarScreen';
+import ClassroomScheduleScreen from '../screens/ClassroomScheduleScreen';
+import CertificatesScreen from '../screens/CertificatesScreen';
 import LearningHistoryScreen from '../screens/LearningHistoryScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
+import AiLearningHubScreen from '../screens/AiLearningHubScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const TAB_ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  DashboardTab: ['grid', 'grid-outline'],
+  CoursesTab: ['book', 'book-outline'],
+  CalendarTab: ['calendar', 'calendar-outline'],
+  RoadmapTab: ['git-branch', 'git-branch-outline'],
+  ProfileTab: ['person-circle', 'person-circle-outline'],
+};
+
 function BottomTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -31,81 +43,54 @@ function BottomTabs() {
         tabBarActiveTintColor: '#009E49',
         tabBarInactiveTintColor: '#64748B',
         tabBarStyle: {
-          height: 62,
-          paddingBottom: 8,
+          height: 58 + insets.bottom,
+          paddingBottom: insets.bottom + 6,
           paddingTop: 6,
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderColor: '#E2E8F0',
         },
-        tabBarLabelStyle: {
-          fontSize: 9.5,
-          fontWeight: '700',
-        },
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'help';
-          if (route.name === 'DashboardTab') {
-            iconName = focused ? 'grid' : 'grid-outline';
-          } else if (route.name === 'CoursesTab') {
-            iconName = focused ? 'book' : 'book-outline';
-          } else if (route.name === 'ClassroomsTab') {
-            iconName = focused ? 'easel' : 'easel-outline';
-          } else if (route.name === 'AchievementsTab') {
-            iconName = focused ? 'ribbon' : 'ribbon-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
-          }
-          return <Ionicons name={iconName} size={22} color={color} />;
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        tabBarIcon: ({ focused, color }) => {
+          const [active, inactive] = TAB_ICONS[route.name] || ['help', 'help-outline'];
+          return <Ionicons name={focused ? active : inactive} size={22} color={color} />;
         },
       })}
     >
-      <Tab.Screen
-        name="DashboardTab"
-        component={LearnerDashboard}
-        options={{ title: 'Tổng Quan', tabBarLabel: 'Tổng Quan' }}
-      />
-      <Tab.Screen
-        name="CoursesTab"
-        component={CoursesScreen}
-        options={{ title: 'Khóa Học', tabBarLabel: 'Khóa Học' }}
-      />
-      <Tab.Screen
-        name="ClassroomsTab"
-        component={ClassroomScheduleScreen}
-        options={{ title: 'Lớp Thực Hành', tabBarLabel: 'Thực Hành' }}
-      />
-      <Tab.Screen
-        name="AchievementsTab"
-        component={CertificatesScreen}
-        options={{ title: 'Thành Tích', tabBarLabel: 'Chứng Chỉ' }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileScreen}
-        options={{ title: 'Tài Khoản', tabBarLabel: 'Tài Khoản' }}
-      />
+      <Tab.Screen name="DashboardTab" component={LearnerDashboard} options={{ tabBarLabel: 'Tổng Quan' }} />
+      <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Khóa Học' }} />
+      <Tab.Screen name="CalendarTab" component={LearnerCalendarScreen} options={{ tabBarLabel: 'Lịch Học' }} />
+      <Tab.Screen name="RoadmapTab" component={RoadmapScreen} options={{ tabBarLabel: 'Lộ Trình' }} />
+      <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Cá Nhân' }} />
     </Tab.Navigator>
   );
 }
 
 export default function AppNavigator() {
+  const { isAuthenticated } = useCourseStore();
+
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="MainTabs" component={BottomTabs} />
-        <Stack.Screen name="CourseOverview" component={CourseOverviewScreen} />
-        <Stack.Screen name="LessonViewer" component={LessonViewerScreen} />
-        <Stack.Screen name="AssessmentPlayer" component={AssessmentPlayerScreen} />
-        <Stack.Screen name="Roadmap" component={RoadmapScreen} />
-        <Stack.Screen name="AiLearningHub" component={AiLearningHubScreen} />
-        <Stack.Screen name="LearnerCalendar" component={LearnerCalendarScreen} />
-        <Stack.Screen name="LearningHistory" component={LearningHistoryScreen} />
-        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-        <Stack.Screen name="Certificates" component={CertificatesScreen} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isAuthenticated ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={BottomTabs} />
+            <Stack.Screen name="CourseOverview" component={CourseOverviewScreen} />
+            <Stack.Screen name="LessonViewer" component={LessonViewerScreen} />
+            <Stack.Screen
+              name="AssessmentPlayer"
+              component={AssessmentPlayerScreen}
+              options={{ gestureEnabled: false }}
+            />
+            <Stack.Screen name="Classrooms" component={ClassroomScheduleScreen} />
+            <Stack.Screen name="Certificates" component={CertificatesScreen} />
+            <Stack.Screen name="LearningHistory" component={LearningHistoryScreen} />
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+            <Stack.Screen name="AiLearningHub" component={AiLearningHubScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
