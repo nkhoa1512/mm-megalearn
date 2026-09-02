@@ -1,15 +1,15 @@
 // src/data/certificateTemplatesData.js
 //
-// Bộ dữ liệu Mẫu Chứng Chỉ Chuẩn Hóa Doanh Nghiệp (MMVN Certificate Templates Library)
-// Áp dụng cho toàn bộ các Khóa Học (Course) và Giáo Trình (Curriculum) thuộc MM Mega Market Việt Nam.
+// Standardized enterprise certificate template dataset (MMVN Certificate Templates Library)
+// Applies to every Course and Curriculum across MM Mega Market Vietnam.
 
 export const DEFAULT_CERTIFICATE_TEMPLATES = [
   {
     id: 'CERTTPL-FSH-001',
-    name: 'Chứng Chỉ Vệ Sinh An Toàn Thực Phẩm Chuẩn HACCP MMVN',
+    name: 'MMVN HACCP Food Hygiene & Safety Certificate',
     nameEn: 'MMVN Food Safety & HACCP Standard Certificate',
     category: 'Food Safety & Hygiene',
-    description: 'Chứng nhận đạt chuẩn vệ sinh an toàn thực phẩm, quy trình kiểm soát nhiệt độ chuỗi lạnh và tiêu chuẩn vệ sinh khu vực chế biến thực phẩm tươi sống theo quy định Bộ Y Tế và MMVN.',
+    description: 'Certifies compliance with food hygiene and safety standards, cold chain temperature control procedures and hygiene standards for fresh food preparation areas under Ministry of Health and MMVN regulations.',
     signerName: 'Thái Minh Dũng',
     signerTitle: 'Head of Quality Assurance & Food Safety',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -26,10 +26,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-HSE-001',
-    name: 'Chứng Chỉ An Toàn Lao Động & Phòng Cháy Chữa Cháy (PCCC)',
+    name: 'Occupational Safety & Fire Prevention Certificate',
     nameEn: 'Occupational Health, Safety & Fire Evacuation Certificate',
     category: 'Health & Safety',
-    description: 'Chứng chỉ bắt buộc định kỳ hàng năm cho toàn bộ cán bộ nhân viên chi nhánh trung tâm phân phối và khối vận hành siêu thị về sơ cấp cứu, PCCC và an toàn nâng hạ hàng hóa.',
+    description: 'Mandatory annual certification for all distribution center and store operations staff covering first aid, fire prevention and safe goods handling.',
     signerName: 'Nguyễn Văn Hùng',
     signerTitle: 'Health, Safety & Environment (HSE) Senior Director',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -46,10 +46,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-OPS-001',
-    name: 'Chứng Chỉ Nghiệp Vụ Vận Hành Siêu Thị & Quản Lý Quầy Hàng',
+    name: 'Store Operations & Counter Management Certificate',
     nameEn: 'Store Operations & Department Merchandising Certificate',
     category: 'Retail Operations',
-    description: 'Chứng nhận hoàn thành chương trình đào tạo nghiệp vụ trưng bày hàng hóa chuẩn Planogram, kiểm kê tồn kho và kiểm soát hao hụt (Shrinkage Control).',
+    description: 'Certifies completion of the merchandising operations program covering Planogram display standards, stock counting and shrinkage control.',
     signerName: 'David Tran',
     signerTitle: 'Store General Manager & Retail Operations Mentor',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -66,10 +66,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-SCM-001',
-    name: 'Chứng Chỉ Quản Trị Chuỗi Cung Ứng & Kiểm Soát Kho Lạnh (Cold-Chain)',
+    name: 'Supply Chain Management & Cold Storage Control Certificate (Cold-Chain)',
     nameEn: 'Supply Chain & Cold-Chain Logistics Governance Certificate',
     category: 'Supply Chain & Logistics',
-    description: 'Chứng chỉ chuyên sâu về quản lý vận tải đa phương thức, kiểm soát chuỗi cung ứng lạnh cho hàng tươi sống và quản trị logistics trung tâm phân phối MMVN.',
+    description: 'Advanced certification in multimodal transport management, cold chain control for fresh goods and MMVN distribution center logistics management.',
     signerName: 'Thanh Pham',
     signerTitle: 'Supply Chain & Logistics Governance Specialist',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -86,14 +86,14 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-CS-001',
-    name: 'Chứng Chỉ Nghệ Thuật Dịch Vụ Khách Hàng Xuất Sắc (Customer First)',
+    name: 'Customer Service Excellence Certificate (Customer First)',
     nameEn: 'Customer First & Service Excellence Master Certificate',
     category: 'Customer Service',
-    description: 'Chứng nhận hoàn thành khóa đào tạo văn hóa phục vụ khách hàng chuyên nghiệp, kỹ năng giao tiếp và giải quyết khiếu nại khách hàng B2B/B2C.',
+    description: 'Certifies completion of the professional customer service culture program covering communication skills and B2B/B2C complaint resolution.',
     signerName: 'Nguyễn Thị Bích Vân',
     signerTitle: 'Head of Customer Experience & Public Relations',
     issuerOrg: 'MM Mega Market Vietnam',
-    validityDefaultMonths: 0, // Vĩnh viễn
+    validityDefaultMonths: 0, // Lifetime
     warningDaysDefault: 30,
     recertificationMethodDefault: 'ASSESSMENT_ONLY',
     attachedFile: {
@@ -106,10 +106,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-LEAD-001',
-    name: 'Chứng Chỉ Năng Lực Quản Trị & Lãnh Đạo Đội Ngũ MMVN',
+    name: 'MMVN Leadership & Team Management Competency Certificate',
     nameEn: 'People Leadership & Supervisory Excellence Certificate',
     category: 'Leadership & Management',
-    description: 'Chứng chỉ công nhận năng lực lãnh đạo, huấn luyện nhân viên (Coaching), đánh giá KPI và xây dựng văn hóa đội ngũ hiệu suất cao tại MMVN.',
+    description: 'Certification recognizing leadership capability, staff coaching, KPI evaluation and building a high-performance team culture at MMVN.',
     signerName: 'Bruno Jousselin',
     signerTitle: 'Managing Director & Country CEO',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -126,14 +126,14 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-TECH-001',
-    name: 'Chứng Chỉ Chuyển Đổi Số & Ứng Dụng Công Nghệ Bán Lẻ',
+    name: 'Digital Transformation & Retail Technology Certificate',
     nameEn: 'Retail Digital Transformation & AI Tools Mastery Certificate',
     category: 'Digital & Technology',
-    description: 'Chứng nhận năng lực sử dụng các hệ thống quản trị bán lẻ ERP, BigC LMS, công cụ AI phân tích dữ liệu và tự động hóa quy trình nghiệp vụ.',
+    description: 'Certifies proficiency with retail ERP management systems, the BigC LMS, AI data analytics tools and business process automation.',
     signerName: 'Hoàng Quốc Tuấn',
     signerTitle: 'Chief Information Officer (CIO)',
     issuerOrg: 'MM Mega Market Vietnam',
-    validityDefaultMonths: 0, // Vĩnh viễn
+    validityDefaultMonths: 0, // Lifetime
     warningDaysDefault: 30,
     recertificationMethodDefault: 'ASSESSMENT_ONLY',
     attachedFile: {
@@ -146,10 +146,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-COMP-001',
-    name: 'Chứng Chỉ Tuân Thủ Quy Chuẩn Đạo Đức Kinh Doanh & Bảo Mật',
+    name: 'Business Ethics & Security Compliance Certificate',
     nameEn: 'Corporate Code of Conduct & Information Security Certificate',
     category: 'Compliance & Ethics',
-    description: 'Chứng chỉ bắt buộc định kỳ về quy tắc ứng xử, phòng chống gian lận thương mại, bảo vệ dữ liệu khách hàng theo quy chuẩn pháp lý và tập đoàn.',
+    description: 'Mandatory recurring certification on the code of conduct, commercial fraud prevention and customer data protection under legal and group standards.',
     signerName: 'Lê Hoàng Yến',
     signerTitle: 'Legal & Corporate Compliance Director',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -166,10 +166,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-FRESH-001',
-    name: 'Chứng Chỉ Kỹ Thuật Chế Biến Thịt & Bánh Mì Tươi Chuyên Nghiệp',
+    name: 'Professional Meat Processing & Fresh Bread Technique Certificate',
     nameEn: 'Professional Fresh Food & Artisan Bakery Craft Certificate',
     category: 'Fresh Food Processing',
-    description: 'Chứng chỉ tay nghề chuẩn quốc tế về kỹ thuật pha lóc thịt tươi, an toàn vận hành máy cắt cưa xương và quy trình nướng bánh mì artisan chuẩn MMVN.',
+    description: 'Internationally recognized trade certification in fresh meat butchery technique, safe operation of bone saws and MMVN artisan bread baking procedures.',
     signerName: 'Jean-Pierre Laurent',
     signerTitle: 'Master Baker & Fresh Food Operations Specialist',
     issuerOrg: 'MM Mega Market Vietnam',
@@ -186,10 +186,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATES = [
   },
   {
     id: 'CERTTPL-FIN-001',
-    name: 'Chứng Chỉ Quản Trị Chi Phí & P&L Trung Tâm Phân Phối',
+    name: 'Distribution Center Cost & P&L Management Certificate',
     nameEn: 'Cost Center Governance & Retail P&L Management Certificate',
     category: 'Financial Management',
-    description: 'Chứng chỉ quản trị tài chính doanh nghiệp dành cho cấp quản lý siêu thị, kiểm soát ngân sách đào tạo, phân bổ chi phí hoạt động và tối ưu hóa lợi nhuận P&L.',
+    description: 'Corporate finance management certification for store management, covering training budget control, operating cost allocation and P&L profit optimization.',
     signerName: 'Vũ Minh Trí',
     signerTitle: 'Chief Financial Officer (CFO)',
     issuerOrg: 'MM Mega Market Vietnam',

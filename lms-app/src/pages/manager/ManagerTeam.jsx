@@ -8,20 +8,20 @@ import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 import RoadmapTabsPanel from '../../features/roadmaps/RoadmapTabsPanel';
 
 const STATUS_META = {
-  NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu', enLabel: 'Not Started' },
-  IN_PROGRESS: { tone: 'rail', label: 'Đang Học', enLabel: 'In Progress' },
-  COMPLETED: { tone: 'sage', label: 'Đã Hoàn Thành', enLabel: 'Completed' },
-  FAILED: { tone: 'rust', label: 'Chưa Đạt Điểm', enLabel: 'Failed' },
-  OVERDUE: { tone: 'rust', label: 'Quá Hạn', enLabel: 'Overdue' },
+  NOT_STARTED: { tone: 'slate', label: 'Not Started', enLabel: 'Not Started' },
+  IN_PROGRESS: { tone: 'rail', label: 'In Progress', enLabel: 'In Progress' },
+  COMPLETED: { tone: 'sage', label: 'Completed', enLabel: 'Completed' },
+  FAILED: { tone: 'rust', label: 'Score Not Passed', enLabel: 'Failed' },
+  OVERDUE: { tone: 'rust', label: 'Overdue', enLabel: 'Overdue' },
 };
 
 const MANAGER_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không gộp nhóm' },
-  { id: 'STATUS', label: 'Theo Trạng Thái' },
-  { id: 'RISK', label: 'Theo Mức Độ Rủi Ro Tuân Thủ' },
-  { id: 'COURSE_TYPE', label: 'Theo Phân Loại Khóa Học' },
-  { id: 'POSITION', label: 'Theo Chức Danh / Vị Trí' },
-  { id: 'LEVEL', label: 'Theo Cấp Bậc (Job Level)' },
+  { id: 'NONE', label: 'No grouping' },
+  { id: 'STATUS', label: 'By Status' },
+  { id: 'RISK', label: 'By Compliance Risk Level' },
+  { id: 'COURSE_TYPE', label: 'By Course Classification' },
+  { id: 'POSITION', label: 'By Job Title / Position' },
+  { id: 'LEVEL', label: 'By Job Level' },
 ];
 
 export default function ManagerTeam() {
@@ -57,21 +57,21 @@ export default function ManagerTeam() {
   const enrichedTeamMembers = useMemo(() => {
     return rawTeamMembers.map((m) => {
       let riskLevel = 'SAFE'; // SAFE | WARNING | CRITICAL
-      let riskLabel = '🟢 Đạt Chuẩn Tuân Thủ';
-      let riskDetail = 'Đang học đúng tiến độ hoặc đã hoàn thành chỉ tiêu đào tạo.';
+      let riskLabel = '🟢 Compliance Standard Met';
+      let riskDetail = 'On schedule or has already met the training target.';
 
       if (m.status === 'OVERDUE') {
         riskLevel = 'CRITICAL';
-        riskLabel = '🔴 Rủi Ro Quá Hạn';
-        riskDetail = `Đã trễ hạn chót (${m.dueDate}) — nguy cơ bị ghi nhận vi phạm kiểm toán vận hành.`;
+        riskLabel = '🔴 Overdue Risk';
+        riskDetail = `Past the deadline (${m.dueDate}) — at risk of being logged as an operations audit breach.`;
       } else if (m.status === 'FAILED') {
         riskLevel = 'CRITICAL';
-        riskLabel = '🔴 Chưa Đạt Điểm';
-        riskDetail = `Điểm bài thi ${m.score}% (dưới chuẩn 80%) sau ${m.attempts || 1} lần thi. Cần kèm cặp & mở thi lại.`;
+        riskLabel = '🔴 Score Not Passed';
+        riskDetail = `Exam score ${m.score}% (below the 80% standard) after ${m.attempts || 1} attempts. Needs coaching & a retake.`;
       } else if (m.inactiveDays >= 3 && m.status !== 'COMPLETED') {
         riskLevel = 'WARNING';
-        riskLabel = '🟡 Cần Nhắc Nhở';
-        riskDetail = `Đã ${m.inactiveDays} ngày không đăng nhập học tập.`;
+        riskLabel = '🟡 Needs A Reminder';
+        riskDetail = `No learning login for ${m.inactiveDays} days.`;
       }
 
       return {
@@ -195,28 +195,28 @@ export default function ManagerTeam() {
     if (groupBy === 'RISK') {
       return {
         key: m.riskLevel,
-        label: m.riskLevel === 'CRITICAL' ? '🔴 Rủi Ro Cao (Quá Hạn / Rớt Điểm)' : m.riskLevel === 'WARNING' ? '🟡 Cảnh Báo (Không Hoạt Động)' : '🟢 An Toàn & Đạt Chuẩn',
+        label: m.riskLevel === 'CRITICAL' ? '🔴 High Risk (Overdue / Failed)' : m.riskLevel === 'WARNING' ? '🟡 Warning (Inactive)' : '🟢 Safe & Meets The Standard',
         icon: m.riskLevel === 'CRITICAL' ? 'ti-alert-octagon' : m.riskLevel === 'WARNING' ? 'ti-alert-triangle' : 'ti-circle-check',
       };
     }
     if (groupBy === 'COURSE_TYPE') {
       return {
         key: m.courseType,
-        label: m.courseType === 'MANDATORY' ? '🔒 Khóa Học Bắt Buộc Tuân Thủ' : m.courseType === 'ROADMAP' ? '🏆 Khóa Học Theo Lộ Trình Cấp Bậc' : '✨ Khóa Học Tự Chọn',
+        label: m.courseType === 'MANDATORY' ? '🔒 Mandatory Compliance Courses' : m.courseType === 'ROADMAP' ? '🏆 Level Roadmap Courses' : '✨ Optional Courses',
         icon: 'ti-certificate',
       };
     }
     if (groupBy === 'POSITION') {
       return {
         key: m.position || 'OTHER',
-        label: m.position || 'Chưa Phân Vị Trí',
+        label: m.position || 'No Position Assigned',
         icon: 'ti-briefcase',
       };
     }
     if (groupBy === 'LEVEL') {
       return {
         key: String(m.level || '7'),
-        label: `Cấp Bậc: Level ${m.level || 7}`,
+        label: `Job Level: Level ${m.level || 7}`,
         icon: 'ti-stairs-up',
       };
     }
@@ -256,20 +256,20 @@ export default function ManagerTeam() {
   // Export comprehensive CSV
   function handleExportCsv() {
     const headers = [
-      'Mã Nhân Viên',
-      'Họ Và Tên',
-      'Chức Danh',
-      'Cấp Bậc',
-      'Khóa Học Phân Bổ',
-      'Phân Loại',
-      'Tiến Độ (%)',
-      'Trạng Thái',
-      'Điểm Số (%)',
-      'Số Lần Thi',
-      'Hạn Chót',
-      'Ngày Học Gần Nhất',
-      'Số Ngày Không Vào Học',
-      'Đánh Giá Rủi Ro Tuân Thủ',
+      'Employee Code',
+      'Full Name',
+      'Job Title',
+      'Job Level',
+      'Allocated Courses',
+      'Classification',
+      'Progress (%)',
+      'Status',
+      'Score (%)',
+      'Attempts',
+      'Deadline',
+      'Last Study Date',
+      'Days Without Study',
+      'Compliance Risk Assessment',
     ];
 
     const rows = filteredList.map((m) => [
@@ -278,13 +278,13 @@ export default function ManagerTeam() {
       m.position || '',
       `Level ${m.level || 7}`,
       m.course || '',
-      m.courseType === 'MANDATORY' ? 'Bắt Buộc' : m.courseType === 'ROADMAP' ? 'Lộ Trình' : 'Tự Chọn',
+      m.courseType === 'MANDATORY' ? 'Mandatory' : m.courseType === 'ROADMAP' ? 'Roadmap' : 'Optional',
       `${m.progress || 0}%`,
       STATUS_META[m.status]?.label || m.status,
-      m.score != null ? `${m.score}%` : 'Chưa thi',
+      m.score != null ? `${m.score}%` : 'Not taken',
       m.attempts || 0,
       m.dueDate || '—',
-      m.lastActivity || 'Chưa ghi nhận',
+      m.lastActivity || 'Not recorded',
       m.inactiveDays || 0,
       m.riskLabel || '',
     ]);
@@ -302,7 +302,8 @@ export default function ManagerTeam() {
   function openReminderModal(member) {
     setReminderMember(member);
     setReminderMessage(
-      `Chào ${member.name},\nBạn đang có khóa học "${member.course}" cần hoàn thành trước ngày ${member.dueDate}. Vui lòng sắp xếp thời gian hoàn thành đúng hạn để đảm bảo tiêu chuẩn tuân thủ của phòng ban.`
+      `Hi ${member.name},
+Your course "${member.course}" must be completed before ${member.dueDate}. Please make time to finish it on schedule so the department stays compliant.`
     );
   }
 
@@ -317,18 +318,18 @@ export default function ManagerTeam() {
   // Render Roster Table component
   function renderRosterTable(members) {
     return (
-      <div className="card" style={{ borderRadius: 10, border: '1px solid var(--line)', overflowX: 'auto', marginBottom: 14, background: '#fff' }}>
+      <div className="card" style={{ borderRadius: 10, border: '1px solid var(--line)', overflowX: 'auto', marginBottom: 14, background: 'var(--paper-raised)' }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC' }}>
-              <th style={{ width: '22%' }}>Nhân Viên</th>
-              <th style={{ width: '22%' }}>Chương Trình / Khóa Học</th>
-              <th style={{ width: '8%' }}>Phân Loại</th>
-              <th style={{ width: '12%' }}>Tiến Độ</th>
-              <th style={{ width: '9%' }}>Trạng Thái</th>
-              <th style={{ width: '9%' }}>Điểm Thi</th>
-              <th style={{ width: '9%' }}>Hạn Chót</th>
-              <th style={{ width: '9%', textAlign: 'right' }}>Thao Tác</th>
+            <tr style={{ background: 'var(--paper-sunken)' }}>
+              <th style={{ width: '22%' }}>Employee</th>
+              <th style={{ width: '22%' }}>Program / Course</th>
+              <th style={{ width: '8%' }}>Classification</th>
+              <th style={{ width: '12%' }}>Progress</th>
+              <th style={{ width: '9%' }}>Status</th>
+              <th style={{ width: '9%' }}>Exam Score</th>
+              <th style={{ width: '9%' }}>Deadline</th>
+              <th style={{ width: '9%', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -336,7 +337,7 @@ export default function ManagerTeam() {
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--ink-faint)' }}>
                   <i className="ti ti-users" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
-                  Không tìm thấy nhân sự phù hợp với bộ lọc hiện tại.
+                  No employee matches the current filters.
                 </td>
               </tr>
             ) : (
@@ -354,7 +355,7 @@ export default function ManagerTeam() {
                             width: 34,
                             height: 34,
                             borderRadius: '50%',
-                            background: isCritical ? '#FEE2E2' : isWarning ? '#FEF3C7' : '#EFF6FF',
+                            background: isCritical ? 'var(--rust-soft)' : isWarning ? 'var(--amber-soft)' : 'var(--blue-soft)',
                             color: isCritical ? '#DC2626' : isWarning ? '#D97706' : '#1D4ED8',
                             display: 'flex',
                             alignItems: 'center',
@@ -368,10 +369,10 @@ export default function ManagerTeam() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{m.name}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                             <span style={{ fontFamily: 'var(--font-mono)' }}>{m.employeeId}</span> &middot; {m.position}
                           </div>
-                          <div style={{ fontSize: 11, color: isCritical ? 'var(--rust)' : isWarning ? '#B45309' : 'var(--sage)', fontWeight: 600, marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: isCritical ? 'var(--rust)' : isWarning ? 'var(--amber-soft-text)' : 'var(--sage)', fontWeight: 600, marginTop: 2 }}>
                             {m.riskLabel}
                           </div>
                         </div>
@@ -381,7 +382,7 @@ export default function ManagerTeam() {
                     <td>
                       <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink)' }}>{m.course}</div>
                       <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
-                        Level {m.level} &middot; {m.storeName || activeManager.storeName || 'MM An Phú'}
+                        Level {m.level} &middot; {m.storeName || activeManager.storeName || 'MM An Phu'}
                       </div>
                     </td>
 
@@ -415,7 +416,7 @@ export default function ManagerTeam() {
                             {m.score}%
                           </span>
                           {m.attempts && (
-                            <span style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginLeft: 4 }}>
+                            <span style={{ fontSize: 11, color: 'var(--ink-faint)', marginLeft: 4 }}>
                               ({m.attempts}L)
                             </span>
                           )}
@@ -431,7 +432,7 @@ export default function ManagerTeam() {
                       </div>
                       {m.inactiveDays > 0 && m.status !== 'COMPLETED' && (
                         <div style={{ fontSize: 11, color: m.inactiveDays >= 3 ? '#D97706' : 'var(--ink-faint)' }}>
-                          Vắng {m.inactiveDays} ngày
+                          Absent {m.inactiveDays} days
                         </div>
                       )}
                     </td>
@@ -443,7 +444,7 @@ export default function ManagerTeam() {
                           variant="outline"
                           icon="ti-bell"
                           onClick={() => openReminderModal(m)}
-                          title="Gửi email thông báo nhắc nhở tiến độ"
+                          title="Send a progress reminder email"
                         />
                         <Button
                           size="sm"
@@ -454,7 +455,7 @@ export default function ManagerTeam() {
                             const fullUser = list.find((u) => u.userId === m.userId || u.employeeCode === m.employeeId || u.fullName === m.name) || m;
                             setTranscriptUser(fullUser);
                           }}
-                          title="Xem toàn bộ khóa học & bảng điểm nhân sự này"
+                          title="View this employee's full course list & transcript"
                         />
                         <Button
                           size="sm"
@@ -473,12 +474,12 @@ export default function ManagerTeam() {
                                 level: m.level || 6,
                                 divisionCode: m.divisionCode || 'OMD',
                                 departmentCode: m.departmentCode || 'PPF',
-                                storeName: m.storeName || activeManager.storeName || 'MM An Phú',
+                                storeName: m.storeName || activeManager.storeName || 'MM An Phu',
                               };
                             }
                             setRoadmapUser(fullUser);
                           }}
-                          title="Xem Lộ Trình Cấp Bậc (Job Level Roadmap) của nhân sự này"
+                          title="View this employee's job level roadmap"
                         />
                       </div>
                     </td>
@@ -498,13 +499,13 @@ export default function ManagerTeam() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Quản Lý Đào Tạo &amp; Phát Triển Năng Lực Đội Ngũ</h1>
+            <h1>Team Training &amp; Competency Development Management</h1>
             <Badge tone="amber" icon="ti-briefcase">
               {activeManager.storeName || `${activeManager.divisionCode} - ${activeManager.departmentCode}`}
             </Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Giám sát toàn diện tiến độ học tập, tỷ lệ tuân thủ kiểm toán, chẩn đoán khoảng cách kỹ năng (Skill Gap) và đánh giá ứng dụng hành vi (Kirkpatrick L3) cho {rawTeamMembers.length} nhân sự trực thuộc {activeManager.fullName}.
+            End-to-end monitoring of learning progress, audit compliance rate, skill gap diagnosis and behavioural application review (Kirkpatrick L3) for the {rawTeamMembers.length} employees reporting to {activeManager.fullName}.
           </p>
         </div>
 
@@ -514,7 +515,7 @@ export default function ManagerTeam() {
             icon="ti-download"
             onClick={handleExportCsv}
           >
-            Xuất Báo Cáo Excel / CSV
+            Export The Report To Excel / CSV
           </Button>
           <Button
             variant="primary"
@@ -522,7 +523,7 @@ export default function ManagerTeam() {
             onClick={handleSendBatchReminder}
             disabled={batchReminderSent || kpis.totalNeedsAttention === 0}
           >
-            {batchReminderSent ? 'Đã Gửi Nhắc Nhở Hàng Loạt!' : `Đôn Đốc ${kpis.totalNeedsAttention} Ca Cần Chú Ý`}
+            {batchReminderSent ? 'Bulk Reminder Sent!' : `Nudge ${kpis.totalNeedsAttention} Cases Needing Attention`}
           </Button>
         </div>
       </div>
@@ -530,25 +531,25 @@ export default function ManagerTeam() {
       {/* 2. TOP 4 EXECUTIVE METRIC CARDS */}
       <div className="grid grid-4" style={{ marginBottom: 24, gap: 14 }}>
         {/* Card 1: Mandatory Compliance */}
-        <div className="card card-pad" style={{ borderLeft: '4px solid var(--sage, #10B981)', background: '#fff' }}>
+        <div className="card card-pad" style={{ borderLeft: '4px solid var(--sage, #10B981)', background: 'var(--paper-raised)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', marginBottom: 4 }}>
-            Tuân Thủ Khóa Bắt Buộc
+            Mandatory Course Compliance
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--sage)' }}>{kpis.mandatoryComplianceRate}%</span>
             <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              ({kpis.mandatoryCompleted}/{kpis.mandatoryListCount} hoàn thành)
+              ({kpis.mandatoryCompleted}/{kpis.mandatoryListCount} complete)
             </span>
           </div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-            Đáp ứng tiêu chuẩn kiểm toán MM Mega Market
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+            Meets the MM Mega Market audit standard
           </div>
         </div>
 
         {/* Card 2: Overall Progress */}
-        <div className="card card-pad" style={{ borderLeft: '4px solid var(--rail, #005BAA)', background: '#fff' }}>
+        <div className="card card-pad" style={{ borderLeft: '4px solid var(--rail, #005BAA)', background: 'var(--paper-raised)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', marginBottom: 4 }}>
-            Tiến Độ Hoàn Thành Chung
+            Overall Completion Progress
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--rail)' }}>{kpis.avgProgress}%</span>
@@ -560,20 +561,20 @@ export default function ManagerTeam() {
         </div>
 
         {/* Card 3: Competency Score */}
-        <div className="card card-pad" style={{ borderLeft: '4px solid #8B5CF6', background: '#fff' }}>
+        <div className="card card-pad" style={{ borderLeft: '4px solid #8B5CF6', background: 'var(--paper-raised)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', marginBottom: 4 }}>
-            Điểm Đánh Giá Năng Lực TB
+            Avg Competency Score
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 28, fontWeight: 900, color: '#8B5CF6' }}>
               {kpis.avgScore != null ? `${kpis.avgScore}%` : '—'}
             </span>
             <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              (Tỷ lệ đạt: {kpis.passRate}%)
+              (Pass rate: {kpis.passRate}%)
             </span>
           </div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-            Chuẩn đạt bài thi kiến thức ≥ 80%
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+            Knowledge exam pass mark ≥ 80%
           </div>
         </div>
 
@@ -582,7 +583,7 @@ export default function ManagerTeam() {
           className="card card-pad"
           style={{
             borderLeft: '4px solid var(--rust, #EF4444)',
-            background: '#fff',
+            background: 'var(--paper-raised)',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s',
           }}
@@ -590,10 +591,10 @@ export default function ManagerTeam() {
             setActiveTab('ROSTER');
             setQuickFilter('RISK_OVERDUE');
           }}
-          title="Bấm để lọc ngay các ca cần xử lý"
+          title="Click to filter straight to the cases needing action"
         >
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-            <span>Cảnh Báo Cần Xử Lý</span>
+            <span>Alerts To Handle</span>
             <i className="ti ti-chevron-right" style={{ fontSize: 12, color: 'var(--ink-faint)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -601,11 +602,11 @@ export default function ManagerTeam() {
               {kpis.totalNeedsAttention}
             </span>
             <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              ca rủi ro
+              cases at risk
             </span>
           </div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-            {kpis.criticalRisksCount} quá hạn/rớt &middot; {kpis.warningRisksCount} vắng học
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+            {kpis.criticalRisksCount} overdue/failed &middot; {kpis.warningRisksCount} inactive
           </div>
         </div>
       </div>
@@ -613,10 +614,10 @@ export default function ManagerTeam() {
       {/* 3. DISTINCT 4 MAIN TABS (NON-REDUNDANT) */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'ROSTER', label: 'Tiến Độ & Tuân Thủ Chi Tiết', icon: 'ti-list-check' },
-          { id: 'SCORE_ANALYTICS', label: 'Phân Tích Điểm Số & Năng Lực', icon: 'ti-chart-pie' },
-          { id: 'SKILL_GAP', label: 'Ma Trận Khoảng Cách Năng Lực (Skill Gap)', icon: 'ti-chart-radar' },
-          { id: 'ACTION_PLANS', label: 'Cam Kết Hành Động & Đánh Giá L3', icon: 'ti-checklist' },
+          { id: 'ROSTER', label: 'Detailed Progress & Compliance', icon: 'ti-list-check' },
+          { id: 'SCORE_ANALYTICS', label: 'Score & Competency Analysis', icon: 'ti-chart-pie' },
+          { id: 'SKILL_GAP', label: 'Skill Gap Matrix', icon: 'ti-chart-radar' },
+          { id: 'ACTION_PLANS', label: 'Action Commitments & L3 Review', icon: 'ti-checklist' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -639,22 +640,22 @@ export default function ManagerTeam() {
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: TIẾN ĐỘ & TUÂN THỦ CHI TIẾT (ROSTER & COMPLIANCE) */}
+      {/* TAB 1: DETAILED PROGRESS & COMPLIANCE (ROSTER & COMPLIANCE) */}
       {/* ========================================================================= */}
       {activeTab === 'ROSTER' && (
         <>
           {/* STANDARDIZED FILTER TOOLBAR */}
-          <div className="card card-pad" style={{ marginBottom: 18, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+          <div className="card card-pad" style={{ marginBottom: 18, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
             {/* ROW 0: QUICK FILTER PILLS */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
               {[
-                { id: 'ALL', label: 'Tất Cả Nhân Sự', count: rawTeamMembers.length },
-                { id: 'COMPLIANT', label: 'Đạt Chuẩn Tuân Thủ', count: enrichedTeamMembers.filter((m) => m.riskLevel === 'SAFE').length },
-                { id: 'IN_PROGRESS', label: 'Đang Học', count: rawTeamMembers.filter((m) => m.status === 'IN_PROGRESS').length },
-                { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: rawTeamMembers.filter((m) => m.status === 'COMPLETED').length },
-                { id: 'RISK_OVERDUE', label: '🔴 Cần Chú Ý / Quá Hạn', count: kpis.totalNeedsAttention, highlight: true },
-                { id: 'FAILED', label: 'Chưa Đạt Điểm', count: rawTeamMembers.filter((m) => m.status === 'FAILED').length },
-                { id: 'NOT_STARTED', label: 'Chưa Bắt Đầu', count: rawTeamMembers.filter((m) => m.status === 'NOT_STARTED').length },
+                { id: 'ALL', label: 'All Employees', count: rawTeamMembers.length },
+                { id: 'COMPLIANT', label: 'Compliance Standard Met', count: enrichedTeamMembers.filter((m) => m.riskLevel === 'SAFE').length },
+                { id: 'IN_PROGRESS', label: 'In Progress', count: rawTeamMembers.filter((m) => m.status === 'IN_PROGRESS').length },
+                { id: 'COMPLETED', label: 'Completed', count: rawTeamMembers.filter((m) => m.status === 'COMPLETED').length },
+                { id: 'RISK_OVERDUE', label: '🔴 Needs Attention / Overdue', count: kpis.totalNeedsAttention, highlight: true },
+                { id: 'FAILED', label: 'Score Not Passed', count: rawTeamMembers.filter((m) => m.status === 'FAILED').length },
+                { id: 'NOT_STARTED', label: 'Not Started', count: rawTeamMembers.filter((m) => m.status === 'NOT_STARTED').length },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -678,7 +679,7 @@ export default function ManagerTeam() {
                     color: quickFilter === f.id ? '#fff' : 'var(--ink-soft)',
                     padding: '1px 6px',
                     borderRadius: 10,
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: 700,
                   }}>
                     {f.count}
@@ -696,7 +697,7 @@ export default function ManagerTeam() {
                   type="text"
                   className="field-input"
                   style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                  placeholder="Tìm theo tên NV, mã NV, chức danh, khóa học..."
+                  placeholder="Search by employee name, code, job title, course..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -714,14 +715,14 @@ export default function ManagerTeam() {
               {/* Group By & Filter Toggle */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-                  <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
                   <select
                     value={groupBy}
                     onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
                     style={{
                       border: 'none',
                       background: 'transparent',
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: groupBy !== 'NONE' ? 700 : 500,
                       color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                       cursor: 'pointer',
@@ -741,9 +742,9 @@ export default function ManagerTeam() {
                   style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
                 >
                   <i className="ti ti-filter" />
-                  <span>Bộ Lọc</span>
+                  <span>Filters</span>
                   {activeFiltersCount > 0 && (
-                    <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                    <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                       {activeFiltersCount}
                     </span>
                   )}
@@ -758,8 +759,8 @@ export default function ManagerTeam() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                   {/* Position */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      CHỨC DANH / VỊ TRÍ
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                      JOB TITLE / POSITION
                     </label>
                     <select
                       className="field-select"
@@ -767,7 +768,7 @@ export default function ManagerTeam() {
                       value={positionFilter}
                       onChange={(e) => setPositionFilter(e.target.value)}
                     >
-                      <option value="ALL">Tất cả chức danh</option>
+                      <option value="ALL">All job titles</option>
                       {positionList.map((pos) => (
                         <option key={pos} value={pos}>{pos}</option>
                       ))}
@@ -776,8 +777,8 @@ export default function ManagerTeam() {
 
                   {/* Level */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      CẤP BẬC (LEVEL)
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                      JOB LEVEL
                     </label>
                     <select
                       className="field-select"
@@ -785,7 +786,7 @@ export default function ManagerTeam() {
                       value={levelFilter}
                       onChange={(e) => setLevelFilter(e.target.value)}
                     >
-                      <option value="ALL">Tất cả cấp bậc</option>
+                      <option value="ALL">All job levels</option>
                       {levelList.map((lvl) => (
                         <option key={lvl} value={lvl}>Level {lvl}</option>
                       ))}
@@ -794,8 +795,8 @@ export default function ManagerTeam() {
 
                   {/* Course Type */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      PHÂN LOẠI KHÓA HỌC
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                      COURSE CLASSIFICATION
                     </label>
                     <select
                       className="field-select"
@@ -803,17 +804,17 @@ export default function ManagerTeam() {
                       value={courseTypeFilter}
                       onChange={(e) => setCourseTypeFilter(e.target.value)}
                     >
-                      <option value="ALL">Tất cả phân loại</option>
-                      <option value="MANDATORY">Bắt Buộc Tuân Thủ (Mandatory)</option>
-                      <option value="ROADMAP">Theo Lộ Trình Cấp Bậc (Roadmap)</option>
-                      <option value="ELECTIVE">Tự Chọn (Elective)</option>
+                      <option value="ALL">All classifications</option>
+                      <option value="MANDATORY">Compliance Mandatory</option>
+                      <option value="ROADMAP">By Level Roadmap</option>
+                      <option value="ELECTIVE">Elective</option>
                     </select>
                   </div>
 
                   {/* Score Range */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      KẾT QUẢ ĐIỂM THI
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                      EXAM RESULT
                     </label>
                     <select
                       className="field-select"
@@ -821,17 +822,17 @@ export default function ManagerTeam() {
                       value={scoreRangeFilter}
                       onChange={(e) => setScoreRangeFilter(e.target.value)}
                     >
-                      <option value="ALL">Tất cả kết quả</option>
-                      <option value="PASS">🟢 Đạt chuẩn (&ge; 80%)</option>
-                      <option value="FAIL">🔴 Chưa đạt (&lt; 80%)</option>
-                      <option value="UNGRADED">⚪ Chưa làm bài kiểm tra</option>
+                      <option value="ALL">All results</option>
+                      <option value="PASS">🟢 Meets the standard (&ge; 80%)</option>
+                      <option value="FAIL">🔴 Not passed (&lt; 80%)</option>
+                      <option value="UNGRADED">⚪ Test not taken</option>
                     </select>
                   </div>
 
                   {/* Risk Level */}
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      MỨC ĐỘ RỦI RO
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                      RISK LEVEL
                     </label>
                     <select
                       className="field-select"
@@ -839,10 +840,10 @@ export default function ManagerTeam() {
                       value={riskFilter}
                       onChange={(e) => setRiskFilter(e.target.value)}
                     >
-                      <option value="ALL">Tất cả mức độ</option>
-                      <option value="SAFE">🟢 An toàn / Đạt chuẩn</option>
-                      <option value="WARNING">🟡 Cảnh báo / Vắng học &gt; 3 ngày</option>
-                      <option value="CRITICAL">🔴 Rủi ro cao / Quá hạn / Rớt thi</option>
+                      <option value="ALL">All levels</option>
+                      <option value="SAFE">🟢 Safe / meets the standard</option>
+                      <option value="WARNING">🟡 Warning / absent &gt; 3 days</option>
+                      <option value="CRITICAL">🔴 High risk / overdue / failed</option>
                     </select>
                   </div>
                 </div>
@@ -853,52 +854,52 @@ export default function ManagerTeam() {
             {(search || quickFilter !== 'ALL' || positionFilter !== 'ALL' || levelFilter !== 'ALL' || courseTypeFilter !== 'ALL' || scoreRangeFilter !== 'ALL' || riskFilter !== 'ALL' || groupBy !== 'NONE') && (
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
                   {search && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Từ khóa: <strong>"{search}"</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Search term: <strong>"{search}"</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                     </span>
                   )}
                   {quickFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Dải chọn: <strong>{quickFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Range: <strong>{quickFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setQuickFilter('ALL')} />
                     </span>
                   )}
                   {positionFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Chức danh: <strong>{positionFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Job title: <strong>{positionFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setPositionFilter('ALL')} />
                     </span>
                   )}
                   {levelFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Cấp bậc: <strong>Level {levelFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Job level: <strong>Level {levelFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setLevelFilter('ALL')} />
                     </span>
                   )}
                   {courseTypeFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Loại: <strong>{courseTypeFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Type: <strong>{courseTypeFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setCourseTypeFilter('ALL')} />
                     </span>
                   )}
                   {scoreRangeFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Điểm: <strong>{scoreRangeFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Score: <strong>{scoreRangeFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setScoreRangeFilter('ALL')} />
                     </span>
                   )}
                   {riskFilter !== 'ALL' && (
-                    <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Rủi ro: <strong>{riskFilter}</strong>
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Risk: <strong>{riskFilter}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setRiskFilter('ALL')} />
                     </span>
                   )}
                   {groupBy !== 'NONE' && (
-                    <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Gộp nhóm: <strong>{MANAGER_GROUP_BY_OPTIONS.find((o) => o.id === groupBy)?.label}</strong>
+                    <span className="badge" style={{ background: 'var(--paper-sunken)', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Group by: <strong>{MANAGER_GROUP_BY_OPTIONS.find((o) => o.id === groupBy)?.label}</strong>
                       <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('NONE')} />
                     </span>
                   )}
@@ -907,11 +908,11 @@ export default function ManagerTeam() {
                     onClick={handleResetAllFilters}
                     style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
                   >
-                    Xóa tất cả bộ lọc
+                    Clear all filters
                   </button>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                  Tìm thấy <strong>{filteredList.length}</strong> / {rawTeamMembers.length} nhân sự
+                  Found <strong>{filteredList.length}</strong> / {rawTeamMembers.length} employees
                 </div>
               </div>
             )}
@@ -925,7 +926,7 @@ export default function ManagerTeam() {
               {groups.map((g) => {
                 const isCollapsed = collapsedGroups.has(g.key);
                 return (
-                  <div key={g.key} className="card" style={{ overflow: 'hidden', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+                  <div key={g.key} className="card" style={{ overflow: 'hidden', background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
                     <button
                       onClick={() => toggleGroup(g.key)}
                       style={{
@@ -934,7 +935,7 @@ export default function ManagerTeam() {
                         alignItems: 'center',
                         gap: 12,
                         padding: '12px 16px',
-                        background: '#F8FAFC',
+                        background: 'var(--paper-sunken)',
                         border: 'none',
                         borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
                         cursor: 'pointer',
@@ -942,11 +943,11 @@ export default function ManagerTeam() {
                       }}
                     >
                       <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} style={{ color: 'var(--ink-faint)' }} />
-                      <div style={{ width: 28, height: 28, borderRadius: 6, background: '#EFF6FF', color: 'var(--blue, #005BAA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--blue-soft)', color: 'var(--blue, #005BAA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <i className={`ti ${g.icon}`} style={{ fontSize: 15 }} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13.5, color: '#0F172A' }}>{g.label}</div>
-                      <Badge tone="slate">{g.rows.length} nhân sự</Badge>
+                      <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{g.label}</div>
+                      <Badge tone="slate">{g.rows.length} employees</Badge>
                     </button>
                     {!isCollapsed && (
                       <div style={{ padding: '8px 12px 0' }}>
@@ -962,33 +963,33 @@ export default function ManagerTeam() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: PHÂN TÍCH ĐIỂM SỐ & HIỆU QUẢ ĐÀO TẠO (SCORE ANALYTICS) */}
+      {/* TAB 2: SCORE & TRAINING EFFECTIVENESS ANALYSIS (SCORE ANALYTICS) */}
       {/* ========================================================================= */}
       {activeTab === 'SCORE_ANALYTICS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 28 }}>
           <div className="grid grid-2" style={{ gap: 16 }}>
-            {/* Phổ Điểm Kiểm Tra Năng Lực */}
-            <div className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+            {/* Competency Score Distribution */}
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
               <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 6, color: 'var(--ink)' }}>
-                Phổ Điểm Kiểm Tra Năng Lực Đội Ngũ
+                Team Competency Score Distribution
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 14 }}>
-                Tỷ lệ nhân viên đạt điểm xuất sắc (≥ 90%), đạt chuẩn (80% - 89%), tiệm cận (70% - 79%) và cần cải thiện (&lt; 70%).
+                The share of employees scoring excellent (≥ 90%), at standard (80% - 89%), approaching (70% - 79%) and needing improvement (&lt; 70%).
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { label: 'Xuất Sắc (90% - 100%)', count: rawTeamMembers.filter((m) => m.score >= 90).length, tone: 'sage', color: '#10B981' },
-                  { label: 'Đạt Chuẩn (80% - 89%)', count: rawTeamMembers.filter((m) => m.score >= 80 && m.score < 90).length, tone: 'rail', color: '#005BAA' },
-                  { label: 'Tiệm Cận (70% - 79%)', count: rawTeamMembers.filter((m) => m.score >= 70 && m.score < 80).length, tone: 'amber', color: '#F59E0B' },
-                  { label: 'Cần Cải Thiện (< 70%)', count: rawTeamMembers.filter((m) => m.score != null && m.score < 70).length, tone: 'rust', color: '#EF4444' },
+                  { label: 'Excellent (90% - 100%)', count: rawTeamMembers.filter((m) => m.score >= 90).length, tone: 'sage', color: '#10B981' },
+                  { label: 'At Standard (80% - 89%)', count: rawTeamMembers.filter((m) => m.score >= 80 && m.score < 90).length, tone: 'rail', color: 'var(--blue)' },
+                  { label: 'Approaching (70% - 79%)', count: rawTeamMembers.filter((m) => m.score >= 70 && m.score < 80).length, tone: 'amber', color: '#F59E0B' },
+                  { label: 'Needs Improvement (< 70%)', count: rawTeamMembers.filter((m) => m.score != null && m.score < 70).length, tone: 'rust', color: '#EF4444' },
                 ].map((item) => {
                   const percent = rawTeamMembers.length > 0 ? Math.round((item.count / rawTeamMembers.length) * 100) : 0;
                   return (
                     <div key={item.label}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
                         <span style={{ fontWeight: 600 }}>{item.label}</span>
-                        <span><strong>{item.count}</strong> nhân sự ({percent}%)</span>
+                        <span><strong>{item.count}</strong> employees ({percent}%)</span>
                       </div>
                       <div style={{ width: '100%', height: 8, background: 'var(--paper-sunken)', borderRadius: 4, overflow: 'hidden' }}>
                         <div style={{ width: `${percent}%`, height: '100%', background: item.color, borderRadius: 4 }} />
@@ -1000,17 +1001,17 @@ export default function ManagerTeam() {
 
               <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px dashed var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
                 <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-                Chuẩn đạt yêu cầu bắt buộc của MM Mega Market là <strong>≥ 80%</strong> điểm bài kiểm tra cuối khóa.
+                The MM Mega Market mandatory pass standard is <strong>≥ 80%</strong> end-of-course exam scores.
               </div>
             </div>
 
-            {/* Bảng Xếp Hạng Top Nhân Sự Xuất Sắc */}
-            <div className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+            {/* Top Performing Employees Leaderboard */}
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
               <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 6, color: 'var(--ink)' }}>
-                🏆 Top Nhân Sự Xuất Sắc Nhất
+                🏆 Top Performing Employees
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 14 }}>
-                Nhân viên có điểm số cao nhất và hoàn thành khóa học sớm nhất trong đợt đào tạo.
+                The employees with the highest scores who finished their courses earliest in this training cycle.
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1026,7 +1027,7 @@ export default function ManagerTeam() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '10px 12px',
-                        background: idx === 0 ? '#FEF9C3' : idx === 1 ? '#F1F5F9' : idx === 2 ? '#FFEDD5' : 'var(--paper-sunken)',
+                        background: idx === 0 ? '#FEF9C3' : idx === 1 ? 'var(--slate-soft)' : idx === 2 ? '#FFEDD5' : 'var(--paper-sunken)',
                         borderRadius: 8,
                         border: idx === 0 ? '1px solid #FDE047' : '1px solid transparent',
                       }}
@@ -1044,8 +1045,8 @@ export default function ManagerTeam() {
                         <div style={{ fontWeight: 900, fontSize: 14, color: m.score >= 80 ? 'var(--sage)' : 'var(--rust)' }}>
                           {m.score != null ? `${m.score}%` : `${m.progress}%`}
                         </div>
-                        <span style={{ fontSize: 10.5, color: 'var(--ink-faint)' }}>
-                          {m.status === 'COMPLETED' ? 'Hoàn thành' : 'Đang học'}
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                          {m.status === 'COMPLETED' ? 'Completed' : 'In progress'}
                         </span>
                       </div>
                     </div>
@@ -1055,26 +1056,26 @@ export default function ManagerTeam() {
           </div>
 
           {/* Assessment Quality Insights */}
-          <div className="card card-pad" style={{ background: '#F8FAFC', border: '1px solid var(--line)', borderRadius: 10 }}>
-            <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 10 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
               <i className="ti ti-bulb" style={{ color: 'var(--amber)', fontSize: 18 }} />
-              Chỉ Số Đánh Giá &amp; Khuyến Nghị Cho Quản Lý
+              Review Metrics &amp; Recommendations For The Manager
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-              <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600 }}>TỶ LỆ VƯỢT QUA LẦN ĐẦU</div>
+              <div style={{ background: 'var(--paper-raised)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>FIRST-ATTEMPT PASS RATE</div>
                 <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--rail)', margin: '4px 0' }}>87.5%</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>7/8 nhân sự đậu bài thi ngay lần kiểm tra 1</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>7 of 8 employees passed the exam on the first attempt</div>
               </div>
-              <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600 }}>SỐ LẦN THI TRUNG BÌNH</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--ink)', margin: '4px 0' }}>1.25 lần</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Mức độ tiếp thu kiến thức tốt, ít phải thi lại</div>
+              <div style={{ background: 'var(--paper-raised)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>AVERAGE ATTEMPTS</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--ink)', margin: '4px 0' }}>1.25 attempts</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Knowledge is absorbed well, with few retakes</div>
               </div>
-              <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600 }}>CẦN MỞ KHÓA THI LẠI</div>
+              <div style={{ background: 'var(--paper-raised)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--line)' }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>RETAKES TO UNLOCK</div>
                 <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--rust)', margin: '4px 0' }}>1 ca (Lisa Wang)</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Rớt 3 lần bài thi Chuỗi lạnh (55% vs chuẩn 80%)</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Failed the cold chain exam 3 times (55% vs the 80% standard)</div>
               </div>
             </div>
           </div>
@@ -1082,18 +1083,18 @@ export default function ManagerTeam() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: MA TRẬN KHOẢNG CÁCH NĂNG LỰC & KẾ NHIỆM (SKILL GAP MATRIX) */}
+      {/* TAB 3: SKILL GAP & SUCCESSION MATRIX (SKILL GAP MATRIX) */}
       {/* ========================================================================= */}
       {activeTab === 'SKILL_GAP' && (
         <div style={{ marginBottom: 28 }}>
           <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '14px 18px', borderRadius: 8, fontSize: 13, marginBottom: 18, lineHeight: 1.5 }}>
             <i className="ti ti-chart-radar" style={{ marginRight: 8, fontSize: 16 }} />
-            Ma trận chẩn đoán đối chiếu giữa <strong>Năng Lực Thực Tế Của Nhân Viên</strong> với <strong>Khung Tiêu Chuẩn Năng Lực Của Vị Trí Kế Nhiệm Mục Tiêu (Thánh Gióng Pipeline)</strong>. Gán khóa học bổ trợ cho nhân viên do User Admin/L&amp;D phụ trách.
+            A diagnostic matrix comparing <strong>The Employee's Actual Competency</strong> against <strong>The Competency Standard Framework Of The Target Succession Role (Thanh Giong Pipeline)</strong>. Assign supplementary courses to employees managed by User Admin/L&amp;D.
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {teamSkillGapMatrix.map((item, idx) => (
-              <div key={idx} className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <div key={idx} className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
                 {/* Header card */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
                   <div>
@@ -1104,25 +1105,25 @@ export default function ManagerTeam() {
                         Net Gap: {item.overallGap}%
                       </Badge>
                       <Badge tone={item.readiness === 'READY_IN_6_MONTHS' ? 'sage' : item.readiness === 'DEVELOPING' ? 'amber' : 'rust'}>
-                        {item.readiness === 'READY_IN_6_MONTHS' ? 'Sẵn Sàng Trong 6 Tháng' : item.readiness === 'DEVELOPING' ? 'Đang Phát Triển' : 'Cần Kèm Cặp Sát'}
+                        {item.readiness === 'READY_IN_6_MONTHS' ? 'Ready In 6 Months' : item.readiness === 'DEVELOPING' ? 'Developing' : 'Needs Close Coaching'}
                       </Badge>
                     </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-                      Vị trí hiện tại: <strong>{item.position}</strong> &rarr; Vị trí kế nhiệm mục tiêu: <strong>{item.targetRole}</strong>
+                    <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 4 }}>
+                      Current position: <strong>{item.position}</strong> &rarr; Target succession role: <strong>{item.targetRole}</strong>
                     </div>
                   </div>
                 </div>
 
                 {/* Skills Breakdown Table */}
                 <div style={{ overflowX: 'auto' }}>
-                  <table className="table" style={{ width: '100%', fontSize: 12.5 }}>
+                  <table className="table" style={{ width: '100%', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: '#F8FAFC' }}>
-                        <th style={{ width: '30%' }}>Kỹ Năng / Năng Lực Trọng Yếu</th>
-                        <th style={{ width: '14%' }}>Chuẩn Yêu Cầu</th>
-                        <th style={{ width: '14%' }}>Điểm Thực Tế</th>
-                        <th style={{ width: '14%' }}>Khoảng Cách (Gap)</th>
-                        <th style={{ width: '28%' }}>Khóa Học Đề Xuất Bổ Trợ</th>
+                      <tr style={{ background: 'var(--paper-sunken)' }}>
+                        <th style={{ width: '30%' }}>Key Skills / Competencies</th>
+                        <th style={{ width: '14%' }}>Required Standard</th>
+                        <th style={{ width: '14%' }}>Actual Score</th>
+                        <th style={{ width: '14%' }}>Gap</th>
+                        <th style={{ width: '28%' }}>Recommended Supplementary Courses</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1140,17 +1141,17 @@ export default function ManagerTeam() {
                             </td>
                             <td>
                               <Badge tone={isExceeded ? 'sage' : isCritical ? 'rust' : 'amber'}>
-                                {isExceeded ? 'Vượt chuẩn (+)' : `${skill.gap}%`}
+                                {isExceeded ? 'Above standard (+)' : `${skill.gap}%`}
                               </Badge>
                             </td>
                             <td>
                               {skill.suggestedCourse ? (
                                 <div>
                                   <div style={{ fontWeight: 600, color: 'var(--rail)', fontSize: 12 }}>{skill.suggestedCourse}</div>
-                                  <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{skill.suggestedCourseId}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{skill.suggestedCourseId}</div>
                                 </div>
                               ) : (
-                                <span style={{ color: 'var(--ink-faint)', fontSize: 11.5 }}>Đã đạt chuẩn, không cần bổ trợ</span>
+                                <span style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Meets the standard; no supplement needed</span>
                               )}
                             </td>
                           </tr>
@@ -1166,29 +1167,29 @@ export default function ManagerTeam() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: CAM KẾT HÀNH ĐỘNG & ĐÁNH GIÁ L3 (KIRKPATRICK ACTION PLANS) */}
+      {/* TAB 4: ACTION COMMITMENTS & L3 REVIEW (KIRKPATRICK ACTION PLANS) */}
       {/* ========================================================================= */}
       {activeTab === 'ACTION_PLANS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
           <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '14px 18px', borderRadius: 8, fontSize: 13, lineHeight: 1.5 }}>
             <i className="ti ti-checklist" style={{ marginRight: 8, fontSize: 16 }} />
-            Theo dõi kế hoạch hành động ứng dụng thực tế vào vận hành siêu thị và thực hiện <strong>Đánh Giá Tác Động Hành Vi (Kirkpatrick Level 3)</strong> sau 3 - 6 tháng đào tạo.
+            Tracks the action plan for applying the learning in real store operations and its execution <strong>Behavioural Impact Review (Kirkpatrick Level 3)</strong> after 3 - 6 months of training.
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {actionPlans.map((plan) => (
-              <div key={plan.id} className="card card-pad" style={{ borderLeft: '4px solid var(--amber)', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <div key={plan.id} className="card card-pad" style={{ borderLeft: '4px solid var(--amber)', background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 800, fontSize: 14.5 }}>{plan.learnerName}</span>
+                      <span style={{ fontWeight: 800, fontSize: 15 }}>{plan.learnerName}</span>
                       <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>&middot; {plan.learnerPosition}</span>
                       <Badge tone={plan.managerReviewL3 ? 'sage' : 'amber'}>
-                        {plan.managerReviewL3 ? 'Đã Phê Duyệt Đánh Giá L3' : 'Chờ Quản Lý Đánh Giá L3'}
+                        {plan.managerReviewL3 ? 'L3 Review Approved' : 'Awaiting The Manager\'s L3 Review'}
                       </Badge>
                     </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--rail)', fontWeight: 600, marginTop: 4 }}>
-                      Khóa học liên kết: {plan.courseName}
+                    <div style={{ fontSize: 13, color: 'var(--rail)', fontWeight: 600, marginTop: 4 }}>
+                      Linked course: {plan.courseName}
                     </div>
                   </div>
 
@@ -1198,26 +1199,26 @@ export default function ManagerTeam() {
                     icon="ti-award"
                     onClick={() => openSurveyModal({ title: plan.courseName }, 'L3', { name: plan.learnerName, fullName: plan.learnerName })}
                   >
-                    {plan.managerReviewL3 ? 'Sửa Đánh Giá L3' : 'Đánh Giá Hành Vi (3-6 Tháng)'}
+                    {plan.managerReviewL3 ? 'Edit The L3 Review' : 'Behavioural Review (3-6 Months)'}
                   </Button>
                 </div>
 
                 <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 2 }}>
-                    Cam kết hành động tại nơi làm việc:
+                    Workplace action commitment:
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, marginBottom: 6 }}>
                     "{plan.targetCommitment}"
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                    KPI Mục Tiêu: <strong>{plan.kpiTarget}</strong> &middot; Hạn Đánh Giá: <strong>{plan.evaluationDate}</strong>
+                    Target KPI: <strong>{plan.kpiTarget}</strong> &middot; Review Deadline: <strong>{plan.evaluationDate}</strong>
                   </div>
                 </div>
 
                 {plan.managerReviewL3 && (
                   <div style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
                     <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                      ✓ Đánh giá của Quản lý ({plan.managerReviewL3.score}/5.0 Sao):
+                      ✓ Manager review ({plan.managerReviewL3.score}/5.0 stars):
                     </div>
                     <div>{plan.managerReviewL3.behaviorChange} - {plan.managerReviewL3.productivityGain}</div>
                   </div>
@@ -1232,7 +1233,7 @@ export default function ManagerTeam() {
       {/* MODALS */}
       {/* ========================================================================= */}
 
-      {/* 1. Modal Xem Toàn Bộ Khóa Học & Bảng Điểm (Transcript) */}
+      {/* 1. Modal: view the full course list & transcript */}
       {transcriptUser && (
         <UserTranscriptModal
           user={transcriptUser}
@@ -1240,10 +1241,10 @@ export default function ManagerTeam() {
         />
       )}
 
-      {/* 2. Modal Xem Lộ Trình Cấp Bậc (Roadmap) */}
+      {/* 2. Modal: view the level roadmap */}
       {roadmapUser && (
         <Modal
-          title={`Lộ Trình Năng Lực Cấp Bậc: ${roadmapUser.fullName || roadmapUser.name} (${roadmapUser.position || 'Nhân Viên'})`}
+          title={`Level Competency Roadmap: ${roadmapUser.fullName || roadmapUser.name} (${roadmapUser.position || 'Employee'})`}
           onClose={() => setRoadmapUser(null)}
           maxWidth={920}
         >
@@ -1251,21 +1252,21 @@ export default function ManagerTeam() {
         </Modal>
       )}
 
-      {/* 3. Modal Gửi Email Đôn Đốc Cá Nhân */}
+      {/* 3. Modal: send an individual reminder email */}
       {reminderMember && (
         <Modal
-          title={`Gửi Email Đôn Đốc Tiến Độ: ${reminderMember.name}`}
+          title={`Send A Progress Reminder Email: ${reminderMember.name}`}
           onClose={() => setReminderMember(null)}
           maxWidth={540}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              Khóa học: <strong>{reminderMember.course}</strong> &middot; Hạn chót: <strong>{reminderMember.dueDate}</strong>
+              Courses: <strong>{reminderMember.course}</strong> &middot; Deadline: <strong>{reminderMember.dueDate}</strong>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--ink)' }}>
-                Nội dung thông báo gửi đến nhân viên:
+                Message sent to the employee:
               </label>
               <textarea
                 className="field-input"
@@ -1278,7 +1279,7 @@ export default function ManagerTeam() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
               <Button variant="outline" size="sm" onClick={() => setReminderMember(null)}>
-                Hủy
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -1287,7 +1288,7 @@ export default function ManagerTeam() {
                 onClick={handleSendSingleReminder}
                 disabled={singleReminderSent}
               >
-                {singleReminderSent ? 'Đã Gửi Thành Công!' : 'Gửi Thông Báo Ngay'}
+                {singleReminderSent ? 'Sent Successfully!' : 'Send The Notification Now'}
               </Button>
             </div>
           </div>

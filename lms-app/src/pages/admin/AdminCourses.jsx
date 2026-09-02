@@ -44,13 +44,13 @@ import {
 
 const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 
-// "Learning Objects" (E-Learning tự học) và "Online Class" (Lớp Live) đã gộp
-// làm 1 tab duy nhất — cả 2 đều là khóa online, chỉ khác nhau ở badge định
-// dạng (🌐 E-Learning / 💻 Live) đã có sẵn trên mỗi dòng, không cần tách tab
-// riêng nữa. "Library Course" đưa lên đầu & đổi tên "All Class" (giữ nguyên
-// hành vi: xem toàn bộ khóa, không lọc theo section). "Library" mới ở cuối là
-// góc nhìn tổng hợp khóa học theo Lĩnh Vực (kỹ năng cứng) — chỉ User Admin &
-// System Admin thấy (adminOnly, lọc khi build danh sách tab hiển thị).
+// "Learning Objects" (self-paced E-Learning) and "Online Class" (live classes) are merged
+// into a single tab — both are online courses, differing only in the
+// format badge (🌐 E-Learning / 💻 Live) is already on every row, so a separate tab
+// is no longer needed. "Library Course" moves to the front & is renamed "All Class" (keeping the same
+// behaviour: shows every course, with no section filter). The new "Library" at the end is
+// a consolidated view of courses by area (hard skills) — only User Admin &
+// System Admin can see it (adminOnly, filtered when building the visible tab list).
 const CATALOG_TABS = [
   { id: 'library', label: 'All Class', icon: 'ti-database' },
   { id: 'online-class', label: 'Online Class', icon: 'ti-broadcast', includeSections: [CATALOG_SECTIONS.LEARNING_OBJECTS, CATALOG_SECTIONS.ONLINE_CLASS] },
@@ -61,19 +61,19 @@ const CATALOG_TABS = [
 ];
 
 const COURSE_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không gộp nhóm' },
-  { id: 'CATEGORY', label: 'Lĩnh Vực (Category)' },
-  { id: 'ORG_UNIT', label: 'Phòng Ban & Khối' },
-  { id: 'LEVEL', label: 'Cấp Bậc' },
-  { id: 'LIFECYCLE_STATUS', label: 'Trạng Thái Vòng Đời' },
-  { id: 'MODALITY', label: 'Hình Thức Đào Tạo' },
+  { id: 'NONE', label: 'No grouping' },
+  { id: 'CATEGORY', label: 'Category' },
+  { id: 'ORG_UNIT', label: 'Department & Division' },
+  { id: 'LEVEL', label: 'Job Level' },
+  { id: 'LIFECYCLE_STATUS', label: 'Lifecycle Status' },
+  { id: 'MODALITY', label: 'Delivery Format' },
 ];
 
 const CURRICULUM_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không gộp nhóm' },
-  { id: 'CATEGORY', label: 'Theo Lĩnh Vực (Category)' },
-  { id: 'STATUS', label: 'Theo Trạng Thái' },
-  { id: 'ASSIGNMENT', label: 'Theo Đối Tượng Phân Bổ' },
+  { id: 'NONE', label: 'No grouping' },
+  { id: 'CATEGORY', label: 'By Area (Category)' },
+  { id: 'STATUS', label: 'By Status' },
+  { id: 'ASSIGNMENT', label: 'By Allocated Audience' },
 ];
 
 function buildCurriculumGroups(curriculaList, groupByOption) {
@@ -82,7 +82,7 @@ function buildCurriculumGroups(curriculaList, groupByOption) {
 
   curriculaList.forEach((cur) => {
     let key = 'OTHER';
-    let label = 'Khác';
+    let label = 'Other';
     let icon = 'ti-folder';
 
     if (groupByOption === 'CATEGORY') {
@@ -91,31 +91,31 @@ function buildCurriculumGroups(curriculaList, groupByOption) {
       icon = 'ti-category';
     } else if (groupByOption === 'STATUS') {
       key = cur.status || 'DRAFT';
-      label = key === 'PUBLISHED' ? 'Đã Phát Hành (Published)' : 'Bản Nháp (Draft)';
+      label = key === 'PUBLISHED' ? 'Published' : 'Draft';
       icon = key === 'PUBLISHED' ? 'ti-circle-check' : 'ti-file-pencil';
     } else if (groupByOption === 'ASSIGNMENT') {
       const count = (cur.assignments || []).length;
       if (count === 0) {
         key = 'UNASSIGNED';
-        label = 'Chưa Phân Bổ';
+        label = 'Not Allocated';
         icon = 'ti-target-off';
       } else {
         const types = new Set((cur.assignments || []).map((a) => a.targetType));
         if (types.has('ALL_ENTERPRISE')) {
           key = 'ENTERPRISE';
-          label = 'Toàn Doanh Nghiệp (All Associates)';
+          label = 'Enterprise-Wide (All Associates)';
           icon = 'ti-world';
         } else if (types.has('BU') || types.has('DIVISION') || types.has('DEPT')) {
           key = 'ORG_UNIT';
-          label = 'Theo Khối & Phòng Ban';
+          label = 'By Division & Department';
           icon = 'ti-building';
         } else if (types.has('STORE')) {
           key = 'STORE';
-          label = 'Theo Cửa Hàng / Store';
+          label = 'By Store';
           icon = 'ti-building-store';
         } else {
           key = 'CUSTOM';
-          label = 'Theo Nhóm Tùy Chỉnh / Cá Nhân';
+          label = 'By Custom Group / Individual';
           icon = 'ti-users';
         }
       }
@@ -157,11 +157,11 @@ export default function AdminCourses() {
   const isCurriculumAdmin = hasCapability(role, 'canManageCurriculum');
   const { mode: curriculumMode } = curriculumAccessOf(currentUser);
   const visibleCurricula = useMemo(() => visibleCurriculaFor(curricula, currentUser), [curricula, currentUser]);
-  // User Admin & SysAdmin quản lý TOÀN BỘ khóa học (canAuthorOnlineCourses là
-  // tín hiệu phân biệt họ với Trainer/L&D — chỉ 2 role này có). Trainer/L&D
-  // chỉ được sửa/xóa đúng khóa do chính họ tạo; 100 khóa danh mục gốc chưa có
-  // trường createdBy được coi là do User Admin thiết lập (chủ sở hữu mặc định
-  // của danh mục chính thức), nên Trainer không có quyền với chúng.
+  // User Admin & SysAdmin manage EVERY course (canAuthorOnlineCourses is the
+  // signal separating them from Trainer/L&D — only these 2 roles have it). Trainer/L&D
+  // may only edit/delete the courses they created; the 100 original catalog courses have no
+  // createdBy field and are therefore treated as set up by the User Admin (the default owner
+  // of the official catalog), so a Trainer has no rights over them.
   const isFullAdmin = hasCapability(role, 'canAuthorOnlineCourses');
   function ownerIdOf(course) {
     return course.createdBy || userAdminUser.userId;
@@ -173,9 +173,9 @@ export default function AdminCourses() {
   }
 
   const [searchParams, setSearchParams] = useSearchParams();
-  // Mặc định mở tab "All Class" (toàn bộ danh mục) — Admin/Trainer bấm
-  // vào trang Courses từ nav thường muốn thấy hết mọi khóa, không riêng 1
-  // hình thức đào tạo cụ thể.
+  // Defaults to the "All Class" tab (the full catalog) — Admin/Trainer click
+  // Opening Courses from the nav usually means wanting to see every course, not just one
+  // a specific delivery format.
   const rawTab = (searchParams.get('tab') || 'library').toLowerCase().trim();
   const activeTab = (() => {
     const clean = rawTab.replace(/[\s_/]+/g, '-');
@@ -195,27 +195,27 @@ export default function AdminCourses() {
     });
   }
   const activeTabDef = CATALOG_TABS.find((tb) => tb.id === activeTab) || CATALOG_TABS[0];
-  // "Library" (domain-library) chỉ dành cho User Admin/SysAdmin — nếu ai đó
-  // vào thẳng bằng URL ?tab=domain-library mà không đủ quyền thì đẩy về lại
-  // "All Class" thay vì hiện 1 view rỗng/không đúng đối tượng.
+  // "Library" (domain-library) is for User Admin/SysAdmin only — if someone
+  // navigates straight to ?tab=domain-library without the rights, they are pushed back to
+  // "All Class" rather than showing an empty/incorrect view.
   useEffect(() => {
     if (activeTab === 'domain-library' && !isFullAdmin) {
       setActiveTab('library');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isFullAdmin]);
-  // Trainer/L&D chỉ được tạo khóa Lớp Trực Tiếp (Classroom/In-Person)
+  // Trainer/L&D may only create in-person (Classroom) courses
   const hideCreateForTrainerTab = isAdmin && !isFullAdmin && activeTab === 'online-class';
 
-  // User Learner, Manager & HRBP không có bất kỳ quyền tạo/sửa/xóa/phát hành
-  // hay xem chi tiết phân bổ nào cả — họ chỉ được duyệt danh mục (đủ 5+ cột dữ
-  // liệu như User Admin thấy) và bấm "View Course" để vào đúng trang học tập
-  // cá nhân (biết mình có được học khóa đó không, đăng ký/bắt đầu học tùy
-  // loại khóa). Việc thêm/đề xuất giáo trình của HRBP vẫn nằm ở Dashboard
-  // riêng của họ (/hrbp/curriculum), không phải trang catalog chung này.
-  // hideAllocationDetails gộp thêm điều kiện hideCreateForTrainerTab ở trên vì
-  // Trainer cũng không được xem "Chi Tiết & Phân Bổ" của khóa Learning
-  // Objects/Online Class — họ chỉ tạo/quản lý được khóa Lớp Trực Tiếp.
+  // User Learner, Manager & HRBP have no create/edit/delete/publish rights
+  // nor view any allocation detail — they may only browse the catalog (with the same 5+ data
+  // columns a User Admin sees) and click "View Course" to reach the right learning page
+  // personal view (whether they may take the course, and enrol/start it as they
+  // course type). HRBP's curriculum add/propose flow still lives on the Dashboard
+  // their own page (/hrbp/curriculum), not this shared catalog page.
+  // hideAllocationDetails also folds in hideCreateForTrainerTab above because
+  // A Trainer also cannot view "Details & Allocation" for a Learning
+  // Objects/Online Class — they can only create/manage in-person classes.
   const isViewOnlyCatalogRole = role === 'learner' || role === 'manager' || role === 'hrbp';
   const hideAllocationDetails = isViewOnlyCatalogRole || hideCreateForTrainerTab;
 
@@ -237,9 +237,9 @@ export default function AdminCourses() {
         }
         return true;
       })
-      // Gộp sẵn ghi danh thật của người đang xem lên mỗi khóa — cần thiết để
-      // tính đúng trạng thái "cá nhân hóa" (Đang Tham Gia/Đã Quá Hạn/Đã Hoàn
-      // Thành/Đã Qua Thời Gian Tham Gia) ở bộ lọc, gộp nhóm và badge bên dưới.
+      // Merge in the viewer's real enrollments onto each course — needed to
+      // compute the correct "personalized" status (In Progress/Overdue/
+      // Completed/Enrollment Window Closed) in the filter, the grouping and the badges below.
       .map((c) => ({ ...c, enrollment: myEnrollments?.[c.id] || null }));
 
   const [search, setSearch] = useState('');
@@ -282,7 +282,7 @@ export default function AdminCourses() {
   }
 
   function publish(course) {
-    publishNewCourseVersion(course.id, null, 'Phát hành phiên bản mới.');
+    publishNewCourseVersion(course.id, null, 'Published a new version.');
   }
 
   function remove(course) {
@@ -304,9 +304,9 @@ export default function AdminCourses() {
   const isLibrary = activeTabDef.id === 'library';
   const isCurriculum = activeTabDef.id === 'curriculum';
   const isAssessment = activeTabDef.id === 'assessment';
-  // "Library" (domain-library) không còn là 1 view gộp-nhóm tự động — nó là
-  // 1 CRUD riêng: admin tự tạo Library, thêm Lĩnh Vực & gán khóa học thủ công
-  // (xem khối JSX riêng bên dưới, không dùng chung layout bảng khóa học).
+  // "Library" (domain-library) is no longer an auto-grouped view — it is
+  // its own CRUD: the admin creates the Library, adds areas & assigns courses manually
+  // (see the dedicated JSX block below; it does not share the course table layout).
   const isLibraryManager = activeTabDef.id === 'domain-library' && isFullAdmin;
 
   // Assessment management & catalog state
@@ -405,18 +405,18 @@ export default function AdminCourses() {
     ? '/learner/courses'
     : '/my-learning';
 
-  // Bộ lọc Trạng Thái Vòng Đời và Gộp Nhóm áp dụng cho MỌI tab liệt kê khóa
-  // học (Learning Objects/Online Class/Classroom/Library), không riêng gì
-  // Library — chỉ khác nhau ở chỗ Library không lọc theo section (xem hết),
-  // còn 3 tab kia lọc thêm theo đúng section của tab đang mở. Với role KHÔNG
-  // PHẢI Full Admin, bộ trạng thái đổi sang góc nhìn cá nhân hóa (xem
-  // personalLifecycleStatusOf) thay vì Nháp/Chưa Mở/Đang Mở/Đã Đóng của Admin.
+  // The lifecycle status filter and grouping apply to EVERY tab that lists courses
+  // (Learning Objects/Online Class/Classroom/Library), not just
+  // Library — differing only in that the Library applies no section filter (it shows everything),
+  // while the other 3 tabs also filter by the open tab's section. For a role that is NOT
+  // Full Admin, the status set switches to the personalized view (see
+  // personalLifecycleStatusOf) instead of the Admin's Draft/Upcoming/Open/Closed.
   const filtered = isCurriculum || isAssessment || isLibraryManager
     ? []
     : bySearchCategoryType.filter((c) => {
-      // "All Class" xem toàn bộ khóa, không lọc theo section; các tab còn lại
-      // lọc theo section riêng (hoặc includeSections khi 1 tab gộp nhiều
-      // section, như Online Class).
+      // "All Class" shows every course with no section filter; the remaining tabs
+      // filter by their own section (or includeSections when one tab merges several
+      // section, like Online Class).
       if (!isLibrary) {
         const sectionOk = activeTabDef.includeSections
           ? activeTabDef.includeSections.includes(catalogSectionOf(c))
@@ -445,15 +445,15 @@ export default function AdminCourses() {
     const canManage = canManageCourse(c);
     const badge = courseFormatBadge(c);
     const lifecycle = computeLifecycleStatus(c);
-    // Full Admin & Trainer: giữ nguyên góc nhìn quản trị (Nháp/Chưa Mở/Đang Mở/Đã Đóng),
-    // chỉ đổi thành "Đã Tham Gia" khi Đang Mở mà chính họ cũng đã ghi danh.
-    // Các role còn lại (Learner/Manager/HRBP): dùng thẳng trạng thái cá
-    // nhân hóa (Đang Tham Gia/Đã Quá Hạn/Đã Hoàn Thành/Đã Qua Thời Gian Tham
-    // Gia/Đang Mở) cho khớp với bộ lọc & gộp nhóm cùng vừa thêm ở trên.
+    // Full Admin & Trainer: keep the administration view (Draft/Upcoming/Open/Closed),
+    // only becomes "Enrolled" when the course is Open and they themselves are enrolled.
+    // The remaining roles (Learner/Manager/HRBP): use the personalized status
+    // personalized (In Progress/Overdue/Completed/Enrollment
+    // Window Closed/Open) to match the filter & grouping just added above.
     const isMineAndOpen = lifecycle === 'OPEN' && enrolledCourseIdSet.has(c.id);
     const lifecycleMeta = (isFullAdmin || isAdmin)
       ? (isMineAndOpen
-        ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
+        ? { label: 'Enrolled', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
         : LIFECYCLE_STATUS_META[lifecycle])
       : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
     const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
@@ -466,7 +466,7 @@ export default function AdminCourses() {
           <div
             style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer' }}
             onClick={() => (hideAllocationDetails ? navigate(`/learner/courses/${c.id}`) : setViewingCourse(c))}
-            title={hideAllocationDetails ? 'Bấm để xem chi tiết khóa học' : 'Bấm để xem chi tiết & phân bổ khóa học'}
+            title={hideAllocationDetails ? 'Click to view the course details' : 'Click to view the course details & allocation'}
           >
             <img
               src={getCourseImage(c)}
@@ -475,11 +475,11 @@ export default function AdminCourses() {
             />
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{c.title}</div>
                 <Badge tone={badge.tone}>{badge.icon} {badge.label}</Badge>
                 <Badge tone={lifecycleMeta.tone}>{lifecycleMeta.label}</Badge>
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
                 <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {(c.categories && c.categories.join(', ')) || c.category} &middot; Version {c.version}
                 {c.onlineClassType === 'VIRTUAL_CLASS' && c.virtualMeeting?.instructorName && (
                   <> &middot; GV: {c.virtualMeeting.instructorName}</>
@@ -494,7 +494,7 @@ export default function AdminCourses() {
             {c.courseType === 'MANDATORY' ? (
               <span style={{ background: 'var(--paper-sunken)', padding: '3px 8px', borderRadius: 4, display: 'inline-block' }}>
                 {asgCount > 0
-                  ? `${asgCount} đối tượng được gán`
+                  ? `${asgCount} assigned audiences`
                   : (c.assignment?.targetLabel || 'Assigned Division')}
               </span>
             ) : (
@@ -506,7 +506,7 @@ export default function AdminCourses() {
         <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.estimatedDuration || c.estimatedHours || '2h'}</td>
         <td>
           {rowPricing.isFree ? (
-            <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+            <Badge tone="sage" icon="ti-gift" size="sm">Free</Badge>
           ) : (
             <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(rowPricing.price)}</Badge>
           )}
@@ -522,23 +522,23 @@ export default function AdminCourses() {
               <>
                 <Button size="sm" variant="outline" icon="ti-edit" onClick={() => navigate(`/admin/courses/${c.id}`)}>Edit</Button>
                 <ActionsMenu
-                  label="Thao tác khác"
+                  label="More actions"
                   items={[
-                    !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Chi Tiết & Phân Bổ', onClick: () => setViewingCourse(c) },
+                    !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Details & Allocation', onClick: () => setViewingCourse(c) },
                     myAccess.canAccess ? {
                       key: 'learn',
                       icon: 'ti-player-play',
-                      label: '🚀 Vào Học Bài (Cá Nhân)',
+                      label: '🚀 Open The Lesson (Personal)',
                       onClick: () => navigate(`/learner/courses/${c.id}`),
                     } : myAccess.state === ACCESS_STATE.REQUESTABLE ? {
                       key: 'request_learn',
                       icon: 'ti-send',
-                      label: '⚠️ Xin Học Vượt Cấp',
+                      label: '⚠️ Request A Level Skip',
                       onClick: () => navigate(`/learner/courses/${c.id}`),
                     } : {
                       key: 'locked_learn',
                       icon: 'ti-lock',
-                      label: '🔒 Khóa học vượt cấp',
+                      label: '🔒 Course above your level',
                       disabled: true,
                       title: myAccess.reason,
                     },
@@ -562,9 +562,9 @@ export default function AdminCourses() {
                 icon={myAccess.canAccess ? "ti-player-play" : myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? "ti-lock" : "ti-eye"}
                 disabled={myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP}
                 onClick={() => navigate(`/learner/courses/${c.id}`)}
-                title={myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? myAccess.reason : (isAdmin ? 'Khóa này không do bạn tạo — chỉ xem, không sửa/xóa được.' : undefined)}
+                title={myAccess.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? myAccess.reason : (isAdmin ? 'You did not create this course — view only, no edit/delete.' : undefined)}
               >
-                {isAdmin ? 'View Course' : (myAccess.canAccess ? 'Vào Học' : myAccess.state === ACCESS_STATE.REQUESTABLE ? 'Xin Học' : 'Khóa Bị Chặn')}
+                {isAdmin ? 'View Course' : (myAccess.canAccess ? 'Start Learning' : myAccess.state === ACCESS_STATE.REQUESTABLE ? 'Request' : 'Course Blocked')}
               </Button>
             )}
           </div>
@@ -584,7 +584,7 @@ export default function AdminCourses() {
               {isFullAdmin && <th>Assigned Target Scope</th>}
               <th style={{ width: 90 }}>Modules</th>
               <th style={{ width: 90 }}>Duration</th>
-              <th style={{ width: 120 }}>Học Phí</th>
+              <th style={{ width: 120 }}>Tuition</th>
               <th style={{ width: 110 }}>Status</th>
               <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
             </tr>
@@ -606,7 +606,7 @@ export default function AdminCourses() {
           const isMineAndOpen = lifecycle === 'OPEN' && enrolledCourseIdSet.has(c.id);
           const lifecycleMeta = (isFullAdmin || isAdmin)
             ? (isMineAndOpen
-              ? { label: 'Đã Tham Gia', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
+              ? { label: 'Enrolled', labelEn: 'Joined', tone: 'rail', icon: 'ti-user-check' }
               : LIFECYCLE_STATUS_META[lifecycle])
             : PERSONAL_LIFECYCLE_STATUS_META[personalLifecycleStatusOf(c)];
           const asgCount = (c.assignments && c.assignments.length) || (c.assignment ? 1 : 0);
@@ -648,7 +648,7 @@ export default function AdminCourses() {
                   </div>
                   <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
                     {rowPricing.isFree ? (
-                      <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+                      <Badge tone="sage" icon="ti-gift" size="sm">Free</Badge>
                     ) : (
                       <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(rowPricing.price)}</Badge>
                     )}
@@ -679,7 +679,7 @@ export default function AdminCourses() {
                     {c.title}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, flexWrap: 'wrap' }}>
                     <span><i className="ti ti-folders" style={{ marginRight: 4 }} />{c.modules?.length || 2} modules</span>
                     <span>&middot;</span>
                     <span><i className="ti ti-clock" style={{ marginRight: 4 }} />{c.estimatedDuration || c.estimatedHours || '2h'}</span>
@@ -687,10 +687,10 @@ export default function AdminCourses() {
                   </div>
 
                   {isFullAdmin && (
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '5px 8px', borderRadius: 6, marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '5px 8px', borderRadius: 6, marginBottom: 8 }}>
                       <i className="ti ti-target" style={{ marginRight: 4, color: 'var(--rail)' }} />
                       {c.courseType === 'MANDATORY'
-                        ? (asgCount > 0 ? `${asgCount} đối tượng phân bổ` : (c.assignment?.targetLabel || 'Assigned Scope'))
+                        ? (asgCount > 0 ? `${asgCount} allocated audiences` : (c.assignment?.targetLabel || 'Assigned Scope'))
                         : 'All MMVN Associates (Catalog)'}
                     </div>
                   )}
@@ -707,17 +707,17 @@ export default function AdminCourses() {
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {!hideAllocationDetails && (
                         <Button size="sm" variant="ghost" icon="ti-list-details" onClick={() => setViewingCourse(c)}>
-                          Chi Tiết
+                          Details
                         </Button>
                       )}
                       <ActionsMenu
-                        label="Thao tác khác"
+                        label="More actions"
                         items={[
-                          !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Chi Tiết & Phân Bổ', onClick: () => setViewingCourse(c) },
+                          !hideAllocationDetails && { key: 'details', icon: 'ti-list-details', label: 'Details & Allocation', onClick: () => setViewingCourse(c) },
                           myAccess.canAccess ? {
                             key: 'learn',
                             icon: 'ti-player-play',
-                            label: '🚀 Vào Học Bài',
+                            label: '🚀 Open The Lesson',
                             onClick: () => navigate(`/learner/courses/${c.id}`),
                           } : null,
                           c.status === 'DRAFT' && { key: 'publish', icon: 'ti-upload', label: 'Publish', onClick: () => publish(c) },
@@ -741,7 +741,7 @@ export default function AdminCourses() {
                     onClick={() => navigate(`/learner/courses/${c.id}`)}
                     style={{ width: '100%' }}
                   >
-                    {isAdmin ? 'Xem Khóa Học' : (myAccess.canAccess ? 'Vào Học Ngay' : 'Xem Chi Tiết')}
+                    {isAdmin ? 'View Course' : (myAccess.canAccess ? 'Start Learning' : 'View Details')}
                   </Button>
                 )}
               </div>
@@ -766,29 +766,29 @@ export default function AdminCourses() {
                   <Badge tone={cur.status === 'PUBLISHED' ? 'sage' : 'rail'}>{cur.status === 'PUBLISHED' ? 'Published' : 'Draft'}</Badge>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, minHeight: 34 }}>{cur.description}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
                   <span>&middot;</span>
-                  <span>{(cur.courseIds || []).length} khóa E-Learning</span>
+                  <span>{(cur.courseIds || []).length} course E-Learning</span>
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 12 }}>
                   <i className="ti ti-target" style={{ color: asgCount > 0 ? 'var(--rail)' : 'var(--ink-faint)', marginRight: 5 }} />
-                  <strong>Phân bổ:</strong> {asgSummary}
+                  <strong>Allocation:</strong> {asgSummary}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
                 <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                  {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Xem Chi Tiết' : 'Chi Tiết & Phân Bổ'}
+                  {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'View Details' : 'Details & Allocation'}
                 </Button>
-                {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
+                {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Edit</Button>}
                 {isCurriculumAdmin && (
                   <Button
                     size="sm"
                     variant="danger"
                     icon="ti-trash"
-                    onClick={() => { if (window.confirm(`Xóa giáo trình "${cur.title}"?`)) deleteCurriculum(cur.id); }}
+                    onClick={() => { if (window.confirm(`Delete the curriculum "${cur.title}"?`)) deleteCurriculum(cur.id); }}
                   >
-                    Xóa
+                    Delete
                   </Button>
                 )}
               </div>
@@ -798,7 +798,7 @@ export default function AdminCourses() {
         {items.length === 0 && (
           <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
             <i className="ti ti-books" aria-hidden="true" />
-            <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Bạn chưa được phân bổ giáo trình nào.' : 'Không tìm thấy giáo trình nào phù hợp với bộ lọc.'}</p>
+            <p>{curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'No curriculum has been allocated to you.' : 'No curriculum matches the filters.'}</p>
           </div>
         )}
       </div>
@@ -811,12 +811,12 @@ export default function AdminCourses() {
         <table className="table">
           <thead>
             <tr>
-              <th>Tên Giáo Trình</th>
-              <th style={{ width: 180 }}>Lĩnh Vực</th>
-              <th style={{ width: 140, textAlign: 'center' }}>Số Khóa E-Learning</th>
-              <th>Đối Tượng Phân Bổ</th>
-              <th style={{ width: 110 }}>Trạng Thái</th>
-              <th style={{ width: 180, textAlign: 'right' }}>Thao Tác</th>
+              <th>Curriculum Name</th>
+              <th style={{ width: 180 }}>Area</th>
+              <th style={{ width: 140, textAlign: 'center' }}>E-Learning Courses</th>
+              <th>Allocated Audience</th>
+              <th style={{ width: 110 }}>Status</th>
+              <th style={{ width: 180, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -826,13 +826,13 @@ export default function AdminCourses() {
                 <tr key={cur.id}>
                   <td>
                     <div
-                      style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', cursor: 'pointer' }}
+                      style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', cursor: 'pointer' }}
                       onClick={() => setViewingCurriculum(cur)}
                     >
                       {cur.title}
                     </div>
                     {cur.description && (
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {cur.description}
                       </div>
                     )}
@@ -841,7 +841,7 @@ export default function AdminCourses() {
                     <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
                   </td>
                   <td style={{ textAlign: 'center', fontWeight: 600 }}>
-                    {(cur.courseIds || []).length} khóa
+                    {(cur.courseIds || []).length} course
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -857,17 +857,17 @@ export default function AdminCourses() {
                   <td>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
                       <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                        {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Chi Tiết' : 'Chi Tiết & Phân Bổ'}
+                        {curriculumMode === CURRICULUM_ACCESS_MODE.ASSIGNED_ONLY ? 'Details' : 'Details & Allocation'}
                       </Button>
-                      {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Sửa</Button>}
+                      {isCurriculumAdmin && <Button size="sm" onClick={() => setEditingCurriculum(cur)}>Edit</Button>}
                       {isCurriculumAdmin && (
                         <Button
                           size="sm"
                           variant="danger"
                           icon="ti-trash"
-                          onClick={() => { if (window.confirm(`Xóa giáo trình "${cur.title}"?`)) deleteCurriculum(cur.id); }}
+                          onClick={() => { if (window.confirm(`Delete the curriculum "${cur.title}"?`)) deleteCurriculum(cur.id); }}
                         >
-                          Xóa
+                          Delete
                         </Button>
                       )}
                     </div>
@@ -879,7 +879,7 @@ export default function AdminCourses() {
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--ink-soft)' }}>
                   <i className="ti ti-books" style={{ fontSize: 24, marginBottom: 8, display: 'block', color: 'var(--ink-faint)' }} />
-                  Không tìm thấy giáo trình nào phù hợp với bộ lọc.
+                  No curriculum matches the filters.
                 </td>
               </tr>
             )}
@@ -905,13 +905,13 @@ export default function AdminCourses() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>{language === 'en' ? 'Course Catalog & Program Governance' : 'Danh Mục & Quản Trị Khóa Học'}</h1>
-            <Badge tone="sage">{visibleCourses.length} {language === 'en' ? 'Total Programs' : 'Khóa Học'}</Badge>
+            <h1>{language === 'en' ? 'Course Catalog & Program Governance' : 'Course Catalog & Administration'}</h1>
+            <Badge tone="sage">{visibleCourses.length} {language === 'en' ? 'Total Programs' : 'Courses'}</Badge>
           </div>
           <p>
             {language === 'en'
               ? 'Define curriculum modules, author interactive quizzes, import question banks, and target mandatory compliance by Business Unit, Division, Department, or Job Level.'
-              : 'Thiết lập mô-đun bài học, bài kiểm tra tương tác, ngân hàng câu hỏi và phân bổ đào tạo bắt buộc theo Khối, Phòng ban hoặc Cấp bậc định biên.'}
+              : 'Build lesson modules, interactive tests and question banks, and allocate mandatory training by Division, Department or Job Level.'}
           </p>
         </div>
         {isAdmin && !isCurriculum && !isAssessment && !isLibraryManager && !hideCreateForTrainerTab && (
@@ -922,7 +922,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
               >
-                {language === 'en' ? '+ Create In-Person Class' : '+ Tạo Khóa Trực Tiếp'}
+                {language === 'en' ? '+ Create In-Person Class' : '+ Create An In-Person Course'}
               </Button>
             ) : activeTab === 'online-class' ? (
               <Button
@@ -930,7 +930,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=online&deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING')}
               >
-                {language === 'en' ? '+ Create Online Course' : '+ Tạo Khóa Trực Tuyến'}
+                {language === 'en' ? '+ Create Online Course' : '+ Create An Online Course'}
               </Button>
             ) : activeTab === 'classroom' ? (
               <Button
@@ -938,7 +938,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
               >
-                {language === 'en' ? '+ Create In-Person Course' : '+ Tạo Khóa Trực Tiếp'}
+                {language === 'en' ? '+ Create In-Person Course' : '+ Create An In-Person Course'}
               </Button>
             ) : (
               <Button
@@ -946,24 +946,24 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=all')}
               >
-                {language === 'en' ? '+ Create New Course' : '+ Tạo Khóa Học Mới'}
+                {language === 'en' ? '+ Create New Course' : '+ Create New Course'}
               </Button>
             )}
           </div>
         )}
         {isCurriculumAdmin && isCurriculum && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingCurriculum(emptyCurriculumDraft())}>
-            Tạo Giáo Trình Mới
+            Create New Curriculum
           </Button>
         )}
         {isFullAdmin && isAssessment && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingAssessment({})}>
-            Tạo Assessment Mới
+            Create New Assessment
           </Button>
         )}
         {isLibraryManager && (
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingLibrary(emptyLibraryDraft())}>
-            Tạo Library Mới
+            Create New Library
           </Button>
         )}
       </div>
@@ -1005,7 +1005,7 @@ export default function AdminCourses() {
                       type="text"
                       className="field-input"
                       style={{ paddingLeft: 36, paddingRight: curriculumSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                      placeholder="Tìm kiếm giáo trình theo tên, mô tả..."
+                      placeholder="Search curricula by name, description..."
                       value={curriculumSearch}
                       onChange={(e) => setCurriculumSearch(e.target.value)}
                     />
@@ -1024,14 +1024,14 @@ export default function AdminCourses() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     {/* Group By Select */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
                       <select
                         value={curriculumGroupBy}
                         onChange={(e) => setCurriculumGroupBy(e.target.value)}
                         style={{
                           border: 'none',
                           background: 'transparent',
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: curriculumGroupBy !== 'NONE' ? 700 : 500,
                           color: curriculumGroupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
                           cursor: 'pointer',
@@ -1052,9 +1052,9 @@ export default function AdminCourses() {
                       style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
                     >
                       <i className="ti ti-filter" />
-                      <span>Bộ Lọc</span>
+                      <span>Filters</span>
                       {activeCurriculumFiltersCount > 0 && (
-                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                        <span style={{ background: 'var(--paper-raised)', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                           {activeCurriculumFiltersCount}
                         </span>
                       )}
@@ -1068,20 +1068,20 @@ export default function AdminCourses() {
                         onClick={() => setCurriculumViewMode('GRID')}
                         className={`btn btn-sm ${curriculumViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                         style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                        title="Dạng Lưới (Grid View)"
+                        title="Grid View"
                       >
                         <i className="ti ti-layout-grid" />
-                        <span>Lưới</span>
+                        <span>Grid</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setCurriculumViewMode('TABLE')}
                         className={`btn btn-sm ${curriculumViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                         style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                        title="Dạng Bảng (List View)"
+                        title="List View"
                       >
                         <i className="ti ti-list" />
-                        <span>Bảng</span>
+                        <span>Table</span>
                       </button>
                     </div>
                   </div>
@@ -1091,17 +1091,17 @@ export default function AdminCourses() {
                 {showCurriculumFilters && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-                      {/* Filter 1: Lĩnh Vực */}
+                      {/* Filter 1: Area */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Lĩnh Vực (Category)
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Category
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedCurriculumCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedCurriculumCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1111,24 +1111,24 @@ export default function AdminCourses() {
                           value={selectedCurriculumCategory}
                           onChange={(e) => setSelectedCurriculumCategory(e.target.value)}
                         >
-                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          <option value="ALL">All areas ({companyCategories.length})</option>
                           {companyCategories.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>
                       </div>
 
-                      {/* Filter 2: Trạng Thái */}
+                      {/* Filter 2: Status */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Trạng Thái Phát Hành
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Publication Status
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedCurriculumStatus !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedCurriculumStatus !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1138,23 +1138,23 @@ export default function AdminCourses() {
                           value={selectedCurriculumStatus}
                           onChange={(e) => setSelectedCurriculumStatus(e.target.value)}
                         >
-                          <option value="ALL">Tất cả trạng thái</option>
-                          <option value="PUBLISHED">Published (Phát hành)</option>
-                          <option value="DRAFT">Draft (Bản nháp)</option>
+                          <option value="ALL">All statuses</option>
+                          <option value="PUBLISHED">Published</option>
+                          <option value="DRAFT">Draft</option>
                         </select>
                       </div>
 
-                      {/* Filter 3: Phân Bổ */}
+                      {/* Filter 3: Allocation */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Đối Tượng Phân Bổ
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Allocated Audience
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedCurriculumAssignment !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedCurriculumAssignment !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1164,9 +1164,9 @@ export default function AdminCourses() {
                           value={selectedCurriculumAssignment}
                           onChange={(e) => setSelectedCurriculumAssignment(e.target.value)}
                         >
-                          <option value="ALL">Tất cả phân bổ</option>
-                          <option value="ASSIGNED">Đã phân bổ</option>
-                          <option value="UNASSIGNED">Chưa phân bổ</option>
+                          <option value="ALL">All allocations</option>
+                          <option value="ASSIGNED">Allocated</option>
+                          <option value="UNASSIGNED">Not allocated</option>
                         </select>
                       </div>
                     </div>
@@ -1174,14 +1174,14 @@ export default function AdminCourses() {
                     {/* Active Filter Summary Bar */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                        Hiển thị <strong>{filteredCurricula.length}</strong> / {visibleCurricula.length} giáo trình
+                        Display <strong>{filteredCurricula.length}</strong> / {visibleCurricula.length} curriculum
                       </div>
                       {(curriculumSearch || activeCurriculumFiltersCount > 0 || curriculumGroupBy !== 'NONE') && (
                         <Button
                           size="sm"
                           variant="ghost"
                           icon="ti-x"
-                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          style={{ fontSize: 12, color: 'var(--rust)' }}
                           onClick={() => {
                             setCurriculumSearch('');
                             setSelectedCurriculumCategory('ALL');
@@ -1190,7 +1190,7 @@ export default function AdminCourses() {
                             setCurriculumGroupBy('NONE');
                           }}
                         >
-                          Xóa tất cả bộ lọc
+                          Clear all filters
                         </Button>
                       )}
                     </div>
@@ -1222,7 +1222,7 @@ export default function AdminCourses() {
                         textAlign: 'left',
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
                         <i className={`ti ${collapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} aria-hidden="true" />
                         {g.icon && <i className={`ti ${g.icon}`} aria-hidden="true" />}
                         <span>{g.label}</span>
@@ -1240,7 +1240,7 @@ export default function AdminCourses() {
               {curriculumGroups.length === 0 && (
                 <div className="empty-state">
                   <i className="ti ti-books" aria-hidden="true" />
-                  <p>Không tìm thấy giáo trình nào phù hợp với bộ lọc.</p>
+                  <p>No curriculum matches the filters.</p>
                 </div>
               )}
             </div>
@@ -1264,7 +1264,7 @@ export default function AdminCourses() {
                       type="text"
                       className="field-input"
                       style={{ paddingLeft: 36, paddingRight: assessmentSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                      placeholder="Tìm kiếm assessment theo tên, mã bài thi..."
+                      placeholder="Search assessments by name, exam code..."
                       value={assessmentSearch}
                       onChange={(e) => setAssessmentSearch(e.target.value)}
                     />
@@ -1283,14 +1283,14 @@ export default function AdminCourses() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     {/* Group By Select */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
                       <select
                         value={assessmentGroupBy}
                         onChange={(e) => setAssessmentGroupBy(e.target.value)}
                         style={{
                           border: 'none',
                           background: 'transparent',
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: assessmentGroupBy !== 'NONE' ? 700 : 500,
                           color: assessmentGroupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
                           cursor: 'pointer',
@@ -1311,9 +1311,9 @@ export default function AdminCourses() {
                       style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
                     >
                       <i className="ti ti-filter" />
-                      <span>Bộ Lọc</span>
+                      <span>Filters</span>
                       {activeAssessmentFiltersCount > 0 && (
-                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                        <span style={{ background: 'var(--paper-raised)', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                           {activeAssessmentFiltersCount}
                         </span>
                       )}
@@ -1326,17 +1326,17 @@ export default function AdminCourses() {
                 {showAssessmentFilters && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-                      {/* Filter 1: Lĩnh Vực */}
+                      {/* Filter 1: Area */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Lĩnh Vực (Category)
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Category
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedAssessmentCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedAssessmentCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1346,24 +1346,24 @@ export default function AdminCourses() {
                           value={selectedAssessmentCategory}
                           onChange={(e) => setSelectedAssessmentCategory(e.target.value)}
                         >
-                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          <option value="ALL">All areas ({companyCategories.length})</option>
                           {companyCategories.map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
                         </select>
                       </div>
 
-                      {/* Filter 2: Loại Hình */}
+                      {/* Filter 2: Type */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Loại Hình (Type)
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Type
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedAssessmentType !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedAssessmentType !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1373,24 +1373,24 @@ export default function AdminCourses() {
                           value={selectedAssessmentType}
                           onChange={(e) => setSelectedAssessmentType(e.target.value)}
                         >
-                          <option value="ALL">Tất cả loại hình</option>
+                          <option value="ALL">All types</option>
                           <option value={ASSESSMENT_TYPES.QUIZ}>📝 Quiz</option>
                           <option value={ASSESSMENT_TYPES.ASSIGNMENT}>📂 Assignment</option>
                           <option value={ASSESSMENT_TYPES.SURVEY}>📊 Survey</option>
                         </select>
                       </div>
 
-                      {/* Filter 3: Hình Thức */}
+                      {/* Filter 3: Format */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Hình Thức Phân Phối
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Delivery Format
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedAssessmentFormat !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedAssessmentFormat !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1400,24 +1400,24 @@ export default function AdminCourses() {
                           value={selectedAssessmentFormat}
                           onChange={(e) => setSelectedAssessmentFormat(e.target.value)}
                         >
-                          <option value="ALL">Tất cả hình thức</option>
-                          <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Độc Lập (Standalone)</option>
-                          <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Gắn Khóa Học (Course)</option>
+                          <option value="ALL">All types</option>
+                          <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Standalone</option>
+                          <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Linked Course</option>
                         </select>
                       </div>
 
-                      {/* Filter 4: Trạng Thái (Full Admin) */}
+                      {/* Filter 4: Status (Full Admin) */}
                       {isFullAdmin && (
                         <div>
-                          <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                            Trạng Thái
+                          <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                            Status
                           </label>
                           <select
                             className="field-select"
                             style={{
                               width: '100%',
                               height: 38,
-                              fontSize: 12.5,
+                              fontSize: 13,
                               borderRadius: 6,
                               background: selectedAssessmentStatus !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                               borderColor: selectedAssessmentStatus !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1427,7 +1427,7 @@ export default function AdminCourses() {
                             value={selectedAssessmentStatus}
                             onChange={(e) => setSelectedAssessmentStatus(e.target.value)}
                           >
-                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="ALL">All statuses</option>
                             <option value="PUBLISHED">Published</option>
                             <option value="DRAFT">Draft</option>
                           </select>
@@ -1438,14 +1438,14 @@ export default function AdminCourses() {
                     {/* Active Filter Summary Bar */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                        Hiển thị <strong>{filteredAssessments.length}</strong> / {visibleAssessments.length} bài assessment
+                        Display <strong>{filteredAssessments.length}</strong> / {visibleAssessments.length} assessments
                       </div>
                       {(assessmentSearch || activeAssessmentFiltersCount > 0 || assessmentGroupBy !== 'NONE') && (
                         <Button
                           size="sm"
                           variant="ghost"
                           icon="ti-x"
-                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          style={{ fontSize: 12, color: 'var(--rust)' }}
                           onClick={() => {
                             setAssessmentSearch('');
                             setSelectedAssessmentCategory('ALL');
@@ -1455,7 +1455,7 @@ export default function AdminCourses() {
                             setAssessmentGroupBy('NONE');
                           }}
                         >
-                          Xóa tất cả bộ lọc
+                          Clear all filters
                         </Button>
                       )}
                     </div>
@@ -1490,11 +1490,11 @@ export default function AdminCourses() {
                         textAlign: 'left',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>
                         <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} />
                         <span>{grp.title}</span>
                       </div>
-                      <Badge tone="sage" size="sm">{grp.items.length} bài thi</Badge>
+                      <Badge tone="sage" size="sm">{grp.items.length} exam</Badge>
                     </button>
                   )}
 
@@ -1506,7 +1506,7 @@ export default function AdminCourses() {
                         const asgCount = (asm.assignments || []).length;
                         const asgSummary = asm.assignments && asm.assignments.length > 0
                           ? asm.assignments.map((a) => a.targetName).join(', ')
-                          : 'Chưa phân bổ';
+                          : 'Not allocated';
 
                         const typesList = asm.types || (asm.type ? [asm.type] : ['QUIZ']);
                         const catsList = asm.categories || (asm.category ? [asm.category] : ['General']);
@@ -1539,7 +1539,7 @@ export default function AdminCourses() {
                               </div>
 
                               <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 34 }}>
-                                {asm.description || 'Chưa có mô tả chi tiết.'}
+                                {asm.description || 'No detailed description yet.'}
                               </div>
 
                               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8, fontSize: 11 }}>
@@ -1552,11 +1552,11 @@ export default function AdminCourses() {
                                   </Badge>
                                 ))}
                                 <Badge tone={asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? 'sage' : 'slate'} size="sm">
-                                  {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? '🎯 Độc Lập' : '🔗 Gắn Khóa'}
+                                  {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? '🎯 Standalone' : '🔗 Link A Course'}
                                 </Badge>
                                 {(asm.contentFormats || (asm.contentFormat ? [asm.contentFormat] : [])).map((fmt) => (
                                   <Badge key={fmt} tone="blue" size="sm">
-                                    {fmt === 'UPLOAD_DOC' ? '📄 File Đề Tự Luận' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Ngân Hàng Câu Hỏi'}
+                                    {fmt === 'UPLOAD_DOC' ? '📄 Essay Paper File' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Question Bank'}
                                   </Badge>
                                 ))}
                               </div>
@@ -1565,24 +1565,24 @@ export default function AdminCourses() {
                               {qTypes.length > 0 && (
                                 <div style={{ fontSize: 11, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '5px 8px', borderRadius: 6, marginBottom: 8 }}>
                                   <i className="ti ti-list-check" style={{ marginRight: 4, color: 'var(--rail)' }} />
-                                  <strong>Dạng câu hỏi:</strong> {qTypes.join(', ')}
+                                  <strong>Question types:</strong> {qTypes.join(', ')}
                                 </div>
                               )}
 
-                              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8 }}>
+                              <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginBottom: 8 }}>
                                 <i className="ti ti-clock" style={{ marginRight: 4 }} />
-                                {asm.timeLimitMinutes} phút &middot; Điểm đạt: {asm.passingScorePercent}% &middot; {(asm.questionIds || []).length} câu hỏi
+                                {asm.timeLimitMinutes} min &middot; Pass score: {asm.passingScorePercent}% &middot; {(asm.questionIds || []).length} questions
                               </div>
 
                               {asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? (
-                                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                                <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
                                   <i className="ti ti-target" style={{ color: asgCount > 0 ? 'var(--rail)' : 'var(--ink-faint)', marginRight: 5 }} />
-                                  <strong>Phân bổ:</strong> {asgSummary}
+                                  <strong>Allocation:</strong> {asgSummary}
                                 </div>
                               ) : (
-                                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                                <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
                                   <i className="ti ti-link" style={{ color: 'var(--rail)', marginRight: 5 }} />
-                                  <strong>Khóa học:</strong> {(asm.courseIds || [asm.courseId]).filter(Boolean).join(', ') || asm.courseTitle || 'E-Learning'}
+                                  <strong>Courses:</strong> {(asm.courseIds || [asm.courseId]).filter(Boolean).join(', ') || asm.courseTitle || 'E-Learning'}
                                 </div>
                               )}
 
@@ -1596,25 +1596,25 @@ export default function AdminCourses() {
 
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 6 }}>
                               <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingAssessment(asm)}>
-                                Xem Chi Tiết
+                                View Details
                               </Button>
 
                               {isOwner ? (
                                 <>
                                   <Button size="sm" icon="ti-pencil" onClick={() => setEditingAssessment(asm)}>
-                                    Sửa
+                                    Edit
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="danger"
                                     icon="ti-trash"
                                     onClick={() => {
-                                      if (window.confirm(`Xóa bài assessment "${asm.title}"?`)) {
+                                      if (window.confirm(`Delete the assessment "${asm.title}"?`)) {
                                         deleteAssessment(asm.id);
                                       }
                                     }}
                                   >
-                                    Xóa
+                                    Delete
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1628,7 +1628,7 @@ export default function AdminCourses() {
                                       }
                                     }}
                                   >
-                                    Làm Thử
+                                    Try It
                                   </Button>
                                 </>
                               ) : (
@@ -1641,11 +1641,11 @@ export default function AdminCourses() {
                                         icon="ti-player-play"
                                         onClick={() => navigate(`${assessmentPlayerBasePath}/${asm.id}`)}
                                       >
-                                        Bắt Đầu Làm Bài
+                                        Start The Exam
                                       </Button>
                                     ) : (
                                       <Button size="sm" disabled icon="ti-lock">
-                                        Không Dành Cho Bạn
+                                        Not Available To You
                                       </Button>
                                     )
                                   ) : (
@@ -1656,11 +1656,11 @@ export default function AdminCourses() {
                                         icon="ti-arrow-right"
                                         onClick={() => navigate(`${learnerCourseBasePath}/${asm.courseId}`)}
                                       >
-                                        Vào Khóa Học Để Thi
+                                        Open The Course To Take The Exam
                                       </Button>
                                     ) : (
                                       <Button size="sm" disabled icon="ti-lock">
-                                        Khóa Học Bị Khóa
+                                        Course Locked
                                       </Button>
                                     )
                                   )}
@@ -1679,17 +1679,17 @@ export default function AdminCourses() {
             {filteredAssessments.length === 0 && (
               <div className="empty-state">
                 <i className="ti ti-writing" aria-hidden="true" />
-                <p>Không tìm thấy bài assessment nào phù hợp với bộ lọc.</p>
+                <p>No assessment matches the filters.</p>
               </div>
             )}
           </div>
         </>
       ) : isLibraryManager ? (
         <>
-          <div className="card card-pad" style={{ marginBottom: 16, fontSize: 12.5, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="card card-pad" style={{ marginBottom: 16, fontSize: 13, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <i className="ti ti-folders" style={{ color: 'var(--rail)', fontSize: 16 }} />
             <div>
-              <strong>Library</strong> — tự tạo Library, thêm các <strong>Lĩnh Vực</strong> bên trong rồi gán khóa học thủ công vào từng Lĩnh Vực để dễ tra cứu. Chỉ hiển thị cho <strong>User Admin &amp; System Admin</strong>.
+              <strong>Library</strong> — create the Library yourself, add the <strong>Area</strong> inside it, then assign courses manually to each area for easy lookup. Shown only to <strong>User Admin &amp; System Admin</strong>.
             </div>
           </div>
           <div className="grid grid-3" style={{ gap: 14 }}>
@@ -1699,23 +1699,23 @@ export default function AdminCourses() {
               return (
                 <div key={lib.id} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6 }}>{lib.name || 'Library chưa đặt tên'}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6 }}>{lib.name || 'Untitled Library'}</div>
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10, minHeight: 34 }}>{lib.description}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Badge tone="slate" size="sm">{domainCount} Lĩnh Vực</Badge>
+                    <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Badge tone="slate" size="sm">{domainCount} Area</Badge>
                       <span>&middot;</span>
-                      <span>{courseCount} khóa học</span>
+                      <span>{courseCount} courses</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-                    <Button size="sm" icon="ti-pencil" onClick={() => setEditingLibrary(lib)}>Quản Lý</Button>
+                    <Button size="sm" icon="ti-pencil" onClick={() => setEditingLibrary(lib)}>Manager</Button>
                     <Button
                       size="sm"
                       variant="danger"
                       icon="ti-trash"
-                      onClick={() => { if (window.confirm(`Xóa Library "${lib.name}"? Các khóa học không bị ảnh hưởng.`)) deleteLibrary(lib.id); }}
+                      onClick={() => { if (window.confirm(`Delete the Library "${lib.name}"? The courses are unaffected.`)) deleteLibrary(lib.id); }}
                     >
-                      Xóa
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -1724,7 +1724,7 @@ export default function AdminCourses() {
             {libraries.length === 0 && (
               <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
                 <i className="ti ti-folders" aria-hidden="true" />
-                <p>Chưa có Library nào. Bấm "Tạo Library Mới" để bắt đầu.</p>
+                <p>No Library yet. Click "Create New Library" to start.</p>
               </div>
             )}
           </div>
@@ -1745,7 +1745,7 @@ export default function AdminCourses() {
                       type="text"
                       className="field-input"
                       style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                      placeholder={language === 'en' ? 'Search course by title, code, keyword...' : 'Tìm kiếm theo tên khóa học, mã khóa, từ khóa...'}
+                      placeholder={language === 'en' ? 'Search course by title, code, keyword...' : 'Search by course name, code, keyword...'}
                       value={search}
                       onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     />
@@ -1764,14 +1764,14 @@ export default function AdminCourses() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     {/* Group By Select */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
                       <select
                         value={groupBy}
                         onChange={(e) => setGroupBy(e.target.value)}
                         style={{
                           border: 'none',
                           background: 'transparent',
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: groupBy !== 'NONE' ? 700 : 500,
                           color: groupBy !== 'NONE' ? 'var(--rail)' : 'var(--ink)',
                           cursor: 'pointer',
@@ -1792,9 +1792,9 @@ export default function AdminCourses() {
                       style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
                     >
                       <i className="ti ti-filter" />
-                      <span>Bộ Lọc</span>
+                      <span>Filters</span>
                       {activeCourseFiltersCount > 0 && (
-                        <span style={{ background: '#fff', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                        <span style={{ background: 'var(--paper-raised)', color: 'var(--rail)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                           {activeCourseFiltersCount}
                         </span>
                       )}
@@ -1808,20 +1808,20 @@ export default function AdminCourses() {
                         onClick={() => setCourseViewMode('TABLE')}
                         className={`btn btn-sm ${courseViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                         style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                        title="Dạng Bảng (List View)"
+                        title="List View"
                       >
                         <i className="ti ti-list" />
-                        <span>Bảng</span>
+                        <span>Table</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setCourseViewMode('GRID')}
                         className={`btn btn-sm ${courseViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                         style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                        title="Dạng Lưới (Grid View)"
+                        title="Grid View"
                       >
                         <i className="ti ti-layout-grid" />
-                        <span>Lưới</span>
+                        <span>Grid</span>
                       </button>
                     </div>
                   </div>
@@ -1831,17 +1831,17 @@ export default function AdminCourses() {
                 {showCourseFilters && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-                      {/* Filter 1: Lĩnh Vực */}
+                      {/* Filter 1: Area */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Lĩnh Vực (Category)
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Category
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedCategory !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedCategory !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1851,24 +1851,24 @@ export default function AdminCourses() {
                           value={selectedCategory}
                           onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
                         >
-                          <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                          <option value="ALL">All areas ({companyCategories.length})</option>
                           {companyCategories.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>
                       </div>
 
-                      {/* Filter 2: Loại Khóa Học */}
+                      {/* Filter 2: Course Type */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Loại Khóa Học
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Course Type
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedType !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedType !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1878,23 +1878,23 @@ export default function AdminCourses() {
                           value={selectedType}
                           onChange={(e) => { setSelectedType(e.target.value); setPage(1); }}
                         >
-                          <option value="ALL">Tất cả loại hình</option>
-                          <option value="MANDATORY">Bắt buộc tuân thủ (Mandatory)</option>
-                          <option value="OPTIONAL">Tự chọn nâng cao (Optional)</option>
+                          <option value="ALL">All types</option>
+                          <option value="MANDATORY">Compliance mandatory</option>
+                          <option value="OPTIONAL">Advanced optional</option>
                         </select>
                       </div>
 
-                      {/* Filter 3: Trạng Thái Vòng Đời */}
+                      {/* Filter 3: Lifecycle Status */}
                       <div>
-                        <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                          Trạng Thái Vòng Đời
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Lifecycle Status
                         </label>
                         <select
                           className="field-select"
                           style={{
                             width: '100%',
                             height: 38,
-                            fontSize: 12.5,
+                            fontSize: 13,
                             borderRadius: 6,
                             background: selectedLifecycle !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
                             borderColor: selectedLifecycle !== 'ALL' ? 'var(--rail)' : 'var(--line)',
@@ -1904,7 +1904,7 @@ export default function AdminCourses() {
                           value={selectedLifecycle}
                           onChange={(e) => { setSelectedLifecycle(e.target.value); setPage(1); }}
                         >
-                          <option value="ALL">Tất cả trạng thái</option>
+                          <option value="ALL">All statuses</option>
                           {Object.entries(isFullAdmin ? LIFECYCLE_STATUS_META : PERSONAL_LIFECYCLE_STATUS_META).map(([key, meta]) => (
                             <option key={key} value={key}>{meta.label}</option>
                           ))}
@@ -1915,14 +1915,14 @@ export default function AdminCourses() {
                     {/* Active Filter Summary Bar */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                        Hiển thị <strong>{groups ? filtered.length : paginated.length}</strong> / <strong>{filtered.length}</strong> khóa học
+                        Display <strong>{groups ? filtered.length : paginated.length}</strong> / <strong>{filtered.length}</strong> courses
                       </div>
                       {(search || activeCourseFiltersCount > 0 || groupBy !== 'NONE') && (
                         <Button
                           size="sm"
                           variant="ghost"
                           icon="ti-x"
-                          style={{ fontSize: 11.5, color: 'var(--rust)' }}
+                          style={{ fontSize: 12, color: 'var(--rust)' }}
                           onClick={() => {
                             setSearch('');
                             setSelectedCategory('ALL');
@@ -1932,7 +1932,7 @@ export default function AdminCourses() {
                             setPage(1);
                           }}
                         >
-                          Xóa tất cả bộ lọc
+                          Clear all filters
                         </Button>
                       )}
                     </div>
@@ -1953,7 +1953,7 @@ export default function AdminCourses() {
                       onClick={() => toggleGroup(g.key)}
                       style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--paper-sunken)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <i className={`ti ${collapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} aria-hidden="true" />
                         {g.icon && <i className={`ti ${g.icon}`} aria-hidden="true" />} {g.label}
                         <Badge tone="slate">{g.items.length}</Badge>
@@ -1968,7 +1968,7 @@ export default function AdminCourses() {
                 );
               })}
               {groups.length === 0 && (
-                <div className="empty-state"><p>Không tìm thấy khóa học nào phù hợp với bộ lọc.</p></div>
+                <div className="empty-state"><p>No course matches the filters.</p></div>
               )}
             </div>
           ) : (
@@ -1977,11 +1977,11 @@ export default function AdminCourses() {
               {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 10 }}>
                   <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                    Trang <strong>{page}</strong> / <strong>{totalPages}</strong> ({filtered.length} khóa học)
+                    Trang <strong>{page}</strong> / <strong>{totalPages}</strong> ({filtered.length} courses)
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                      &larr; Trước
+                      &larr; Previous
                     </Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
@@ -2170,7 +2170,7 @@ function CurriculumDetailModal({
         dueDate: dueDate || '',
       }));
       handleAssign(liveCurriculum.id, toAdd);
-      setFeedbackMsg(`✅ Đã phân bổ giáo trình thành công cho ${targets.length} đối tượng!`);
+      setFeedbackMsg(`✅ Curriculum allocated successfully to ${targets.length} audiences!`);
     } else if (isHrbp && handlePropose) {
       targets.forEach((t) => {
         handlePropose(
@@ -2184,7 +2184,7 @@ function CurriculumDetailModal({
           justification
         );
       });
-      setFeedbackMsg(`📋 Đã gửi ${targets.length} đơn đề xuất phân bổ giáo trình tới User Admin để phê duyệt!`);
+      setFeedbackMsg(`📋 Sent ${targets.length} curriculum allocation requests to the User Admin for approval!`);
     }
 
     setShowAssignForm(false);
@@ -2195,7 +2195,7 @@ function CurriculumDetailModal({
     <Modal
       isOpen
       title={liveCurriculum.title}
-      subtitle={`${liveCurriculum.category || 'General'} · ${(liveCurriculum.courseIds || []).length} khóa học · ${assignments.length} đối tượng chính thức · ${pendingProposals.length} đơn chờ duyệt`}
+      subtitle={`${liveCurriculum.category || 'General'} · ${(liveCurriculum.courseIds || []).length} courses · ${assignments.length} official audiences · ${pendingProposals.length} pending requests`}
       onClose={onClose}
       size="lg"
       footer={(
@@ -2208,10 +2208,10 @@ function CurriculumDetailModal({
           <div style={{ display: 'flex', gap: 8 }}>
             {isCurriculumAdmin && (
               <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(liveCurriculum)}>
-                Chỉnh Sửa Giáo Trình
+                Edit Curriculum
               </Button>
             )}
-            <Button variant="ghost" onClick={onClose}>Đóng</Button>
+            <Button variant="ghost" onClick={onClose}>Close</Button>
           </div>
         </div>
       )}
@@ -2228,7 +2228,7 @@ function CurriculumDetailModal({
               onClick={() => setActiveTab('tree')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <i className="ti ti-sitemap" /> Cấu Trúc Khóa Học ({(liveCurriculum.courseIds || []).length})
+              <i className="ti ti-sitemap" /> Course Structure ({(liveCurriculum.courseIds || []).length})
             </button>
             <button
               type="button"
@@ -2236,9 +2236,9 @@ function CurriculumDetailModal({
               onClick={() => setActiveTab('assignments')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
+              <i className="ti ti-users-group" /> Assigned Audiences ({assignments.length})
               {pendingProposals.length > 0 && (
-                <Badge tone="amber" size="sm">{pendingProposals.length} Chờ Duyệt</Badge>
+                <Badge tone="amber" size="sm">{pendingProposals.length} Pending Approval</Badge>
               )}
             </button>
           </div>
@@ -2250,20 +2250,20 @@ function CurriculumDetailModal({
       ) : (
         <div>
           {feedbackMsg && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: 12.5, fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--blue-soft)', border: '1px solid #BFDBFE', color: 'var(--blue-soft-text)', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
               {feedbackMsg}
             </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
               {isHrbp
-                ? 'HRBP có thể gửi đơn đề xuất phân bổ giáo trình cho nhân sự/bộ phận lên User Admin duyệt:'
-                : 'Phân bổ giáo trình cho đơn vị hoặc cá nhân học viên bắt buộc tuân thủ (hỗ trợ chọn nhiều):'}
+                ? 'HRBP can send the User Admin a request to allocate a curriculum to an employee/sub-department:'
+                : 'Allocate the curriculum to a unit or to individual learners required to comply (multi-select supported):'}
             </div>
             {(canDirectAssign || canPropose) && !showAssignForm && (
               <Button size="sm" variant="primary" icon={isHrbp ? 'ti-send' : 'ti-plus'} onClick={() => setShowAssignForm(true)}>
-                {isHrbp ? 'Đề Xuất Gán Giáo Trình (Gửi Duyệt)' : 'Gán Đối Tượng Mới'}
+                {isHrbp ? 'Propose A Curriculum (Sent For Approval)' : 'Assign A New Audience'}
               </Button>
             )}
           </div>
@@ -2278,23 +2278,23 @@ function CurriculumDetailModal({
           )}
 
           {pendingProposals.length > 0 && (
-            <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#92400E', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-clock" /> Đề Xuất Đang Chờ User Admin Phê Duyệt ({pendingProposals.length})
+            <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, background: 'var(--amber-soft)', border: '1px solid #FDE68A' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber-soft-text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-clock" /> Proposals Awaiting User Admin Approval ({pendingProposals.length})
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pendingProposals.map((p) => (
-                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #FEF3C7', fontSize: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-raised)', padding: '8px 12px', borderRadius: 6, border: '1px solid #FEF3C7', fontSize: 12, flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{p.targetLabel}</span>
                       <span style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>({assignmentTypeLabel(p.assignmentType)})</span>
                       {p.justification && (
-                        <div style={{ color: 'var(--ink-soft)', fontSize: 11.5, marginTop: 2, fontStyle: 'italic' }}>
-                          Lý do: {p.justification}
+                        <div style={{ color: 'var(--ink-soft)', fontSize: 12, marginTop: 2, fontStyle: 'italic' }}>
+                          Reason: {p.justification}
                         </div>
                       )}
                     </div>
-                    <Badge tone="amber" size="sm">Đang Chờ Duyệt</Badge>
+                    <Badge tone="amber" size="sm">Awaiting Approval</Badge>
                   </div>
                 ))}
               </div>
@@ -2302,20 +2302,20 @@ function CurriculumDetailModal({
           )}
 
           {assignments.length === 0 ? (
-            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
+            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
               <i className="ti ti-target-arrow" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
-              Chưa có đối tượng nào được gán chính thức giáo trình này.
+              No audience has been officially assigned this curriculum yet.
             </div>
           ) : (
             <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
-              <table className="table" style={{ margin: 0, fontSize: 12.5 }}>
+              <table className="table" style={{ margin: 0, fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--paper-sunken)' }}>
-                    <th>Phân Loại</th>
-                    <th>Tên Đối Tượng Được Gán</th>
-                    <th>Hạn Chót</th>
-                    <th>Ngày Gán</th>
-                    {isCurriculumAdmin && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
+                    <th>Classification</th>
+                    <th>Assigned Audience Name</th>
+                    <th>Deadline</th>
+                    <th>Assigned On</th>
+                    {isCurriculumAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -2334,10 +2334,10 @@ function CurriculumDetailModal({
                             {asg.dueDate}
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--ink-faint)' }}>Không giới hạn</span>
+                          <span style={{ color: 'var(--ink-faint)' }}>Unlimited</span>
                         )}
                       </td>
-                      <td style={{ color: 'var(--ink-faint)', fontSize: 11.5 }}>
+                      <td style={{ color: 'var(--ink-faint)', fontSize: 12 }}>
                         {asg.assignedAt || '—'}
                       </td>
                       {isCurriculumAdmin && (
@@ -2347,12 +2347,12 @@ function CurriculumDetailModal({
                             variant="danger"
                             icon="ti-trash"
                             onClick={() => {
-                              if (window.confirm(`Hủy phân bổ giáo trình này cho "${asg.targetLabel || asg.targetId}"?`)) {
+                              if (window.confirm(`Cancel this curriculum allocation for "${asg.targetLabel || asg.targetId}"?`)) {
                                 handleRemove(liveCurriculum.id, asg.id);
                               }
                             }}
                           >
-                            Xóa
+                            Delete
                           </Button>
                         </td>
                       )}
@@ -2414,7 +2414,7 @@ function CourseDetailModal({
       assignedLevelEligibility,
     }));
     assignCourse(liveCourse.id, toAdd);
-    setFeedbackMsg(`✅ Đã phân bổ khóa học thành công cho ${targets.length} đối tượng!`);
+    setFeedbackMsg(`✅ Course allocated successfully to ${targets.length} audiences!`);
     setShowAssignForm(false);
     setTimeout(() => setFeedbackMsg(null), 5000);
   }
@@ -2423,7 +2423,7 @@ function CourseDetailModal({
     <Modal
       isOpen
       title={liveCourse.title}
-      subtitle={`${liveCourse.code} · ${liveCourse.category || liveCourse.domain || 'General'} · Version ${liveCourse.version || 'v1.0'} · ${assignments.length} đối tượng được gán`}
+      subtitle={`${liveCourse.code} · ${liveCourse.category || liveCourse.domain || 'General'} · Version ${liveCourse.version || 'v1.0'} · ${assignments.length} assigned audiences`}
       onClose={onClose}
       size="lg"
       footer={(
@@ -2443,7 +2443,7 @@ function CourseDetailModal({
                   navigate(`/learner/courses/${liveCourse.id}`);
                 }}
               >
-                🚀 Vào Học Bài (Learner Mode)
+                🚀 Open The Lesson (Learner Mode)
               </Button>
             ) : myAccess.state === ACCESS_STATE.REQUESTABLE ? (
               <Button
@@ -2455,7 +2455,7 @@ function CourseDetailModal({
                   navigate(`/learner/courses/${liveCourse.id}`);
                 }}
               >
-                ⚠️ Xin Học Vượt Cấp
+                ⚠️ Request A Level Skip
               </Button>
             ) : (
               <Button
@@ -2465,15 +2465,15 @@ function CourseDetailModal({
                 icon="ti-lock"
                 title={myAccess.reason}
               >
-                🔒 Khóa Học Vượt Cấp
+                🔒 Course Above Your Level
               </Button>
             )}
             {isAdmin && (
               <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(liveCourse)}>
-                Chỉnh Sửa (Builder)
+                Edit (Builder)
               </Button>
             )}
-            <Button variant="ghost" onClick={onClose}>Đóng</Button>
+            <Button variant="ghost" onClick={onClose}>Close</Button>
           </div>
         </div>
       )}
@@ -2486,7 +2486,7 @@ function CourseDetailModal({
             onClick={() => setActiveTab('info')}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <i className="ti ti-info-circle" /> Thông Tin &amp; Nội Dung
+            <i className="ti ti-info-circle" /> Details &amp; Content
           </button>
           <button
             type="button"
@@ -2494,7 +2494,7 @@ function CourseDetailModal({
             onClick={() => setActiveTab('assignments')}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <i className="ti ti-users-group" /> Đối Tượng Được Gán ({assignments.length})
+            <i className="ti ti-users-group" /> Assigned Audiences ({assignments.length})
           </button>
         </div>
       </div>
@@ -2510,20 +2510,20 @@ function CourseDetailModal({
             />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--ink)', marginBottom: 4 }}>{liveCourse.title}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>{liveCourse.description}</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>{liveCourse.description}</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12 }}>
-                <span><strong>Thời lượng:</strong> {liveCourse.estimatedDuration || liveCourse.estimatedHours || '2h'}</span>
+                <span><strong>Duration:</strong> {liveCourse.estimatedDuration || liveCourse.estimatedHours || '2h'}</span>
                 <span>&middot;</span>
-                <span><strong>Cấp bậc mục tiêu:</strong> {targetLevels.map((l) => `Level ${l}`).join(', ')}</span>
+                <span><strong>Target job level:</strong> {targetLevels.map((l) => `Level ${l}`).join(', ')}</span>
                 <span>&middot;</span>
-                <span><strong>Loại khóa:</strong> <CourseTypeBadge courseType={liveCourse.courseType} /></span>
+                <span><strong>Course type:</strong> <CourseTypeBadge courseType={liveCourse.courseType} /></span>
                 <span>&middot;</span>
                 <span>
-                  <strong>Học phí:</strong>{' '}
+                  <strong>Tuition:</strong>{' '}
                   {coursePricing.isFree ? (
-                    <Badge tone="sage" icon="ti-gift" size="sm">Miễn Phí</Badge>
+                    <Badge tone="sage" icon="ti-gift" size="sm">Free</Badge>
                   ) : (
-                    <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(coursePricing.price)} / học viên</Badge>
+                    <Badge tone="amber" icon="ti-coin" size="sm">{formatVnd(coursePricing.price)} / learner</Badge>
                   )}
                 </span>
               </div>
@@ -2547,11 +2547,11 @@ function CourseDetailModal({
               }}
             >
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="ti ti-circle-check" /> Bạn Đủ Điều Kiện Tham Gia Khóa Học Này
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--sage-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="ti ti-circle-check" /> You Are Eligible For This Course
                 </div>
-                <div style={{ fontSize: 12, color: '#166534', marginTop: 2 }}>
-                  {myAccess.reason || `Định biên: Level ${targetLevels.join(', ')} · Cấp bậc hiện tại của bạn: Level ${currentUser?.level || 7} (${Number(currentUser?.level || 7) <= Math.max(...targetLevels.map(Number)) ? 'Đúng cấp / Cấp cao hơn' : 'Được gán trực tiếp'})`}
+                <div style={{ fontSize: 12, color: 'var(--sage-soft-text)', marginTop: 2 }}>
+                  {myAccess.reason || `Requirement: Level ${targetLevels.join(', ')} · Your current level: Level ${currentUser?.level || 7} (${Number(currentUser?.level || 7) <= Math.max(...targetLevels.map(Number)) ? 'Correct level / higher level' : 'Directly assigned'})`}
                 </div>
               </div>
               <Button
@@ -2563,7 +2563,7 @@ function CourseDetailModal({
                   navigate(`/learner/courses/${liveCourse.id}`);
                 }}
               >
-                🚀 Vào Học Ngay (Learner Mode)
+                🚀 Start Learning (Learner Mode)
               </Button>
             </div>
           ) : myAccess.state === ACCESS_STATE.REQUESTABLE ? (
@@ -2571,7 +2571,7 @@ function CourseDetailModal({
               style={{
                 padding: '12px 14px',
                 borderRadius: 8,
-                background: '#EFF6FF',
+                background: 'var(--blue-soft)',
                 border: '1px solid #BFDBFE',
                 marginBottom: 16,
                 display: 'flex',
@@ -2583,9 +2583,9 @@ function CourseDetailModal({
             >
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="ti ti-lock" /> Khóa Học Vượt 1 Cấp (Cần Gửi Đơn Xin Học)
+                  <i className="ti ti-lock" /> Course One Grade Above (a request is required)
                 </div>
-                <div style={{ fontSize: 12, color: '#1E40AF', marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: 'var(--blue-soft-text)', marginTop: 2 }}>
                   {myAccess.reason}
                 </div>
               </div>
@@ -2598,7 +2598,7 @@ function CourseDetailModal({
                   navigate(`/learner/courses/${liveCourse.id}`);
                 }}
               >
-                ⚠️ Gửi Đơn Xin Học Vượt Cấp
+                ⚠️ Submit A Level Skip Request
               </Button>
             </div>
           ) : myAccess.state === ACCESS_STATE.PENDING_APPROVAL ? (
@@ -2606,15 +2606,15 @@ function CourseDetailModal({
               style={{
                 padding: '12px 14px',
                 borderRadius: 8,
-                background: '#FFFBEB',
+                background: 'var(--amber-soft)',
                 border: '1px solid #FDE68A',
                 marginBottom: 16,
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#92400E', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-clock" /> Đơn Xin Học Vượt Cấp Đang Chờ Phê Duyệt
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--amber-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-clock" /> Level Skip Requests Awaiting Approval
               </div>
-              <div style={{ fontSize: 12, color: '#B45309', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: 'var(--amber-soft-text)', marginTop: 2 }}>
                 {myAccess.reason}
               </div>
             </div>
@@ -2623,60 +2623,60 @@ function CourseDetailModal({
               style={{
                 padding: '12px 14px',
                 borderRadius: 8,
-                background: '#FEF2F2',
+                background: 'var(--rust-soft)',
                 border: '1px solid #FECACA',
                 marginBottom: 16,
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#B91C1C', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-ban" /> Khóa Học Vượt Cấp — Bị Khóa Truy Cập
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--rust-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-ban" /> Course Above Your Level — Access Locked
               </div>
-              <div style={{ fontSize: 12, color: '#991B1B', marginTop: 2 }}>
-                {myAccess.reason || `Khóa học định biên Level ${targetLevels.join(', ')} — Bạn đang ở Level ${currentUser?.level || 7} (Chênh ${myAccess.gap || 2} cấp bậc). Bắt buộc phải hoàn thành lộ trình cấp bậc trước.`}
+              <div style={{ fontSize: 12, color: 'var(--rust-soft-text)', marginTop: 2 }}>
+                {myAccess.reason || `This course requires Level ${targetLevels.join(', ')} — you are at Level ${currentUser?.level || 7} (${myAccess.gap || 2} grades away). You must complete the level roadmap first.`}
               </div>
             </div>
           )}
 
           {/* Module / Logistics Content */}
           {liveCourse.onlineClassType === 'VIRTUAL_CLASS' ? (
-            <div className="card card-pad" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#92400E', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-broadcast" /> Thông Tin Lớp Học Trực Tuyến Live
+            <div className="card card-pad" style={{ background: 'var(--amber-soft)', borderColor: '#FDE68A' }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--amber-soft-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-broadcast" /> Live Online Class Details
               </div>
-              <div className="grid grid-2" style={{ gap: 10, fontSize: 12.5 }}>
-                <div><strong>Nền tảng:</strong> {liveCourse.virtualMeeting?.platform || 'Microsoft Teams'}</div>
-                <div><strong>Giảng viên chủ trì:</strong> {liveCourse.virtualMeeting?.instructorName || 'Chưa phân công'}</div>
-                <div><strong>Lịch học:</strong> {liveCourse.virtualMeeting?.scheduleDate || '—'} ({liveCourse.virtualMeeting?.scheduleTime || '—'})</div>
-                <div><strong>Link phòng họp:</strong> <a href={liveCourse.virtualMeeting?.meetingUrl || '#'} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>{liveCourse.virtualMeeting?.meetingUrl || '—'}</a></div>
+              <div className="grid grid-2" style={{ gap: 10, fontSize: 13 }}>
+                <div><strong>Platform:</strong> {liveCourse.virtualMeeting?.platform || 'Microsoft Teams'}</div>
+                <div><strong>Hosting trainer:</strong> {liveCourse.virtualMeeting?.instructorName || 'Not assigned'}</div>
+                <div><strong>Schedule:</strong> {liveCourse.virtualMeeting?.scheduleDate || '—'} ({liveCourse.virtualMeeting?.scheduleTime || '—'})</div>
+                <div><strong>Meeting link:</strong> <a href={liveCourse.virtualMeeting?.meetingUrl || '#'} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>{liveCourse.virtualMeeting?.meetingUrl || '—'}</a></div>
               </div>
             </div>
           ) : (liveCourse.deliveryType === 'IN_PERSON_CLASSROOM' || liveCourse.modality === 'CLASSROOM_LAB') ? (
-            <div className="card card-pad" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-school" /> Thông Tin Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành
+            <div className="card card-pad" style={{ background: 'var(--blue-soft)', borderColor: '#BFDBFE' }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue-soft-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-school" /> In-Person Workshop Training Details
               </div>
-              <div className="grid grid-2" style={{ gap: 10, fontSize: 12.5 }}>
-                <div><strong>Giảng viên chính:</strong> {liveCourse.trainerName || liveCourse.instructor || 'Chưa phân công'}</div>
+              <div className="grid grid-2" style={{ gap: 10, fontSize: 13 }}>
+                <div><strong>Lead trainer:</strong> {liveCourse.trainerName || liveCourse.instructor || 'Not assigned'}</div>
                 {((liveCourse.coTrainers && liveCourse.coTrainers.length > 0) || (liveCourse.coTrainerNames && liveCourse.coTrainerNames.length > 0)) && (
-                  <div style={{ gridColumn: '1 / -1', background: '#DBEAFE', padding: '6px 10px', borderRadius: 6, color: '#1E40AF' }}>
+                  <div style={{ gridColumn: '1 / -1', background: 'var(--blue-soft)', padding: '6px 10px', borderRadius: 6, color: 'var(--blue-soft-text)' }}>
                     <i className="ti ti-users" style={{ marginRight: 6 }} />
-                    <strong>Đồng giảng viên / Trợ giảng:</strong> {liveCourse.coTrainerNames?.join(', ') || liveCourse.coTrainers.map(t => t.fullName || t.name).join(', ')}
+                    <strong>Co-trainers / teaching assistants:</strong> {liveCourse.coTrainerNames?.join(', ') || liveCourse.coTrainers.map(t => t.fullName || t.name).join(', ')}
                   </div>
                 )}
-                <div><strong>Địa điểm / Xưởng:</strong> {liveCourse.venue || 'Fresh Food & Bakery Lab'}</div>
-                <div><strong>Lịch đào tạo:</strong> {liveCourse.scheduleDate || '2026-08-28'} ({liveCourse.scheduleTime || '08:30 - 11:30'})</div>
-                <div><strong>Sức chứa:</strong> {liveCourse.maxCapacity || 25} học viên &middot; Live QR Attendance</div>
+                <div><strong>Venue / workshop:</strong> {liveCourse.venue || 'Fresh Food & Bakery Lab'}</div>
+                <div><strong>Training schedule:</strong> {liveCourse.scheduleDate || '2026-08-28'} ({liveCourse.scheduleTime || '08:30 - 11:30'})</div>
+                <div><strong>Capacity:</strong> {liveCourse.maxCapacity || 25} learners &middot; Live QR Attendance</div>
               </div>
             </div>
           ) : (
             <div>
               <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 10 }}>
-                Cấu Trúc Mô-đun &amp; Bài Học ({liveCourse.modules?.length || 2} modules)
+                Module &amp; Lesson Structure ({liveCourse.modules?.length || 2} modules)
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {(liveCourse.modules || [{ id: 'm1', title: 'Module 1: Tổng quan nội dung', lessons: [] }]).map((m, idx) => (
-                  <div key={m.id || idx} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}>
-                    <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)', marginBottom: 6 }}>
+                {(liveCourse.modules || [{ id: 'm1', title: 'Module 1: Content overview', lessons: [] }]).map((m, idx) => (
+                  <div key={m.id || idx} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', background: 'var(--paper-raised)' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 6 }}>
                       {idx + 1}. {m.title}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 12 }}>
@@ -2688,7 +2688,7 @@ function CourseDetailModal({
                         </div>
                       ))}
                       {(!m.lessons || m.lessons.length === 0) && (
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Bao gồm học liệu trực tuyến, slide tương tác và video thực tế.</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Includes online learning material, interactive slides and real-world video.</div>
                       )}
                     </div>
                   </div>
@@ -2700,18 +2700,18 @@ function CourseDetailModal({
       ) : (
         <div>
           {feedbackMsg && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', fontSize: 12.5, fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--blue-soft)', border: '1px solid #BFDBFE', color: 'var(--blue-soft-text)', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>
               {feedbackMsg}
             </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-              Phân bổ khóa học bắt buộc cho BU, Division, Department, Sub-Dept, Store hoặc nhiều nhân sự cụ thể (chọn nhiều):
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+              Allocate the mandatory course to a BU, Division, Department, Sub-Dept, Store or to specific employees (multi-select):
             </div>
             {isAdmin && !showAssignForm && (
               <Button size="sm" variant="primary" icon="ti-plus" onClick={() => setShowAssignForm(true)}>
-                Gán Đối Tượng Mới
+                Assign A New Audience
               </Button>
             )}
           </div>
@@ -2725,20 +2725,20 @@ function CourseDetailModal({
           )}
 
           {assignments.length === 0 ? (
-            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
+            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', borderRadius: 8 }}>
               <i className="ti ti-target-arrow" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
-              Chưa có đối tượng nào được gán khóa học này. Bấm "Gán Đối Tượng Mới" để phân bổ.
+              No audience has been assigned this course. Click "Assign A New Audience" to allocate it.
             </div>
           ) : (
             <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
-              <table className="table" style={{ margin: 0, fontSize: 12.5 }}>
+              <table className="table" style={{ margin: 0, fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--paper-sunken)' }}>
-                    <th>Phân Loại</th>
-                    <th>Tên Đối Tượng Được Gán</th>
-                    <th>Hạn Chót</th>
-                    <th>Ngày Gán</th>
-                    {isAdmin && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
+                    <th>Classification</th>
+                    <th>Assigned Audience Name</th>
+                    <th>Deadline</th>
+                    <th>Assigned On</th>
+                    {isAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -2757,10 +2757,10 @@ function CourseDetailModal({
                             {asg.dueDate}
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--ink-faint)' }}>Không giới hạn</span>
+                          <span style={{ color: 'var(--ink-faint)' }}>Unlimited</span>
                         )}
                       </td>
-                      <td style={{ color: 'var(--ink-faint)', fontSize: 11.5 }}>
+                      <td style={{ color: 'var(--ink-faint)', fontSize: 12 }}>
                         {asg.assignedAt || '—'}
                       </td>
                       {isAdmin && (
@@ -2770,12 +2770,12 @@ function CourseDetailModal({
                             variant="danger"
                             icon="ti-trash"
                             onClick={() => {
-                              if (window.confirm(`Hủy phân bổ khóa học này cho "${asg.targetLabel || asg.targetId}"?`)) {
+                              if (window.confirm(`Cancel this course allocation for "${asg.targetLabel || asg.targetId}"?`)) {
                                 removeCourseAssignment(liveCourse.id, asg.id);
                               }
                             }}
                           >
-                            Xóa
+                            Delete
                           </Button>
                         </td>
                       )}
@@ -2805,7 +2805,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
 
   const eLearningCourses = useMemo(() => {
     return (courses || []).filter((c) => {
-      // Ưu tiên các khóa Online E-Learning tự học
+      // Prefer self-paced online E-Learning courses
       if (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB') return false;
       if (c.onlineClassType === 'VIRTUAL_CLASS') return false;
       return true;
@@ -2862,24 +2862,24 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
   return (
     <Modal
       isOpen
-      title={draft.title ? 'Chỉnh Sửa Giáo Trình (Edit Curriculum)' : 'Tạo Giáo Trình Mới (Create Curriculum)'}
-      subtitle="Thiết lập giáo trình lộ trình bao gồm nhiều khóa học E-Learning tự học chuẩn hóa"
+      title={draft.title ? 'Edit Curriculum' : 'Create Curriculum'}
+      subtitle="Build a roadmap curriculum bundling several standardized self-paced E-Learning courses"
       onClose={onCancel}
       size="xl"
       footer={(
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
-            Đã chọn: <strong style={{ color: 'var(--rail)' }}>{form.courseIds.length}</strong> khóa học E-Learning ({totalSelectedHours.toFixed(1)}h học)
+          <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+            Selected: <strong style={{ color: 'var(--rail)' }}>{form.courseIds.length}</strong> E-Learning courses ({totalSelectedHours.toFixed(1)}h)
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
             <Button
               variant="primary"
               icon="ti-check"
               disabled={!form.title.trim() || form.courseIds.length === 0}
               onClick={() => onSave(form)}
             >
-              Lưu Giáo Trình
+              Save Curriculum
             </Button>
           </div>
         </div>
@@ -2887,17 +2887,17 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
     >
       <div className="grid grid-2" style={{ gap: 14, marginBottom: 12 }}>
         <div>
-          <label className="field-label">Tên giáo trình (Curriculum Title) <span style={{ color: 'var(--rust)' }}>*</span></label>
+          <label className="field-label">Curriculum Title <span style={{ color: 'var(--rust)' }}>*</span></label>
           <input
             className="field-input"
-            placeholder="VD: Chương Trình Nền Tảng An Toàn Thực Phẩm"
+            placeholder="E.g. Food Safety Foundation Program"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
           />
         </div>
         <div>
-          <label className="field-label">Lĩnh vực chuyên môn (Category)</label>
+          <label className="field-label">Specialist Area (Category)</label>
           <select
             className="field-select"
             value={form.category}
@@ -2911,12 +2911,12 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
       </div>
 
       <div style={{ marginBottom: 12 }}>
-        <label className="field-label">Mô tả giáo trình &amp; mục tiêu đào tạo</label>
+        <label className="field-label">Curriculum description &amp; training objective</label>
         <textarea
           className="field-input"
           rows={2}
           style={{ resize: 'vertical' }}
-          placeholder="Mô tả mục tiêu, đối tượng áp dụng và kết quả đầu ra của giáo trình..."
+          placeholder="Describe the curriculum's objective, target audience and learning outcomes..."
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
@@ -2929,7 +2929,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
             checked={form.status === 'PUBLISHED'}
             onChange={(e) => setForm({ ...form, status: e.target.checked ? 'PUBLISHED' : 'DRAFT' })}
           />
-          <span>Xuất bản ngay (Published - Sẵn sàng phân bổ cho học viên)</span>
+          <span>Publish now (Published - ready to allocate to learners)</span>
         </label>
       </div>
 
@@ -2947,16 +2947,16 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
       {/* Course Selection Area */}
       <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>
             <i className="ti ti-books" style={{ color: 'var(--rail)', marginRight: 6 }} />
-            Chọn Khóa Học E-Learning Vào Giáo Trình
+            Add E-Learning Courses To The Curriculum
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button size="sm" variant="outline" onClick={selectAllFiltered}>
-              Chọn tất cả đang lọc ({filteredAvailable.length})
+              Select all filtered ({filteredAvailable.length})
             </Button>
             <Button size="sm" variant="ghost" onClick={clearAllSelected}>
-              Bỏ chọn tất cả
+              Deselect all
             </Button>
           </div>
         </div>
@@ -2969,7 +2969,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
               type="text"
               className="field-input"
               style={{ paddingLeft: 28, height: 32, fontSize: 12 }}
-              placeholder="Tìm kiếm mã hoặc tên khóa..."
+              placeholder="Search by course code or name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -2981,7 +2981,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
-            <option value="ALL">Tất cả danh mục ({companyCategories.length})</option>
+            <option value="ALL">All categories ({companyCategories.length})</option>
             {companyCategories.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -2993,7 +2993,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
           >
-            <option value="ALL">Tất cả Level</option>
+            <option value="ALL">All levels</option>
             {['1', '2', '3', '4', '5', '6', '7'].map((lvl) => (
               <option key={lvl} value={lvl}>Level {lvl}</option>
             ))}
@@ -3005,8 +3005,8 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
           {/* Left Column: Filtered Available E-Learning Courses */}
           <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
             <div style={{ padding: '8px 12px', background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
-              <span>Danh sách khóa E-Learning ({filteredAvailable.length})</span>
-              <span style={{ color: 'var(--ink-faint)' }}>Tích chọn để thêm</span>
+              <span>E-Learning course list ({filteredAvailable.length})</span>
+              <span style={{ color: 'var(--ink-faint)' }}>Tick to add</span>
             </div>
             <div style={{ maxHeight: 300, overflowY: 'auto', padding: 6 }}>
               {filteredAvailable.map((c) => {
@@ -3037,7 +3037,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)', fontWeight: 600 }}>{c.code}</span>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)' }}>{c.title}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{c.title}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--ink-soft)' }}>
                         <Badge tone="slate" size="sm">{c.category || 'Store Ops'}</Badge>
@@ -3053,7 +3053,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
               })}
               {filteredAvailable.length === 0 && (
                 <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
-                  Không tìm thấy khóa E-Learning phù hợp với bộ lọc.
+                  No E-Learning course matches the filters.
                 </div>
               )}
             </div>
@@ -3062,8 +3062,8 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
           {/* Right Column: Selected Courses in Curriculum */}
           <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
             <div style={{ padding: '8px 12px', background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Khóa học đã chọn ({selectedCourses.length})</span>
-              <Badge tone="sage" size="sm">{totalSelectedHours.toFixed(1)} giờ học</Badge>
+              <span>Selected courses ({selectedCourses.length})</span>
+              <Badge tone="sage" size="sm">{totalSelectedHours.toFixed(1)} study hours</Badge>
             </div>
             <div style={{ maxHeight: 300, overflowY: 'auto', padding: 6 }}>
               {selectedCourses.map((c, idx) => (
@@ -3100,7 +3100,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
                     }}
                     className="btn btn-sm"
                     style={{ padding: '2px 6px', color: 'var(--rust)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14 }}
-                    title="Bỏ khóa này"
+                    title="Remove this course"
                   >
                     <i className="ti ti-x" />
                   </button>
@@ -3109,7 +3109,7 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
               {selectedCourses.length === 0 && (
                 <div style={{ padding: '30px 12px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
                   <i className="ti ti-books" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
-                  Chưa có khóa học nào được chọn vào giáo trình.
+                  No course has been added to the curriculum yet.
                 </div>
               )}
             </div>
@@ -3120,11 +3120,11 @@ export function CurriculumEditorModal({ draft, courses, companyCategories, certi
   );
 }
 
-// Editor 1-lần cho Library: tên/mô tả + thêm Lĩnh Vực (gắn 1 Category có sẵn)
-// + gán khóa học vào từng Lĩnh Vực đều thao tác trên state cục bộ (chưa ghi
-// store), chỉ commit 1 lần khi bấm "Lưu Library" (qua onSave, giống hệt
-// CurriculumEditorModal) — dùng chung cho cả tạo mới lẫn sửa Library đã có,
-// nên "xây" xong toàn bộ cụm Lĩnh Vực + khóa học trong 1 lần mở modal.
+// A one-shot editor for the Library: name/description + add areas (each bound to an existing category)
+// + assigning courses to each area all operate on local state (nothing is written
+// store); it commits once when "Save Library" is pressed (through onSave, exactly like
+// CurriculumEditorModal) — shared by both creating and editing an existing Library,
+// so the whole set of areas + courses is "built" in a single modal session.
 export function LibraryEditorModal({ draft, courses, companyCategories, onCancel, onSave }) {
   const [form, setForm] = useState(() => ({ ...draft, domains: draft.domains || [] }));
   const domains = form.domains;
@@ -3149,7 +3149,7 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
   }
 
   function removeDomain(domainId) {
-    if (!window.confirm('Bỏ Lĩnh Vực này khỏi Library? Khóa học bên trong không bị ảnh hưởng.')) return;
+    if (!window.confirm('Remove this area from the Library? The courses inside are unaffected.')) return;
     setDomains(domains.filter((d) => d.id !== domainId));
     if (openPickerFor === domainId) setOpenPickerFor(null);
   }
@@ -3178,19 +3178,19 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
   return (
     <Modal
       isOpen
-      title={draft.name ? 'Chỉnh Sửa Library' : 'Tạo Library Mới'}
-      subtitle={`${domains.length} Lĩnh Vực · ${totalCourses} khóa học — thêm Lĩnh Vực & khóa học rồi bấm Lưu để tạo 1 lần`}
+      title={draft.name ? 'Edit Library' : 'Create New Library'}
+      subtitle={`${domains.length} areas · ${totalCourses} courses — add areas & courses, then click Save to create them all at once`}
       onClose={onCancel}
       size="xl"
       footer={(
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 12 }}>
           <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
-            {domains.length} Lĩnh Vực &middot; {totalCourses} khóa học đã gán
+            {domains.length} Area &middot; {totalCourses} courses assigned
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
             <Button variant="primary" icon="ti-check" disabled={!form.name.trim()} onClick={() => onSave(form)}>
-              Lưu Library
+              Save Library
             </Button>
           </div>
         </div>
@@ -3198,20 +3198,20 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
     >
       <div className="grid grid-2" style={{ gap: 14, marginBottom: 16 }}>
         <div>
-          <label className="field-label">Tên Library <span style={{ color: 'var(--rust)' }}>*</span></label>
+          <label className="field-label">Library Name <span style={{ color: 'var(--rust)' }}>*</span></label>
           <input
             className="field-input"
-            placeholder="VD: Thư Viện Kỹ Năng Cứng"
+            placeholder="E.g. Hard Skills Library"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
         </div>
         <div>
-          <label className="field-label">Mô tả</label>
+          <label className="field-label">Description</label>
           <input
             className="field-input"
-            placeholder="Mục đích & phạm vi của Library này..."
+            placeholder="The purpose & scope of this Library..."
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
@@ -3233,14 +3233,14 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--paper-sunken)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Badge tone="rail" icon="ti-tag">{d.category}</Badge>
-                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{domainCourses.length} khóa học</span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{domainCourses.length} courses</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeDomain(d.id)}
                   className="btn btn-sm"
                   style={{ background: 'transparent', border: 'none', color: 'var(--rust)', cursor: 'pointer' }}
-                  title="Xóa Lĩnh Vực"
+                  title="Remove Area"
                 >
                   <i className="ti ti-trash" />
                 </button>
@@ -3249,7 +3249,7 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
               <div style={{ padding: '10px 14px' }}>
                 {domainCourses.map((c) => (
                   <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', borderRadius: 6 }}>
-                    <div style={{ fontSize: 12.5, color: 'var(--ink)' }}>
+                    <div style={{ fontSize: 13, color: 'var(--ink)' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)', marginRight: 6 }}>{c.code}</span>
                       {c.title}
                     </div>
@@ -3257,18 +3257,18 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
                       type="button"
                       onClick={() => removeCourseFromDomain(d.id, c.id)}
                       style={{ background: 'transparent', border: 'none', color: 'var(--rust)', cursor: 'pointer' }}
-                      title="Bỏ khỏi Lĩnh Vực"
+                      title="Remove from the area"
                     >
                       <i className="ti ti-x" />
                     </button>
                   </div>
                 ))}
                 {domainCourses.length === 0 && (
-                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: '8px 0' }}>Chưa có khóa học nào trong Lĩnh Vực này.</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: '8px 0' }}>No course in this area yet.</div>
                 )}
 
                 <Button size="sm" variant="outline" icon="ti-plus" onClick={() => openPicker(d.id)} style={{ marginTop: 8 }}>
-                  {isPickerOpen ? 'Đóng' : 'Thêm Khóa Học'}
+                  {isPickerOpen ? 'Close' : 'Add Course'}
                 </Button>
 
                 {isPickerOpen && (
@@ -3277,7 +3277,7 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
                       type="text"
                       className="field-input"
                       style={{ height: 32, fontSize: 12, marginBottom: 8 }}
-                      placeholder="Tìm khóa học theo tên hoặc mã..."
+                      placeholder="Search courses by name or code..."
                       value={pickerSearch}
                       onChange={(e) => setPickerSearch(e.target.value)}
                     />
@@ -3302,13 +3302,13 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
                         );
                       })}
                       {pickerCandidates.length === 0 && (
-                        <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: 8 }}>Không có khóa học phù hợp.</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-faint)', padding: 8 }}>No matching course.</div>
                       )}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                      <Button size="sm" variant="ghost" onClick={() => setOpenPickerFor(null)}>Hủy</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setOpenPickerFor(null)}>Cancel</Button>
                       <Button size="sm" variant="primary" disabled={pickerSelected.length === 0} onClick={() => confirmAddCourses(d.id)}>
-                        Thêm {pickerSelected.length || ''} Khóa Đã Chọn
+                        Add {pickerSelected.length || ''} Selected Courses
                       </Button>
                     </div>
                   </div>
@@ -3319,7 +3319,7 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
         })}
 
         {domains.length === 0 && (
-          <div className="empty-state"><p>Chưa có Lĩnh Vực nào. Thêm Lĩnh Vực đầu tiên bên dưới.</p></div>
+          <div className="empty-state"><p>No area yet. Add the first area below.</p></div>
         )}
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
@@ -3329,13 +3329,13 @@ export function LibraryEditorModal({ draft, courses, companyCategories, onCancel
             value={addingDomainCategory}
             onChange={(e) => setAddingDomainCategory(e.target.value)}
           >
-            <option value="">{availableCategories.length ? 'Chọn Lĩnh Vực để thêm...' : 'Đã thêm hết Danh Mục hiện có'}</option>
+            <option value="">{availableCategories.length ? 'Choose an area to add...' : 'Every existing category has been added'}</option>
             {availableCategories.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
           <Button size="sm" variant="primary" icon="ti-plus" disabled={!addingDomainCategory} onClick={addDomain}>
-            Thêm Lĩnh Vực
+            Add Area
           </Button>
         </div>
       </div>

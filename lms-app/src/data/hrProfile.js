@@ -1,31 +1,31 @@
 // ===========================================================================
-// Hồ sơ nhân sự (HR profile) — các trường bắt buộc phải có khi xuất file cho
-// Kế toán / Kiểm toán:
+// HR profile — the fields that must be present when exporting the file for
+// Accounting / Audit:
 //
 //   Employee Status · Personnel Number · Cost center · Full Name · Entry Date ·
 //   Gender · Date of birth · Business Email Address · Position · Level ·
 //   HO/Store · Division · Department · Sub Department · Location
 //
-// Dữ liệu tổ chức (Division / Department / Sub Department / Position / Level /
-// Email) đã có sẵn trên bản ghi người dùng. Những thuộc tính còn thiếu được
-// SUY RA BẰNG QUY TẮC TẤT ĐỊNH từ mã nhân viên — không random — để mỗi lần
-// build ra cùng một kết quả và file xuất tháng này khớp file xuất tháng trước.
+// Organizational data (Division / Department / Sub Department / Position / Level /
+// Email) already present on the user record. The remaining attributes are
+// DERIVED BY DETERMINISTIC RULES from the employee code — never random — so that every
+// produce the same result and this month's export matches last month's export.
 //
-//   • Personnel Number = phần số của employeeCode, đệm 0 cho đủ 8 ký tự.
-//   • Cost center      = mã 5 số của Division (orgHierarchy.divisions.costCenter).
-//   • Entry Date       = HR_REFERENCE_DATE trừ đi yearsOfService.
-//   • Gender           = chẵn/lẻ của Personnel Number (Nam / Nữ).
-//   • Date of birth    = năm vào làm trừ tuổi tuyển dụng (22–35, suy từ mã NV).
+//   • Personnel Number = the numeric part of employeeCode, zero-padded to 8 characters.
+//   • Cost center      = the Division's 5-digit code (orgHierarchy.divisions.costCenter).
+//   • Entry Date       = HR_REFERENCE_DATE minus yearsOfService.
+//   • Gender           = parity of the Personnel Number (Male / Female).
+//   • Date of birth    = joining year minus hiring age (22–35, derived from the employee code).
 //   • HO/Store         = OPERATIONS -> "Store", SUPPORTING -> "HO".
-//   • Location         = địa điểm của Division.
+//   • Location         = the Division's location.
 //
-// withHrProfile() chỉ BỔ SUNG trường còn thiếu, không ghi đè giá trị đã khai
-// báo tay — nhờ vậy 6 persona demo giữ nguyên hồ sơ gốc của họ.
+// withHrProfile() only ADDS missing fields; it never overwrites declared values
+// declared by hand — so the 6 demo personas keep their original profiles.
 // ===========================================================================
 
 import { divisions } from './orgHierarchy';
 
-/** Mốc tính thâm niên. Cố định để Entry Date không trôi theo ngày chạy build. */
+/** Seniority reference date. Fixed so Entry Date does not drift with the build date. */
 export const HR_REFERENCE_DATE = '2026-01-01';
 
 export const HR_EXPORT_COLUMNS = [
@@ -56,7 +56,7 @@ const EMPLOYEE_STATUS_LABEL = {
 const divisionById = new Map(divisions.map((d) => [d.id, d]));
 const divisionByCode = new Map(divisions.map((d) => [d.code, d]));
 
-/** Phần số của mã nhân viên: 'MMVN-1042' | 'USR-1042' -> 1042. */
+/** Numeric part of the employee code: 'MMVN-1042' | 'USR-1042' -> 1042. */
 function employeeSeed(user) {
   const digits = String(user.employeeCode || user.userId || '').replace(/[^0-9]/g, '');
   return Number(digits) || 0;
@@ -66,7 +66,7 @@ function isoDate(d) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Division của nhân sự: ưu tiên id, không có thì dò theo code hoặc tên. */
+/** The employee's Division: prefer the id, otherwise look it up by code or name. */
 export function divisionOf(user) {
   if (!user) return null;
   return (
@@ -77,20 +77,20 @@ export function divisionOf(user) {
   );
 }
 
-/** Mã Trung Tâm Chi Phí 5 số chịu chi phí đào tạo cho nhân sự này. */
+/** The 5-digit cost center code that carries this employee's training cost. */
 export function costCenterCodeOf(user) {
   if (user?.costCenterCode) return user.costCenterCode;
   return divisionOf(user)?.costCenter || null;
 }
 
-/** Nhãn trạng thái nhân sự theo đúng từ vựng của file HR. */
+/** Employee status label using the exact vocabulary of the HR file. */
 export function employeeStatusLabel(status) {
   return EMPLOYEE_STATUS_LABEL[status] || status || 'Active';
 }
 
 /**
- * Bổ sung các trường hồ sơ HR còn thiếu cho một bản ghi người dùng.
- * Thuần hàm, không đột biến tham số đầu vào.
+ * Fills in the HR profile fields missing from a user record.
+ * Pure function; it does not mutate its input.
  */
 export function withHrProfile(user) {
   if (!user) return user;
@@ -116,14 +116,14 @@ export function withHrProfile(user) {
     costCenterName: user.costCenterName || div?.name || null,
     employeeStatus: user.employeeStatus || employeeStatusLabel(user.status),
     entryDate: user.entryDate || isoDate(entry),
-    gender: user.gender || (seed % 2 === 0 ? 'Nam' : 'Nữ'),
+    gender: user.gender || (seed % 2 === 0 ? 'Nam' : 'Female'),
     dateOfBirth: user.dateOfBirth || isoDate(dob),
     hoStore: user.hoStore || ((div?.branch || user.branch) === 'OPERATIONS' ? 'Store' : 'HO'),
-    location: user.location || div?.location || 'TP. Hồ Chí Minh (Head Office - An Phú)',
+    location: user.location || div?.location || 'Ho Chi Minh City (Head Office - An Phu)',
   };
 }
 
-/** Một dòng đúng 15 cột của file HR chuẩn. */
+/** One row of exactly 15 columns for the standard HR file. */
 export function hrExportRow(user) {
   const u = withHrProfile(user);
   return {

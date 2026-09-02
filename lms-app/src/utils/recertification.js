@@ -1,13 +1,13 @@
 // src/utils/recertification.js
 //
-// Quản lý chu kỳ tái đào tạo & tái cấp chứng chỉ định kỳ (Recertification Engine)
-// Quy chuẩn ngành bán lẻ / siêu thị MM Mega Market & Big C:
-// - Cho phép cấu hình thời hạn hiệu lực (validityPeriodMonths): 6, 12, 24, 36 tháng hoặc Vĩnh viễn (0).
-// - Cho phép cấu hình số ngày cảnh báo trước hạn (recertificationWarningDays): 15, 30, 45, 60 ngày.
-// - Cho phép cấu hình hình thức tái cấp (recertificationMethod):
-//     * RETAKE_FULL_COURSE: Học lại toàn bộ nội dung & bài giảng + Thi sát hạch
-//     * ASSESSMENT_ONLY: Chỉ thi sát hạch chuẩn hóa (Fast-track Exam)
-//     * IN_PERSON_WORKSHOP: Tham gia workshop / lớp huấn luyện trực tiếp
+// Manages the retraining & recurring recertification cycle (Recertification Engine)
+// MM Mega Market & Big C retail / supermarket industry standards:
+// - Allows configuring the validity period (validityPeriodMonths): 6, 12, 24, 36 months or lifetime (0).
+// - Allows configuring the advance warning days (recertificationWarningDays): 15, 30, 45, 60 days.
+// - Allows configuring the recertification method (recertificationMethod):
+//     * RETAKE_FULL_COURSE: retake all content & lessons + sit the examination
+//     * ASSESSMENT_ONLY: sit the standardized examination only (fast-track exam)
+//     * IN_PERSON_WORKSHOP: attend an in-person workshop / training class
 
 import { todayDateString, parseDateString } from './calendarDate';
 
@@ -26,24 +26,24 @@ export const RECERTIFICATION_METHODS = {
 
 export const RECERTIFICATION_METHOD_LABELS = {
   RETAKE_FULL_COURSE: {
-    vi: 'Học lại toàn bộ nội dung & Thi sát hạch',
+    vi: 'Retake all content & sit the examination',
     en: 'Retake Full Course & Assessment',
-    badge: 'Học Lại Toàn Bộ',
+    badge: 'Retake Everything',
   },
   ASSESSMENT_ONLY: {
-    vi: 'Chỉ thi sát hạch nhanh (Fast-track Exam)',
+    vi: 'Fast-track exam only',
     en: 'Fast-track Assessment Only',
-    badge: 'Thi Sát Hạch',
+    badge: 'Sit The Examination',
   },
   IN_PERSON_WORKSHOP: {
-    vi: 'Tham gia lớp huấn luyện trực tiếp (Workshop)',
+    vi: 'Attend an in-person training workshop',
     en: 'In-person Training Workshop',
-    badge: 'Lớp Trực Tiếp',
+    badge: 'In-Person Class',
   },
 };
 
 /**
- * Tính toán ngày hết hạn dựa vào completedAt và số tháng hiệu lực
+ * Computes the expiry date from completedAt and the validity in months
  */
 export function computeValidUntilDate(completedAtDateStr, validityPeriodMonths = 12) {
   if (!completedAtDateStr || validityPeriodMonths === 0) return null;
@@ -54,7 +54,7 @@ export function computeValidUntilDate(completedAtDateStr, validityPeriodMonths =
 }
 
 /**
- * Tính toán trạng thái tái cấp chứng chỉ cho một khóa học
+ * Computes the recertification status of a course
  */
 export function computeCourseRecertification(course, enrollment, certificate) {
   if (!course || !course.configuration?.certificateEnabled) {
@@ -79,7 +79,7 @@ export function computeCourseRecertification(course, enrollment, certificate) {
   const warningDays = cfg.recertificationWarningDays !== undefined ? parseInt(cfg.recertificationWarningDays, 10) : 30;
   const recertMethod = cfg.recertificationMethod || RECERTIFICATION_METHODS.RETAKE_FULL_COURSE;
 
-  // Nếu chứng chỉ vĩnh viễn (validityMonths === 0)
+  // If the certificate is lifetime (validityMonths === 0)
   if (validityMonths === 0) {
     return {
       state: RECERTIFICATION_STATE.ACTIVE,
@@ -89,10 +89,10 @@ export function computeCourseRecertification(course, enrollment, certificate) {
       validUntil: null,
       isLifetime: true,
       diffDays: null,
-      statusLabel: 'Chứng Chỉ Vĩnh Viễn',
+      statusLabel: 'Lifetime Certificate',
       statusLabelEn: 'Lifetime Credential',
       badgeTone: 'sage',
-      actionLabel: 'Xem Lại Bài Học',
+      actionLabel: 'Review The Lesson',
       actionLabelEn: 'Review Course',
       alertMessage: null,
       warningDays,
@@ -101,7 +101,7 @@ export function computeCourseRecertification(course, enrollment, certificate) {
     };
   }
 
-  // Lấy ngày hết hạn từ chứng chỉ hoặc từ enrollment
+  // Take the expiry date from the certificate or from the enrollment
   const validUntil = certificate?.validUntil || enrollment?.validUntil || (
     enrollment?.completedAt ? computeValidUntilDate(enrollment.completedAt, validityMonths) : null
   );
@@ -131,10 +131,10 @@ export function computeCourseRecertification(course, enrollment, certificate) {
   const isFullCourse = recertMethod === RECERTIFICATION_METHODS.RETAKE_FULL_COURSE;
 
   if (diffDays < 0) {
-    // Đã hết hạn (EXPIRED)
+    // Expired (EXPIRED)
     const overdueDays = Math.abs(diffDays);
-    const statusLabel = isFullCourse ? 'Học & Tái Cấp Chứng Chỉ' : 'Thi Tái Cấp Chứng Chỉ';
-    const actionLabel = isFullCourse ? 'Học Lại & Tái Cấp Ngay' : 'Làm Bài Thi Tái Cấp';
+    const statusLabel = isFullCourse ? 'Study & Recertify' : 'Sit The Recertification Exam';
+    const actionLabel = isFullCourse ? 'Retake & Recertify Now' : 'Take The Recertification Exam';
 
     return {
       state: RECERTIFICATION_STATE.EXPIRED,
@@ -153,19 +153,19 @@ export function computeCourseRecertification(course, enrollment, certificate) {
       actionLabel,
       actionLabelEn: isFullCourse ? 'Retake Course Now' : 'Take Recertification Exam',
       alertMessage: isFullCourse
-        ? `Chứng chỉ của khóa học này đã hết hiệu lực vào ngày ${validUntil} (quá hạn ${overdueDays} ngày). Khóa học đã mở lại toàn bộ nội dung để bạn ôn tập và tham gia sát hạch tái cấp.`
-        : `Chứng chỉ của khóa học này đã hết hiệu lực vào ngày ${validUntil} (quá hạn ${overdueDays} ngày). Vui lòng hoàn thành bài thi sát hạch để được cấp chứng chỉ mới.`,
+        ? `This course's certificate expired on ${validUntil} (${overdueDays} days overdue). The course has been fully reopened so you can revise and sit the recertification exam.`
+        : `This course's certificate expired on ${validUntil} (${overdueDays} days overdue). Please complete the examination to be issued a new certificate.`,
     };
   }
 
   if (diffDays <= warningDays) {
-    // Cận hạn trong vòng warningDays
+    // Due within warningDays
     const statusLabel = isFullCourse
-      ? `Học Tái Cấp (Còn ${diffDays} ngày)`
-      : `Cận Hạn Tái Cấp (Còn ${diffDays} ngày)`;
+      ? `Recertification Study (${diffDays} days left)`
+      : `Recertification Due (${diffDays} days left)`;
     const actionLabel = isFullCourse
-      ? 'Học Lại & Tái Cấp Sớm'
-      : 'Ôn Tập & Thi Sớm';
+      ? 'Retake & Recertify Early'
+      : 'Revise & Sit The Exam Early';
 
     return {
       state: RECERTIFICATION_STATE.DUE_SOON,
@@ -184,12 +184,12 @@ export function computeCourseRecertification(course, enrollment, certificate) {
       actionLabel,
       actionLabelEn: isFullCourse ? 'Retake & Recertify Early' : 'Review & Take Exam Early',
       alertMessage: isFullCourse
-        ? `Chứng chỉ sẽ hết hiệu lực vào ngày ${validUntil} (còn ${diffDays} ngày). Hệ thống đã mở khóa lại bài học để bạn chủ động ôn tập và hoàn thành tái cấp sớm.`
-        : `Chứng chỉ sẽ hết hiệu lực vào ngày ${validUntil} (còn ${diffDays} ngày). Bạn có thể làm bài sát hạch tái cấp ngay bây giờ để gia hạn thêm ${validityMonths} tháng.`,
+        ? `The certificate expires on ${validUntil} (${diffDays} days left). The lessons have been reopened so you can revise and recertify early.`
+        : `The certificate expires on ${validUntil} (${diffDays} days left). You can sit the recertification exam now to extend it by another ${validityMonths} months.`,
     };
   }
 
-  // Còn hiệu lực dài hạn
+  // Valid long-term
   return {
     state: RECERTIFICATION_STATE.ACTIVE,
     isExpired: false,
@@ -201,10 +201,10 @@ export function computeCourseRecertification(course, enrollment, certificate) {
     validityMonths,
     recertMethod,
     isFullCourse,
-    statusLabel: 'Chứng Chỉ Còn Hiệu Lực',
+    statusLabel: 'Certificate Valid',
     statusLabelEn: 'Certificate Valid',
     badgeTone: 'sage',
-    actionLabel: 'Xem Lại Bài Học',
+    actionLabel: 'Review The Lesson',
     actionLabelEn: 'Review Course',
     alertMessage: null,
   };

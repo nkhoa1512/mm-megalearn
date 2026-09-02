@@ -1,27 +1,27 @@
 // ===========================================================================
-// MM MegaLearn - Ma Trận Lộ Trình Đa Tầng theo Scope Key
+// MM MegaLearn - Multi-Tier Roadmap Matrix By Scope Key
 //   BU (Business Unit) -> Division -> Department -> Sub-Department x Level
 //
-// Xây dựng THÊM trên nền dữ liệu tổ chức đã có trong orgHierarchy.js, KHÔNG
-// thay thế: 2 Business Unit của kế hoạch (bu-ho / bu-ops) ánh xạ trực tiếp
-// vào trường `branch` (SUPPORTING / OPERATIONS) đã dùng xuyên suốt hệ thống,
-// nên toàn bộ dữ liệu tổ chức/nhân sự/dashboard hiện có không bị phá vỡ.
+// Built ON TOP of the organizational data already in orgHierarchy.js, NOT
+// replacing it: the plan's 2 Business Units (bu-ho / bu-ops) map directly
+// on the `branch` field (SUPPORTING / OPERATIONS) already used throughout the system,
+// so none of the existing org/employee/dashboard data is broken.
 //
-// Mỗi Scope Key (`${buId}:${divisionId}:${departmentId}:${subId}:${level}`)
-// là MỘT bản ghi Lộ Trình có versioning riêng, giống hệt cơ chế đa phiên bản
-// của khóa học (course.versions): `courseIds` là danh sách ĐANG SỐNG, `versions`
-// là kho lưu các phiên bản CŨ đã bị thay thế. Khi Admin sửa (thêm/bớt khóa
-// học) và lưu, phiên bản hiện tại được đóng băng vào `versions[oldVersion]`
-// rồi tăng lên phiên bản mới — học viên ĐÃ hoàn thành hoặc ĐANG học dở một
-// khóa thuộc phiên bản cũ sẽ tiếp tục thấy đúng phiên bản đó; chỉ học viên
-// CHƯA từng động vào lộ trình này mới thấy phiên bản mới nhất.
+// Each Scope Key (`${buId}:${divisionId}:${departmentId}:${subId}:${level}`)
+// is ONE Roadmap record with its own versioning, exactly like the multi-version mechanism
+// of a course (course.versions): `courseIds` is the LIVE list, `versions`
+// is the archive of OLD replaced versions. When an Admin edits (adds/removes
+// courses) and saves, the current version is frozen into `versions[oldVersion]`
+// then bumped to a new version — a learner who HAS completed or IS part-way through
+// a course from an older version keeps seeing exactly that version; only learners
+// who have NEVER touched this roadmap see the newest version.
 // ===========================================================================
 
 import { nextMajorVersion } from './mockData';
 
 export const SCOPE_BUSINESS_UNITS = [
-  { id: 'bu-ho', branch: 'SUPPORTING', name: 'Khối Văn Phòng Hỗ Trợ (Head Office)' },
-  { id: 'bu-ops', branch: 'OPERATIONS', name: 'Khối Vận Hành Siêu Thị (Store Operations)' },
+  { id: 'bu-ho', branch: 'SUPPORTING', name: 'Head Office Support' },
+  { id: 'bu-ops', branch: 'OPERATIONS', name: 'Store Operations' },
 ];
 
 export function buIdForBranch(branch) {
@@ -32,12 +32,12 @@ export function branchForBuId(buId) {
   return buId === 'bu-ops' ? 'OPERATIONS' : 'SUPPORTING';
 }
 
-/** Ô Sub-Department: sectionId (siêu thị) được ưu tiên hơn subDepartmentId (khối văn phòng). */
+/** Sub-Department slot: sectionId (stores) takes priority over subDepartmentId (office divisions). */
 export function subScopeIdOf(entity) {
   return entity?.sectionId || entity?.subDepartmentId || null;
 }
 
-/** Dựng Scope Key chuẩn `${buId}:${divisionId}:${departmentId}:${subId}:${level}`, dùng '*' cho ô bỏ trống. */
+/** Builds the canonical Scope Key `${buId}:${divisionId}:${departmentId}:${subId}:${level}`, using '*' for empty slots. */
 export function buildScopeKey({ buId, divisionId, departmentId, subDepartmentId, level }) {
   return [buId || '*', divisionId || '*', departmentId || '*', subDepartmentId || '*', level].join(':');
 }
@@ -53,7 +53,7 @@ export function parseScopeKey(scopeKey) {
   };
 }
 
-/** Chuỗi Scope Key kế thừa của 1 user ở 1 level, từ chi tiết nhất -> tổng quát nhất. */
+/** The chain of inherited Scope Keys for one user at one level, most specific -> most general. */
 export function scopeChainFor(user, level) {
   const buId = buIdForBranch(user?.branch);
   const divisionId = user?.divisionId || null;
@@ -73,12 +73,11 @@ function versionNumber(v) {
 }
 
 /**
- * Phiên bản lộ trình mà `userEnrollments` (ghi danh khóa học của 1 học viên)
- * thực sự phải thấy: quét các phiên bản CŨ (cũ -> mới) của `entry`, phiên bản
- * đầu tiên mà học viên đã có tiến độ (đang học/đã hoàn thành) ở ít nhất 1 khóa
- * thuộc phiên bản đó thắng — học viên bị "khóa" vào đúng phiên bản họ đã bắt
- * đầu. Học viên chưa từng động vào khóa nào của lộ trình này thấy phiên bản
- * ĐANG SỐNG (mới nhất).
+ * The roadmap version that `userEnrollments` (one learner's course enrollments)
+ * must actually see: scan the OLD versions of `entry` (old -> new); the first version
+ * in which the learner already has progress (in progress/completed) on at least one course
+ * wins — the learner is "locked" to the version they started on. A learner who has never
+ * touched a course in this roadmap sees the LIVE (newest) version.
  */
 export function resolveUserRoadmapVersion(entry, userEnrollments = {}) {
   if (!entry) return { version: null, courseIds: [], isArchived: false };
@@ -97,11 +96,11 @@ export function resolveUserRoadmapVersion(entry, userEnrollments = {}) {
 }
 
 /**
- * Tra cứu danh sách khóa học của 1 user ở 1 level theo cơ chế Kế Thừa &
- * Phân Nhánh Thông Minh (Smart Fallback & Inheritance): thử khớp chính xác
- * Sub-Department trước, rồi lần lượt lùi ra Department -> Division -> BU.
- * `userEnrollments` (tùy chọn) dùng để khóa học viên vào đúng phiên bản họ đã
- * bắt đầu — bỏ trống khi Admin chỉ đang xem/preview (luôn thấy bản mới nhất).
+ * Looks up the course list for one user at one level using Smart Fallback &
+ * Inheritance: try an exact Sub-Department match first, then fall back
+ * outward to Department -> Division -> BU.
+ * `userEnrollments` (optional) locks the learner to the version they already
+ * started — leave it empty when an Admin is only previewing (always sees the newest).
  */
 export function getRoadmapForScope(matrix, user, level, userEnrollments = {}) {
   const chain = scopeChainFor(user, level);
@@ -131,13 +130,13 @@ export function getRoadmapForScope(matrix, user, level, userEnrollments = {}) {
 }
 
 /**
- * Lưu danh sách khóa học mới cho đúng 1 Scope Key:
- *  - Nếu Scope Key CHƯA tồn tại (Tạo Lộ Trình Mới) -> khởi tạo v1.0, không
- *    đóng băng gì cả.
- *  - Nếu ĐÃ tồn tại và danh sách thực sự thay đổi -> đóng băng phiên bản
- *    hiện tại vào `versions[oldVersion]` rồi tăng lên phiên bản mới (v1.0 ->
- *    v2.0 -> v3.0 -> ... không giới hạn), y hệt cơ chế `publishNewCourseVersion`.
- *  - Nếu danh sách không đổi -> giữ nguyên, không tạo phiên bản rác.
+ * Saves a new course list for exactly one Scope Key:
+ *  - If the Scope Key does NOT exist yet (Create New Roadmap) -> initialize v1.0 and
+ *    freeze nothing.
+ *  - If it EXISTS and the list genuinely changed -> freeze the current version
+ *    into `versions[oldVersion]` and bump to a new version (v1.0 ->
+ *    v2.0 -> v3.0 -> ... unbounded), exactly like `publishNewCourseVersion`.
+ *  - If the list is unchanged -> leave it alone and create no junk version.
  */
 export function publishRoadmapScope(matrix, scopeKey, nextCourseIds, meta = {}) {
   const prev = matrix[scopeKey];
@@ -150,7 +149,7 @@ export function publishRoadmapScope(matrix, scopeKey, nextCourseIds, meta = {}) 
         currentVersion: 'v1.0',
         courseIds: cleanIds,
         versions: {},
-        versionHistory: [{ version: 'v1.0', updatedBy: meta.updatedBy || 'Admin', updatedAt: meta.updatedAt, note: meta.note || 'Khởi tạo lộ trình.' }],
+        versionHistory: [{ version: 'v1.0', updatedBy: meta.updatedBy || 'Admin', updatedAt: meta.updatedAt, note: meta.note || 'Roadmap created.' }],
       },
     };
   }
@@ -168,10 +167,10 @@ export function publishRoadmapScope(matrix, scopeKey, nextCourseIds, meta = {}) 
       courseIds: cleanIds,
       versions: {
         ...prev.versions,
-        [oldVersion]: { courseIds: prev.courseIds, archivedAt: meta.updatedAt, updatedBy: meta.updatedBy || 'Admin', changeLog: meta.note || `Phiên bản ${oldVersion} được đóng băng khi phát hành ${newVersion}.` },
+        [oldVersion]: { courseIds: prev.courseIds, archivedAt: meta.updatedAt, updatedBy: meta.updatedBy || 'Admin', changeLog: meta.note || `Version ${oldVersion} was frozen when ${newVersion} was published.` },
       },
       versionHistory: [
-        { version: newVersion, updatedBy: meta.updatedBy || 'Admin', updatedAt: meta.updatedAt, note: meta.note || `Phát hành phiên bản ${newVersion}.` },
+        { version: newVersion, updatedBy: meta.updatedBy || 'Admin', updatedAt: meta.updatedAt, note: meta.note || `Published version ${newVersion}.` },
         ...(prev.versionHistory || []),
       ],
     },
@@ -179,9 +178,9 @@ export function publishRoadmapScope(matrix, scopeKey, nextCourseIds, meta = {}) 
 }
 
 /**
- * Chuyển ma trận Level x Branch cũ (CURRENT_ROADMAPS) sang scope-key phẳng
- * `${buId}:*:*:*:${level}` — giữ nguyên 100% cấu hình đã có, không mất dữ liệu
- * khi nâng cấp lên mô hình đa tầng. Mỗi entry khởi tạo ở v1.0.
+ * Converts the old Level x Branch matrix (CURRENT_ROADMAPS) into flat scope keys
+ * `${buId}:*:*:*:${level}` — preserving 100% of the existing configuration with no data loss
+ * on upgrade to the multi-tier model. Each entry starts at v1.0.
  */
 export function migrateLevelBranchMatrix(oldMatrix) {
   const next = {};
@@ -196,11 +195,10 @@ export function migrateLevelBranchMatrix(oldMatrix) {
 }
 
 /**
- * Liệt kê TOÀN BỘ vị trí tổ chức có thật (BU x Division x Department x
- * Sub-Department) đang có ít nhất 1 nhân sự, kèm headcount theo từng Level —
- * dùng để dựng Danh Bạ Lộ Trình (Roadmap Directory) hiển thị đúng những gì
- * học viên thực tế nhìn thấy, thay vì chỉ liệt kê những scope Admin đã lỡ cấu
- * hình.
+ * Lists EVERY real organizational position (BU x Division x Department x
+ * Sub-Department) that has at least 1 employee, with headcount per Level —
+ * used to build the Roadmap Directory so it shows exactly what learners
+ * actually see, instead of only the scopes an Admin happened to configure.
  */
 export function listRealOrgPositions(users) {
   const map = new Map();

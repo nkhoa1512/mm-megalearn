@@ -139,9 +139,9 @@ export default function AdminConfig() {
     },
   });
 
-  // 5. Ma trận RBAC — trục là ROLE (6 vai trò), không phải cấp bậc định biên.
-  // Cấp bậc (Level 7 -> 1) quyết định học viên được học khóa nào; role quyết định
-  // họ được thao tác gì trên hệ thống. Hai trục này độc lập với nhau.
+  // 5. RBAC matrix — the axis is the ROLE (6 roles), not the job level.
+  // The job level (Level 7 -> 1) decides which courses a learner may take; the role decides
+  // what they may do in the system. The two axes are independent of each other.
   const [rbacMatrix, setRbacMatrix] = useState({
     learner: { viewReports: false, createCourses: false, approveCourses: false, issueCertificates: false, manageSettings: false, exportAudit: false },
     manager: { viewReports: true, createCourses: false, approveCourses: true, issueCertificates: false, manageSettings: false, exportAudit: false },
@@ -248,7 +248,7 @@ export default function AdminConfig() {
             position: 'fixed',
             bottom: 24,
             right: 24,
-            background: 'var(--ink)',
+            background: '#111827',
             color: '#fff',
             padding: '12px 20px',
             borderRadius: 'var(--radius-md)',
@@ -316,7 +316,7 @@ export default function AdminConfig() {
                   <i className="ti ti-wand" style={{ fontSize: 20 }} />
                   Automated Onboarding &amp; Compliance Dispatch Engine
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 4 }}>
                   Automatically triggers mandatory course enrollments whenever new employees are synced from SAP or change division/level.
                 </div>
               </div>
@@ -354,7 +354,7 @@ export default function AdminConfig() {
                       />
                     </td>
                     <td>
-                      <div style={{ fontWeight: 700, fontSize: 13.5 }}>{r.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{r.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{r.id}</div>
                     </td>
                     <td>
@@ -395,7 +395,7 @@ export default function AdminConfig() {
                   onChange={(e) => setInactivityDays(e.target.value)}
                   style={{ width: 90 }}
                 />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>days without login</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>days without login</span>
               </div>
               <div className="field-hint">Shifts learner status to Inactive and initiates auto-reminders.</div>
             </div>
@@ -410,7 +410,7 @@ export default function AdminConfig() {
                   onChange={(e) => setManagerAlertDays(e.target.value)}
                   style={{ width: 90 }}
                 />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>inactive days</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>inactive days</span>
               </div>
               <div className="field-hint">Sends push notification &amp; Teams alert to direct supervisor.</div>
             </div>
@@ -425,7 +425,7 @@ export default function AdminConfig() {
                   onChange={(e) => setMaxReminders(e.target.value)}
                   style={{ width: 90 }}
                 />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>reminders max</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>reminders max</span>
               </div>
               <div className="field-hint">Halts automated robot notifications once limit is reached.</div>
             </div>
@@ -489,7 +489,7 @@ export default function AdminConfig() {
                   onChange={(e) => setMaxAttempts(e.target.value)}
                   style={{ width: 80 }}
                 />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>attempts</span>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>attempts</span>
               </div>
               <div className="field-hint">Fails trigger manager review.</div>
             </div>
@@ -518,7 +518,7 @@ export default function AdminConfig() {
                 />
               </div>
 
-              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
                 Embeds invisible or visible encrypted identifiers into all course videos, PDF manuals, and assessment screens to trace leaks.
               </p>
 
@@ -552,7 +552,7 @@ export default function AdminConfig() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 16 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={watermarkIncludeIp}
@@ -560,7 +560,7 @@ export default function AdminConfig() {
                     />
                     Include Client IP Address
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={watermarkIncludeTime}
@@ -575,10 +575,10 @@ export default function AdminConfig() {
             {/* Right: Live Watermark Visual Simulator */}
             <div className="card card-pad" style={{ background: '#0F172A', color: '#F8FAFC', position: 'relative', overflow: 'hidden', minHeight: 280, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#94A3B8', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--ink-faint)', textTransform: 'uppercase' }}>
                   Live Watermark Canvas Simulation
                 </span>
-                <span style={{ fontSize: 10.5, color: '#38BDF8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4 }}>
+                <span style={{ fontSize: 11, color: '#38BDF8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4 }}>
                   {watermarkEnabled ? 'WATERMARK ACTIVE' : 'WATERMARK DISABLED'}
                 </span>
               </div>
@@ -588,7 +588,7 @@ export default function AdminConfig() {
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#F1F5F9', marginBottom: 6 }}>
                   MMVN CONFIDENTIAL SOP: FRESH FOOD COLD CHAIN SPECIFICATION
                 </div>
-                <p style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: 12, color: 'var(--ink-faint)', lineHeight: 1.6, margin: 0 }}>
                   Standard Operating Procedure 402-A: All dairy and poultry products must maintain constant ambient temperature between 2°C and 4°C during transfer. Unauthorized reproduction or photography of this document is strictly prohibited under MMVN Corporate Security Policy.
                 </p>
               </div>
@@ -620,7 +620,7 @@ export default function AdminConfig() {
                 </div>
               )}
 
-              <div style={{ fontSize: 11, color: '#64748B', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
                 <span>Simulated Resolution: 1080p FHD</span>
                 <span>Forensic Hash: SHA-256 Verified</span>
               </div>
@@ -702,7 +702,7 @@ export default function AdminConfig() {
                   <i className="ti ti-cloud-computing" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: '#1E40AF' }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--blue-soft-text)' }}>
                     SAP SuccessFactors HRIS Connector &middot; Connected (OAuth 2.0 Token Valid)
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
@@ -732,7 +732,7 @@ export default function AdminConfig() {
                 className="field-input"
                 value={sapEndpoint}
                 onChange={(e) => setSapEndpoint(e.target.value)}
-                style={{ fontSize: 12.5, fontFamily: 'var(--font-mono)' }}
+                style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}
               />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
@@ -777,7 +777,7 @@ export default function AdminConfig() {
                   onChange={(e) => setSapAutoDeactivate(e.target.checked)}
                   style={{ width: 16, height: 16, marginTop: 2 }}
                 />
-                <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
                   <strong>Auto-Deactivate Terminated Staff:</strong> Instantly revoke active LMS logins and archive learning progress when marked terminated in SAP.
                 </span>
               </label>
@@ -825,7 +825,7 @@ export default function AdminConfig() {
       {activeTab === 'org-structure' && (
         <div style={{ marginBottom: 28 }}>
           <div className="card card-pad" style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>
               Browse MMVN's dual organizational hierarchy: the Supporting Functions branch (Division → Department)
               on the left, and the Operations branch (Area → Cluster → Store) on the right. Employee master records
               synced from SAP SuccessFactors (HRIS tab) attach to nodes in this tree.
@@ -843,9 +843,9 @@ export default function AdminConfig() {
           {/* Gateway Status Cards */}
           <div className="grid grid-3" style={{ marginBottom: 24 }}>
             {/* Zalo ZNS */}
-            <div className="card card-pad" style={{ borderColor: '#60A5FA', background: '#EFF6FF' }}>
+            <div className="card card-pad" style={{ borderColor: '#60A5FA', background: 'var(--blue-soft)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--blue-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-message-dots" /> Zalo ZNS / SMS Gateway
                 </div>
                 <Badge tone="blue">Connected</Badge>
@@ -875,9 +875,9 @@ export default function AdminConfig() {
             </div>
 
             {/* Corporate SMTP */}
-            <div className="card card-pad" style={{ borderColor: '#86EFAC', background: '#F0FDF4' }}>
+            <div className="card card-pad" style={{ borderColor: '#86EFAC', background: 'var(--sage-soft)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--sage-soft-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-mail" /> Corporate SMTP Server
                 </div>
                 <Badge tone="sage">Active (TLS)</Badge>
@@ -946,7 +946,7 @@ export default function AdminConfig() {
 
                 {/* Tag helper chips */}
                 <div style={{ marginTop: 10 }}>
-                  <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Available Dynamic Variables: </span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Available Dynamic Variables: </span>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                     {['{EMPLOYEE_NAME}', '{COURSE_NAME}', '{DUE_DATE}', '{DAYS_OVERDUE}', '{MANAGER_NAME}', '{SCORE}', '{CERT_ID}'].map((tag) => (
                       <span key={tag} style={{ background: 'var(--paper-sunken)', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
@@ -963,12 +963,12 @@ export default function AdminConfig() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 8 }}>
                     Simulated Recipient Preview
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginBottom: 8 }}>
                     {templates[activeTemplateTab].subject
                       .replace('{COURSE_NAME}', 'HACCP Food Safety Standards')
                       .replace('{EMPLOYEE_NAME}', 'Minh Tran')}
                   </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6, background: '#fff', padding: 12, borderRadius: 6, border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6, background: 'var(--paper-raised)', padding: 12, borderRadius: 6, border: '1px solid var(--line)' }}>
                     {templates[activeTemplateTab].body
                       .replace('{EMPLOYEE_NAME}', 'Minh Tran')
                       .replace('{COURSE_NAME}', 'HACCP Food Safety Standards')
@@ -996,18 +996,18 @@ export default function AdminConfig() {
       {/* ========================================================================= */}
       {activeTab === 'rbac' && (
         <>
-          <div className="section-label">Ma Trận Phân Quyền RBAC Theo 6 Vai Trò Hệ Thống</div>
-          <div className="card card-pad" style={{ marginBottom: 14, fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-            Phân quyền thao tác bám theo <strong>vai trò hệ thống</strong> (Learner → System Admin IT), độc lập với{' '}
-            <strong>cấp bậc định biên</strong> (Level 7 thấp nhất → Level 1 cao nhất). Cấp bậc chỉ quyết định học viên được
-            học khóa nào theo quy tắc học vượt cấp tuần tự.
+          <div className="section-label">RBAC Permission Matrix Across The 6 System Roles</div>
+          <div className="card card-pad" style={{ marginBottom: 14, fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+            Operation permissions follow the <strong>system role</strong> (Learner → System Admin IT), independent of{' '}
+            <strong>job level</strong> (Level 7 lowest → Level 1 highest). The job level only decides which courses a learner
+            may take, under the sequential level skip rule.
           </div>
           <div className="card" style={{ marginBottom: 28, overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
                   <th style={{ width: 90 }}>Rank</th>
-                  <th>Vai Trò Hệ Thống &amp; Phạm Vi Quản Lý</th>
+                  <th>System Role &amp; Management Scope</th>
                   <th style={{ textAlign: 'center', width: 110 }}>View Reports</th>
                   <th style={{ textAlign: 'center', width: 110 }}>Author Courses</th>
                   <th style={{ textAlign: 'center', width: 120 }}>Approve Requests</th>
@@ -1026,7 +1026,7 @@ export default function AdminConfig() {
                       </td>
                       <td>
                         <div style={{ fontWeight: 700, fontSize: 13 }}>{def.labelVi}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Quản lý: {managedScopeLabel(def.id)}</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Manager: {managedScopeLabel(def.id)}</div>
                       </td>
                       {['viewReports', 'createCourses', 'approveCourses', 'issueCertificates', 'manageSettings', 'exportAudit'].map((key) => (
                         <td key={key} style={{ textAlign: 'center' }}>
@@ -1111,7 +1111,7 @@ export default function AdminConfig() {
                   <i className="ti ti-database-export" style={{ color: 'var(--rail)' }} />
                   Configuration Backup &amp; System Maintenance
                 </div>
-                <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 16 }}>
+                <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
                   Export all active rules, RBAC matrices, SAP parameters, and security policies as an immutable JSON configuration file.
                 </p>
 

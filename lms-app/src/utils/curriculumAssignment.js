@@ -3,20 +3,20 @@ import { hasCapability, normalizeRole } from '../data/roles';
 import { DEFAULT_CUSTOM_GROUPS, isUserInCustomGroup } from '../data/customGroupsData';
 
 /**
- * Kiểm tra xem một giáo trình (Curriculum) có được phân bổ cho người dùng `user` hay không.
- * Đối chiếu theo danh sách `curriculum.assignments`:
- * - GROUP: khớp nếu `user` thuộc Custom Group chỉ định
- * - BUSINESS_UNIT: khớp `user.businessUnitId` hoặc 'ALL' / 'bu-mmvn'
- * - DIVISION: khớp `user.divisionId` hoặc `user.divisionCode`
- * - DEPARTMENT: khớp `user.departmentId` hoặc `user.departmentCode`
- * - SUBDEPARTMENT: khớp `user.subDepartmentId` hoặc `user.subDepartmentCode`
- * - AREA: khớp `user.areaId`
- * - STORE: khớp `user.storeId`
- * - STORE_TYPE: khớp `user.storeTypeId`
- * - CLUSTER: khớp `user.clusterId`
- * - LEVEL: khớp `user.level`
- * - ROLE: khớp `user.role`
- * - USER: khớp `user.userId` hoặc `user.employeeCode`
+ * Checks whether a curriculum is allocated to the user `user`.
+ * It is matched against the `curriculum.assignments` list:
+ * - GROUP: matches if `user` belongs to the named custom group
+ * - BUSINESS_UNIT: matches `user.businessUnitId` or 'ALL' / 'bu-mmvn'
+ * - DIVISION: matches `user.divisionId` or `user.divisionCode`
+ * - DEPARTMENT: matches `user.departmentId` or `user.departmentCode`
+ * - SUBDEPARTMENT: matches `user.subDepartmentId` or `user.subDepartmentCode`
+ * - AREA: matches `user.areaId`
+ * - STORE: matches `user.storeId`
+ * - STORE_TYPE: matches `user.storeTypeId`
+ * - CLUSTER: matches `user.clusterId`
+ * - LEVEL: matches `user.level`
+ * - ROLE: matches `user.role`
+ * - USER: matches `user.userId` or `user.employeeCode`
  */
 export function isCurriculumAssignedToUser(curriculum, user, customGroupsList = null) {
   if (!curriculum || !user) return { isAssigned: false, assignment: null };
@@ -100,7 +100,7 @@ export function isCurriculumAssignedToUser(curriculum, user, customGroupsList = 
 }
 
 /**
- * Lấy danh sách tất cả các giáo trình Published được gán cho `user`.
+ * Returns every published curriculum assigned to `user`.
  */
 export function getAssignedCurriculaForUser(curricula = [], user) {
   if (!user || !Array.isArray(curricula)) return [];
@@ -118,7 +118,7 @@ export function getAssignedCurriculaForUser(curricula = [], user) {
 }
 
 /**
- * Tính toán tiến độ học tập của một user đối với một giáo trình.
+ * Computes a user's learning progress on a curriculum.
  */
 export function getCurriculumProgress(curriculum, user, enrollmentsMap = {}, allCourses = []) {
   const courseIds = curriculum?.courseIds || [];
@@ -172,11 +172,11 @@ export function getCurriculumProgress(curriculum, user, enrollmentsMap = {}, all
 }
 
 /**
- * Sinh chuỗi mô tả tóm tắt đối tượng đã phân bổ cho giáo trình.
+ * Builds a summary string of the audiences a curriculum is allocated to.
  */
 export function assignmentTargetSummary(curriculum) {
   const assignments = curriculum?.assignments || [];
-  if (assignments.length === 0) return 'Chưa phân bổ đối tượng';
+  if (assignments.length === 0) return 'No audience allocated';
 
   const labels = assignments.map((a) => {
     if (a.targetLabel) return a.targetLabel;
@@ -186,11 +186,11 @@ export function assignmentTargetSummary(curriculum) {
   });
 
   if (labels.length === 1) return labels[0];
-  return `${labels[0]} (+${labels.length - 1} đối tượng khác)`;
+  return `${labels[0]} (+${labels.length - 1} more)`;
 }
 
 /**
- * Tìm label hiển thị cho một target ID theo type.
+ * Finds the display label for a target ID by type.
  */
 export function resolveTargetLabel(assignmentType, targetId) {
   const opts = targetOptionsFor(assignmentType) || [];
@@ -199,16 +199,16 @@ export function resolveTargetLabel(assignmentType, targetId) {
 }
 
 // ---------------------------------------------------------------------------
-// Phân quyền Giáo trình (Curriculum) — nguồn sự thật DUY NHẤT cho câu hỏi
-// "role này thấy được giáo trình nào và làm được gì với nó", dùng chung cho
-// AdminCourses, LearnerCourses và tab Giáo Trình của HRBP.
+// Curriculum permissions — the SINGLE source of truth for the question
+// "which curricula this role sees and what they may do with them", shared by
+// AdminCourses, LearnerCourses and the HRBP's Curriculum tab.
 //
-//   MANAGE_ALL    (User Admin, SysAdmin) — thấy mọi giáo trình kể cả Nháp,
-//                 toàn quyền tạo/sửa/xóa và phân bổ trực tiếp.
-//   VIEW_ALL      (HRBP) — thấy mọi giáo trình đã Xuất bản nhưng CHỈ ĐỌC;
-//                 được đề xuất ứng viên nhân tài vào học (qua duyệt).
-//   ASSIGNED_ONLY (Learner, Manager, Trainer/L&D) — chỉ thấy đúng giáo trình
-//                 đã được User Admin/SysAdmin phân bổ cho chính mình.
+//   MANAGE_ALL    (User Admin, SysAdmin) — sees every curriculum including drafts,
+//                 full rights to create/edit/delete and allocate directly.
+//   VIEW_ALL      (HRBP) — sees every published curriculum but READ-ONLY;
+//                 they may nominate talent candidates to enrol (subject to approval).
+//   ASSIGNED_ONLY (Learner, Manager, Trainer/L&D) — sees only the curricula
+//                 that User Admin/SysAdmin allocated to them.
 // ---------------------------------------------------------------------------
 export const CURRICULUM_ACCESS_MODE = {
   MANAGE_ALL: 'MANAGE_ALL',
@@ -235,7 +235,7 @@ export function curriculumAccessOf(user) {
   };
 }
 
-/** Danh sách giáo trình mà `user` được phép NHÌN THẤY, theo đúng 3 chế độ trên. */
+/** The curricula `user` may SEE, following the 3 modes above. */
 export function visibleCurriculaFor(curricula = [], user) {
   if (!Array.isArray(curricula)) return [];
   const { mode } = curriculumAccessOf(user);
@@ -245,14 +245,14 @@ export function visibleCurriculaFor(curricula = [], user) {
 }
 
 /**
- * Hai nhóm giáo trình cho bộ lọc của HRBP:
- *   mine     — giáo trình của chính HRBP với tư cách người học (được phân bổ cho họ).
- *   proposed — giáo trình HRBP đã đề xuất cho người khác, kèm đơn đề xuất
- *              (`request`) để hiển thị trạng thái Chờ duyệt / Đã duyệt / Từ chối.
+ * Two curriculum groups for the HRBP's filter:
+ *   mine     — the HRBP's own curricula as a learner (allocated to them).
+ *   proposed — curricula the HRBP proposed for other people, together with the proposal
+ *              (`request`) so the Pending / Approved / Rejected status can be shown.
  *
- * `proposed` truy vết qua CẢ hai nguồn: đơn trong `approvals` (còn chờ hoặc đã
- * bị từ chối) và `assignments[].proposedBy` (đơn đã được duyệt và ghi vào giáo
- * trình) — vì sau khi duyệt, `assignedBy` là người DUYỆT chứ không phải HRBP.
+ * `proposed` is traced through BOTH sources: requests in `approvals` (still pending or
+ * rejected) and `assignments[].proposedBy` (approved requests written onto the
+ * curriculum) — because after approval, `assignedBy` is the APPROVER, not the HRBP.
  */
 export function hrbpCurriculumBuckets(curricula = [], user, approvals = []) {
   const mine = getAssignedCurriculaForUser(curricula, user);
@@ -281,7 +281,7 @@ export function hrbpCurriculumBuckets(curricula = [], user, approvals = []) {
     (cur.assignments || []).forEach((asg) => {
       if (asg.proposedBy !== uid) return;
       const linked = myRequests.find((r) => r.id === asg.sourceRequestId);
-      if (linked) return; // đã đưa vào ở vòng trên qua chính đơn đó
+      if (linked) return; // already added in the previous pass through that same request
       pushOnce(cur, null, asg);
     });
   });

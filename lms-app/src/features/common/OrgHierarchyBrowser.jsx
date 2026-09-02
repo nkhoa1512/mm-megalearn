@@ -194,7 +194,7 @@ export default function OrgHierarchyBrowser() {
           minHeight: 'fit-content',
           border: isOpen ? '1px solid var(--blue)' : '1px solid var(--line)',
           borderRadius: 8,
-          background: '#fff',
+          background: 'var(--paper-raised)',
           boxShadow: isOpen ? '0 2px 8px rgba(0, 91, 170, 0.08)' : '0 1px 2px rgba(0, 0, 0, 0.02)',
           transition: 'all 0.15s ease',
           overflow: 'hidden',
@@ -206,7 +206,7 @@ export default function OrgHierarchyBrowser() {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '10px 14px',
-            background: isOpen ? (isOps ? 'var(--bigc-green-soft, #E6F7ED)' : 'var(--blue-soft, #E6F0FA)') : '#fff',
+            background: isOpen ? (isOps ? 'var(--bigc-green-soft, #E6F7ED)' : 'var(--blue-soft, #E6F0FA)') : 'var(--paper-raised)',
             borderLeft: isOps ? '4px solid var(--bigc-green, #009E49)' : '4px solid var(--blue, #005BAA)',
             gap: 10,
           }}
@@ -228,7 +228,7 @@ export default function OrgHierarchyBrowser() {
                 width: 24,
                 height: 24,
                 borderRadius: 4,
-                background: isOpen ? (isOps ? '#C6F6D5' : '#DBEAFE') : 'var(--paper-sunken, #F1F5F9)',
+                background: isOpen ? (isOps ? '#C6F6D5' : 'var(--blue-soft)') : 'var(--paper-sunken, #F1F5F9)',
                 color: isOpen ? (isOps ? '#006830' : '#003E73') : 'var(--ink-soft)',
                 display: 'flex',
                 alignItems: 'center',
@@ -250,7 +250,7 @@ export default function OrgHierarchyBrowser() {
                     padding: '1px 7px',
                     borderRadius: 4,
                     fontFamily: 'var(--font-mono, monospace)',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: 700,
                     flexShrink: 0,
                   }}
@@ -258,7 +258,7 @@ export default function OrgHierarchyBrowser() {
                   {div.code}
                 </span>
               )}
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.35 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.35 }}>
                 {div.name}
               </span>
             </div>
@@ -280,13 +280,13 @@ export default function OrgHierarchyBrowser() {
               }}
             >
               <i className="ti ti-folders" style={{ fontSize: 11 }} />
-              {depts.length} phòng
+              {depts.length} departments
             </span>
 
             <button
               type="button"
               onClick={() => handleOpenEditDiv(div)}
-              title="Chỉnh sửa Khối"
+              title="Edit Division"
               style={{
                 background: 'var(--paper-sunken, #F8FAFC)',
                 border: '1px solid var(--line)',
@@ -307,13 +307,13 @@ export default function OrgHierarchyBrowser() {
                   isOpen: true,
                   type: 'DIVISION',
                   id: div.id,
-                  title: `Xóa Khối ${div.code}`,
-                  message: `Bạn có chắc muốn xóa Khối "${div.name}"? Tất cả Phòng Ban và Sub-Department trực thuộc sẽ bị xóa theo.`,
+                  title: `Delete Division ${div.code}`,
+                  message: `Are you sure you want to delete the Division "${div.name}"? Every Department and Sub-Department below it will be deleted too.`,
                 })
               }
-              title="Xóa Khối"
+              title="Delete Division"
               style={{
-                background: '#FFF1F2',
+                background: 'var(--rust-soft)',
                 border: '1px solid #FECDD3',
                 cursor: 'pointer',
                 color: '#E11D48',
@@ -332,8 +332,8 @@ export default function OrgHierarchyBrowser() {
         {isOpen && (
           <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8, background: '#FAFAFA', borderTop: '1px solid var(--line)' }}>
             {depts.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontStyle: 'italic', padding: '6px 4px' }}>
-                Chưa có phòng ban trực thuộc khối này.
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontStyle: 'italic', padding: '6px 4px' }}>
+                This division has no departments yet.
               </div>
             ) : (
               depts.map((d) => {
@@ -345,7 +345,7 @@ export default function OrgHierarchyBrowser() {
                     style={{
                       border: isDeptOpen ? '1px solid var(--line-strong)' : '1px solid var(--line)',
                       borderRadius: 6,
-                      background: '#fff',
+                      background: 'var(--paper-raised)',
                       overflow: 'hidden',
                     }}
                   >
@@ -355,7 +355,7 @@ export default function OrgHierarchyBrowser() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '9px 12px',
-                        background: isDeptOpen ? 'var(--paper-sunken, #F8FAFC)' : '#fff',
+                        background: isDeptOpen ? 'var(--paper-sunken, #F8FAFC)' : 'var(--paper-raised)',
                         gap: 8,
                       }}
                     >
@@ -376,7 +376,7 @@ export default function OrgHierarchyBrowser() {
                         />
                         <span
                           style={{
-                            background: '#F1F5F9',
+                            background: 'var(--slate-soft)',
                             color: 'var(--ink-soft)',
                             border: '1px solid var(--line)',
                             padding: '1px 6px',
@@ -402,7 +402,7 @@ export default function OrgHierarchyBrowser() {
                             border: subDepts.length > 0 ? '1px solid #BFDBFE' : '1px solid var(--line)',
                             padding: '1px 7px',
                             borderRadius: 10,
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: 600,
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -415,7 +415,7 @@ export default function OrgHierarchyBrowser() {
                         <button
                           type="button"
                           onClick={() => handleOpenEditDept(d)}
-                          title="Sửa Phòng Ban"
+                          title="Edit Department"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-soft)', padding: '2px 4px' }}
                         >
                           <i className="ti ti-edit" style={{ fontSize: 12 }} />
@@ -427,11 +427,11 @@ export default function OrgHierarchyBrowser() {
                               isOpen: true,
                               type: 'DEPARTMENT',
                               id: d.id,
-                              title: `Xóa Phòng Ban ${d.code}`,
-                              message: `Bạn có chắc muốn xóa Phòng ban "${d.name}"? Tất cả Sub-Department trực thuộc sẽ bị xóa theo.`,
+                              title: `Delete Department ${d.code}`,
+                              message: `Are you sure you want to delete the department "${d.name}"? Every Sub-Department below it will be deleted too.`,
                             })
                           }
-                          title="Xóa Phòng Ban"
+                          title="Delete Department"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: '2px 4px' }}
                         >
                           <i className="ti ti-trash" style={{ fontSize: 12 }} />
@@ -441,10 +441,10 @@ export default function OrgHierarchyBrowser() {
 
                     {/* Sub-departments container */}
                     {isDeptOpen && (
-                      <div style={{ padding: '10px 12px 12px 24px', display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px dashed var(--line)', background: '#F8FAFC' }}>
+                      <div style={{ padding: '10px 12px 12px 24px', display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px dashed var(--line)', background: 'var(--paper-sunken)' }}>
                         {subDepts.length === 0 ? (
                           <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>
-                            Chưa có Sub-Department con.
+                            No child Sub-Department yet.
                           </div>
                         ) : (
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 6 }}>
@@ -458,14 +458,14 @@ export default function OrgHierarchyBrowser() {
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   padding: '5px 8px',
-                                  background: '#fff',
+                                  background: 'var(--paper-raised)',
                                   borderRadius: 4,
                                   border: '1px solid var(--line)',
                                 }}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
                                   <i className="ti ti-corner-down-right" style={{ color: 'var(--blue)', fontSize: 12, flexShrink: 0 }} />
-                                  <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 10.5, fontWeight: 700, color: 'var(--blue)', background: 'var(--blue-soft)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>
+                                  <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--blue-soft)', padding: '1px 4px', borderRadius: 3, flexShrink: 0 }}>
                                     {sub.code}
                                   </span>
                                   <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={sub.name}>
@@ -476,7 +476,7 @@ export default function OrgHierarchyBrowser() {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditSubDept(sub)}
-                                    title="Sửa Sub-Dept"
+                                    title="Edit Sub-Dept"
                                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-soft)', padding: '2px 3px' }}
                                   >
                                     <i className="ti ti-edit" style={{ fontSize: 11 }} />
@@ -488,11 +488,11 @@ export default function OrgHierarchyBrowser() {
                                         isOpen: true,
                                         type: 'SUB_DEPARTMENT',
                                         id: sub.id,
-                                        title: `Xóa Sub-Department ${sub.code}`,
-                                        message: `Bạn có chắc muốn xóa Sub-Department "${sub.name}"?`,
+                                        title: `Delete Sub-Department ${sub.code}`,
+                                        message: `Are you sure you want to delete the Sub-Department "${sub.name}"?`,
                                       })
                                     }
-                                    title="Xóa Sub-Dept"
+                                    title="Delete Sub-Dept"
                                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: '2px 3px' }}
                                   >
                                     <i className="ti ti-trash" style={{ fontSize: 11 }} />
@@ -520,7 +520,7 @@ export default function OrgHierarchyBrowser() {
                             alignSelf: 'flex-start',
                           }}
                         >
-                          <i className="ti ti-plus" style={{ fontSize: 12 }} /> Thêm Sub-Department
+                          <i className="ti ti-plus" style={{ fontSize: 12 }} /> Add Sub-Department
                         </button>
                       </div>
                     )}
@@ -535,7 +535,7 @@ export default function OrgHierarchyBrowser() {
               onClick={() => handleOpenAddDept(div.id)}
               style={{ alignSelf: 'flex-start', marginTop: 2, fontSize: 12 }}
             >
-              <i className="ti ti-plus" style={{ marginRight: 4 }} /> Thêm Phòng Ban (Department)
+              <i className="ti ti-plus" style={{ marginRight: 4 }} /> Add Department
             </Button>
           </div>
         )}
@@ -546,7 +546,7 @@ export default function OrgHierarchyBrowser() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Top Filter & Toolbar Card */}
-      <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
           {/* BU selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -560,15 +560,15 @@ export default function OrgHierarchyBrowser() {
                 style={{
                   padding: '5px 12px',
                   borderRadius: 20,
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                   border: selectedBuId === 'ALL' ? '1px solid var(--blue)' : '1px solid var(--line)',
-                  background: selectedBuId === 'ALL' ? 'var(--blue-soft)' : '#fff',
+                  background: selectedBuId === 'ALL' ? 'var(--blue-soft)' : 'var(--paper-raised)',
                   color: selectedBuId === 'ALL' ? 'var(--blue)' : 'var(--ink-soft)',
                 }}
               >
-                Tất cả BU ({businessUnits.length})
+                All BU ({businessUnits.length})
               </button>
               {businessUnits.map((bu) => {
                 const isSelected = selectedBuId === bu.id;
@@ -591,7 +591,7 @@ export default function OrgHierarchyBrowser() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        fontSize: 12.5,
+                        fontSize: 13,
                         fontWeight: 600,
                         cursor: 'pointer',
                         color: isSelected ? 'var(--blue)' : 'var(--ink)',
@@ -604,7 +604,7 @@ export default function OrgHierarchyBrowser() {
                       <button
                         type="button"
                         onClick={() => handleOpenEditBu(bu)}
-                        title="Chỉnh sửa BU"
+                        title="Edit BU"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-faint)', padding: '2px 3px' }}
                       >
                         <i className="ti ti-edit" style={{ fontSize: 12 }} />
@@ -617,11 +617,11 @@ export default function OrgHierarchyBrowser() {
                               isOpen: true,
                               type: 'BU',
                               id: bu.id,
-                              title: `Xóa Business Unit ${bu.code}`,
-                              message: `Bạn có chắc chắn muốn xóa BU "${bu.name}"? Tất cả các Division trực thuộc sẽ bị ảnh hưởng.`,
+                              title: `Delete Business Unit ${bu.code}`,
+                              message: `Are you sure you want to delete the BU "${bu.name}"? Every Division below it will be affected.`,
                             })
                           }
-                          title="Xóa BU"
+                          title="Delete BU"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: '2px 3px' }}
                         >
                           <i className="ti ti-trash" style={{ fontSize: 12 }} />
@@ -637,10 +637,10 @@ export default function OrgHierarchyBrowser() {
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Button size="sm" variant="ghost" icon="ti-plus" onClick={handleOpenAddBu}>
-              Thêm BU
+              Add BU
             </Button>
             <Button size="sm" variant="primary" icon="ti-plus" onClick={handleOpenAddDiv}>
-              Thêm Khối / Division
+              Add Division
             </Button>
           </div>
         </div>
@@ -654,15 +654,15 @@ export default function OrgHierarchyBrowser() {
               style={{
                 padding: '6px 14px',
                 borderRadius: 6,
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 700,
                 cursor: 'pointer',
                 border: activeBranchFilter === 'ALL' ? '1px solid var(--blue)' : '1px solid var(--line)',
-                background: activeBranchFilter === 'ALL' ? 'var(--blue)' : '#fff',
+                background: activeBranchFilter === 'ALL' ? 'var(--blue)' : 'var(--paper-raised)',
                 color: activeBranchFilter === 'ALL' ? '#fff' : 'var(--ink-soft)',
               }}
             >
-              Tất Cả Khối ({divisions.length})
+              All Division ({divisions.length})
             </button>
             <button
               type="button"
@@ -670,11 +670,11 @@ export default function OrgHierarchyBrowser() {
               style={{
                 padding: '6px 14px',
                 borderRadius: 6,
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 700,
                 cursor: 'pointer',
                 border: activeBranchFilter === 'SUPPORTING' ? '1px solid var(--blue)' : '1px solid var(--line)',
-                background: activeBranchFilter === 'SUPPORTING' ? 'var(--blue)' : '#fff',
+                background: activeBranchFilter === 'SUPPORTING' ? 'var(--blue)' : 'var(--paper-raised)',
                 color: activeBranchFilter === 'SUPPORTING' ? '#fff' : 'var(--ink-soft)',
               }}
             >
@@ -686,15 +686,15 @@ export default function OrgHierarchyBrowser() {
               style={{
                 padding: '6px 14px',
                 borderRadius: 6,
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 700,
                 cursor: 'pointer',
                 border: activeBranchFilter === 'OPERATIONS' ? '1px solid var(--bigc-green)' : '1px solid var(--line)',
-                background: activeBranchFilter === 'OPERATIONS' ? 'var(--bigc-green)' : '#fff',
+                background: activeBranchFilter === 'OPERATIONS' ? 'var(--bigc-green)' : 'var(--paper-raised)',
                 color: activeBranchFilter === 'OPERATIONS' ? '#fff' : 'var(--ink-soft)',
               }}
             >
-              🛒 Operations Siêu Thị ({operationsDivisions.length})
+              🛒 Store Operations ({operationsDivisions.length})
             </button>
           </div>
 
@@ -706,7 +706,7 @@ export default function OrgHierarchyBrowser() {
             <input
               type="text"
               className="field-input"
-              placeholder="Tìm theo tên/mã Division, Dept, Sub-Dept..."
+              placeholder="Search by Division, Dept or Sub-Dept name/code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: 34, paddingRight: searchTerm ? 32 : 12, height: 38, fontSize: 13, borderRadius: 8 }}
@@ -728,10 +728,10 @@ export default function OrgHierarchyBrowser() {
       {activeBranchFilter === 'ALL' ? (
         <div className="grid grid-2" style={{ gap: 16, alignItems: 'start' }}>
           {/* SUPPORTING FUNCTIONS BRANCH */}
-          <div className="card card-pad" style={{ background: '#fff' }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-building" /> Supporting Functions ({supportingDivisions.length} Khối)
+                <i className="ti ti-building" /> Supporting Functions ({supportingDivisions.length} Division)
               </div>
               <Badge tone="blue" size="sm">Head Office &amp; Functions</Badge>
             </div>
@@ -739,7 +739,7 @@ export default function OrgHierarchyBrowser() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '680px', overflowY: 'auto', paddingRight: 4 }}>
               {supportingDivisions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ink-soft)', fontSize: 13 }}>
-                  Không tìm thấy khối hỗ trợ phù hợp.
+                  No matching support division found.
                 </div>
               ) : (
                 supportingDivisions.map(renderDivisionCard)
@@ -748,10 +748,10 @@ export default function OrgHierarchyBrowser() {
           </div>
 
           {/* OPERATIONS BRANCH */}
-          <div className="card card-pad" style={{ background: '#fff' }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bigc-green-soft-text, #006830)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <i className="ti ti-building-store" /> Operations ({operationsDivisions.length} Chi Nhánh / Depot)
+                <i className="ti ti-building-store" /> Operations ({operationsDivisions.length} Branches / Depots)
               </div>
               <Badge tone="sage" size="sm">Hypermarkets &amp; Depots</Badge>
             </div>
@@ -759,7 +759,7 @@ export default function OrgHierarchyBrowser() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '680px', overflowY: 'auto', paddingRight: 4 }}>
               {operationsDivisions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ink-soft)', fontSize: 13 }}>
-                  Không tìm thấy chi nhánh/depot phù hợp.
+                  No matching branch/depot found.
                 </div>
               ) : (
                 operationsDivisions.map(renderDivisionCard)
@@ -768,9 +768,9 @@ export default function OrgHierarchyBrowser() {
           </div>
         </div>
       ) : (
-        <div className="card card-pad" style={{ background: '#fff' }}>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', marginBottom: 12, borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
-            {activeBranchFilter === 'SUPPORTING' ? '🏢 Khối Chức Năng Hỗ Trợ (Head Office)' : '🛒 Khối Vận Hành Siêu Thị & Depot'} &middot; {filteredDivisions.length} Khối
+            {activeBranchFilter === 'SUPPORTING' ? '🏢 Supporting Functions (Head Office)' : '🛒 Store Operations & Depot'} &middot; {filteredDivisions.length} Division
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {filteredDivisions.map(renderDivisionCard)}
@@ -789,15 +789,15 @@ export default function OrgHierarchyBrowser() {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 450, background: '#fff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 450, background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: 'var(--ink)' }}>
-              {buModal.mode === 'ADD' ? 'Thêm Business Unit Mới' : `Chỉnh Sửa BU ${buModal.data.code}`}
+              {buModal.mode === 'ADD' ? 'Add New Business Unit' : `Edit BU ${buModal.data.code}`}
             </div>
             <form onSubmit={handleSaveBuSubmit}>
               <div style={{ marginBottom: 10 }}>
-                <label className="field-label">Mã BU (Code) *</label>
+                <label className="field-label">BU Code *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. MMVN, MMTH..."
@@ -807,7 +807,7 @@ export default function OrgHierarchyBrowser() {
                 />
               </div>
               <div style={{ marginBottom: 10 }}>
-                <label className="field-label">Tên Business Unit *</label>
+                <label className="field-label">Business Unit Name *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. MM Mega Market Vietnam"
@@ -817,21 +817,21 @@ export default function OrgHierarchyBrowser() {
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label className="field-label">Mô Tả</label>
+                <label className="field-label">Description</label>
                 <textarea
                   className="field-input"
                   rows={2}
-                  placeholder="Mô tả ngành hàng kinh doanh..."
+                  placeholder="Describe the merchandise category..."
                   value={buForm.description}
                   onChange={(e) => setBuForm((p) => ({ ...p, description: e.target.value }))}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <Button variant="ghost" type="button" onClick={() => setBuModal({ isOpen: false, mode: 'ADD', data: null })}>
-                  Hủy
+                  Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  {buModal.mode === 'ADD' ? 'Tạo BU' : 'Lưu Thay Đổi'}
+                  {buModal.mode === 'ADD' ? 'Create BU' : 'Save Changes'}
                 </Button>
               </div>
             </form>
@@ -849,16 +849,16 @@ export default function OrgHierarchyBrowser() {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 460, background: '#fff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 460, background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: 'var(--ink)' }}>
-              {divModal.mode === 'ADD' ? 'Thêm Khối / Division Mới' : `Chỉnh Sửa Khối ${divModal.data.code}`}
+              {divModal.mode === 'ADD' ? 'Add New Division' : `Edit Division ${divModal.data.code}`}
             </div>
             <form onSubmit={handleSaveDivSubmit}>
               <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label className="field-label">Mã Khối (Code) *</label>
+                  <label className="field-label">Division Code *</label>
                   <input
                     className="field-input"
                     placeholder="e.g. 1010_AP, HRD, OMD..."
@@ -868,29 +868,29 @@ export default function OrgHierarchyBrowser() {
                   />
                 </div>
                 <div>
-                  <label className="field-label">Thuộc Nhánh *</label>
+                  <label className="field-label">Parent Branch *</label>
                   <select
                     className="field-select"
                     value={divForm.branch}
                     onChange={(e) => setDivForm((p) => ({ ...p, branch: e.target.value }))}
                   >
                     <option value="SUPPORTING">Supporting Functions (Head Office)</option>
-                    <option value="OPERATIONS">Operations (Siêu Thị / Depot)</option>
+                    <option value="OPERATIONS">Operations (Store / Depot)</option>
                   </select>
                 </div>
               </div>
               <div style={{ marginBottom: 10 }}>
-                <label className="field-label">Tên Khối / Division *</label>
+                <label className="field-label">Division Name *</label>
                 <input
                   className="field-input"
-                  placeholder="e.g. MM An Phú hoặc Human Resources"
+                  placeholder="e.g. MM An Phu or Human Resources"
                   value={divForm.name}
                   onChange={(e) => setDivForm((p) => ({ ...p, name: e.target.value }))}
                   required
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label className="field-label">Business Unit Trực Thuộc</label>
+                <label className="field-label">Parent Business Unit</label>
                 <select
                   className="field-select"
                   value={divForm.businessUnitId}
@@ -905,10 +905,10 @@ export default function OrgHierarchyBrowser() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <Button variant="ghost" type="button" onClick={() => setDivModal({ isOpen: false, mode: 'ADD', data: null })}>
-                  Hủy
+                  Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  {divModal.mode === 'ADD' ? 'Tạo Khối' : 'Lưu Thay Đổi'}
+                  {divModal.mode === 'ADD' ? 'Create Division' : 'Save Changes'}
                 </Button>
               </div>
             </form>
@@ -926,15 +926,15 @@ export default function OrgHierarchyBrowser() {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 440, background: '#fff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 440, background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: 'var(--ink)' }}>
-              {deptModal.mode === 'ADD' ? 'Thêm Phòng Ban (Department)' : `Chỉnh Sửa Phòng Ban ${deptModal.data.code}`}
+              {deptModal.mode === 'ADD' ? 'Add Department' : `Edit Department ${deptModal.data.code}`}
             </div>
             <form onSubmit={handleSaveDeptSubmit}>
               <div style={{ marginBottom: 10 }}>
-                <label className="field-label">Mã Phòng Ban (Code) *</label>
+                <label className="field-label">Department Code *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. FF_ST, HR_LOD, MCH_DF..."
@@ -944,7 +944,7 @@ export default function OrgHierarchyBrowser() {
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label className="field-label">Tên Phòng Ban (Name) *</label>
+                <label className="field-label">Department Name *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. Fresh Food_ST, Learning & Org Dev..."
@@ -955,10 +955,10 @@ export default function OrgHierarchyBrowser() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <Button variant="ghost" type="button" onClick={() => setDeptModal({ isOpen: false, mode: 'ADD', data: null, divisionId: null })}>
-                  Hủy
+                  Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  {deptModal.mode === 'ADD' ? 'Tạo Phòng Ban' : 'Lưu Thay Đổi'}
+                  {deptModal.mode === 'ADD' ? 'Create Department' : 'Save Changes'}
                 </Button>
               </div>
             </form>
@@ -976,15 +976,15 @@ export default function OrgHierarchyBrowser() {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 440, background: '#fff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 440, background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: 'var(--ink)' }}>
-              {subDeptModal.mode === 'ADD' ? 'Thêm Sub-Department' : `Chỉnh Sửa Sub-Department ${subDeptModal.data.code}`}
+              {subDeptModal.mode === 'ADD' ? 'Add Sub-Department' : `Edit Sub-Department ${subDeptModal.data.code}`}
             </div>
             <form onSubmit={handleSaveSubDeptSubmit}>
               <div style={{ marginBottom: 10 }}>
-                <label className="field-label">Mã Sub-Department (Code) *</label>
+                <label className="field-label">Sub-Department Code *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. SUB-BAKERY, SUB-SF-NL..."
@@ -994,7 +994,7 @@ export default function OrgHierarchyBrowser() {
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label className="field-label">Tên Sub-Department (Name) *</label>
+                <label className="field-label">Sub-Department Name *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. Bakery, SF National Learning..."
@@ -1005,10 +1005,10 @@ export default function OrgHierarchyBrowser() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <Button variant="ghost" type="button" onClick={() => setSubDeptModal({ isOpen: false, mode: 'ADD', data: null, departmentId: null })}>
-                  Hủy
+                  Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  {subDeptModal.mode === 'ADD' ? 'Tạo Sub-Department' : 'Lưu Thay Đổi'}
+                  {subDeptModal.mode === 'ADD' ? 'Create Sub-Department' : 'Save Changes'}
                 </Button>
               </div>
             </form>
@@ -1026,7 +1026,7 @@ export default function OrgHierarchyBrowser() {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 420, background: '#fff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 420, background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: '#E11D48' }}>
@@ -1038,7 +1038,7 @@ export default function OrgHierarchyBrowser() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <Button variant="ghost" type="button" onClick={() => setDeleteConfirm({ isOpen: false, type: '', id: null, title: '', message: '' })}>
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -1046,7 +1046,7 @@ export default function OrgHierarchyBrowser() {
                 style={{ background: '#E11D48', borderColor: '#E11D48' }}
                 onClick={handleConfirmDelete}
               >
-                Xác nhận Xóa
+                Confirm Deletion
               </Button>
             </div>
           </div>

@@ -58,13 +58,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
   // Tab 1: Intervention Modal States
   const [interventionModal, setInterventionModal] = useState(false);
-  const [formUnit, setFormUnit] = useState('Quầy Bánh & Tươi Sống (MM An Phú)');
+  const [formUnit, setFormUnit] = useState('Bakery & Fresh Food Counter (MM An Phu)');
   const [formDeptCode, setFormDeptCode] = useState('PPF');
   const [formSkill, setFormSkill] = useState('HACCP & Cold-Chain Storage Protocols');
   const [formCourseId, setFormCourseId] = useState('CRS-FSH-001');
   const [formCourseTitle, setFormCourseTitle] = useState('Food Safety & Hygiene Standards (HACCP)');
   const [formUrgency, setFormUrgency] = useState('HIGH');
-  const [formImpact, setFormImpact] = useState('Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.');
+  const [formImpact, setFormImpact] = useState('Bakery counter shrinkage rose 3.2% in July. A hands-on class on standardizing the process is needed.');
   const [formTrainer, setFormTrainer] = useState('Nguyen Van Hung (Master Trainer)');
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -113,7 +113,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       trainerName: formTrainer,
     });
     setInterventionModal(false);
-    showToast('✅ Đã tạo Ticket can thiệp L&D thành công!');
+    showToast('✅ L&D intervention ticket created successfully!');
   }
 
   // Handle Propose Curriculum Assignment to Candidate
@@ -128,7 +128,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         targetLabel: `${assignCurriculumModal.name} (${assignCurriculumModal.employeeCode || targetUserId})`,
         dueDate: curriculumDueDate,
       },
-      `HRBP đề xuất bổ sung Giáo trình phát triển năng lực cho ứng viên kế nhiệm ${assignCurriculumModal.name}.`
+      `HRBP proposes adding a competency development curriculum for succession candidate ${assignCurriculumModal.name}.`
     );
     if (result && result.ok && updateSuccessionTalent) {
       updateSuccessionTalent(assignCurriculumModal.id, {
@@ -137,7 +137,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       });
     }
     setAssignCurriculumModal(null);
-    showToast(`📋 Đã gửi đơn đề xuất gán Giáo Trình cho ứng viên ${assignCurriculumModal.name} lên User Admin phê duyệt!`);
+    showToast(`📋 Sent the curriculum allocation request for candidate ${assignCurriculumModal.name} to the User Admin for approval!`);
   }
 
   // Handle Save 1-on-1 Alignment
@@ -154,11 +154,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       mentoring20Progress: Number(alnMentor),
       course10Progress: Number(alnFormal),
       readiness: alnReadiness,
-      readinessLabel: alnReadiness === 'READY_NOW' ? 'Sẵn Sàng Ngay' : alnReadiness === 'READY_IN_6_MONTHS' ? 'Sẵn Sàng trong 6 Tháng' : 'Sẵn Sàng trong 1 Năm',
+      readinessLabel: alnReadiness === 'READY_NOW' ? 'Ready Now' : alnReadiness === 'READY_IN_6_MONTHS' ? 'Ready In 6 Months' : 'Ready In 1 Year',
       notes: alnNotes,
     });
     setAlignmentModal(null);
-    showToast(`🤝 Đã ghi nhận Biên bản họp 1-on-1 Alignment cho ${alignmentModal.name}!`);
+    showToast(`🤝 Recorded the 1-on-1 alignment meeting minutes for ${alignmentModal.name}!`);
   }
 
   // Handle Nominate Talent
@@ -174,11 +174,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       userId: foundUser.userId,
       name: foundUser.fullName,
       currentRole: foundUser.position || 'Specialist',
-      store: foundUser.storeName || 'MM Mega Market An Phú',
+      store: foundUser.storeName || 'MM Mega Market An Phu',
       storeId: foundUser.storeId || 'store-an-phu',
       targetRole: nominateTargetRole.trim(),
       readiness: 'DEVELOPING',
-      readinessLabel: 'Đang Đào Tạo Phát Triển',
+      readinessLabel: 'Developing',
       progress702010: 60,
       ojt70: 60,
       mentoring20: 60,
@@ -189,7 +189,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     setNominateModal(false);
     setNominateUserId('');
     setNominateTargetRole('');
-    showToast(`🌟 Đã đề cử thành công ${foundUser.fullName} vào Talent Pool!`);
+    showToast(`🌟 Successfully nominated ${foundUser.fullName} to the Talent Pool!`);
   }
 
   // Handle Send SGM Nudge
@@ -198,12 +198,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     if (!nudgeModal) return;
     sendComplianceNudge(nudgeModal.storeId || nudgeModal.code || nudgeModal.store, {
       storeName: nudgeModal.store,
-      sgmName: 'Giám Đốc Siêu Thị (SGM)',
+      sgmName: 'Store General Manager (SGM)',
       deadline: nudgeDeadline,
-      message: nudgeMessage || `Yêu cầu hoàn tất 100% chứng chỉ bắt buộc ATTP/HACCP và PCCC trước ngày ${nudgeDeadline}.`,
+      message: nudgeMessage || `Requires 100% completion of the mandatory food safety/HACCP and fire safety certifications before ${nudgeDeadline}.`,
     });
     setNudgeModal(null);
-    showToast(`⚠️ Đã gửi cảnh báo chính thức tới Giám Đốc Siêu Thị ${nudgeModal.store}!`);
+    showToast(`⚠️ Formal alert sent to the Store General Manager of ${nudgeModal.store}!`);
   }
 
   // Real store compliance list & analytics derived from store users
@@ -230,7 +230,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('📥 Đã xuất báo cáo kiểm tra tuân thủ thành công!');
+    showToast('📥 Compliance audit report exported successfully!');
   }
 
   return (
@@ -243,12 +243,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             top: 24,
             right: 24,
             zIndex: 9999,
-            background: 'var(--ink)',
+            background: '#111827',
             color: '#fff',
             padding: '12px 20px',
             borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-            fontSize: 13.5,
+            fontSize: 14,
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
@@ -269,12 +269,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <Badge tone="blue" icon="ti-users">HR Business Partner (Level 2)</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Đối tác Nhân sự Chiến lược: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Phụ trách: Khối Vận hành Siêu thị Khu vực Miền Nam
+            Strategic HR Business Partner: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Responsible for: Store Operations Division, Southern Region
           </p>
         </div>
 
         <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
-          Xem Giao Diện Học Tập Cá Nhân
+          View The Personal Learning Interface
         </Button>
       </div>
 
@@ -286,7 +286,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)' }}>{overallComplianceRate}%</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Tỷ lệ Tuân thủ<br />Đào tạo Vùng</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Compliance Rate<br />Regional Training</div>
           </div>
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -295,9 +295,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)' }}>
-              {successionTalents.length} Ứng viên
+              {successionTalents.length} Candidate
             </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Quy Hoạch Kế Nhiệm<br />(Talent Pool)</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Succession Planning<br />(Talent Pool)</div>
           </div>
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -306,7 +306,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)' }}>{interventions.length}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Đề Xuất Can Thiệp<br />L&amp;D Đang Theo Dõi</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Intervention Request<br />L&amp;D Monitoring</div>
           </div>
         </div>
         <div className="card card-pad" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -315,7 +315,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)' }}>{headcount}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Nhân sự trong phạm vi<br />HRBP phụ trách</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Employees in scope<br />Responsible HRBP</div>
           </div>
         </div>
       </div>
@@ -323,10 +323,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'SKILL_GAP', label: 'Khoảng Cách Năng Lực & Đề Xuất L&D (Skill Gap Matrix)', icon: 'ti-chart-dots', count: `${interventions.length} Ticket` },
-          { id: 'SUCCESSION', label: 'Quy Hoạch Kế Nhiệm & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: `${successionTalents.length} Kế nhiệm` },
-          { id: 'COMPLIANCE', label: 'Bản Đồ Tuân Thủ Bắt Buộc Theo Siêu Thị (Regional Heatmap)', icon: 'ti-shield-check', count: `${overallComplianceRate}%` },
-          { id: 'CURRICULUM', label: 'Giáo Trình & Đề Xuất Nhân Tài (Curriculum)', icon: 'ti-books', count: `${(curricula || []).filter(c => c.status === 'PUBLISHED').length} Giáo Trình` },
+          { id: 'SKILL_GAP', label: 'Competency Gap & L&D Recommendations (Skill Gap Matrix)', icon: 'ti-chart-dots', count: `${interventions.length} Ticket` },
+          { id: 'SUCCESSION', label: 'Succession Planning & Talent Pool (70-20-10 Pipeline)', icon: 'ti-git-branch', count: `${successionTalents.length} successors` },
+          { id: 'COMPLIANCE', label: 'Mandatory Compliance Map By Store (Regional Heatmap)', icon: 'ti-shield-check', count: `${overallComplianceRate}%` },
+          { id: 'CURRICULUM', label: 'Curriculum & Talent Nomination', icon: 'ti-books', count: `${(curricula || []).filter(c => c.status === 'PUBLISHED').length} curricula` },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -348,7 +348,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
               background: activeTab === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--line)',
               padding: '1px 6px',
               borderRadius: 10,
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 700,
             }}>
               {tab.count}
@@ -362,7 +362,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <div className="section-label" style={{ marginBottom: 12 }}>
-              Ma Trận Thiếu Hụt Năng Lực Cần Can Thiệp Theo Khối / Bộ Phận:
+              Competency Gap Matrix Requiring Intervention By Division / Sub-Department:
             </div>
 
             <div className="grid grid-2" style={{ gap: 16 }}>
@@ -371,26 +371,26 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                       <div>
-                        <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{item.unit}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{item.unit}</div>
                         <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, marginTop: 2 }}>{item.skill}</div>
                       </div>
                       <Badge tone={item.gap <= -15 ? 'rust' : 'amber'}>Gap: {item.gap}%</Badge>
                     </div>
 
                     <div style={{ margin: '12px 0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                        <span>Năng lực thực tế: <strong>{item.current}%</strong></span>
-                        <span>Chuẩn yêu cầu: <strong>{item.required}%</strong></span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                        <span>Actual competency: <strong>{item.current}%</strong></span>
+                        <span>Required standard: <strong>{item.required}%</strong></span>
                       </div>
                       <ProgressBar value={item.current} tone={item.current >= 80 ? 'sage' : item.current >= 70 ? 'amber' : 'rust'} size="sm" />
                     </div>
 
                     <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 10px', lineHeight: 1.45 }}>
-                      <strong>Tác động kinh doanh:</strong> {item.impact}
+                      <strong>Business impact:</strong> {item.impact}
                     </p>
-                    <div style={{ fontSize: 11.5, color: 'var(--rail)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Khóa học đề xuất: <strong>{item.recommendedCourse}</strong></span>
-                      <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Giảng viên: {item.trainer}</span>
+                    <div style={{ fontSize: 12, color: 'var(--rail)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Recommended course: <strong>{item.recommendedCourse}</strong></span>
+                      <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Trainer: {item.trainer}</span>
                     </div>
                   </div>
 
@@ -401,7 +401,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       icon="ti-eye"
                       onClick={() => navigate(`/courses/${item.recommendedCourseId}`)}
                     >
-                      Xem Khóa Học
+                      View Course
                     </Button>
                     <Button
                       size="sm"
@@ -419,7 +419,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                         setInterventionModal(true);
                       }}
                     >
-                      Gửi Yêu Cầu L&amp;D
+                      Send The L&amp;D Request
                     </Button>
                   </div>
                 </div>
@@ -432,29 +432,29 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 800 }}>
-                  Quản Lý Danh Sách Đề Xuất Can Thiệp Đã Gửi L&amp;D ({interventions.length} Yêu cầu)
+                  Intervention Requests Sent To L&amp;D ({interventions.length} requests)
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-                  Theo dõi tình trạng tiếp nhận và tiến độ lên lịch đào tạo của phòng L&amp;D cho các khoảng cách kỹ năng đã báo cáo.
+                  Tracks whether the L&amp;D department has picked up the reported skill gaps and how far the training scheduling has progressed.
                 </p>
               </div>
             </div>
 
             {interventions.length === 0 ? (
               <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--ink-soft)', fontSize: 13 }}>
-                Chưa có đề xuất can thiệp nào được gửi. Bấm <strong>+ Đề Xuất L&amp;D Mở Lớp Can Thiệp</strong> ở trên để tạo ticket mới.
+                No intervention request has been sent. Click <strong>+ Ask L&amp;D To Run An Intervention Class</strong> above to create a new ticket.
               </div>
             ) : (
               <table className="table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Mã Ticket</th>
-                    <th>Bộ Phận &amp; Khối</th>
-                    <th>Kỹ Năng &amp; Khóa Học Đề Xuất</th>
-                    <th>Độ Khẩn</th>
-                    <th>Ngày Gửi</th>
-                    <th>Trạng Thái Xử Lý</th>
-                    <th style={{ textAlign: 'right' }}>Thao Tác</th>
+                    <th>Ticket ID</th>
+                    <th>Sub-Department &amp; Division</th>
+                    <th>Skills &amp; Recommended Courses</th>
+                    <th>Urgency</th>
+                    <th>Submitted On</th>
+                    <th>Handling Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -462,21 +462,21 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     <tr key={itv.id}>
                       <td>
                         <strong style={{ fontFamily: 'monospace', color: 'var(--blue)' }}>{itv.id}</strong>
-                        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Bởi: {itv.requestedBy}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>By: {itv.requestedBy}</div>
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600, fontSize: 12.5 }}>{itv.unit}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{itv.unit}</div>
                         <Badge tone="slate" size="sm">{itv.departmentCode}</Badge>
                       </td>
                       <td>
-                        <div style={{ fontSize: 12.5, fontWeight: 600 }}>{itv.skill}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--rail)' }}>
-                          Khóa: {itv.courseTitle}
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{itv.skill}</div>
+                        <div style={{ fontSize: 12, color: 'var(--rail)' }}>
+                          Locked: {itv.courseTitle}
                         </div>
                       </td>
                       <td>
                         <Badge tone={itv.urgency === 'HIGH' ? 'rust' : itv.urgency === 'MEDIUM' ? 'amber' : 'blue'}>
-                          {itv.urgency === 'HIGH' ? '🔴 Khẩn Cấp' : itv.urgency === 'MEDIUM' ? '🟡 Trung Bình' : '🔵 Thường'}
+                          {itv.urgency === 'HIGH' ? '🔴 Urgent' : itv.urgency === 'MEDIUM' ? '🟡 Moderate' : '🔵 Normal'}
                         </Badge>
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
@@ -484,13 +484,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       </td>
                       <td>
                         {itv.status === 'SCHEDULED' ? (
-                          <Badge tone="sage" icon="ti-calendar">Đã Lên Lịch: {itv.scheduledDate || '05/09/2026'}</Badge>
+                          <Badge tone="sage" icon="ti-calendar">Scheduled: {itv.scheduledDate || '05/09/2026'}</Badge>
                         ) : itv.status === 'COMPLETED' ? (
-                          <Badge tone="sage" icon="ti-check">Đã Hoàn Tất</Badge>
+                          <Badge tone="sage" icon="ti-check">Completed</Badge>
                         ) : itv.status === 'CANCELLED' ? (
-                          <Badge tone="slate">Đã Hủy</Badge>
+                          <Badge tone="slate">Cancelled</Badge>
                         ) : (
-                          <Badge tone="amber" icon="ti-clock">⏳ Chờ L&D Tiếp Nhận</Badge>
+                          <Badge tone="amber" icon="ti-clock">⏳ Awaiting L&D Pickup</Badge>
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -501,10 +501,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                             style={{ color: 'var(--rust)' }}
                             onClick={() => {
                               cancelIntervention(itv.id);
-                              showToast(`Đã hủy ticket ${itv.id}`);
+                              showToast(`Ticket ${itv.id} cancelled`);
                             }}
                           >
-                            Hủy
+                            Cancel
                           </Button>
                         )}
                       </td>
@@ -538,24 +538,24 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', borderColor: 'var(--sage)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#166534' }}>
-                    Quy Hoạch Đội Ngũ Kế Nhiệm Khối Vận Hành Siêu Thị (Succession Talent Pool)
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--sage-soft-text)' }}>
+                    Store Operations Succession Talent Pool
                   </div>
-                  <p style={{ fontSize: 12.5, color: '#14532D', margin: '4px 0 0' }}>
-                    Theo dõi tiến độ phát triển năng lực theo mô hình 70-20-10 của các ứng viên kế nhiệm vị trí Giám đốc Siêu thị (SGM) và Trưởng quầy ngành hàng.
+                  <p style={{ fontSize: 13, color: '#14532D', margin: '4px 0 0' }}>
+                    Tracks 70-20-10 competency development progress for candidates succeeding into Store General Manager (SGM) and category counter manager roles.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <Badge tone="sage">{successionTalents.length} Nhân Sự Trong Talent Pool</Badge>
+                  <Badge tone="sage">{successionTalents.length} Employee Trong Talent Pool</Badge>
                   <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
-                    Đề Cử Ứng Viên Mới
+                    Nominate A New Candidate
                   </Button>
                 </div>
               </div>
             </div>
 
             {/* STANDARDIZED FILTER TOOLBAR */}
-            <div className="card card-pad" style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
                 {/* Search input */}
                 <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 220 }}>
@@ -564,7 +564,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     type="text"
                     className="field-input"
                     style={{ paddingLeft: 36, paddingRight: successionSearch ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                    placeholder="Tìm theo tên nhân sự, mã NV, chức danh, siêu thị..."
+                    placeholder="Search by employee name, code, job title, store..."
                     value={successionSearch}
                     onChange={(e) => setSuccessionSearch(e.target.value)}
                   />
@@ -586,21 +586,21 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     style={{
                       width: '100%',
                       height: 38,
-                      fontSize: 12.5,
+                      fontSize: 13,
                       borderRadius: 8,
-                      background: successionReadinessFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                      background: successionReadinessFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                       borderColor: successionReadinessFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
-                      color: successionReadinessFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                      color: successionReadinessFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                       fontWeight: successionReadinessFilter !== 'ALL' ? 700 : 500,
                     }}
                     value={successionReadinessFilter}
                     onChange={(e) => setSuccessionReadinessFilter(e.target.value)}
                   >
-                    <option value="ALL">Tất cả mức độ sẵn sàng</option>
-                    <option value="READY_NOW">🟢 Sẵn Sàng Ngay (Ready Now)</option>
-                    <option value="READY_IN_6_MONTHS">🟡 Sẵn Sàng Sau 6 Tháng</option>
-                    <option value="READY_IN_1_YEAR">🔵 Sẵn Sàng Sau 1-2 Năm</option>
-                    <option value="DEVELOPING">⚪ Đang Bồi Dưỡng (Developing)</option>
+                    <option value="ALL">All readiness levels</option>
+                    <option value="READY_NOW">🟢 Ready Now</option>
+                    <option value="READY_IN_6_MONTHS">🟡 Ready in 6 Months</option>
+                    <option value="READY_IN_1_YEAR">🔵 Ready in 1-2 Years</option>
+                    <option value="DEVELOPING">⚪ Developing</option>
                   </select>
                 </div>
               </div>
@@ -609,16 +609,16 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
               {(successionSearch || successionReadinessFilter !== 'ALL') && (
                 <div style={{ paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
                     {successionSearch && (
-                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Từ khóa: <strong>"{successionSearch}"</strong>
+                      <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Search term: <strong>"{successionSearch}"</strong>
                         <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSuccessionSearch('')} />
                       </span>
                     )}
                     {successionReadinessFilter !== 'ALL' && (
-                      <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Mức sẵn sàng: <strong>{successionReadinessFilter}</strong>
+                      <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        Readiness: <strong>{successionReadinessFilter}</strong>
                         <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSuccessionReadinessFilter('ALL')} />
                       </span>
                     )}
@@ -627,11 +627,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       onClick={() => { setSuccessionSearch(''); setSuccessionReadinessFilter('ALL'); }}
                       style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
                     >
-                      Xóa tất cả bộ lọc
+                      Clear all filters
                     </button>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                    Tìm thấy <strong>{filteredTalents.length}</strong> / {successionTalents.length} ứng viên
+                    Found <strong>{filteredTalents.length}</strong> / {successionTalents.length} candidates
                   </div>
                 </div>
               )}
@@ -641,28 +641,28 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Nhân Sự Tiềm Năng</th>
-                  <th>Chức Danh Hiện Tại &amp; Siêu Thị</th>
-                  <th>Vị Trí Quy Hoạch Kế Nhiệm</th>
-                  <th style={{ width: 140 }}>Mức Độ Sẵn Sàng</th>
-                  <th style={{ minWidth: 160 }}>Tiến Độ 70-20-10</th>
-                  <th style={{ textAlign: 'right' }}>Thao Tác Tác Nghiệp HRBP</th>
+                  <th>High-Potential Employees</th>
+                  <th>Current Job Title &amp; Store</th>
+                  <th>Target Succession Role</th>
+                  <th style={{ width: 140 }}>Readiness Level</th>
+                  <th style={{ minWidth: 160 }}>70-20-10 Progress</th>
+                  <th style={{ textAlign: 'right' }}>HRBP Operations</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTalents.map((talent) => (
                   <tr key={talent.id}>
                     <td>
-                      <div style={{ fontWeight: 700, fontSize: 13.5 }}>{talent.name}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{talent.id}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{talent.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{talent.id}</div>
                     </td>
                     <td>
                       <div>{talent.currentRole}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{talent.store}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{talent.store}</div>
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--blue)' }}>{talent.targetRole}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Mentor: {talent.mentor}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Mentor: {talent.mentor}</div>
                       {talent.curriculumId && (() => {
                         const cur = (curricula || []).find((c) => c.id === talent.curriculumId);
                         if (!cur) return null;
@@ -682,7 +682,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                               padding: '4px 6px',
                               background: 'var(--paper-sunken)',
                               borderRadius: 4,
-                              fontSize: 10.5,
+                              fontSize: 11,
                             }}
                           >
                             <div
@@ -717,10 +717,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                         <div style={{ flex: 1 }}>
                           <ProgressBar value={talent.progress702010} tone={talent.progress702010 >= 80 ? 'sage' : 'blue'} size="sm" />
                         </div>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 32 }}>{talent.progress702010}%</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 32 }}>{talent.progress702010}%</span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-                        70% OJT: {talent.ojt70 || 70}% &middot; 20% Mentor: {talent.mentoring20 || 70}% &middot; 10% Khóa: {talent.formal10 || 70}%
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
+                        70% OJT: {talent.ojt70 || 70}% &middot; 20% Mentor: {talent.mentoring20 || 70}% &middot; 10% Locked: {talent.formal10 || 70}%
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -729,19 +729,19 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                           size="sm"
                           variant="outline"
                           icon="ti-books"
-                          title="Gán Giáo Trình Bắt Buộc Cho Ứng Viên Kế Nhiệm"
+                          title="Assign A Mandatory Curriculum To The Succession Candidate"
                           onClick={() => {
                             setAssignCurriculumModal(talent);
                             setSelectedCurriculumId(curricula[0]?.id || '');
                           }}
                         >
-                          Gán Giáo Trình
+                          Assign Curriculum
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           icon="ti-notes"
-                          title="Ghi Nhận Biên Bản Họp 1-on-1 Alignment Với Mentor & Quản Lý"
+                          title="Record 1-on-1 Alignment Meeting Minutes With The Mentor & Manager"
                           onClick={() => {
                             setAlignmentModal(talent);
                             setAlnOjt(talent.ojt70 || 80);
@@ -751,7 +751,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                             setAlnNotes('');
                           }}
                         >
-                          Họp 1-on-1
+                          1-on-1 Meeting
                         </Button>
                         <Button
                           size="sm"
@@ -770,7 +770,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                             setTranscriptUser(found);
                           }}
                         >
-                          Hồ Sơ
+                          Profile
                         </Button>
                       </div>
                     </td>
@@ -783,11 +783,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           {/* TABLE OF RECENT 1-ON-1 ALIGNMENT MINUTES */}
           <div className="card card-pad">
             <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>
-              Biên Bản Họp 1-on-1 Alignment Định Kỳ Với SGM &amp; Mentor ({successionAlignments.length} Biên bản)
+              Recurring 1-on-1 Alignment Meeting Minutes With The SGM &amp; Mentor ({successionAlignments.length} records)
             </div>
             {successionAlignments.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', padding: '12px 0' }}>
-                Chưa có biên bản họp nào. Bấm nút <strong>Họp 1-on-1</strong> tại từng ứng viên ở bảng trên để ghi nhận đánh giá 70-20-10.
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)', padding: '12px 0' }}>
+                No meeting minutes yet. Click the button <strong>1-on-1 Meeting</strong> on each candidate in the table above to record the 70-20-10 review.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -810,10 +810,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                         {aln.candidateName} &middot; <span style={{ color: 'var(--blue)' }}>{aln.targetRole}</span>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '3px 0' }}>
-                        {aln.notes || 'Đã rà soát tiến độ dự án thực tế OJT và kỹ năng kèm cặp nhân viên mới.'}
+                        {aln.notes || 'Reviewed real OJT project progress and new-employee coaching skills.'}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
-                        Mentor: <strong>{aln.mentorName}</strong> &middot; Người ghi nhận: <strong>{aln.managerName}</strong> &middot; Ngày: {aln.updatedAt}
+                        Mentor: <strong>{aln.mentorName}</strong> &middot; Recorded by: <strong>{aln.managerName}</strong> &middot; Date: {aln.updatedAt}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: 140 }}>
@@ -821,7 +821,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                         {aln.readinessLabel || aln.readiness}
                       </Badge>
                       <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                        OJT: {aln.ojt70Progress}% &middot; Mentor: {aln.mentoring20Progress}% &middot; Khóa: {aln.course10Progress}%
+                        OJT: {aln.ojt70Progress}% &middot; Mentor: {aln.mentoring20Progress}% &middot; Locked: {aln.course10Progress}%
                       </div>
                     </div>
                   </div>
@@ -839,11 +839,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           <div className="card card-pad" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
-                Tỷ Lệ Tuân Thủ Đào Tạo Bắt Buộc Theo Chi Nhánh Siêu Thị (Regional Compliance Heatmap)
+                Mandatory Training Compliance Rate By Store Branch (Regional Compliance Heatmap)
               </div>
-              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
-                Giám sát % hoàn thành các chứng chỉ bắt buộc theo luật định (HACCP, PCCC, An toàn lao động, Bảo mật POS).
-                Bấm vào từng siêu thị để drill-down danh sách nhân viên quá hạn.
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
+                Monitors the % completion of legally mandated certifications (HACCP, fire safety, occupational safety, POS security).
+                Click a store to drill down into the list of overdue employees.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -852,7 +852,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 icon="ti-download"
                 onClick={handleExportAuditReport}
               >
-                Xuất Báo Cáo Tuân Thủ (JSON/Audit)
+                Export The Compliance Report (JSON/Audit)
               </Button>
             </div>
           </div>
@@ -864,7 +864,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 className="card card-pad"
                 style={{
                   borderColor: st.overall < 85 ? 'var(--rust)' : st.overall >= 95 ? 'var(--sage)' : 'var(--line)',
-                  background: st.overall < 85 ? '#FEF2F2' : 'var(--paper-raised)',
+                  background: st.overall < 85 ? 'var(--rust-soft)' : 'var(--paper-raised)',
                   cursor: 'pointer',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                 }}
@@ -873,7 +873,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{st.store}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{st.region} &middot; {st.totalStaff} Nhân sự</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{st.region} &middot; {st.totalStaff} employees</div>
                   </div>
                   <Badge tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'}>
                     {st.overall}%
@@ -886,11 +886,11 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                     <strong>{st.haccp}%</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--ink-soft)' }}>PCCC &amp; An Toàn Lao Động:</span>
+                    <span style={{ color: 'var(--ink-soft)' }}>Fire Safety &amp; Occupational Safety:</span>
                     <strong>{st.pccc}%</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--ink-soft)' }}>Bảo Mật POS &amp; Thông Tin:</span>
+                    <span style={{ color: 'var(--ink-soft)' }}>POS &amp; Information Security:</span>
                     <strong>{st.sec}%</strong>
                   </div>
                 </div>
@@ -898,12 +898,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 <ProgressBar value={st.overall} tone={st.overall >= 95 ? 'sage' : st.overall >= 90 ? 'blue' : 'rust'} size="sm" />
 
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px dashed var(--line)' }}>
-                  <span style={{ fontSize: 11.5, color: st.overdueCount > 10 ? 'var(--rust)' : 'var(--ink-soft)', fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, color: st.overdueCount > 10 ? 'var(--rust)' : 'var(--ink-soft)', fontWeight: 600 }}>
                     <i className="ti ti-alert-circle" style={{ marginRight: 4 }} />
-                    {st.overdueCount} nhân sự quá hạn
+                    {st.overdueCount} employees overdue
                   </span>
-                  <span style={{ fontSize: 11.5, color: 'var(--blue)', fontWeight: 600 }}>
-                    Chi tiết &rarr;
+                  <span style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                    Details &rarr;
                   </span>
                 </div>
               </div>
@@ -914,7 +914,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
           {complianceNudges.length > 0 && (
             <div className="card card-pad">
               <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>
-                Lịch Sử Cảnh Báo Tuân Thủ Đã Gửi Cho Giám Đốc Siêu Thị (SGM)
+                History Of Compliance Alerts Sent To Store General Managers (SGM)
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {complianceNudges.map((ndg) => (
@@ -923,7 +923,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                       <strong>{ndg.storeName}</strong>: {ndg.message}
                     </div>
                     <div style={{ color: 'var(--ink-soft)', fontSize: 11 }}>
-                      Hạn chót: <strong>{ndg.deadline}</strong> &middot; Gửi ngày: {ndg.sentAt}
+                      Deadline: <strong>{ndg.deadline}</strong> &middot; Send days: {ndg.sentAt}
                     </div>
                   </div>
                 ))}
@@ -939,13 +939,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: SUBMIT L&D INTERVENTION REQUEST */}
       {interventionModal && (
         <Modal
-          title="Đề Xuất L&D Tổ Chức Khóa Đào Tạo Can Thiệp Năng Lực"
+          title="Ask L&D To Run A Competency Intervention Course"
           onClose={() => setInterventionModal(false)}
           size="md"
         >
           <form onSubmit={handleSubmitIntervention}>
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Khối / Bộ Phận / Siêu Thị Cần Can Thiệp:</label>
+              <label className="field-label">Division / Sub-Department / Store Needing Intervention:</label>
               <input
                 className="field-input"
                 value={formUnit}
@@ -956,7 +956,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
             <div className="grid grid-2" style={{ gap: 12, marginBottom: 12 }}>
               <div>
-                <label className="field-label">Mã Phòng Ban (Dept Code):</label>
+                <label className="field-label">Department Code:</label>
                 <input
                   className="field-input"
                   value={formDeptCode}
@@ -965,17 +965,17 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Mức Độ Khẩn:</label>
+                <label className="field-label">Urgency:</label>
                 <select className="field-select" value={formUrgency} onChange={(e) => setFormUrgency(e.target.value)}>
-                  <option value="HIGH">🔴 Khẩn Cấp (Thiếu hụt nghiêm trọng)</option>
-                  <option value="MEDIUM">🟡 Trung Bình (Theo dõi sát)</option>
-                  <option value="LOW">🔵 Kế Hoạch Định Kỳ</option>
+                  <option value="HIGH">🔴 Urgent (critical shortfall)</option>
+                  <option value="MEDIUM">🟡 Moderate (watch closely)</option>
+                  <option value="LOW">🔵 Scheduled Plan</option>
                 </select>
               </div>
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Kỹ Năng Thiếu Hụt (Skill Gap):</label>
+              <label className="field-label">Skill Gap:</label>
               <input
                 className="field-input"
                 value={formSkill}
@@ -985,7 +985,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Khóa Học Đề Xuất:</label>
+              <label className="field-label">Recommended Course:</label>
               <select
                 className="field-select"
                 value={formCourseId}
@@ -1002,7 +1002,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Lý Do Đề Xuất &amp; Tác Động Kinh Doanh:</label>
+              <label className="field-label">Reason &amp; Business Impact:</label>
               <textarea
                 className="field-input"
                 rows={3}
@@ -1013,9 +1013,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setInterventionModal(false)}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setInterventionModal(false)}>Cancel</Button>
               <Button variant="primary" icon="ti-send" type="submit">
-                Xác Nhận Gửi Yêu Cầu Cho L&amp;D
+                Confirm And Send The Request To L&amp;D
               </Button>
             </div>
           </form>
@@ -1025,7 +1025,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: ASSIGN CURRICULUM TO SUCCESSION TALENT */}
       {assignCurriculumModal && (
         <Modal
-          title={`Gán Giáo Trình Kế Nhiệm Cho Ứng Viên: ${assignCurriculumModal.name}`}
+          title={`Assign A Succession Curriculum To Candidate: ${assignCurriculumModal.name}`}
           onClose={() => setAssignCurriculumModal(null)}
           size="md"
         >
@@ -1033,25 +1033,25 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <div style={{ marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>{assignCurriculumModal.name} ({assignCurriculumModal.id})</div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                Vị trí quy hoạch: <strong>{assignCurriculumModal.targetRole}</strong> &middot; Siêu thị: {assignCurriculumModal.store}
+                Target role: <strong>{assignCurriculumModal.targetRole}</strong> &middot; Store: {assignCurriculumModal.store}
               </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Chọn Giáo Trình Kế Nhiệm:</label>
+              <label className="field-label">Choose The Succession Curriculum:</label>
               <select
                 className="field-select"
                 value={selectedCurriculumId}
                 onChange={(e) => setSelectedCurriculumId(e.target.value)}
               >
                 {curricula.map((c) => (
-                  <option key={c.id} value={c.id}>{c.code} — {c.title} ({c.courseIds?.length || 0} khóa học)</option>
+                  <option key={c.id} value={c.id}>{c.code} — {c.title} ({c.courseIds?.length || 0} courses)</option>
                 ))}
               </select>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Hạn Chót Hoàn Thành Toàn Bộ Giáo Trình:</label>
+              <label className="field-label">Deadline To Complete The Whole Curriculum:</label>
               <input
                 type="date"
                 className="field-input"
@@ -1061,9 +1061,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" onClick={() => setAssignCurriculumModal(null)}>Hủy</Button>
+              <Button variant="ghost" onClick={() => setAssignCurriculumModal(null)}>Cancel</Button>
               <Button variant="primary" icon="ti-check" onClick={handleAssignCurriculumToCandidate}>
-                Xác Nhận Gán Giáo Trình
+                Confirm The Curriculum Assignment
               </Button>
             </div>
           </div>
@@ -1073,7 +1073,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: 1-ON-1 SUCCESSION ALIGNMENT SESSION */}
       {alignmentModal && (
         <Modal
-          title={`Biên Bản Họp 1-on-1 Alignment: ${alignmentModal.name}`}
+          title={`1-on-1 Alignment Meeting Minutes: ${alignmentModal.name}`}
           onClose={() => setAlignmentModal(null)}
           size="md"
         >
@@ -1081,14 +1081,14 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <div style={{ marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>{alignmentModal.name} &middot; {alignmentModal.currentRole}</div>
               <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
-                Quy hoạch: {alignmentModal.targetRole} (Mentor: {alignmentModal.mentor})
+                Target role: {alignmentModal.targetRole} (Mentor: {alignmentModal.mentor})
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-                  <span>70% Dự Án &amp; Trải Nghiệm Thực Tế (OJT Project):</span>
+                  <span>70% Real Projects &amp; Experience (OJT Project):</span>
                   <span style={{ color: 'var(--blue)' }}>{alnOjt}%</span>
                 </div>
                 <input
@@ -1103,7 +1103,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-                  <span>20% Kèm Cặp Cùng SGM Mentor &amp; Quản Lý:</span>
+                  <span>20% Coaching With The SGM Mentor &amp; Manager:</span>
                   <span style={{ color: 'var(--sage)' }}>{alnMentor}%</span>
                 </div>
                 <input
@@ -1118,7 +1118,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-                  <span>10% Khóa Học &amp; Chứng Chỉ E-Learning / Lớp Học:</span>
+                  <span>10% E-Learning Courses &amp; Certifications / Classes:</span>
                   <span style={{ color: 'var(--rail)' }}>{alnFormal}%</span>
                 </div>
                 <input
@@ -1133,21 +1133,21 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Mức Độ Sẵn Sàng Bổ Nhiệm (Readiness):</label>
+              <label className="field-label">Appointment Readiness:</label>
               <select className="field-select" value={alnReadiness} onChange={(e) => setAlnReadiness(e.target.value)}>
-                <option value="READY_NOW">🟢 Sẵn Sàng Bổ Nhiệm Ngay (Ready Now)</option>
-                <option value="READY_IN_6_MONTHS">🟡 Sẵn Sàng Trong 6 Tháng (Ready in 6 Months)</option>
-                <option value="READY_1_YEAR">🔵 Sẵn Sàng Trong 1 Năm (Ready in 1 Year)</option>
-                <option value="DEVELOPING">⚪ Đang Đào Tạo Nền Tảng (Developing)</option>
+                <option value="READY_NOW">🟢 Ready Now</option>
+                <option value="READY_IN_6_MONTHS">🟡 Ready in 6 Months</option>
+                <option value="READY_1_YEAR">🔵 Ready in 1 Year</option>
+                <option value="DEVELOPING">⚪ Developing Foundations</option>
               </select>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Ghi Chú Cuộc Họp &amp; Kế Hoạch Hành Động Tiếp Theo:</label>
+              <label className="field-label">Meeting Notes &amp; Next Action Plan:</label>
               <textarea
                 className="field-input"
                 rows={3}
-                placeholder="Nhập nhận xét của Mentor và HRBP về điểm mạnh, điểm cần cải thiện..."
+                placeholder="Enter the mentor's and HRBP's comments on strengths and areas to improve..."
                 value={alnNotes}
                 onChange={(e) => setAlnNotes(e.target.value)}
                 required
@@ -1155,9 +1155,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setAlignmentModal(null)}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setAlignmentModal(null)}>Cancel</Button>
               <Button variant="primary" icon="ti-device-floppy" type="submit">
-                Lưu Biên Bản Họp
+                Save The Meeting Minutes
               </Button>
             </div>
           </form>
@@ -1167,20 +1167,20 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: NOMINATE TALENT INTO TALENT POOL */}
       {nominateModal && (
         <Modal
-          title="Đề Cử Nhân Sự Vào Danh Sách Kế Nhiệm (Talent Pool)"
+          title="Nominate An Employee To The Talent Pool"
           onClose={() => setNominateModal(false)}
           size="md"
         >
           <form onSubmit={handleNominateCandidate}>
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Chọn Nhân Sự Đề Cử:</label>
+              <label className="field-label">Choose The Nominee:</label>
               <select
                 className="field-select"
                 value={nominateUserId}
                 onChange={(e) => setNominateUserId(e.target.value)}
                 required
               >
-                <option value="">— Chọn nhân viên —</option>
+                <option value="">— Choose an employee —</option>
                 {(users && users.length > 0 ? users : allUsers ? allUsers() : []).slice(0, 40).map((u) => (
                   <option key={u.userId} value={u.userId}>
                     {u.employeeCode || u.userId} — {u.fullName} ({u.position || u.role} - Level {u.level})
@@ -1190,10 +1190,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Vị Trí Quy Hoạch Kế Nhiệm (Target Succession Role):</label>
+              <label className="field-label">Target Succession Role:</label>
               <input
                 className="field-input"
-                placeholder="VD: Trưởng Bộ Phận Bánh Mì, Phó Giám Đốc Siêu Thị..."
+                placeholder="E.g. Bakery Department Head, Deputy Store General Manager..."
                 value={nominateTargetRole}
                 onChange={(e) => setNominateTargetRole(e.target.value)}
                 required
@@ -1201,7 +1201,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Người Kèm Cặp (Mentor Chỉ Định):</label>
+              <label className="field-label">Assigned Mentor:</label>
               <input
                 className="field-input"
                 value={nominateMentor}
@@ -1211,9 +1211,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setNominateModal(false)}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setNominateModal(false)}>Cancel</Button>
               <Button variant="primary" icon="ti-user-check" type="submit">
-                Xác Nhận Đưa Vào Talent Pool
+                Confirm Addition To The Talent Pool
               </Button>
             </div>
           </form>
@@ -1223,16 +1223,16 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: DRILLDOWN STORE COMPLIANCE ASSOCIATES */}
       {storeDrilldown && (
         <Modal
-          title={`Chi Tiết Tuân Thủ Đào Tạo: ${storeDrilldown.store}`}
+          title={`Training Compliance Detail: ${storeDrilldown.store}`}
           onClose={() => setStoreDrilldown(null)}
           size="lg"
         >
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, background: 'var(--paper-sunken)', padding: 12, borderRadius: 8 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Tỷ lệ tuân thủ toàn siêu thị: {storeDrilldown.overall}%</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Store-wide compliance rate: {storeDrilldown.overall}%</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                  Tổng quân số: {storeDrilldown.totalStaff} &middot; Số nhân sự quá hạn chứng chỉ: <strong>{storeDrilldown.overdueCount} người</strong>
+                  Total headcount: {storeDrilldown.totalStaff} &middot; Employees with overdue certifications: <strong>{storeDrilldown.overdueCount}</strong>
                 </div>
               </div>
               <Button
@@ -1241,41 +1241,41 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 icon="ti-bell"
                 onClick={() => {
                   setNudgeModal(storeDrilldown);
-                  setNudgeMessage(`Yêu cầu Giám đốc Siêu thị ${storeDrilldown.store} khẩn trương chỉ đạo các quầy hoàn tất đào tạo PCCC và HACCP cho ${storeDrilldown.overdueCount} nhân viên quá hạn.`);
+                  setNudgeMessage(`Requires the Store General Manager of ${storeDrilldown.store} to urgently direct the counters to complete fire safety and HACCP training for ${storeDrilldown.overdueCount} overdue employees.`);
                 }}
               >
-                Gửi Cảnh Báo Cho SGM
+                Send An Alert To The SGM
               </Button>
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-              Danh Sách Nhân Sự Có Chứng Chỉ Chưa Hoàn Thành / Quá Hạn:
+              Employees With Incomplete / Overdue Certifications:
             </div>
 
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               <table className="table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Mã NV &amp; Họ Tên</th>
-                    <th>Quầy / Bộ Phận</th>
-                    <th>Chứng Chỉ Chưa Đạt</th>
-                    <th>Hạn Chót Ban Đầu</th>
-                    <th>Tình Trạng</th>
+                    <th>Employee Code &amp; Full Name</th>
+                    <th>Counter / Sub-Department</th>
+                    <th>Certifications Not Passed</th>
+                    <th>Original Deadline</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(() => {
                     const storeUsers = (users || []).filter((u) => u.storeId === storeDrilldown.id);
                     const list = storeUsers.length > 0 ? storeUsers.slice(0, 10) : [
-                      { employeeCode: 'MMVN-1042', fullName: 'Minh Tran', departmentName: 'Quầy Bánh Tươi (PPF)', userId: 'USR-1042' },
-                      { employeeCode: 'MMVN-2041', fullName: 'Quoc Bao', departmentName: 'Sơ Chế Thịt (PPF)', userId: 'USR-2041' },
+                      { employeeCode: 'MMVN-1042', fullName: 'Minh Tran', departmentName: 'Fresh Bakery Counter (PPF)', userId: 'USR-1042' },
+                      { employeeCode: 'MMVN-2041', fullName: 'Quoc Bao', departmentName: 'Meat Preparation (PPF)', userId: 'USR-2041' },
                     ];
                     return list.map((emp, i) => {
                       const uEnr = enrollments[emp.userId] || {};
                       const incompleteCourse = (courses || []).find((c) => {
                         const enr = uEnr[c.id];
                         return enr && enr.status !== 'COMPLETED';
-                      }) || { title: 'ATTP & HACCP Quầy Tươi' };
+                      }) || { title: 'Fresh Counter Food Safety & HACCP' };
                       const enrInfo = uEnr[incompleteCourse.id] || { status: 'OVERDUE', dueDate: '2026-08-15' };
                       return (
                         <tr key={emp.userId || i}>
@@ -1283,12 +1283,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                             <strong>{emp.fullName}</strong>
                             <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace' }}>{emp.employeeCode || emp.userId}</div>
                           </td>
-                          <td style={{ fontSize: 12 }}>{emp.departmentName || emp.department || 'Vận Hành'}</td>
+                          <td style={{ fontSize: 12 }}>{emp.departmentName || emp.department || 'Operations'}</td>
                           <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--rail)' }}>{incompleteCourse.title}</td>
                           <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{enrInfo.dueDate || '2026-08-30'}</td>
                           <td>
                             <Badge tone={enrInfo.status === 'OVERDUE' ? 'rust' : 'amber'}>
-                              {enrInfo.status === 'OVERDUE' ? 'Quá Hạn' : 'Đang Học'}
+                              {enrInfo.status === 'OVERDUE' ? 'Overdue' : 'In Progress'}
                             </Badge>
                           </td>
                         </tr>
@@ -1300,7 +1300,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-              <Button variant="ghost" onClick={() => setStoreDrilldown(null)}>Đóng</Button>
+              <Button variant="ghost" onClick={() => setStoreDrilldown(null)}>Close</Button>
             </div>
           </div>
         </Modal>
@@ -1309,18 +1309,18 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
       {/* MODAL: SEND SGM COMPLIANCE WARNING */}
       {nudgeModal && (
         <Modal
-          title={`Gửi Cảnh Báo Tuân Thủ Cho Giám Đốc Siêu Thị (SGM): ${nudgeModal.store}`}
+          title={`Send A Compliance Alert To The Store General Manager (SGM): ${nudgeModal.store}`}
           onClose={() => setNudgeModal(null)}
           size="md"
         >
           <form onSubmit={handleSendSgmNudge}>
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Chi Nhánh Siêu Thị:</label>
+              <label className="field-label">Store Branch:</label>
               <input className="field-input" value={nudgeModal.store} disabled />
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Hạn Chót Khắc Phục Tuân Thủ:</label>
+              <label className="field-label">Compliance Remediation Deadline:</label>
               <input
                 type="date"
                 className="field-input"
@@ -1331,7 +1331,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Nội Dung Chỉ Đạo &amp; Cảnh Báo:</label>
+              <label className="field-label">Direction &amp; Alert Content:</label>
               <textarea
                 className="field-input"
                 rows={3}
@@ -1342,9 +1342,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setNudgeModal(null)}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setNudgeModal(null)}>Cancel</Button>
               <Button variant="primary" icon="ti-send" type="submit">
-                Xác Nhận Gửi Cảnh Báo Tới SGM
+                Confirm And Send The Alert To The SGM
               </Button>
             </div>
           </form>

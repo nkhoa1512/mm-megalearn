@@ -15,7 +15,7 @@ const STATUS_META = {
     border: '#10b981',
     icon: 'ti-check',
     labelKey: 'timeline_completed',
-    labelVi: 'Đã Hoàn Thành',
+    labelVi: 'Completed',
   },
   IN_PROGRESS: {
     color: '#d97706',
@@ -23,7 +23,7 @@ const STATUS_META = {
     border: '#f59e0b',
     icon: 'ti-player-play',
     labelKey: 'timeline_in_progress',
-    labelVi: 'Đang Học',
+    labelVi: 'In Progress',
   },
   NOT_STARTED: {
     color: 'var(--slate)',
@@ -31,7 +31,7 @@ const STATUS_META = {
     border: 'var(--line-strong)',
     icon: 'ti-book-2',
     labelKey: 'timeline_not_started',
-    labelVi: 'Chưa Bắt Đầu',
+    labelVi: 'Not Started',
   },
 };
 const LOCKED_META = {
@@ -40,12 +40,12 @@ const LOCKED_META = {
   border: 'var(--line)',
   icon: 'ti-lock',
   labelKey: 'timeline_locked',
-  labelVi: 'Đang Khóa',
+  labelVi: 'Locked',
 };
 
-// Node ảnh tròn dùng chung cho Start / Milestone / Finish. Lớp icon nền luôn
-// được vẽ trước — nếu ảnh minh họa (hotlink Unsplash) load lỗi thì <img> tự ẩn
-// và icon nền lộ ra, tránh vòng tròn trống trơn.
+// The round image node shared by Start / Milestone / Finish. The background icon layer is always
+// drawn first — if the illustration (an Unsplash hotlink) fails to load, the <img> hides itself
+// and the background icon shows through, avoiding an empty circle.
 function NodeCircle({ size = NODE_SIZE, borderColor, bg, iconColor, icon, imageSrc, imageAlt, grayscale, scale = 1 }) {
   return (
     <div
@@ -95,8 +95,8 @@ function NodeCircle({ size = NODE_SIZE, borderColor, bg, iconColor, icon, imageS
   );
 }
 
-// Đường nối ngang giữa 2 node, cao bằng NODE_SIZE và tự canh giữa theo tâm
-// node (nhờ alignItems: 'center') để không bị lệch khi nhãn bên dưới xuống dòng.
+// The horizontal connector between two nodes, as tall as NODE_SIZE and auto-centred on the
+// node (thanks to alignItems: 'center') so it stays aligned when the label below wraps.
 function HConnector({ color }) {
   return (
     <div style={{ flex: 1, minWidth: 28, height: NODE_SIZE, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -119,9 +119,9 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
   const wrapperRef = useRef(null);
   const hideTimer = useRef(null);
 
-  // Popover được portal thẳng ra document.body (position: fixed theo toạ độ
-  // viewport) vì thẻ ".card" cha có overflow: hidden — nếu render lồng bên
-  // trong khung cuộn, popover sẽ bị cắt cụt ở đúng biên dưới của thẻ card.
+  // The popover is portalled straight to document.body (position: fixed using viewport
+  // coordinates) because the parent ".card" has overflow: hidden — if it rendered
+  // inside the scroll frame, the popover would be clipped exactly at the card's bottom edge.
   useEffect(() => {
     if (!hovered) return;
     function handleDismiss() { setHovered(null); }
@@ -135,9 +135,9 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
 
   if (milestones.length === 0) {
     return (
-      <div style={{ fontSize: 12.5, color: 'var(--ink-faint)', padding: '28px 0', textAlign: 'center' }}>
+      <div style={{ fontSize: 13, color: 'var(--ink-faint)', padding: '28px 0', textAlign: 'center' }}>
         <i className="ti ti-map-pin-off" style={{ fontSize: 24, display: 'block', marginBottom: 8, color: 'var(--ink-faint)' }} />
-        {t('timeline_empty', 'Chưa có khóa học nào được cấu hình cho lộ trình này.')}
+        {t('timeline_empty', 'No courses have been configured for this roadmap yet.')}
       </div>
     );
   }
@@ -147,10 +147,10 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
   const neutralLine = locked ? 'var(--line)' : 'var(--line-strong)';
   const doneLine = locked ? 'var(--line)' : '#10b981';
 
-  // Hover vào 1 mốc: tính vị trí popover ngay bên dưới node đó theo toạ độ
-  // viewport (dùng position: fixed qua portal), canh giữa theo tâm node và
-  // kẹp trong biên màn hình để không tràn ra ngoài; nếu không đủ chỗ phía
-  // dưới thì tự lật lên phía trên node.
+  // Hovering a milestone: compute the popover position directly below that node using the
+  // viewport coordinates (position: fixed via a portal), centred on the node and
+  // clamped inside the screen edges so it never overflows; when there is not enough room
+  // below, it flips above the node instead.
   const POPOVER_EST_HEIGHT = 260;
   function showPopover(m, evt) {
     if (locked) return;
@@ -187,19 +187,19 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
       {/* Progress Summary Ribbon */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 12, color: 'var(--ink-soft)', flexWrap: 'wrap', gap: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--blue)' }}>
-          <i className="ti ti-rocket" /> {language === 'en' ? 'Starting Point' : 'Điểm Xuất Phát'}
+          <i className="ti ti-rocket" /> {language === 'en' ? 'Starting Point' : 'Starting Point'}
         </span>
         <span style={{ fontWeight: 600 }}>
-          {language === 'en' ? 'Progress: ' : 'Tiến độ: '}<strong style={{ color: allCompleted ? 'var(--sage)' : 'var(--ink)' }}>{completedCount}/{milestones.length} {language === 'en' ? 'stages' : 'chặng'}</strong>
+          {language === 'en' ? 'Progress: ' : 'Progress: '}<strong style={{ color: allCompleted ? 'var(--sage)' : 'var(--ink)' }}>{completedCount}/{milestones.length} {language === 'en' ? 'stages' : 'stages'}</strong>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: allCompleted ? 'var(--sage)' : 'var(--amber)' }}>
-          <i className="ti ti-flag-filled" /> {language === 'en' ? 'Goal' : 'Cờ Về Đích'}
+          <i className="ti ti-flag-filled" /> {language === 'en' ? 'Goal' : 'Finish Flag'}
         </span>
       </div>
 
-      {/* Horizontal Scrollable Path — thanh cuộn ngang rõ ở đáy khung,
-          nhãn luôn nằm cố định phía dưới node (không zigzag) để dễ đọc.
-          Hover vào 1 mốc hiện popover thông tin ngay tại đó thay vì phải bấm. */}
+      {/* Horizontal Scrollable Path — a clear horizontal scrollbar at the bottom of the frame,
+          with labels fixed below each node (no zigzag) for readability.
+          Hovering a milestone shows its information popover in place rather than requiring a click. */}
       <div ref={wrapperRef} style={{ position: 'relative' }}>
         <div
           className="roadmap-h-scroll"
@@ -215,7 +215,7 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
                 icon="ti-player-play-filled"
               />
               <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#2563eb', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-                {language === 'en' ? 'Start' : 'Xuất Phát'}
+                {language === 'en' ? 'Start' : 'Start'}
               </div>
             </div>
 
@@ -226,7 +226,7 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
               const meta = locked ? LOCKED_META : (STATUS_META[m.status] || STATUS_META.NOT_STARTED);
               const isHovered = hovered?.course.id === m.course.id;
               const isLastMilestone = idx === milestones.length - 1;
-              const stageText = language === 'en' ? `STAGE ${idx + 1}` : `CHẶNG ${idx + 1}`;
+              const stageText = language === 'en' ? `STAGE ${idx + 1}` : `STAGE ${idx + 1}`;
               const statusLabel = language === 'en' ? t(meta.labelKey, meta.labelVi) : meta.labelVi;
 
               return (
@@ -296,15 +296,15 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
                 icon={allCompleted ? 'ti-trophy' : 'ti-flag-filled'}
               />
               <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, fontWeight: 800, color: allCompleted ? '#059669' : '#d97706', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-                {language === 'en' ? 'Finish' : 'Về Đích'}
+                {language === 'en' ? 'Finish' : 'Finish'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* HOVER POPOVER — thông tin nhanh về mốc đang hover, neo ngay dưới
-            node đó. Portal ra document.body vì thẻ ".card" cha có overflow:
-            hidden nên popover lồng bên trong sẽ bị cắt cụt ở biên card. */}
+        {/* HOVER POPOVER — quick information about the hovered milestone, anchored just below
+            that node. Portalled to document.body because the parent ".card" has overflow:
+            hidden, so a popover nested inside would be clipped at the card edge. */}
         {hovered && popoverPos && createPortal(
           <div
             onMouseEnter={cancelHide}
@@ -341,7 +341,7 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 }}>
-                  <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>
                     {hovered.course.code}
                   </span>
                   <JobLevelBadge level={hovered.course.targetLevel} compact />
@@ -358,18 +358,18 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
                 icon={hovered.completed ? 'ti-check' : 'ti-clock'}
               >
                 {hovered.completed
-                  ? (language === 'en' ? 'Completed' : 'Đã hoàn thành')
+                  ? (language === 'en' ? 'Completed' : 'Completed')
                   : hovered.status === 'IN_PROGRESS'
-                  ? (language === 'en' ? 'In Progress' : 'Đang học')
-                  : (language === 'en' ? 'Not Started' : 'Chưa bắt đầu')}
+                  ? (language === 'en' ? 'In Progress' : 'In progress')
+                  : (language === 'en' ? 'Not Started' : 'Not started')}
               </Badge>
             </div>
 
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 8 }}>
-              {hovered.course.domain || hovered.course.category} &middot; {language === 'en' ? 'Duration: ' : 'Thời lượng: '}{hovered.course.estimatedHours || '2.5h'} &middot; {language === 'en' ? 'Pass: ' : 'Điểm đạt: '}{hovered.course.passingScore || 80}%
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 8 }}>
+              {hovered.course.domain || hovered.course.category} &middot; {language === 'en' ? 'Duration: ' : 'Duration: '}{hovered.course.estimatedHours || '2.5h'} &middot; {language === 'en' ? 'Pass: ' : 'Pass score: '}{hovered.course.passingScore || 80}%
             </div>
 
-            <p style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 8, marginBottom: 10, lineHeight: 1.5, ...clampStyle }}>
+            <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 8, marginBottom: 10, lineHeight: 1.5, ...clampStyle }}>
               {hovered.course.description}
             </p>
 
@@ -381,8 +381,8 @@ export default function VisualRoadmapTimeline({ milestones = [], locked = false,
               onClick={() => onOpenCourse && onOpenCourse(hovered.course)}
             >
               {hovered.completed
-                ? (language === 'en' ? 'Review Lesson' : 'Xem Lại Bài Giảng')
-                : (language === 'en' ? 'Start Learning' : 'Vào Học Ngay')}
+                ? (language === 'en' ? 'Review Lesson' : 'Review The Lesson')
+                : (language === 'en' ? 'Start Learning' : 'Start Learning')}
             </Button>
           </div>,
           document.body

@@ -1,5 +1,5 @@
 // ===========================================================================
-// MM Mega Market Vietnam (MMVN) - Customized User Groups (Nhóm Tùy Chỉnh)
+// MM Mega Market Vietnam (MMVN) - Customized User Groups
 // Enables User Admin to create and manage custom cohorts for batch assignments
 // across Curriculum, Courses, Assessments, and Targeted Learning Tracks.
 // ===========================================================================
@@ -10,7 +10,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'ALL_EXPAT',
     title: 'ALL_EXPAT',
     name: 'ALL_EXPAT',
-    description: 'Toàn bộ chuyên gia & nhân sự nước ngoài đang công tác tại MM Mega Market Vietnam.',
+    description: 'All foreign experts and expatriate staff working at MM Mega Market Vietnam.',
     type: 'MANUAL',
     category: 'SPECIAL_COHORT',
     criteria: {
@@ -33,7 +33,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'ALL_VIETNAMESE_EMPLOYEES_ONLY',
     title: 'ALL_VIETNAMESE_EMPLOYEES_ONLY',
     name: 'ALL_VIETNAMESE_EMPLOYEES_ONLY',
-    description: 'Toàn bộ cán bộ công nhân viên quốc tịch Việt Nam trên toàn hệ thống 42 siêu thị & văn phòng.',
+    description: 'All Vietnamese-national employees across the full network of 42 stores and offices.',
     type: 'DYNAMIC',
     category: 'DEMOGRAPHIC',
     criteria: {
@@ -56,7 +56,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'ALL_VIETNAMESE_EMPLOYEES_ONLY_SUSTAINABILITY',
     title: 'ALL_VIETNAMESE_EMPLOYEES_ONLY_SUSTAINABILITY',
     name: 'ALL_VIETNAMESE_EMPLOYEES_ONLY_SUSTAINABILITY',
-    description: 'Nhóm nhân sự tham gia chương trình Phát triển Bền vững, Năng lượng Xanh & ESG 2026.',
+    description: 'Staff enrolled in the Sustainability, Green Energy & ESG 2026 program.',
     type: 'DYNAMIC',
     category: 'STRATEGIC_INITIATIVE',
     criteria: {
@@ -77,9 +77,9 @@ export const DEFAULT_CUSTOM_GROUPS = [
   {
     id: 'grp-new-joiners',
     code: 'NEW_COMERS_PROGRAM',
-    title: 'Chương trình dành cho nhân viên mới',
-    name: 'Chương trình dành cho nhân viên mới',
-    description: 'Tân tuyển dụng dưới 6 tháng — áp dụng lộ trình Onboarding Hội Nhập Văn Hóa & An Toàn MMVN.',
+    title: 'Program for new employees',
+    name: 'Program for new employees',
+    description: 'New hires under 6 months — enrolled in the MMVN Culture & Safety Onboarding roadmap.',
     type: 'DYNAMIC',
     category: 'ONBOARDING',
     criteria: {
@@ -102,7 +102,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'HEAD_OF_DEPARTMENT',
     title: 'Head of Department',
     name: 'Head of Department & Section Managers',
-    description: 'Trưởng các Phòng ban Head Office và Trưởng Quầy / Trưởng Ngành Hàng Siêu Thị (Level 3 - 4).',
+    description: 'Head Office department heads and store counter/category managers (Level 3 - 4).',
     type: 'DYNAMIC',
     category: 'LEADERSHIP',
     criteria: {
@@ -125,7 +125,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'DC_GROUP',
     title: 'DC Group',
     name: 'DC & Supply Chain Logistics Ops Group',
-    description: 'Khối Trung tâm Phân phối (DC Binh Duong, DC Bac Ninh), Kho Vận & Vận hành Chuỗi cung ứng.',
+    description: 'Distribution Center division (DC Binh Duong, DC Bac Ninh), warehousing & supply chain operations.',
     type: 'DYNAMIC',
     category: 'OPERATIONS',
     criteria: {
@@ -148,7 +148,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'SGM_PORTFOLIO_LEAD',
     title: 'Store General Managers & Deputy SGMs',
     name: 'Store General Managers & Deputy SGMs',
-    description: 'Ban Giám Đốc Siêu Thị & Phó Giám Đốc Điều Hành Trung Tâm (Level 2).',
+    description: 'Store General Managers & Deputy Center Operations Directors (Level 2).',
     type: 'DYNAMIC',
     category: 'LEADERSHIP',
     criteria: {
@@ -171,7 +171,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'FRESH_BAKERY_FASTTRACK',
     title: 'Fresh Food & Bakery Fast-Track Talents',
     name: 'Fresh Food & Bakery Fast-Track Talents',
-    description: 'Nhóm nhân tài kế cận ngành hàng Thực phẩm Tươi sống & Bánh mì (HACCP Gold Standard).',
+    description: 'Successor talent pool for the Fresh Food & Bakery categories (HACCP Gold Standard).',
     type: 'DYNAMIC',
     category: 'TALENT_POOL',
     criteria: {
@@ -194,7 +194,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'FRONTLINE_CASHIERS_CS',
     title: 'Frontline Cashiers & Customer Service Team',
     name: 'Frontline Cashiers & Customer Service Team',
-    description: 'Đội ngũ Thu ngân, Tiếp tân dịch vụ khách hàng & Giao vận O2O tuyến đầu.',
+    description: 'Front-line cashier, customer service reception & O2O delivery teams.',
     type: 'DYNAMIC',
     category: 'CUSTOMER_SERVICE',
     criteria: {
@@ -217,7 +217,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'HSE_EMERGENCY_TEAM',
     title: 'HSE & Fire Safety Emergency Response Team',
     name: 'HSE & Fire Safety Emergency Response Team',
-    description: 'Đội phản ứng nhanh An toàn Vệ sinh Lao động, PCCC và Cứu nạn Cứu hộ tại cơ sở.',
+    description: 'On-site rapid response team for occupational safety, fire prevention and rescue.',
     type: 'MANUAL',
     category: 'SAFETY_COMPLIANCE',
     criteria: {
@@ -240,7 +240,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'BOOK_CLUB_PROMOTERS',
     title: 'Book Club Members',
     name: 'Book Club Members & Promoters',
-    description: 'Câu lạc bộ Văn hóa đọc MMVN — Nhóm đại sứ chia sẻ tri thức và văn hóa tự học suốt đời.',
+    description: 'MMVN Reading Culture Club — knowledge-sharing ambassadors promoting lifelong self-learning.',
     type: 'MANUAL',
     category: 'CULTURE_ENGAGEMENT',
     criteria: {
@@ -263,7 +263,7 @@ export const DEFAULT_CUSTOM_GROUPS = [
     code: 'QA_FOOD_SAFETY_PE',
     title: 'PE TEST',
     name: 'PE TEST & Quality Assurance Inspectors',
-    description: 'Đội ngũ chuyên viên kiểm định chất lượng, test mẫu phòng lab và giám sát ATTP chuỗi cung ứng.',
+    description: 'Quality inspection specialists covering lab sample testing and food safety monitoring across the supply chain.',
     type: 'FILE_IMPORT',
     category: 'QUALITY_ASSURANCE',
     criteria: {
@@ -284,24 +284,24 @@ export const DEFAULT_CUSTOM_GROUPS = [
 ];
 
 /**
- * Phân giải danh sách người dùng thuộc một Custom Group.
- * Hỗ trợ cả 3 hình thức:
- * 1. DYNAMIC (lọc theo BU, DIV, DEPT, SUB-DEPT, Level, Role)
- * 2. MANUAL (chọn theo danh sách memberUserIds)
- * 3. FILE_IMPORT (import danh sách mã nhân sự / user IDs)
+ * Resolves the list of users belonging to a Custom Group.
+ * Supports all 3 forms:
+ * 1. DYNAMIC (filter by BU, DIV, DEPT, SUB-DEPT, Level, Role)
+ * 2. MANUAL (chosen via the memberUserIds list)
+ * 3. FILE_IMPORT (imported list of employee codes / user IDs)
  */
 export function resolveGroupMembers(group, allUsersList = []) {
   if (!group || !Array.isArray(allUsersList)) return [];
 
   const explicitIds = new Set(group.memberUserIds || []);
 
-  // Nếu là MANUAL hoặc FILE_IMPORT, trả về các user khớp explicit ID
+  // For MANUAL or FILE_IMPORT, return users matching the explicit IDs
   if (group.type === 'MANUAL' || group.type === 'FILE_IMPORT') {
     if (explicitIds.size === 0) return [];
     return allUsersList.filter((u) => explicitIds.has(u.userId) || explicitIds.has(u.employeeCode));
   }
 
-  // Nếu là DYNAMIC, kết hợp tiêu chí lọc + explicit IDs
+  // For DYNAMIC, combine the filter criteria with the explicit IDs
   const { criteria = {} } = group;
   const {
     businessUnitId,
@@ -312,15 +312,15 @@ export function resolveGroupMembers(group, allUsersList = []) {
     role,
   } = criteria;
 
-  // Lọc theo các tiêu chí đã định nghĩa
+  // Filter by the defined criteria
   return allUsersList.filter((u) => {
     // Check explicit include
     if (explicitIds.has(u.userId) || explicitIds.has(u.employeeCode)) return true;
 
-    // Nếu không có tiêu chí nào được chọn mà không có explicit ID, không match
+    // If no criteria are selected and there is no explicit ID, there is no match
     const hasAnyCriteria = Boolean(divisionId || departmentId || subDepartmentId || level || role);
     if (!hasAnyCriteria && explicitIds.size === 0) {
-      // Nhóm đặc biệt ALL_VIETNAMESE_EMPLOYEES_ONLY (mọi nhân sự trừ expat)
+      // Special group ALL_VIETNAMESE_EMPLOYEES_ONLY (all staff except expats)
       if (group.id === 'grp-vn-all' || group.code === 'ALL_VIETNAMESE_EMPLOYEES_ONLY') {
         const expatGroup = DEFAULT_CUSTOM_GROUPS.find((g) => g.id === 'grp-expat');
         const expatSet = new Set(expatGroup?.memberUserIds || []);
@@ -353,7 +353,7 @@ export function resolveGroupMembers(group, allUsersList = []) {
 }
 
 /**
- * Kiểm tra xem một người dùng `user` có thuộc `group` hay không.
+ * Checks whether a given `user` belongs to `group`.
  */
 export function isUserInCustomGroup(user, group, allUsersList = []) {
   if (!user || !group) return false;

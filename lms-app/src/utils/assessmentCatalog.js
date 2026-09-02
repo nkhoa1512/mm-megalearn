@@ -3,11 +3,11 @@ import { normalizeRole, hasCapability } from '../data/roles';
 import { checkCourseAccessRule, ACCESS_STATE } from '../data/levelSystem';
 
 export const ASSESSMENT_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không Gộp Nhóm' },
-  { id: 'CATEGORY', label: 'Lĩnh Vực (Category)' },
-  { id: 'TYPE', label: 'Loại Hình (Quiz / Assignment / Survey)' },
-  { id: 'DELIVERY_FORMAT', label: 'Hình Thức (Độc Lập / Gắn Khóa Học)' },
-  { id: 'STATUS', label: 'Trạng Thái (Published / Draft)' },
+  { id: 'NONE', label: 'No Grouping' },
+  { id: 'CATEGORY', label: 'Category' },
+  { id: 'TYPE', label: 'Type (Quiz / Assignment / Survey)' },
+  { id: 'DELIVERY_FORMAT', label: 'Form (Standalone / Course-linked)' },
+  { id: 'STATUS', label: 'Status (Published / Draft)' },
 ];
 
 function stripDiacritics(str) {
@@ -39,13 +39,13 @@ export function generateAssessmentCode(title = '', existingCodes = []) {
 }
 
 /**
- * Kiểm tra xem một Assessment Độc Lập có phân bổ cho người dùng hay không.
+ * Checks whether a standalone assessment is allocated to a user.
  */
 export function isAssessmentAssignedToUser(assessment, user) {
   if (!assessment || !user) return { isAssigned: false, isPublic: false, assignment: null };
   const assignments = assessment.assignments || [];
   if (assignments.length === 0) {
-    // Nếu không có assignment nào được set: mặc định coi như unassigned trừ khi là Public
+    // If no assignment is set: treat it as unassigned unless it is Public
     return { isAssigned: false, isPublic: false, assignment: null };
   }
 
@@ -121,17 +121,17 @@ export function isAssessmentAssignedToUser(assessment, user) {
 }
 
 /**
- * Thẩm định quyền truy cập & làm bài của User đối với một Assessment.
+ * Verifies a user's right to access and take an assessment.
  */
 export function getAssessmentAccess(assessment, user, courses = []) {
   const role = normalizeRole(user?.role);
   const isSysOrUserAdmin = role === 'sysadmin' || role === 'useradmin';
 
   if (!assessment) {
-    return { canTake: false, isLocked: true, reason: 'Assessment không tồn tại' };
+    return { canTake: false, isLocked: true, reason: 'The assessment does not exist' };
   }
 
-  // SysAdmin & UserAdmin luôn có quyền xem và thi thử
+  // SysAdmin & UserAdmin always have the right to view and trial it
   if (isSysOrUserAdmin) {
     return {
       canTake: true,
@@ -139,23 +139,23 @@ export function getAssessmentAccess(assessment, user, courses = []) {
       isPublic: true,
       isAssigned: true,
       isAdminPreview: true,
-      reason: 'Quản trị viên toàn quyền truy cập & thử nghiệm',
+      reason: 'Administrators have full access & trial rights',
     };
   }
 
-  // Trainer: Có quyền nếu là người tạo hoặc assessment thuộc khóa do Trainer phụ trách
+  // Trainer: allowed if they are the author or the assessment belongs to a course they lead
   if (role === 'trainer') {
     if (assessment.createdBy === user?.userId) {
       return {
         canTake: true,
         isLocked: false,
         isAssigned: true,
-        reason: 'Bạn là Giảng viên / Tác giả phụ trách assessment này',
+        reason: 'You are the trainer / author responsible for this assessment',
       };
     }
   }
 
-  // 1. Assessment Độc lập (Standalone)
+  // 1. Standalone Assessment
   if (assessment.deliveryFormat === DELIVERY_FORMATS.STANDALONE) {
     const { isAssigned, isPublic, assignment } = isAssessmentAssignedToUser(assessment, user);
     if (isPublic || isAssigned) {
@@ -165,7 +165,7 @@ export function getAssessmentAccess(assessment, user, courses = []) {
         isPublic,
         isAssigned,
         assignment,
-        reason: isPublic ? 'Bài kiểm tra công khai cho mọi nhân viên' : 'Bạn đã được phân bổ bài kiểm tra này',
+        reason: isPublic ? 'A test open to every employee' : 'This test has been allocated to you',
       };
     }
     return {
@@ -173,11 +173,11 @@ export function getAssessmentAccess(assessment, user, courses = []) {
       isLocked: true,
       isPublic: false,
       isAssigned: false,
-      reason: 'Assessment không dành cho bạn (Chưa được phân bổ theo Đơn vị / Cấp bậc / Cá nhân)',
+      reason: 'This assessment is not for you (it has not been allocated by unit / level / individual)',
     };
   }
 
-  // 2. Assessment Theo Khóa Học (Course-linked)
+  // 2. Course-linked Assessment
   if (assessment.deliveryFormat === DELIVERY_FORMATS.COURSE_LINKED) {
     const linkedCourse = (courses || []).find((c) => c.id === assessment.courseId);
     if (!linkedCourse) {
@@ -185,7 +185,7 @@ export function getAssessmentAccess(assessment, user, courses = []) {
         canTake: false,
         isLocked: true,
         linkedCourse: null,
-        reason: 'Khóa học liên kết chưa sẵn sàng hoặc đã lưu trữ',
+        reason: 'The linked course is not ready or has been archived',
       };
     }
 
@@ -198,7 +198,7 @@ export function getAssessmentAccess(assessment, user, courses = []) {
         isLocked: false,
         linkedCourse,
         isOptional,
-        reason: isOptional ? 'Khóa học tự chọn mở cho bạn tham gia' : 'Bạn đủ điều kiện tham gia khóa học và làm bài kiểm tra',
+        reason: isOptional ? 'An optional course open for you to join' : 'You are eligible to take the course and sit the test',
       };
     }
 
@@ -207,15 +207,15 @@ export function getAssessmentAccess(assessment, user, courses = []) {
       isLocked: true,
       linkedCourse,
       isOptional: false,
-      reason: `Khóa học/Assessment này không thuộc phạm vi đào tạo của bạn (${accessRule.reason || 'Bị khóa theo cấp bậc / phân bổ'})`,
+      reason: `This course/assessment is outside your training scope (${accessRule.reason || 'Locked by job level / allocation'})`,
     };
   }
 
-  return { canTake: false, isLocked: true, reason: 'Chưa xác định quyền truy cập' };
+  return { canTake: false, isLocked: true, reason: 'Access rights undetermined' };
 }
 
 /**
- * Filter danh sách Assessment
+ * Filter the assessment list
  */
 export function filterAssessments(assessments = [], {
   search = '',
@@ -259,30 +259,30 @@ export function filterAssessments(assessments = [], {
 }
 
 /**
- * Group By danh sách Assessment
+ * Group the assessment list
  */
 export function buildAssessmentGroups(assessments = [], groupBy = 'NONE', questionBankMap = {}) {
   if (groupBy === 'NONE') {
-    return [{ id: 'ALL', title: 'Tất Cả Bài Kiểm Tra & Khảo Sát', items: assessments }];
+    return [{ id: 'ALL', title: 'All Tests & Surveys', items: assessments }];
   }
 
   const groupsMap = new Map();
 
   assessments.forEach((asm) => {
-    let key = 'Khác';
-    let label = 'Khác';
+    let key = 'Other';
+    let label = 'Other';
 
     if (groupBy === 'CATEGORY') {
       key = asm.category || 'Chung';
       label = asm.category || 'Chung';
     } else if (groupBy === 'TYPE') {
       key = asm.type || 'QUIZ';
-      label = asm.type === ASSESSMENT_TYPES.QUIZ ? '📝 Trắc Nghiệm / Quiz'
-        : asm.type === ASSESSMENT_TYPES.ASSIGNMENT ? '📂 Bài Tập Tự Luận / Assignment'
-        : '📊 Khảo Sát / Survey';
+      label = asm.type === ASSESSMENT_TYPES.QUIZ ? '📝 Quiz'
+        : asm.type === ASSESSMENT_TYPES.ASSIGNMENT ? '📂 Essay Assignment'
+        : '📊 Survey';
     } else if (groupBy === 'DELIVERY_FORMAT') {
       key = asm.deliveryFormat || DELIVERY_FORMATS.STANDALONE;
-      label = asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? '🎯 Assessment Độc Lập' : '🔗 Gắn Khóa Học (Course-linked)';
+      label = asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE ? '🎯 Standalone Assessment' : '🔗 Course-linked';
     } else if (groupBy === 'STATUS') {
       key = asm.status || 'PUBLISHED';
       label = asm.status === 'PUBLISHED' ? '🟢 Published' : '⚪ Draft';

@@ -30,10 +30,10 @@ function curriculaUsing(curricula, templateId) {
 }
 
 const CERT_GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không gộp nhóm' },
-  { id: 'CATEGORY', label: 'Theo Lĩnh Vực' },
-  { id: 'VALIDITY', label: 'Theo Thời Hạn Hiệu Lực' },
-  { id: 'SIGNER', label: 'Theo Người Ký Duyệt' },
+  { id: 'NONE', label: 'No grouping' },
+  { id: 'CATEGORY', label: 'By Area' },
+  { id: 'VALIDITY', label: 'By Validity Period' },
+  { id: 'SIGNER', label: 'By Approving Signatory' },
 ];
 
 export default function AdminCertifications() {
@@ -134,14 +134,14 @@ export default function AdminCertifications() {
 
     const map = {};
     filteredTemplates.forEach((t) => {
-      let groupKey = 'Khác';
+      let groupKey = 'Other';
       if (groupBy === 'CATEGORY') {
-        groupKey = t.category || 'Chưa phân loại';
+        groupKey = t.category || 'Uncategorized';
       } else if (groupBy === 'VALIDITY') {
         const months = t.validityDefaultMonths ?? 12;
-        groupKey = months === 0 ? 'Vĩnh Viễn (Lifetime)' : `Hiệu lực ${months} Tháng`;
+        groupKey = months === 0 ? 'Lifetime' : `Valid for ${months} months`;
       } else if (groupBy === 'SIGNER') {
-        groupKey = t.signerName ? `Người ký: ${t.signerName}` : 'Chưa chỉ định người ký';
+        groupKey = t.signerName ? `Signed by: ${t.signerName}` : 'No signatory assigned';
       }
 
       if (!map[groupKey]) {
@@ -180,12 +180,12 @@ export default function AdminCertifications() {
     const usedByCurricula = curriculaUsing(curricula, t.id);
     if (usedByCourses.length + usedByCurricula.length > 0) {
       window.alert(
-        `Không thể xóa mẫu "${t.name}" vì đang được dùng ở ${usedByCourses.length} khóa học & ${usedByCurricula.length} giáo trình. ` +
-        `Hãy gỡ mẫu này khỏi các khóa học/giáo trình đó trước.`
+        `Cannot delete the template "${t.name}" because it is used by ${usedByCourses.length} courses & ${usedByCurricula.length} curricula. ` +
+        `Detach this template from those courses/curricula first.`
       );
       return;
     }
-    if (window.confirm(`Xóa mẫu chứng chỉ "${t.name}"? Không thể hoàn tác.`)) {
+    if (window.confirm(`Delete the certificate template "${t.name}"? This cannot be undone.`)) {
       deleteCertificateTemplate(t.id);
     }
   }
@@ -193,15 +193,15 @@ export default function AdminCertifications() {
   function openPreview(t) {
     setPreviewTemplate({
       id: `CERT-MMVN-PREVIEW-${t.id.replace('CERTTPL-', '')}`,
-      courseName: 'Khóa Đào Tạo Nghiệp Vụ Chuyên Môn MM Mega Market',
+      courseName: 'MM Mega Market Professional Operations Training Course',
       courseCode: 'MMVN-SAMPLE-001',
       issueDate: new Date().toISOString().slice(0, 10),
       validUntil: t.validityDefaultMonths === 0 ? null : new Date(new Date().setFullYear(new Date().getFullYear() + (t.validityDefaultMonths / 12 || 1))).toISOString().slice(0, 10),
       isLifetime: t.validityDefaultMonths === 0,
       score: 95,
       recipientName: currentUser?.fullName || 'Nguyễn Văn Học Viên',
-      recipientPosition: currentUser?.position || 'Chuyên Viên / Giám Sát',
-      department: 'MM Mega Market An Phú / Ban Vận Hành & Khối Tươi Sống',
+      recipientPosition: currentUser?.position || 'Executive / Supervisor',
+      department: 'MM Mega Market An Phu / Operations & Fresh Food Division',
       template: t,
     });
   }
@@ -221,21 +221,21 @@ export default function AdminCertifications() {
           justifyContent: 'space-between',
           border: '1px solid var(--line)',
           borderRadius: 10,
-          background: '#fff',
+          background: 'var(--paper-raised)',
           transition: 'box-shadow 0.2s',
         }}
       >
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-            <div style={{ fontWeight: 800, fontSize: 14.5, color: '#0F172A', lineHeight: 1.3 }}>
-              {t.name || 'Mẫu chưa đặt tên'}
+            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', lineHeight: 1.3 }}>
+              {t.name || 'Untitled template'}
             </div>
             <Badge tone={isLifetime ? 'purple' : 'blue'} size="sm">
-              {isLifetime ? 'Vĩnh Viễn' : `${t.validityDefaultMonths || 12}T`}
+              {isLifetime ? 'Lifetime' : `${t.validityDefaultMonths || 12}T`}
             </Badge>
           </div>
 
-          <div style={{ fontSize: 11.5, color: 'var(--blue, #005BAA)', fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--blue, #005BAA)', fontWeight: 700, marginBottom: 6 }}>
             <i className="ti ti-folder" style={{ marginRight: 4 }} />
             {t.category}
           </div>
@@ -244,9 +244,9 @@ export default function AdminCertifications() {
             {t.description}
           </div>
 
-          <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 11.5, marginBottom: 10 }}>
-            <div><strong>Người ký:</strong> {t.signerName || 'Bruno Jousselin'} ({t.signerTitle || 'Managing Director'})</div>
-            <div><strong>Đơn vị cấp:</strong> {t.issuerOrg || 'MM Mega Market Vietnam'}</div>
+          <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 12, marginBottom: 10 }}>
+            <div><strong>Signed by:</strong> {t.signerName || 'Bruno Jousselin'} ({t.signerTitle || 'Managing Director'})</div>
+            <div><strong>Issuing organization:</strong> {t.issuerOrg || 'MM Mega Market Vietnam'}</div>
           </div>
 
           {t.attachedFile && (
@@ -255,18 +255,18 @@ export default function AdminCertifications() {
             </div>
           )}
 
-          <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ color: '#16A34A', fontWeight: 700 }}>{usedByCourses.length} khóa học</span>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ color: '#16A34A', fontWeight: 700 }}>{usedByCourses.length} courses</span>
             <span>&middot;</span>
-            <span>{usedByCurricula.length} giáo trình</span>
+            <span>{usedByCurricula.length} curriculum</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 6 }}>
-          <Button size="sm" variant="primary" icon="ti-eye" onClick={() => openPreview(t)}>Xem Mẫu</Button>
-          <Button size="sm" variant="outline" icon="ti-list-details" onClick={() => setViewingTemplateId(t.id)}>Chi Tiết</Button>
-          <Button size="sm" icon="ti-pencil" onClick={() => setEditingTemplate(t)}>Sửa</Button>
-          <Button size="sm" variant="danger" icon="ti-trash" onClick={() => handleDelete(t)}>Xóa</Button>
+          <Button size="sm" variant="primary" icon="ti-eye" onClick={() => openPreview(t)}>View Template</Button>
+          <Button size="sm" variant="outline" icon="ti-list-details" onClick={() => setViewingTemplateId(t.id)}>Details</Button>
+          <Button size="sm" icon="ti-pencil" onClick={() => setEditingTemplate(t)}>Edit</Button>
+          <Button size="sm" variant="danger" icon="ti-trash" onClick={() => handleDelete(t)}>Delete</Button>
         </div>
       </div>
     );
@@ -274,17 +274,17 @@ export default function AdminCertifications() {
 
   function renderTable(templatesList) {
     return (
-      <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', background: '#fff' }}>
+      <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--paper-raised)' }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Tên Mẫu Chứng Chỉ</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Lĩnh Vực (Category)</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Thời Hạn Hiệu Lực</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Người Ký &amp; Chức Danh</th>
-              <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>Đang Áp Dụng</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>File Mẫu</th>
-              <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>Thao Tác</th>
+            <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Certificate Template Name</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Category</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Validity Period</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Signatory &amp; Job Title</th>
+              <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>In Use</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Template File</th>
+              <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -296,41 +296,41 @@ export default function AdminCertifications() {
               return (
                 <tr key={t.id} style={{ borderBottom: '1px solid var(--line)' }}>
                   <td style={{ padding: '12px 14px' }}>
-                    <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0F172A' }}>{t.name}</div>
-                    {t.nameEn && <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{t.nameEn}</div>}
-                    <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'monospace', marginTop: 2 }}>{t.id}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{t.name}</div>
+                    {t.nameEn && <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{t.nameEn}</div>}
+                    <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'monospace', marginTop: 2 }}>{t.id}</div>
                   </td>
                   <td style={{ padding: '12px 14px' }}>
                     <Badge tone="blue" size="sm">{t.category}</Badge>
                   </td>
                   <td style={{ padding: '12px 14px' }}>
                     <Badge tone={isLifetime ? 'purple' : 'slate'} size="sm">
-                      {isLifetime ? 'Vĩnh Viễn (Lifetime)' : `${t.validityDefaultMonths || 12} Tháng`}
+                      {isLifetime ? 'Lifetime' : `${t.validityDefaultMonths || 12} Months`}
                     </Badge>
                   </td>
                   <td style={{ padding: '12px 14px' }}>
-                    <div style={{ fontWeight: 700, fontSize: 12.5, color: '#0F172A' }}>{t.signerName || '—'}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{t.signerName || '—'}</div>
                     <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{t.signerTitle || '—'}</div>
                   </td>
                   <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#16A34A' }}>{usedByCourses.length} khóa học</div>
-                    <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{usedByCurricula.length} giáo trình</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#16A34A' }}>{usedByCourses.length} courses</div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{usedByCurricula.length} curriculum</div>
                   </td>
-                  <td style={{ padding: '12px 14px', fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  <td style={{ padding: '12px 14px', fontSize: 12, color: 'var(--ink-soft)' }}>
                     {t.attachedFile ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <i className="ti ti-paperclip" /> {t.attachedFile.name}
                       </span>
                     ) : (
-                      <span style={{ color: 'var(--ink-faint)' }}>Không có</span>
+                      <span style={{ color: 'var(--ink-faint)' }}>None</span>
                     )}
                   </td>
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: 4 }}>
-                      <Button size="sm" variant="primary" icon="ti-eye" onClick={() => openPreview(t)} title="Xem Bản In Mẫu">Xem Mẫu</Button>
-                      <Button size="sm" variant="outline" icon="ti-list-details" onClick={() => setViewingTemplateId(t.id)} title="Chi Tiết" />
-                      <Button size="sm" icon="ti-pencil" onClick={() => setEditingTemplate(t)} title="Sửa" />
-                      <Button size="sm" variant="danger" icon="ti-trash" onClick={() => handleDelete(t)} title="Xóa" />
+                      <Button size="sm" variant="primary" icon="ti-eye" onClick={() => openPreview(t)} title="View The Printed Template">View Template</Button>
+                      <Button size="sm" variant="outline" icon="ti-list-details" onClick={() => setViewingTemplateId(t.id)} title="Details" />
+                      <Button size="sm" icon="ti-pencil" onClick={() => setEditingTemplate(t)} title="Edit" />
+                      <Button size="sm" variant="danger" icon="ti-trash" onClick={() => handleDelete(t)} title="Delete" />
                     </div>
                   </td>
                 </tr>
@@ -347,55 +347,55 @@ export default function AdminCertifications() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>{language === 'en' ? 'Manage Certification & Credentials' : 'Quản Lý Chứng Chỉ & Mẫu Tái Cấp'}</h1>
-            <Badge tone="sage" icon="ti-certificate">{certificateTemplates.length} {language === 'en' ? 'Templates' : 'Mẫu Chuẩn'}</Badge>
+            <h1>{language === 'en' ? 'Manage Certification & Credentials' : 'Certificate & Recertification Template Management'}</h1>
+            <Badge tone="sage" icon="ti-certificate">{certificateTemplates.length} {language === 'en' ? 'Templates' : 'Templates'}</Badge>
           </div>
           <p>
             {language === 'en'
               ? 'Manage the enterprise digital certificate template library for MM Mega Market. Templates configure signers, accreditation seals, default validity periods, and recertification cycles.'
-              : 'Quản lý thư viện mẫu chứng chỉ số doanh nghiệp MM Mega Market. Cấu hình người ký duyệt, con dấu chính thức, thời hạn hiệu lực (có hạn / vĩnh viễn) và chu kỳ tái cấp tự động.'}
+              : 'Manage the MM Mega Market digital certificate template library. Configure approving signatories, the official seal, validity (fixed term / lifetime) and the automatic recertification cycle.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="primary" icon="ti-plus" onClick={() => setEditingTemplate(emptyCertificateTemplateDraft(companyCategories[0]))}>
-            Tạo Mẫu Chứng Chỉ Mới
+            Create A New Certificate Template
           </Button>
         </div>
       </div>
 
       {/* METRICS ROW */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Số Mẫu Chứng Chỉ</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Certificate Templates</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--blue, #005BAA)', marginTop: 2 }}>{certificateTemplates.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Phủ khắp {companyCategories.length} lĩnh vực đào tạo</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Covering {companyCategories.length} training areas</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Khóa Học Đang Cấp Chứng Chỉ</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Courses Issuing This Certificate</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginTop: 2 }}>{totalCoursesUsing}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Tích hợp mã QR và ngày cấp tự động</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Includes a QR code and an automatic issue date</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Mẫu Có Hạn / Tái Cấp Định Kỳ</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Fixed-Term / Recurring Recertification Template</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#D97706', marginTop: 2 }}>
             {certificateTemplates.filter((t) => t.validityDefaultMonths !== 0).length}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Chu kỳ 6 - 36 tháng (HACCP, PCCC, An toàn)</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>6 - 36 month cycle (HACCP, Fire Safety, Occupational Safety)</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Mẫu Chứng Chỉ Vĩnh Viễn</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Lifetime Certificate Template</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#7C3AED', marginTop: 2 }}>
             {certificateTemplates.filter((t) => t.validityDefaultMonths === 0).length}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Kỹ năng mềm, công nghệ, hội nhập</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Soft skills, technology, onboarding</div>
         </div>
       </div>
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
-      <div className="card card-pad" style={{ marginBottom: 18, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ marginBottom: 18, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* ROW 1: SEARCH, GROUP BY, FILTER TOGGLE, VIEW MODE */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           {/* Search Input */}
@@ -405,7 +405,7 @@ export default function AdminCertifications() {
               type="text"
               className="field-input"
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder={language === 'en' ? 'Search certificate by name, signer, code...' : 'Tìm kiếm mẫu theo tên, người ký, mã...'}
+              placeholder={language === 'en' ? 'Search certificate by name, signer, code...' : 'Search templates by name, signatory, code...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -424,14 +424,14 @@ export default function AdminCertifications() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value)}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: groupBy !== 'NONE' ? 700 : 500,
                   color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
@@ -452,9 +452,9 @@ export default function AdminCertifications() {
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeFiltersCount}
                 </span>
               )}
@@ -468,20 +468,20 @@ export default function AdminCertifications() {
                 onClick={() => setViewMode('GRID')}
                 className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Lưới (Grid View)"
+                title="Grid View"
               >
                 <i className="ti ti-layout-grid" />
-                <span>Lưới</span>
+                <span>Grid</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('TABLE')}
                 className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Bảng (List View)"
+                title="List View"
               >
                 <i className="ti ti-list" />
-                <span>Bảng</span>
+                <span>Table</span>
               </button>
             </div>
           </div>
@@ -491,112 +491,112 @@ export default function AdminCertifications() {
         {showFilters && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-              {/* Filter 1: Lĩnh Vực */}
+              {/* Filter 1: Area */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Lĩnh Vực (Category)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Category
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: selectedCategory !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: selectedCategory !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: selectedCategory !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: selectedCategory !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: selectedCategory !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: selectedCategory !== 'ALL' ? 700 : 500,
                   }}
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
-                  <option value="ALL">Tất cả lĩnh vực ({companyCategories.length})</option>
+                  <option value="ALL">All areas ({companyCategories.length})</option>
                   {companyCategories.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Filter 2: Thời Hạn Hiệu Lực */}
+              {/* Filter 2: Validity Period */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Thời Hạn Hiệu Lực
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Validity Period
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: selectedValidity !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: selectedValidity !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: selectedValidity !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: selectedValidity !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: selectedValidity !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: selectedValidity !== 'ALL' ? 700 : 500,
                   }}
                   value={selectedValidity}
                   onChange={(e) => setSelectedValidity(e.target.value)}
                 >
-                  <option value="ALL">Tất cả thời hạn</option>
-                  <option value="LIFETIME">Vĩnh Viễn (Lifetime)</option>
-                  <option value="6">6 Tháng</option>
-                  <option value="12">12 Tháng (1 Năm)</option>
-                  <option value="24">24 Tháng (2 Năm)</option>
-                  <option value="36">36 Tháng (3 Năm)</option>
+                  <option value="ALL">All validity periods</option>
+                  <option value="LIFETIME">Lifetime</option>
+                  <option value="6">6 Months</option>
+                  <option value="12">12 Months (1 Year)</option>
+                  <option value="24">24 Months (2 Years)</option>
+                  <option value="36">36 Months (3 Years)</option>
                 </select>
               </div>
 
-              {/* Filter 3: Người Ký Duyệt */}
+              {/* Filter 3: Approving Signatory */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Người Ký Duyệt
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Approving Signatory
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: selectedSigner !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: selectedSigner !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: selectedSigner !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: selectedSigner !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: selectedSigner !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: selectedSigner !== 'ALL' ? 700 : 500,
                   }}
                   value={selectedSigner}
                   onChange={(e) => setSelectedSigner(e.target.value)}
                 >
-                  <option value="ALL">Tất cả người ký ({allSigners.length})</option>
+                  <option value="ALL">All signatories ({allSigners.length})</option>
                   {allSigners.map((signer) => (
                     <option key={signer} value={signer}>{signer}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Filter 4: Tình Trạng Áp Dụng */}
+              {/* Filter 4: Usage Status */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Tình Trạng Áp Dụng
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Usage Status
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: selectedUsage !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: selectedUsage !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: selectedUsage !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: selectedUsage !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: selectedUsage !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: selectedUsage !== 'ALL' ? 700 : 500,
                   }}
                   value={selectedUsage}
                   onChange={(e) => setSelectedUsage(e.target.value)}
                 >
-                  <option value="ALL">Tất cả tình trạng</option>
-                  <option value="USED">Đang dùng cho khóa học/giáo trình</option>
-                  <option value="UNUSED">Chưa được gắn</option>
+                  <option value="ALL">All statuses</option>
+                  <option value="USED">In use by a course/curriculum</option>
+                  <option value="UNUSED">Not attached</option>
                 </select>
               </div>
             </div>
@@ -607,46 +607,46 @@ export default function AdminCertifications() {
         {(search || activeFiltersCount > 0 || groupBy !== 'NONE') && (
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
 
               {search && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Từ khóa: <strong>"{search}"</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Search term: <strong>"{search}"</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                 </span>
               )}
 
               {selectedCategory !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Lĩnh vực: <strong>{selectedCategory}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Area: <strong>{selectedCategory}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSelectedCategory('ALL')} />
                 </span>
               )}
 
               {selectedValidity !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Hiệu lực: <strong>{selectedValidity === 'LIFETIME' ? 'Vĩnh Viễn' : `${selectedValidity} Tháng`}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Validity: <strong>{selectedValidity === 'LIFETIME' ? 'Lifetime' : `${selectedValidity} Months`}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSelectedValidity('ALL')} />
                 </span>
               )}
 
               {selectedSigner !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Người ký: <strong>{selectedSigner}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Signed by: <strong>{selectedSigner}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSelectedSigner('ALL')} />
                 </span>
               )}
 
               {selectedUsage !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Trạng thái: <strong>{selectedUsage === 'USED' ? 'Đang dùng' : 'Chưa gắn'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Status: <strong>{selectedUsage === 'USED' ? 'In use' : 'Not attached'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSelectedUsage('ALL')} />
                 </span>
               )}
 
               {groupBy !== 'NONE' && (
-                <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Gộp nhóm: <strong>{CERT_GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
+                <span className="badge" style={{ background: 'var(--paper-sunken)', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Group by: <strong>{CERT_GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('NONE')} />
                 </span>
               )}
@@ -656,12 +656,12 @@ export default function AdminCertifications() {
                 onClick={resetAllFilters}
                 style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
               >
-                Xóa tất cả bộ lọc
+                Clear all filters
               </button>
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Tìm thấy <strong>{filteredTemplates.length}</strong> / {certificateTemplates.length} mẫu
+              Found <strong>{filteredTemplates.length}</strong> / {certificateTemplates.length} templates
             </div>
           </div>
         )}
@@ -669,13 +669,13 @@ export default function AdminCertifications() {
 
       {/* RENDER CONTENT (GRID / TABLE with or without GROUP BY) */}
       {filteredTemplates.length === 0 ? (
-        <div className="empty-state" style={{ background: '#fff', padding: 40, borderRadius: 10, border: '1px solid var(--line)' }}>
+        <div className="empty-state" style={{ background: 'var(--paper-raised)', padding: 40, borderRadius: 10, border: '1px solid var(--line)' }}>
           <i className="ti ti-certificate" aria-hidden="true" style={{ fontSize: 36, color: 'var(--ink-faint)' }} />
           <p style={{ marginTop: 10, color: 'var(--ink-soft)' }}>
-            Chưa tìm thấy mẫu chứng chỉ nào phù hợp với bộ lọc hiện tại.
+            No certificate template matches the current filters.
           </p>
           <div style={{ marginTop: 14 }}>
-            <Button size="sm" variant="outline" onClick={resetAllFilters}>Xóa Bộ Lọc</Button>
+            <Button size="sm" variant="outline" onClick={resetAllFilters}>Clear Filters</Button>
           </div>
         </div>
       ) : groupedData ? (
@@ -684,8 +684,8 @@ export default function AdminCertifications() {
           {groupedData.map(({ title, items }) => (
             <div key={title}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0F172A' }}>{title}</h3>
-                <Badge tone="slate" size="sm">{items.length} mẫu</Badge>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>{title}</h3>
+                <Badge tone="slate" size="sm">{items.length} templates</Badge>
               </div>
 
               {viewMode === 'GRID' ? (
@@ -749,47 +749,47 @@ function CertificateTemplateDetailModal({ template, coursesUsingIt, curriculaUsi
     <Modal
       isOpen
       title={template.name}
-      subtitle={`${template.category} — ${coursesUsingIt.length} khóa học · ${curriculaUsingIt.length} giáo trình`}
+      subtitle={`${template.category} — ${coursesUsingIt.length} courses · ${curriculaUsingIt.length} curricula`}
       onClose={onClose}
       size="lg"
       footer={(
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
           <Button size="sm" variant="primary" icon="ti-eye" onClick={() => onPreview(template)}>
-            Xem Trước Bản In Chứng Chỉ
+            Preview The Printed Certificate
           </Button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(template)}>Sửa Mẫu</Button>
-            <Button variant="ghost" onClick={onClose}>Đóng</Button>
+            <Button size="sm" variant="outline" icon="ti-pencil" onClick={() => onEdit(template)}>Edit Template</Button>
+            <Button variant="ghost" onClick={onClose}>Close</Button>
           </div>
         </div>
       )}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5 }}>{template.description || 'Chưa có mô tả.'}</div>
+        <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5 }}>{template.description || 'No description.'}</div>
 
-        <div className="grid grid-2" style={{ gap: 10, background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, fontSize: 12.5 }}>
-          <div><strong>Người ký duyệt:</strong> {template.signerName || '—'}</div>
-          <div><strong>Chức danh:</strong> {template.signerTitle || '—'}</div>
-          <div><strong>Đơn vị cấp:</strong> {template.issuerOrg || '—'}</div>
-          <div><strong>Thời hạn mặc định:</strong> {template.validityDefaultMonths === 0 ? 'Vĩnh viễn (Lifetime)' : `${template.validityDefaultMonths || 12} Tháng`}</div>
+        <div className="grid grid-2" style={{ gap: 10, background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, fontSize: 13 }}>
+          <div><strong>Approving signatory:</strong> {template.signerName || '—'}</div>
+          <div><strong>Job title:</strong> {template.signerTitle || '—'}</div>
+          <div><strong>Issuing organization:</strong> {template.issuerOrg || '—'}</div>
+          <div><strong>Default validity:</strong> {template.validityDefaultMonths === 0 ? 'Lifetime' : `${template.validityDefaultMonths || 12} Months`}</div>
           <div>
-            <strong>File đính kèm:</strong>{' '}
-            {template.attachedFile ? `${template.attachedFile.name} (${template.attachedFile.sizeLabel || 'n/a'})` : 'Không có'}
+            <strong>Attached file:</strong>{' '}
+            {template.attachedFile ? `${template.attachedFile.name} (${template.attachedFile.sizeLabel || 'n/a'})` : 'None'}
           </div>
         </div>
 
         <div>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-            <i className="ti ti-stack-2" style={{ marginRight: 6, color: '#005BAA' }} />
-            Đang Áp Dụng Cho Khóa Học ({coursesUsingIt.length})
+            <i className="ti ti-stack-2" style={{ marginRight: 6, color: 'var(--blue)' }} />
+            In Use Cho Course ({coursesUsingIt.length})
           </div>
           {coursesUsingIt.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Chưa gắn cho khóa học nào.</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Not attached to any course yet.</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               {coursesUsingIt.map((c) => (
                 <div key={c.id} style={{ fontSize: 12, padding: '6px 10px', background: 'var(--paper-sunken)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#005BAA', fontWeight: 700 }}>{c.code}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 700 }}>{c.code}</span>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title}</span>
                 </div>
               ))}
@@ -799,15 +799,15 @@ function CertificateTemplateDetailModal({ template, coursesUsingIt, curriculaUsi
 
         <div>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-            <i className="ti ti-books" style={{ marginRight: 6, color: '#005BAA' }} />
-            Đang Áp Dụng Cho Giáo Trình ({curriculaUsingIt.length})
+            <i className="ti ti-books" style={{ marginRight: 6, color: 'var(--blue)' }} />
+            In Use Cho Curriculum ({curriculaUsingIt.length})
           </div>
           {curriculaUsingIt.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Chưa gắn cho giáo trình nào.</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Not attached to any curriculum yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {curriculaUsingIt.map((cur) => (
-                <div key={cur.id} style={{ fontSize: 12.5, padding: '6px 10px', background: 'var(--paper-sunken)', borderRadius: 6 }}>
+                <div key={cur.id} style={{ fontSize: 13, padding: '6px 10px', background: 'var(--paper-sunken)', borderRadius: 6 }}>
                   {cur.title}
                 </div>
               ))}
@@ -834,19 +834,19 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
   return (
     <Modal
       isOpen
-      title={draft.name ? 'Chỉnh Sửa Mẫu Chứng Chỉ' : 'Tạo Mẫu Chứng Chỉ Mới'}
-      subtitle="Thiết lập các thông tin chuẩn hóa để tự động in lên chứng chỉ số của học viên khi hoàn thành khóa học."
+      title={draft.name ? 'Edit Certificate Template' : 'Create A New Certificate Template'}
+      subtitle="Define the standardized details printed automatically onto a learner's digital certificate on course completion."
       onClose={onCancel}
       size="lg"
       footer={(
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
           <Button size="sm" variant="outline" icon="ti-eye" disabled={!form.name.trim()} onClick={() => onPreview && onPreview(form)}>
-            Xem Trước Mẫu
+            Preview Template
           </Button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
             <Button variant="primary" icon="ti-check" disabled={!form.name.trim()} onClick={() => onSave(form)}>
-              Lưu Mẫu Chứng Chỉ
+              Save Certificate Template
             </Button>
           </div>
         </div>
@@ -854,20 +854,20 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
     >
       <div className="grid grid-2" style={{ gap: 14, marginBottom: 12 }}>
         <div>
-          <label className="field-label">Tên Mẫu Chứng Chỉ (Tiếng Việt) <span style={{ color: 'var(--rust)' }}>*</span></label>
+          <label className="field-label">Certificate Template Name (Vietnamese) <span style={{ color: 'var(--rust)' }}>*</span></label>
           <input
             className="field-input"
-            placeholder="VD: Chứng Chỉ Vệ Sinh An Toàn Thực Phẩm Chuẩn HACCP"
+            placeholder="E.g. HACCP Food Hygiene & Safety Certificate"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
         </div>
         <div>
-          <label className="field-label">Tên Tiếng Anh (English Title)</label>
+          <label className="field-label">English Title</label>
           <input
             className="field-input"
-            placeholder="VD: MMVN Food Safety & HACCP Standard Certificate"
+            placeholder="e.g. MMVN Food Safety & HACCP Standard Certificate"
             value={form.nameEn || ''}
             onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
           />
@@ -876,7 +876,7 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
 
       <div className="grid grid-2" style={{ gap: 14, marginBottom: 12 }}>
         <div>
-          <label className="field-label">Lĩnh Vực Đào Tạo (Category)</label>
+          <label className="field-label">Training Area (Category)</label>
           <select
             className="field-select"
             value={form.category}
@@ -888,28 +888,28 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
           </select>
         </div>
         <div>
-          <label className="field-label">Thời Hạn Hiệu Lực Mặc Định</label>
+          <label className="field-label">Default Validity Period</label>
           <select
             className="field-select"
             value={form.validityDefaultMonths ?? 12}
             onChange={(e) => setForm({ ...form, validityDefaultMonths: parseInt(e.target.value, 10) })}
           >
-            <option value={6}>6 Tháng (Đợt cao điểm/vệ sinh định kỳ)</option>
-            <option value={12}>12 Tháng / 1 Năm (Chuẩn ATVSTP, PCCC, An toàn)</option>
-            <option value={24}>24 Tháng / 2 Năm (Nghiệp vụ Vận hành & Quản lý)</option>
-            <option value={36}>36 Tháng / 3 Năm (Kỹ năng Lãnh đạo Cấp Cao)</option>
-            <option value={0}>Vĩnh viễn (Lifetime - Không hết hạn)</option>
+            <option value={6}>6 Months (peak season / recurring hygiene)</option>
+            <option value={12}>12 Months / 1 Year (Food Safety, Fire Safety, Occupational Safety)</option>
+            <option value={24}>24 Months / 2 Years (Operations & Management)</option>
+            <option value={36}>36 Months / 3 Years (Senior Leadership Skills)</option>
+            <option value={0}>Lifetime (never expires)</option>
           </select>
         </div>
       </div>
 
       <div style={{ marginBottom: 12 }}>
-        <label className="field-label">Mô tả &amp; Mục Đích Áp Dụng</label>
+        <label className="field-label">Description &amp; Intended Use</label>
         <textarea
           className="field-input"
           rows={2}
           style={{ resize: 'vertical' }}
-          placeholder="Mục đích & phạm vi sử dụng của mẫu chứng chỉ này..."
+          placeholder="The purpose & intended use of this certificate template..."
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
@@ -917,19 +917,19 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
 
       <div className="grid grid-2" style={{ gap: 14, marginBottom: 12 }}>
         <div>
-          <label className="field-label">Người Ký Duyệt</label>
+          <label className="field-label">Approving Signatory</label>
           <input
             className="field-input"
-            placeholder="VD: Thái Minh Dũng"
+            placeholder="E.g. Thái Minh Dũng"
             value={form.signerName}
             onChange={(e) => setForm({ ...form, signerName: e.target.value })}
           />
         </div>
         <div>
-          <label className="field-label">Chức Danh Người Ký</label>
+          <label className="field-label">Signatory Job Title</label>
           <input
             className="field-input"
-            placeholder="VD: Head of Learning & Org Development"
+            placeholder="e.g. Head of Learning & Org Development"
             value={form.signerTitle}
             onChange={(e) => setForm({ ...form, signerTitle: e.target.value })}
           />
@@ -937,7 +937,7 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
       </div>
 
       <div style={{ marginBottom: 12 }}>
-        <label className="field-label">Đơn Vị Cấp Chứng Chỉ</label>
+        <label className="field-label">Issuing Organization</label>
         <input
           className="field-input"
           value={form.issuerOrg}
@@ -946,16 +946,16 @@ export function CertificateTemplateEditorModal({ draft, companyCategories, onCan
       </div>
 
       <div>
-        <label className="field-label">File Định Dạng Chứng Chỉ Đính Kèm (tùy chọn PDF/Word/Hình ảnh)</label>
+        <label className="field-label">Attached Certificate Layout File (optional PDF/Word/image)</label>
         <input type="file" className="field-input" onChange={handleFileChange} />
         {form.attachedFile && (
-          <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ marginTop: 6, fontSize: 12, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <i className="ti ti-paperclip" /> {form.attachedFile.name} ({form.attachedFile.sizeLabel})
             <button
               type="button"
               onClick={() => setForm((f) => ({ ...f, attachedFile: null }))}
               style={{ background: 'transparent', border: 'none', color: 'var(--rust)', cursor: 'pointer' }}
-              title="Gỡ file"
+              title="Remove file"
             >
               <i className="ti ti-x" />
             </button>

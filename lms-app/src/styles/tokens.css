@@ -1,4 +1,4 @@
-@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css');
+/* Icon + web fonts are loaded once from index.html (see <head>). */
 
 :root {
   /* ==========================================================================
@@ -89,11 +89,38 @@
   --slate-soft: #F1F5F9;
   --slate-soft-text: #334155;
 
-  /* Typography */
-  --font-brand: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-  --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* --- Typography ---------------------------------------------------------
+     Two families only: Plus Jakarta Sans for display/headings, Inter for body.
+     Both are loaded in index.html; nothing here may name a font that is not. */
+  --font-brand: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* One type scale for the whole product. Every size in the UI is a step on
+     this ramp — no half-pixel or one-off sizes, so pages read at the same
+     visual scale instead of one page looking zoomed relative to the next. */
+  --text-2xs: 10px;   /* micro labels, table chips */
+  --text-xs: 11px;    /* badges, captions */
+  --text-sm: 12px;    /* secondary text, dense table cells */
+  --text-base: 13px;  /* body copy */
+  --text-md: 14px;    /* emphasised body, inputs, buttons */
+  --text-lg: 16px;    /* card titles */
+  --text-xl: 18px;    /* section titles */
+  --text-h3: 14px;
+  --text-h2: 18px;
+  --text-h1: 22px;    /* the single page-title size, on every route */
+  --text-display: 26px; /* KPI numerals */
+
+  /* --- Page frame ---------------------------------------------------------
+     Header, content and footer all use these, so the whole shell lines up on
+     one grid and every route is framed identically. */
+  --frame-max: 1600px;
+  --frame-gutter: 32px;
+  --frame-pad-y: 28px;
+  /* Full-bleed bars (header, breadcrumb, footer) keep their background and border
+     edge to edge while their contents line up with the page frame. */
+  --frame-pad-inline: max(var(--frame-gutter), calc((100% - var(--frame-max)) / 2 + var(--frame-gutter)));
 
   /* Layout */
   --radius-xs: 4px;
@@ -195,7 +222,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--text-md);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -208,6 +235,12 @@ h1, h2, h3, h4 {
   letter-spacing: -0.015em;
 }
 
-h1 { font-size: 22px; font-weight: 800; line-height: 1.25; }
-h2 { font-size: 17px; font-weight: 700; }
-h3 { font-size: 14px; font-weight: 700; }
+h1 { font-size: var(--text-h1); font-weight: 800; line-height: 1.25; }
+h2 { font-size: var(--text-h2); font-weight: 700; line-height: 1.3; }
+h3 { font-size: var(--text-h3); font-weight: 700; line-height: 1.4; }
+
+/* Narrower viewports tighten the frame rather than changing the type scale,
+   so text never appears to shift size between pages or breakpoints. */
+@media (max-width: 1200px) { :root { --frame-gutter: 24px; } }
+@media (max-width: 900px)  { :root { --frame-gutter: 18px; --frame-pad-y: 20px; } }
+@media (max-width: 600px)  { :root { --frame-gutter: 14px; --frame-pad-y: 16px; } }

@@ -271,7 +271,7 @@ export default function AdminDashboard() {
                 <td>
                   <strong>{cp.avgScore != null ? `${cp.avgScore}%` : '—'}</strong>
                 </td>
-                <td style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
+                <td style={{ fontSize: 12, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
                   <i className="ti ti-bulb" style={{ color: 'var(--amber)', marginRight: 4 }} />
                   {cp.frictionNote}
                 </td>
@@ -294,7 +294,7 @@ export default function AdminDashboard() {
                 alignItems: 'center',
                 padding: '10px 14px',
                 borderRadius: 8,
-                background: act.alert ? '#FEF2F2' : 'var(--paper-sunken)',
+                background: act.alert ? 'var(--rust-soft)' : 'var(--paper-sunken)',
                 border: act.alert ? '1px solid #FECACA' : '1px solid var(--line)',
                 flexWrap: 'wrap',
                 gap: 10,
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                     width: 34,
                     height: 34,
                     borderRadius: 8,
-                    background: act.type === 'SAP_SYNC' ? '#EEF2FF' : act.alert ? '#FEE2E2' : '#ECFDF5',
+                    background: act.type === 'SAP_SYNC' ? '#EEF2FF' : act.alert ? 'var(--rust-soft)' : 'var(--sage-soft)',
                     color: act.type === 'SAP_SYNC' ? '#4F46E5' : act.alert ? '#DC2626' : '#059669',
                     display: 'flex',
                     alignItems: 'center',
@@ -317,15 +317,15 @@ export default function AdminDashboard() {
                   <i className={act.type === 'SAP_SYNC' ? 'ti ti-cloud-computing' : act.alert ? 'ti-alert-triangle' : act.type === 'QR_CHECKIN' ? 'ti-qrcode' : 'ti-certificate'} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: act.alert ? '#991B1B' : 'var(--ink)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: act.alert ? 'var(--rust-soft-text)' : 'var(--ink)' }}>
                     {act.user ? `${act.user} (${act.code} · ${act.role})` : act.source}
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
                     {act.title || act.details}
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
                 {act.time}
               </div>
             </div>

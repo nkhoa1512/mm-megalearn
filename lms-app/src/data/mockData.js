@@ -38,8 +38,8 @@ import { withHrProfile } from './hrProfile';
 export { UNIVERSAL_COMPLIANCE_COURSE_IDS } from './generated100Data';
 export { COURSE_IMAGE_PRESETS, getCourseImage } from './courseImages';
 
-// Thang 7 cấp bậc & mô hình 6 role được tái xuất khẩu ở đây để các màn hình chỉ
-// cần import từ một nơi duy nhất.
+// The 7-level scale & 6-role model are re-exported here so screens only need
+// only need to import from a single place.
 export {
   LEVEL_DEFINITIONS,
   LEVEL_ORDER,
@@ -81,14 +81,14 @@ export {
 export const demoUsers = generated100Users;
 
 // ---------------------------------------------------------------------------
-// 6 Demo Persona chuẩn cho 6 Role phân cấp (thấp -> cao)
+// The 6 standard demo personas for the 6 ranked roles (low -> high)
 //   1. learner   Minh Tran          USR-1042  Level 7
 //   2. manager   David Tran         USR-0245  Level 4
 //   3. trainer   Nguyen Van Hung    USR-9003  Level 3
 //   4. hrbp      Le Thi Mai         USR-9004  Level 2
 //   5. useradmin Pham Thanh Thao    USR-9002  Level 2
 //   6. sysadmin  Tran Quoc Bao      USR-9001  Level 1
-// Cả 6 đều là Learner: role nào cũng có cổng học tập cá nhân.
+// All 6 are Learners: every role has a personal learning portal.
 // ---------------------------------------------------------------------------
 
 export const managerUser = demoUsers[1]; // David Tran (Store Department Manager - Level 4)
@@ -104,19 +104,19 @@ export const sysAdminUser = withHrProfile({
   level: '1',
   levelTitle: levelTitle('1'),
   branch: 'SUPPORTING',
-  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  branchName: 'Supporting Functions (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-mis', divisionCode: 'MIS', divisionName: 'MIS',
   departmentId: 'dept-mis-dept', departmentCode: 'MIS', departmentName: 'MIS',
   subDepartmentId: 'sub-scm-lw', subDepartmentCode: 'SUB-SCM-LW', subDepartmentName: 'Logistics & Warehouse',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: null, storeName: 'Head Office (An Phu, Thu Duc City)',
   managerId: null,
   status: 'ACTIVE',
   yearsOfService: 6.4,
   avatar: 'TB',
   badgeTone: 'rust',
-  description: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
+  description: 'Full authority over infrastructure, APIs, ISO 27001 audit logs and every role including User Admin.',
 });
 
 export const userAdminUser = withHrProfile({
@@ -129,19 +129,19 @@ export const userAdminUser = withHrProfile({
   level: '2',
   levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
-  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  branchName: 'Supporting Functions (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
   departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
   subDepartmentId: 'sub-hrd-hrbpho', subDepartmentCode: 'SUB-HRBP-HO', subDepartmentName: 'HR - HRBP HO',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: null, storeName: 'Head Office (An Phu, Thu Duc City)',
   managerId: 'USR-9001',
   status: 'ACTIVE',
   yearsOfService: 5.1,
   avatar: 'PT',
   badgeTone: 'blue',
-  description: 'Quản trị hồ sơ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp tại các chi nhánh.',
+  description: 'Managing employee records, allocating courses and assigning trainers to classes at each branch.',
 });
 
 export const trainerHungUser = withHrProfile({
@@ -154,19 +154,19 @@ export const trainerHungUser = withHrProfile({
   level: '3',
   levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
-  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  branchName: 'Supporting Functions (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
   departmentId: 'dept-hrd-lod', departmentCode: 'HR_LOD', departmentName: 'HR - Learning & Organizational Development',
   subDepartmentId: 'sub-hrd-sfnl', subDepartmentCode: 'SUB-SF-NL', subDepartmentName: 'SF National Learning',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: null, storeName: 'Head Office (An Phu, Thu Duc City)',
   managerId: 'USR-9004',
   status: 'ACTIVE',
   yearsOfService: 8.2,
   avatar: 'NH',
   badgeTone: 'sage',
-  description: 'Tạo khóa học thực hành, đứng lớp tại xưởng siêu thị và chiếu Live QR cho học viên điểm danh.',
+  description: 'Creating practical courses, teaching in the store workshop and displaying the Live QR for learner check-in.',
 });
 
 export const trainerThanhUser = withHrProfile({
@@ -175,23 +175,23 @@ export const trainerThanhUser = withHrProfile({
   fullName: 'Vu Duc Thanh (HSE Trainer)',
   email: 'thanh.vu@mmvietnam.com',
   role: 'trainer',
-  position: 'Giảng Viên An Toàn & HSE Section Manager',
+  position: 'Safety Trainer & HSE Section Manager',
   level: '3',
   levelTitle: levelTitle('3'),
   branch: 'SUPPORTING',
-  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  branchName: 'Supporting Functions (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-lpqa', divisionCode: 'LP-QA', divisionName: 'LP-QA',
   departmentId: 'dept-lpqa-lp', departmentCode: 'LP', departmentName: 'Loss Prevention',
   subDepartmentId: 'sub-df-chh-1010', subDepartmentCode: 'SUB-CHH', subDepartmentName: 'Cosmetics & Household & HBA',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: null, storeName: 'Head Office (An Phu, Thu Duc City)',
   managerId: 'USR-9004',
   status: 'ACTIVE',
   yearsOfService: 9.0,
   avatar: 'VT',
   badgeTone: 'sage',
-  description: 'Đứng lớp diễn tập PCCC, sơ cấp cứu và an toàn xe nâng tại các sân thực hành chi nhánh.',
+  description: 'Leading fire drills, first aid and forklift safety sessions on the branch practice grounds.',
 });
 
 export const trainerQuangUser = withHrProfile({
@@ -200,23 +200,23 @@ export const trainerQuangUser = withHrProfile({
   fullName: 'Tran Minh Quang (SGM Mentor)',
   email: 'quang.tran@mmvietnam.com',
   role: 'trainer',
-  position: 'Store General Manager kiêm Giảng Viên Quản Trị',
+  position: 'Store General Manager & Management Trainer',
   level: '2',
   levelTitle: levelTitle('2'),
   branch: 'OPERATIONS',
-  branchName: 'Khối Vận hành Siêu thị (Operations)',
+  branchName: 'Store Operations',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-opt', divisionCode: 'Operations', divisionName: 'Operations',
   departmentId: 'dept-opt-sm', departmentCode: 'OPS_SM', departmentName: 'Operations - Store Management',
   subDepartmentId: 'sub-opt-sm-south', subDepartmentCode: 'SUB-OPS-SOU', subDepartmentName: 'Regional Operations (South)',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: 'store-an-phu', storeName: 'MM Mega Market An Phú (Flagship)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: 'store-an-phu', storeName: 'MM Mega Market An Phu (Flagship)',
   managerId: 'USR-9001',
   status: 'ACTIVE',
   yearsOfService: 11.5,
   avatar: 'TQ',
   badgeTone: 'sage',
-  description: 'Mentor lộ trình kế nhiệm SGM và giảng dạy Quản trị P&L siêu thị (khóa Level 2).',
+  description: 'Mentors the SGM succession roadmap and teaches Store P&L Management (a Level 2 course).',
 });
 
 export const trainerUser = trainerHungUser;
@@ -232,27 +232,27 @@ export const hrbpUser = withHrProfile({
   level: '2',
   levelTitle: levelTitle('2'),
   branch: 'SUPPORTING',
-  branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+  branchName: 'Supporting Functions (Head Office)',
   businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
   divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
   departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
   subDepartmentId: 'sub-hrd-hrbpho', subDepartmentCode: 'SUB-HRBP-HO', subDepartmentName: 'HR - HRBP HO',
-  areaId: 'area-south', areaName: 'Khu vực Miền Nam',
-  storeId: null, storeName: 'Head Office (An Phú, TP. Thủ Đức)',
+  areaId: 'area-south', areaName: 'Southern Region',
+  storeId: null, storeName: 'Head Office (An Phu, Thu Duc City)',
   managerId: 'USR-9002',
   status: 'ACTIVE',
   yearsOfService: 7.3,
   avatar: 'LM',
   badgeTone: 'blue',
-  description: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ đào tạo theo vùng.',
+  description: 'Skill gap analysis, 70-20-10 succession planning and regional training compliance monitoring.',
 });
 
-// Sarah Nguyen (USR-0001) là L&D Director trong thang mới: role `trainer`, Level 2.
-// Giữ tên export `adminUser` để các màn hình cũ tiếp tục biên dịch được.
+// Sarah Nguyen (USR-0001) is the L&D Director on the new scale: role `trainer`, Level 2.
+// Keeps the `adminUser` export name so the older screens still compile.
 export const lndDirectorUser = demoUsers[0];
 export const adminUser = lndDirectorUser;
 
-// 6 persona chính, xếp theo rank role từ thấp đến cao.
+// The 6 core personas, ordered by role rank from low to high.
 export const rolePersonas = [
   { role: 'learner', user: currentUser },
   { role: 'manager', user: managerUser },
@@ -281,10 +281,10 @@ export function allUsers() {
   return [...demoUsers, ...extras.filter((u) => !seen.has(u.userId))];
 }
 
-// Danh sách nhân sự mà `actor` được phép quản lý theo ma trận xếp tầng
-// (Cascading Hierarchy): mọi role có rank thấp hơn role của actor.
-// Manager chỉ thấy người trong phòng ban / tuyến báo cáo của mình; các role
-// từ Trainer trở lên nhìn xuyên toàn tổ chức.
+// The list of employees `actor` is allowed to manage under the cascading matrix
+// (Cascading Hierarchy): every role ranked below the actor's role.
+// A Manager only sees people in their own department / reporting line; the other roles
+// from Trainer upward can see across the whole organization.
 export function getManagedUsers(actor) {
   if (!actor) return [];
   const actorRole = normalizeRole(actor.role);
@@ -305,17 +305,17 @@ export function getManagedUsers(actor) {
   return pool;
 }
 
-// Nguồn duy nhất cho "ai được phép đứng lớp": mọi nhân sự có capability
+// The single source for "who may teach": every employee with the capability
 // canBeAssignedToClass (Trainer/L&D, HRBP, User Admin, System Admin) — thay
-// vì hồ sơ tĩnh trainersDirectory (chỉ 4 người, ID không khớp tài khoản hệ
-// thống thật) từng dùng cho việc chọn Giảng viên khi tạo khóa Trực tiếp.
+// because the static trainersDirectory profile (only 4 people, with IDs that do not match system
+// accounts) was previously used to pick a trainer when creating an in-person course.
 export function teachingEligibleUsers() {
   return allUsers().filter((u) => hasCapability(normalizeRole(u.role), 'canBeAssignedToClass'));
 }
 
-// Chỉ số hiệu suất giảng dạy (CSAT, số buổi đã dạy, tổng học viên) cho 6 nhân
-// sự "gương mặt" hay xuất hiện trong demo — có sẵn ở classroomSessions/khóa
-// học mẫu nên số liệu dựng sẵn khớp với những gì hiển thị trên các trang khác.
+// Teaching performance metrics (CSAT, sessions taught, total learners) for the 6
+// staff who are the recurring "faces" of the demo — already present in classroomSessions/the
+// sample course, so the pre-built figures match what other pages display.
 const CURATED_TRAINER_STATS = {
   [trainerHungUser.userId]: { rating: 4.9, totalClassesTaught: 48, totalLearners: 1240 },
   [trainerThanhUser.userId]: { rating: 4.92, totalClassesTaught: 52, totalLearners: 1850 },
@@ -325,9 +325,9 @@ const CURATED_TRAINER_STATS = {
   [sysAdminUser.userId]: { rating: 4.83, totalClassesTaught: 6, totalLearners: 180 },
 };
 
-/** Chỉ số CSAT/giảng dạy cho bất kỳ ai đủ điều kiện đứng lớp. Nhân sự chưa có
- *  số liệu dựng sẵn (giảng viên phát sinh trong 100 nhân sự mẫu) được gán một
- *  con số hợp lý, ổn định theo userId thay vì random mỗi lần render. */
+/** CSAT/teaching metrics for anyone eligible to lead a class. Staff with no
+ *  pre-built figures (trainers arising from the 100 sample employees) get a
+ *  plausible number derived deterministically from userId rather than a fresh random each render. */
 export function trainerStatsFor(userId) {
   if (CURATED_TRAINER_STATS[userId]) return CURATED_TRAINER_STATS[userId];
   let hash = 0;
@@ -574,19 +574,19 @@ export function getTeamMembersForManager(manager) {
 export const courses = generated100Courses;
 
 // ---------------------------------------------------------------------------
-// Virtual Classroom (Online E-Learning con sub-type): lớp học trực tuyến trực
-// tiếp qua Zoom/Teams, khác với E-Learning tự học (Module/Bài học/Quiz). Chỉ
-// User Admin/System Admin được tạo loại này (canAuthorOnlineCourses); Trainer
-// vẫn chỉ đứng lớp Offline ILT như hiện tại. Điểm danh tái dùng nguyên cơ chế
-// Attendance đã có ở TrainerHub — không có Quiz kết thúc khóa (hoàn thành =
-// đã tham gia buổi học, theo yêu cầu người dùng).
+// Virtual Classroom (a sub-type of Online E-Learning): a live online class
+// live over Zoom/Teams, unlike self-paced E-Learning (Module/Lesson/Quiz). Only
+// Only User Admin/System Admin may create this type (canAuthorOnlineCourses); a Trainer
+// still only teaches offline ILT as today. Attendance reuses exactly the same mechanism.
+// Attendance already exists in TrainerHub — there is no closing quiz (completion =
+// attended the session, as the user requested).
 const virtualClassCourseImage = 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=600&q=80';
 
 courses.push(
   {
     id: 'CRS-VC-001',
     code: 'VC-LEAD-001',
-    title: 'Webinar Trực Tuyến: Kỹ Năng Điều Hành Cuộc Họp & Quản Trị Thay Đổi Số Hóa Cửa Hàng',
+    title: 'Online Webinar: Meeting Facilitation Skills & Managing Store Digital Transformation',
     category: 'Leadership & Management',
     domain: 'Virtual Live Classroom',
     thumbnail: virtualClassCourseImage,
@@ -607,13 +607,13 @@ courses.push(
     trainerName: trainerHungUser.fullName,
     venue: null, venueId: null, scheduleDate: null, scheduleTime: null,
     maxCapacity: 60,
-    description: 'Lớp học trực tuyến trực tiếp (live) qua Microsoft Teams: kỹ năng điều hành cuộc họp hiệu quả và dẫn dắt đội ngũ cửa hàng qua giai đoạn chuyển đổi số. Hoàn thành = tham gia đầy đủ buổi học, không có bài kiểm tra cuối khóa.',
+    description: 'Live online class over Microsoft Teams: how to run effective meetings and lead a store team through digital transformation. Completion = full attendance, with no end-of-course test.',
     prerequisites: [],
     configuration: {
       assessmentEnabled: false, maxAttempts: 0, passingScorePercent: 0, certificateEnabled: true,
       questionBankSize: 0, questionsPerAttempt: 0, version: 'v1.0',
       lastReviewedBy: 'Nguyễn Văn Hùng (Master Trainer)', lastReviewedDate: '2026-08-10',
-      changelog: [{ version: 'v1.0', date: '2026-08-10', reviewer: 'Nguyễn Văn Hùng (Master Trainer)', note: 'Khởi tạo lớp học trực tuyến Virtual Class đầu tiên.' }],
+      changelog: [{ version: 'v1.0', date: '2026-08-10', reviewer: 'Nguyễn Văn Hùng (Master Trainer)', note: 'Seeds the first Virtual Class online session.' }],
     },
     assignment: null,
     modules: [],
@@ -627,21 +627,21 @@ courses.push(
       instructorName: trainerHungUser.fullName,
       instructorTitle: trainerHungUser.position,
       scheduleDate: '2026-09-03',
-      scheduleTime: '14:00 - 16:00 (2.0 giờ)',
+      scheduleTime: '14:00 - 16:00 (2.0 hours)',
       maxCapacity: 60,
-      instructions: 'Chuẩn bị laptop/tai nghe, đăng nhập trước giờ học 10 phút để kiểm tra đường truyền. Bật camera trong suốt buổi học để Giảng viên xác nhận tham gia.',
+      instructions: 'Have your laptop/headset ready and log in 10 minutes before the session to test your connection. Keep your camera on throughout so the trainer can confirm attendance.',
       status: 'UPCOMING',
       recordingUrl: '',
       materials: [
-        { name: 'Slide bài giảng: Điều Hành Cuộc Họp Hiệu Quả.pdf', url: '#' },
-        { name: 'Checklist Chuẩn Bị Trước Buổi Học.pdf', url: '#' },
+        { name: 'Lecture slides: Running Effective Meetings.pdf', url: '#' },
+        { name: 'Pre-Session Preparation Checklist.pdf', url: '#' },
       ],
     },
   },
   {
     id: 'CRS-VC-002',
     code: 'VC-HSE-002',
-    title: 'Hội Thảo Trực Tuyến: Cập Nhật Quy Định An Toàn Thực Phẩm HACCP 2026',
+    title: 'Online Webinar: HACCP 2026 Food Safety Regulation Update',
     category: 'Compliance & Ethics',
     domain: 'Virtual Live Classroom',
     thumbnail: virtualClassCourseImage,
@@ -662,13 +662,13 @@ courses.push(
     trainerName: trainerThanhUser.fullName,
     venue: null, venueId: null, scheduleDate: null, scheduleTime: null,
     maxCapacity: 100,
-    description: 'Hội thảo trực tuyến qua Zoom cập nhật quy định HACCP 2026 mới nhất cho toàn bộ nhân sự khối Tươi sống. Hoàn thành = tham gia đầy đủ buổi học, không có bài kiểm tra cuối khóa.',
+    description: 'Online Zoom webinar covering the latest HACCP 2026 regulation updates for all Fresh Food division staff. Completion = full attendance, with no end-of-course test.',
     prerequisites: [],
     configuration: {
       assessmentEnabled: false, maxAttempts: 0, passingScorePercent: 0, certificateEnabled: true,
       questionBankSize: 0, questionsPerAttempt: 0, version: 'v1.0',
       lastReviewedBy: 'Vu Duc Thanh (HSE Trainer)', lastReviewedDate: '2026-08-12',
-      changelog: [{ version: 'v1.0', date: '2026-08-12', reviewer: 'Vu Duc Thanh (HSE Trainer)', note: 'Khởi tạo hội thảo trực tuyến HACCP 2026.' }],
+      changelog: [{ version: 'v1.0', date: '2026-08-12', reviewer: 'Vu Duc Thanh (HSE Trainer)', note: 'Seeds the HACCP 2026 online webinar.' }],
     },
     assignment: {
       assignmentType: 'LEVEL', targetBusinessUnitId: null, targetDivisionId: null, targetLevel: '6',
@@ -685,22 +685,22 @@ courses.push(
       instructorName: trainerThanhUser.fullName,
       instructorTitle: trainerThanhUser.position,
       scheduleDate: '2026-09-10',
-      scheduleTime: '09:00 - 10:30 (1.5 giờ)',
+      scheduleTime: '09:00 - 10:30 (1.5 hours)',
       maxCapacity: 100,
-      instructions: 'Tải sẵn tài liệu quy định HACCP 2026 đính kèm trước buổi học. Chuẩn bị câu hỏi thực tế phát sinh tại quầy để trao đổi trực tiếp cùng Giảng viên.',
+      instructions: 'Download the attached HACCP 2026 regulation material before the session. Bring real questions from your counter to discuss directly with the trainer.',
       status: 'UPCOMING',
       recordingUrl: '',
       materials: [
-        { name: 'Quy Định HACCP 2026 (Bản Cập Nhật).pdf', url: '#' },
+        { name: 'HACCP 2026 Regulations (Updated).pdf', url: '#' },
       ],
     },
   },
 );
 
-// Ghi danh mẫu cho 2 lớp Virtual Class ở trên, để có dữ liệu thật minh họa
-// trải nghiệm học viên. Phải chọn đúng học viên cùng cấp bậc mục tiêu của
-// từng khóa (Level 4 / Level 6) — không dùng currentUser (Minh Tran, Level 7)
-// vì sẽ vi phạm quy tắc "không tự ghi danh vượt cấp" (verify script chặn).
+// Sample enrollments for the 2 Virtual Classes above, to give real illustrative data
+// the learner experience. Pick learners whose level matches the course target
+// each course (Level 4 / Level 6) — not currentUser (Minh Tran, Level 7)
+// because it would break the "no self-enrollment above level" rule (the verify script blocks it).
 const leadershipLevel4Learner = demoUsers.find((u) => u.level === '4' && normalizeRole(u.role) === 'learner');
 if (leadershipLevel4Learner && generated100EnrollmentMatrix[leadershipLevel4Learner.userId]) {
   generated100EnrollmentMatrix[leadershipLevel4Learner.userId]['CRS-VC-001'] = {
@@ -714,22 +714,22 @@ if (hseLevel6Learner && generated100EnrollmentMatrix[hseLevel6Learner.userId]) {
   };
 }
 
-// Đa phiên bản khóa học (xem resolveCourseView/publishNewCourseVersion bên
-// dưới): mọi khóa học (100 khóa gốc + 22 gap-fill + 2 Virtual Class) cần có
-// sẵn currentVersion/versions{} — chưa khóa nào từng được "Phát Hành Phiên
-// Bản Mới" nên versions{} rỗng (không có phiên bản cũ nào bị đóng băng cả).
+// Course versioning (see resolveCourseView/publishNewCourseVersion below)
+// below): every course (100 original + 22 gap-fill + 2 Virtual Class) must have
+// currentVersion/versions{} ready — no course has ever been through "Publish
+// New Version" yet, so versions{} is empty (no old version has been frozen).
 courses.forEach((c) => {
   if (!c.currentVersion) c.currentVersion = c.version || 'v1.0';
   if (!c.versions) c.versions = {};
 });
 
 // ---------------------------------------------------------------------------
-// Category chuẩn hóa + Lifecycle Status theo ngày (Draft/Upcoming/Open/Closed):
-// mọi khóa học được gán categories[] (đa lĩnh vực, category giữ nguyên làm
-// categories[0] để tương thích ngược) và startDate/endDate, rải đều xác định
-// (không dùng Math.random, để ổn định qua các lần tải lại) trên cả 4 trạng
-// thái vòng đời — bao gồm ép 2 khóa CLOSED có ghi danh thật (1 đã hoàn thành,
-// 1 đang học dở) để kiểm thử quy tắc hiển thị của học viên với khóa đã đóng.
+// Standardized category + date-driven lifecycle status (Draft/Upcoming/Open/Closed):
+// every course is assigned categories[] (multi-domain, with category kept as
+// categories[0] for backward compatibility) plus startDate/endDate, spread deterministically
+// (no Math.random, so it stays stable across reloads) across all 4 lifecycle
+// lifecycle states — including forcing 2 CLOSED courses with real enrollments (1 completed,
+// 1 in progress) to exercise the learner display rules for closed courses.
 // Xem computeLifecycleStatus() trong src/utils/courseCatalog.js.
 const LIFECYCLE_TODAY = new Date('2026-08-26');
 const FORCE_CLOSED_COURSE_IDS = new Set(['CRS-FSH-002', 'CRS-HSE-019']);
@@ -767,16 +767,16 @@ courses.forEach((c, i) => {
 });
 
 // ---------------------------------------------------------------------------
-// Curriculum (Giáo Trình Học): tập hợp nhiều khóa E-Learning tự học thành một
-// lộ trình có cấu trúc Curriculum -> Courses -> Modules -> Lessons. Chỉ tham
-// chiếu courseIds thật (không sao chép lại modules/lessons) — chỉ những khóa
-// deliveryType ONLINE_ELEARNING & onlineClassType không phải VIRTUAL_CLASS.
+// Curriculum: a bundle of several self-paced E-Learning courses into one
+// roadmap has the structure Curriculum -> Courses -> Modules -> Lessons. It only references
+// real courseIds (without copying modules/lessons back) — only the courses
+// deliveryType ONLINE_ELEARNING and onlineClassType other than VIRTUAL_CLASS.
 // ---------------------------------------------------------------------------
 export const curricula = [
   {
     id: 'CUR-FSH-FOUNDATIONS',
-    title: 'Chương Trình Nền Tảng An Toàn Thực Phẩm',
-    description: 'Giáo trình E-Learning tổng hợp các khóa an toàn & vệ sinh thực phẩm bắt buộc cho toàn bộ nhân sự khối Tươi Sống.',
+    title: 'Food Safety Foundation Program',
+    description: 'E-Learning curriculum bundling every mandatory food safety & hygiene course for all Fresh Food division staff.',
     category: 'Food Safety & Hygiene',
     courseIds: ['CRS-FSH-001', 'CRS-FSH-003', 'CRS-FSH-004', 'CRS-FSH-005'],
     status: 'PUBLISHED',
@@ -788,7 +788,7 @@ export const curricula = [
         id: 'asg-fsh-1',
         assignmentType: 'DEPARTMENT',
         targetId: 'dept-ppf',
-        targetLabel: 'Fresh Food Operations (Khối Tươi Sống)',
+        targetLabel: 'Fresh Food Operations',
         assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-01',
         dueDate: '2026-09-30',
@@ -806,8 +806,8 @@ export const curricula = [
   },
   {
     id: 'CUR-LEAD-TRACK',
-    title: 'Lộ Trình Phát Triển Năng Lực Lãnh Đạo',
-    description: 'Giáo trình E-Learning dành cho quản lý cấp trung: kỹ năng huấn luyện, phản hồi, tư duy chiến lược và quản trị thay đổi.',
+    title: 'Leadership Competency Development Roadmap',
+    description: 'E-Learning curriculum for middle management: coaching skills, feedback, strategic thinking and change management.',
     category: 'Leadership & Management',
     courseIds: ['CRS-LEAD-049', 'CRS-LEAD-050', 'CRS-LEAD-051', 'CRS-LEAD-052'],
     status: 'PUBLISHED',
@@ -819,7 +819,7 @@ export const curricula = [
         id: 'asg-lead-1',
         assignmentType: 'ROLE',
         targetId: 'manager',
-        targetLabel: 'Line Manager (Quản lý cấp trung Level 4-5)',
+        targetLabel: 'Line Manager (middle management, Level 4-5)',
         assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-05',
         dueDate: '2026-10-15',
@@ -837,8 +837,8 @@ export const curricula = [
   },
   {
     id: 'CUR-ISA-SECURITY',
-    title: 'Giáo Trình An Ninh Thông Tin Doanh Nghiệp',
-    description: 'Giáo trình E-Learning bắt buộc toàn công ty về nhận thức an ninh mạng và bảo vệ dữ liệu khách hàng.',
+    title: 'Enterprise Information Security Curriculum',
+    description: 'Company-wide mandatory E-Learning curriculum on cybersecurity awareness and customer data protection.',
     category: 'Information Security',
     courseIds: ['CRS-ISA-011', 'CRS-ISA-012', 'CRS-ISA-013'],
     status: 'PUBLISHED',
@@ -850,7 +850,7 @@ export const curricula = [
         id: 'asg-isa-1',
         assignmentType: 'BUSINESS_UNIT',
         targetId: 'bu-mmvn',
-        targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
+        targetLabel: 'MM Mega Market Vietnam (Enterprise-Wide)',
         assignedBy: userAdminUser.userId,
         assignedAt: '2026-07-10',
         dueDate: '2026-09-15',
@@ -859,8 +859,8 @@ export const curricula = [
   },
   {
     id: 'CUR-SCM-OPS',
-    title: 'Giáo Trình Vận Hành Chuỗi Cung Ứng & Kho Vận',
-    description: 'Giáo trình E-Learning cho nhân sự Khối Chuỗi Cung Ứng: an toàn xe nâng, kho vận, quản lý đội xe.',
+    title: 'Supply Chain & Warehouse Operations Curriculum',
+    description: 'E-Learning curriculum for Supply Chain division staff: forklift safety, warehousing, fleet management.',
     category: 'Supply Chain & Logistics',
     courseIds: ['CRS-SCM-059', 'CRS-SCM-060', 'CRS-SCM-061'],
     status: 'DRAFT',
@@ -881,8 +881,8 @@ export const curricula = [
   },
   {
     id: 'CUR-ETHIC-COMPLIANCE',
-    title: 'Giáo Trình Tuân Thủ & Đạo Đức Doanh Nghiệp',
-    description: 'Giáo trình E-Learning bắt buộc: quy tắc ứng xử, chống tham nhũng, và các quy định pháp lý cạnh tranh công bằng.',
+    title: 'Corporate Compliance & Ethics Curriculum',
+    description: 'Mandatory E-Learning curriculum: code of conduct, anti-corruption, and fair competition legal requirements.',
     category: 'Compliance & Ethics',
     courseIds: ['CRS-ETHIC-081', 'CRS-ETHIC-082', 'CRS-ETHIC-083'],
     status: 'PUBLISHED',
@@ -894,7 +894,7 @@ export const curricula = [
         id: 'asg-ethic-1',
         assignmentType: 'BUSINESS_UNIT',
         targetId: 'bu-mmvn',
-        targetLabel: 'MM Mega Market Vietnam (Toàn Doanh Nghiệp)',
+        targetLabel: 'MM Mega Market Vietnam (Enterprise-Wide)',
         assignedBy: userAdminUser.userId,
         assignedAt: '2026-08-05',
         dueDate: '2026-09-25',
@@ -904,15 +904,15 @@ export const curricula = [
 ];
 
 // ---------------------------------------------------------------------------
-// Chuẩn hóa Định Dạng Bài Giảng (Format Standardization): quy hoạch mọi bài
-// giảng về đúng 5 định dạng chuẩn — SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
-// (Udemy/LinkedIn Learning/Coursera/YouTube/Khác) — thay cho các lessonType cũ
-// phân tán (DOCUMENT, SCRIPT, IMAGE, TEXT) VÀ thay cho việc course.modality
-// (SCORM_PACKAGE/PPT_PRESENTATION/EXTERNAL_PLATFORM/YOUTUBE_LINK) từng ghi đè
-// lessonType ở tầng Lesson Player. Từ nay lesson.lessonType là NGUỒN DUY NHẤT
-// quyết định Player nào hiển thị — không còn đọc course.modality ở LessonPlayer.
-// ASSESSMENT không nằm trong 5 định dạng này (là cổng thẩm định năng lực độc
-// lập cấp khóa học/phiên bản, xem course.questionBank) nên giữ nguyên riêng.
+// Lecture Format Standardization: normalizes every lesson
+// lesson onto the 5 standard formats — SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
+// (Udemy/LinkedIn Learning/Coursera/YouTube/Other) — replacing the old lessonType
+// scattered types (DOCUMENT, SCRIPT, IMAGE, TEXT) AND replacing the way course.modality
+// (SCORM_PACKAGE/PPT_PRESENTATION/EXTERNAL_PLATFORM/YOUTUBE_LINK) used to override
+// lessonType at the Lesson Player layer. From now on lesson.lessonType is the SINGLE SOURCE
+// decides which Player is shown — LessonPlayer no longer reads course.modality.
+// ASSESSMENT is not one of these 5 formats (it is a standalone competency gateway
+// at course/version level, see course.questionBank) so it is kept separate.
 const LEGACY_LESSON_TYPE_MAP = { DOCUMENT: 'PDF', SCRIPT: 'PDF', IMAGE: 'PPT', TEXT: 'PPT' };
 const COURSE_MODALITY_LESSON_OVERRIDE = {
   SCORM_PACKAGE: 'SCORM',
@@ -944,7 +944,7 @@ courses.forEach((course) => {
       } else if (mapped === 'PDF' && !lesson.content?.url && !lesson.content?.fileName) {
         lesson.content = { url: '', fileName: null, fileType: null };
       } else if ((mapped === 'PPT' || mapped === 'SCORM') && lesson.content?.text) {
-        // PPT/SCORM dùng bộ trình chiếu minh họa tĩnh, không cần nội dung text cũ.
+        // PPT/SCORM use a static illustrative slide deck and do not need the old text content.
         lesson.content = {};
       }
     });
@@ -962,8 +962,8 @@ export const userEnrollmentsMap = generated100EnrollmentMatrix;
 
 export { getCourseAccessControl };
 
-// Ghi danh của một học viên = dữ liệu HRIS tĩnh + phần ghi danh phát sinh trong
-// phiên làm việc (overlay do CourseStore giữ, ví dụ khóa vừa được duyệt học vượt).
+// A learner's enrollment = static HRIS data + the enrollments created during
+// the working session (an overlay held by CourseStore, e.g. a level skip just approved).
 export function enrollmentsForUser(user, overlay = null) {
   if (!user) return {};
   const base = userEnrollmentsMap[user.userId] || {};
@@ -1104,15 +1104,15 @@ export function createBlankCourse() {
     targetLevels: [],
     targetLevelTitle: '',
     deliveryType: 'ONLINE_ELEARNING', // 'ONLINE_ELEARNING' | 'IN_PERSON_CLASSROOM'
-    // Chỉ có ý nghĩa khi deliveryType là ONLINE_ELEARNING: 'E_LEARNING' (tự học
-    // qua Module/Bài học/Quiz, cơ chế hiện tại) hoặc 'VIRTUAL_CLASS' (lớp học
-    // trực tuyến trực tiếp qua Zoom/Teams/Meet với Giảng viên chủ trì).
+    // Only meaningful when deliveryType is ONLINE_ELEARNING: 'E_LEARNING' (self-paced
+    // through Module/Lesson/Quiz, the current mechanism) or 'VIRTUAL_CLASS' (a class
+    // live online over Zoom/Teams/Meet with a trainer hosting).
     onlineClassType: 'E_LEARNING',
-    // Đa phiên bản khóa học: currentVersion trỏ tới phiên bản đang sống (đọc/ghi
-    // trực tiếp qua modules/configuration bên dưới); versions{} lưu snapshot các
-    // phiên bản CŨ đã bị thay thế (đóng băng vĩnh viễn tại thời điểm Publish kế
-    // tiếp) để học viên đã hoàn thành/đang học dở phiên bản đó không bị ảnh
-    // hưởng bởi các chỉnh sửa sau này. Xem resolveCourseView()/publishNewCourseVersion().
+    // Course versioning: currentVersion points at the live version (read/written
+    // directly through modules/configuration below); versions{} stores snapshots of the
+    // the OLD replaced version (frozen permanently at the moment of the next Publish
+    // Publish) so learners who completed or are part-way through it are not
+    // affected by later edits. See resolveCourseView()/publishNewCourseVersion().
     currentVersion: 'v1.0',
     versions: {},
     courseType: 'OPTIONAL',
@@ -1126,8 +1126,8 @@ export function createBlankCourse() {
     estimatedHours: '2.0h',
     createdBy: adminUser.userId,
     publishedAt: null,
-    // ID nhân sự thật (không phải trainersDirectory cũ) để đồng bộ với
-    // teachingEligibleUsers() — nơi chọn Giảng viên khi tạo khóa Trực tiếp.
+    // Real employee IDs (not the old trainersDirectory) so they stay in sync with
+    // teachingEligibleUsers() — where the trainer is chosen when creating an in-person course.
     trainerId: trainerHungUser.userId,
     trainerName: trainerHungUser.fullName,
     venueId: 'lab-ap-fresh',
@@ -1138,13 +1138,13 @@ export function createBlankCourse() {
     enrolledStudents: [],
     prerequisites: [],
     syllabus: [
-      { step: 'Phần 1: Giới thiệu & Chuẩn bị An toàn (30 phút)', detail: 'Phổ biến quy tắc an toàn, mục tiêu khóa học và kiểm tra trang thiết bị.' },
-      { step: 'Phần 2: Hướng dẫn Thao tác & Thực hành Trực tiếp (90 phút)', detail: 'Thực hành thao tác chuẩn theo quy trình vận hành SOP.' },
-      { step: 'Phần 3: Đánh giá Kết quả & Giải đáp Thắc mắc (60 phút)', detail: 'Tổng kết bài học, kiểm tra kỹ năng và hoàn tất bảng điểm danh.' },
+      { step: 'Part 1: Introduction & Safety Preparation (30 minutes)', detail: 'Briefing the safety rules and course objectives, and checking the equipment.' },
+      { step: 'Part 2: Guided Technique & Live Practice (90 minutes)', detail: 'Practising the standard technique per the SOP.' },
+      { step: 'Part 3: Result Assessment & Q&A (60 minutes)', detail: 'Wrapping up the lesson, testing the skills and completing the attendance sheet.' },
     ],
     materials: [
-      { id: 'mat-1', name: 'Tài Liệu Hướng Dẫn Vận Hành Chuẩn (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
-      { id: 'mat-2', name: 'Slide Bài Giảng Thực Hành & Tình Huống (PPT)', type: 'PPT', size: '6.8 MB', url: '#' },
+      { id: 'mat-1', name: 'Standard Operating Guide (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-2', name: 'Practical Lecture Slides & Scenarios (PPT)', type: 'PPT', size: '6.8 MB', url: '#' },
     ],
     configuration: {
       assessmentEnabled: false,
@@ -1168,7 +1168,7 @@ export function createBlankCourse() {
     enrollment: null,
     assessmentAttempts: [],
     questionBank: [],
-    // Chỉ được điền/dùng khi onlineClassType === 'VIRTUAL_CLASS'.
+    // Only filled in / used when onlineClassType === 'VIRTUAL_CLASS'.
     virtualMeeting: {
       platform: 'TEAMS', // 'TEAMS' | 'ZOOM' | 'MEET' | 'WEBEX' | 'CUSTOM'
       meetingUrl: '',
@@ -1265,31 +1265,31 @@ function recomputeEnrollment(course) {
   return course;
 }
 
-// Tính tag phiên bản kế tiếp: v1.0 -> v2.0 -> v3.0 -> ... (không giới hạn số
-// lượng phiên bản, mỗi lần Publish tăng đúng 1 bậc số nguyên).
+// Computes the next version tag: v1.0 -> v2.0 -> v3.0 -> ... (no cap on the number
+// of versions, each Publish increments by exactly one integer step).
 export function nextMajorVersion(v) {
   const m = /^v(\d+)/.exec(v || 'v1.0');
   const n = m ? Number(m[1]) : 1;
   return `v${n + 1}.0`;
 }
 
-// Trả về "góc nhìn" nội dung khóa học (modules/configuration/modality/format)
-// đúng với phiên bản mà học viên đã ghi danh (enrolledVersion), KHÔNG PHẢI
-// luôn luôn là phiên bản mới nhất:
-//   - Nếu enrolledVersion trùng currentVersion (hoặc không có) -> trả về
-//     course như hiện tại (đọc trực tiếp course.modules — phiên bản đang sống).
-//   - Nếu enrolledVersion là một phiên bản CŨ đã bị Publish thay thế -> trả về
-//     bản snapshot đóng băng trong course.versions[enrolledVersion], để người
-//     đã hoàn thành/đang học dở phiên bản đó không bị ảnh hưởng bởi các chỉnh
-//     sửa Admin thực hiện sau này trên phiên bản mới.
+// Returns the content "view" of a course (modules/configuration/modality/format)
+// matching the version the learner actually enrolled in (enrolledVersion), NOT
+// always the newest version:
+//   - If enrolledVersion equals currentVersion (or is absent) -> return
+//     course as it is today (reading course.modules directly — the live version).
+//   - If enrolledVersion is an OLD version already replaced by a Publish -> return
+//     the frozen snapshot in course.versions[enrolledVersion], so people
+//     who completed or are part-way through that version are unaffected by later
+//     edits the Admin later makes on the new version.
 export function resolveCourseView(course, enrolledVersion) {
   if (!course) return course;
   const current = course.currentVersion || course.version || 'v1.0';
-  // Ghi danh có sẵn từ ma trận HRIS gốc (100 học viên mẫu) được tạo trước khi
-  // tính năng đa phiên bản tồn tại nên không có enrolledVersion — theo định
-  // nghĩa, những ghi danh đó chỉ có thể phát sinh khi khóa học còn ở v1.0
-  // (chưa từng Publish phiên bản nào), nên mặc định về 'v1.0' thay vì coi là
-  // "trùng phiên bản hiện tại" (tránh vô tình lộ nội dung mới cho họ).
+  // Enrollments seeded from the original HRIS matrix (100 sample learners) are created before
+  // the versioning feature existed, so they have no enrolledVersion — by definition
+  // definition those enrollments can only have arisen while the course was still at v1.0
+  // (never having published a version), so it defaults to 'v1.0' rather than being treated as
+  // "same as the current version" (so new content is never leaked to them by accident).
   const resolvedEnrolledVersion = enrolledVersion || 'v1.0';
   if (resolvedEnrolledVersion === current) return course;
   const snap = course.versions && course.versions[resolvedEnrolledVersion];
@@ -1305,18 +1305,18 @@ export function resolveCourseView(course, enrolledVersion) {
   };
 }
 
-// `module.lessons[].status` trong dữ liệu khóa học gốc là trạng thái CHUNG của
-// khóa (dùng chung cho mọi học viên, không tách theo user), trong khi
-// enrollment.status/progressPercent mới là ghi danh THẬT của riêng từng học
-// viên (lấy từ userEnrollmentsMap — ma trận HRIS 100 nhân sự, sinh độc lập với
-// course.modules). Hai nguồn này không tự khớp nhau với các khóa đã có sẵn
-// tiến độ từ trước (seed data): nếu không suy ra lại, một khóa Đã Hoàn Thành
-// 100% vẫn hiện toàn bộ bài học "Not started", còn bài thi cuối khóa cũng bị
-// coi là chưa đủ điều kiện mở dù đã có chứng chỉ. Hàm này chuẩn hóa lại
-// modules cho KHỚP với enrollment thật trước khi đưa vào bất kỳ màn hình nào
-// hiển thị HOẶC dùng để gán trạng thái (LearnerCourseDetail, LessonPlayer,
-// AssessmentPlayer) — phải gọi Ở CẢ 3 nơi để tránh lệch nhau giữa trang xem
-// chi tiết và trang học/thi thật.
+// `module.lessons[].status` in the source course data is the SHARED status of
+// course (shared by every learner, not split per user), whereas
+// enrollment.status/progressPercent is the REAL enrollment of each individual
+// learner (taken from userEnrollmentsMap — the 100-employee HRIS matrix, generated independently of
+// course.modules). These two sources do not line up by themselves for pre-existing courses
+// pre-existing progress (seed data): without re-deriving it, a Completed course
+// 100% would still show every lesson as "Not started", and the final exam would also be
+// treated as not yet unlocked even with a certificate issued. This function re-normalizes
+// modules to MATCH the real enrollment before feeding any screen
+// display OR used to assign status (LearnerCourseDetail, LessonPlayer,
+// AssessmentPlayer) — it must be called in ALL 3 places to keep the view page
+// the detail page and the real study/exam pages.
 export function deriveLessonStatuses(modules, enrollment) {
   if (!modules) return modules;
   const status = enrollment?.status;
@@ -1332,15 +1332,15 @@ export function deriveLessonStatuses(modules, enrollment) {
       lessons: m.lessons.map((l) => ({ ...l, status: 'COMPLETED' })),
     }));
   }
-  // IN_PROGRESS / OVERDUE / FAILED: đánh dấu hoàn thành đúng số bài tương ứng
-  // với progressPercent đã ghi nhận, bài kế tiếp đang học dở, phần còn lại
-  // chưa bắt đầu.
+  // IN_PROGRESS / OVERDUE / FAILED: mark exactly the matching number of lessons complete
+  // against the recorded progressPercent, the next lesson mid-progress, and the rest
+  // not started.
   const flat = modules.flatMap((m) => m.lessons.filter((l) => l.lessonType !== 'ASSESSMENT'));
   const exactPosition = flat.length ? (flat.length * (enrollment.progressPercent || 0)) / 100 : 0;
   const completedCount = Math.round(exactPosition);
-  // Phần lẻ giữa vị trí thật (chưa làm tròn) và số bài đã xong: dùng làm % dở
-  // dang của đúng bài đang học, để hiện "45% complete" thay vì lúc nào cũng
-  // "0% complete" trên bài đang học dở — trông giống dữ liệu thật hơn.
+  // The fraction between the real position (before rounding) and the lessons finished: used as the partial %
+  // of the lesson actually in progress, so it shows "45% complete" instead of always
+  // "0% complete" on the lesson in progress — which looks more like real data.
   const inProgressPercent = Math.round((exactPosition - Math.floor(exactPosition)) * 100);
   let seen = 0;
   return modules.map((m) => ({
@@ -1355,13 +1355,13 @@ export function deriveLessonStatuses(modules, enrollment) {
   }));
 }
 
-// Cùng khoảng trống dữ liệu như deriveLessonStatuses(), nhưng cho lịch sử thi:
-// course.assessmentAttempts luôn khởi tạo rỗng ở template (chỉ được ghi thật
-// khi học viên thi ngay trong phiên hiện tại qua AssessmentPlayer), nên một
-// khóa đã seed sẵn enrollment COMPLETED (và đã có chứng chỉ) vẫn hiện "chưa
-// từng thi" nếu không suy ra 1 lượt thi đạt tương ứng khi enrollment nói đã
-// hoàn thành. Chỉ tổng hợp thêm khi thật sự thiếu — không đụng vào các lượt
-// thi có thật đã ghi nhận.
+// The same data gap as deriveLessonStatuses(), but for exam history:
+// course.assessmentAttempts always starts empty on the template (it is only written for real
+// when the learner takes the exam in the current session via AssessmentPlayer), so a
+// course seeded with a COMPLETED enrollment (and an issued certificate) would still show "never
+// taken" unless a matching passing attempt is derived when the enrollment says it is
+// completed. Extra records are synthesized only when genuinely missing — never touching the
+// real recorded exam attempts.
 export function deriveAssessmentAttempts(attempts, enrollment, configuration) {
   const real = attempts || [];
   if (real.length > 0 || !configuration?.assessmentEnabled) return real;
@@ -1379,8 +1379,8 @@ export function deriveAssessmentAttempts(attempts, enrollment, configuration) {
 // enrollment recomputed — pass the result straight to CourseStore.updateCourse.
 export function applyLessonProgress(course, lessonId, fields) {
   const next = cloneCourse(course);
-  // Khóa học sinh tự động không mang sẵn enrollment; ghi danh được nạp từ
-  // ma trận HRIS hoặc overlay của CourseStore nên cần default an toàn ở đây.
+  // Auto-generated courses carry no enrollment; enrollments are loaded from
+  // the HRIS matrix or the CourseStore overlay, so a safe default is needed here.
   if (!next.enrollment) next.enrollment = { status: 'IN_PROGRESS', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null };
   if (!next.assessmentAttempts) next.assessmentAttempts = [];
   for (const m of next.modules) {
@@ -1409,11 +1409,11 @@ export function applyAssessmentAttempt(course, { score, passed, answered }) {
   return recomputeEnrollment(next);
 }
 
-// `certificateTemplates` (từ CourseStore) là tùy chọn — khi khóa có
-// configuration.certificateTemplateId khớp 1 template trong thư viện, các
-// field signerName/signerTitle/issuerOrg của template đó thay thế mặc định
-// trên CertificateModal; ngày cấp vẫn luôn lấy từ enrollment.completedAt của
-// từng học viên (auto khớp ngày hoàn thành, không đổi theo template).
+// `certificateTemplates` (from CourseStore) is optional — when a course has
+// configuration.certificateTemplateId matches a template in the library, and its
+// that template's signerName/signerTitle/issuerOrg fields replace the defaults
+// on the CertificateModal; the issue date is always taken from enrollment.completedAt of
+// each learner (auto-matched to the completion date, unchanged by the template).
 export function deriveCertificates(courseList, user, overlay = null, certificateTemplates = []) {
   if (!user) return [];
   const list = myLearningCourses(courseList, user, overlay);
@@ -1426,10 +1426,10 @@ export function deriveCertificates(courseList, user, overlay = null, certificate
       const validityMonths = c.configuration?.validityPeriodMonths !== undefined ? parseInt(c.configuration.validityPeriodMonths, 10) : 12;
       const isLifetime = validityMonths === 0;
 
-      // Hạn tái cấp: lấy từ enrollment (nếu vừa thi lại) hoặc tính theo chu kỳ
+      // Recertification due date: taken from the enrollment (if just retaken) or computed from the cycle
       const validUntil = isLifetime ? null : (c.enrollment.validUntil || (
-        c.id === 'CRS-FSH-001' ? '2026-08-15' // Kịch bản mẫu: Quá hạn 13 ngày -> Trạng thái RECERTIFICATION_REQUIRED
-        : c.id === 'CRS-CS-002' ? '2026-09-10' // Kịch bản mẫu: Cận hạn 13 ngày -> Trạng thái DUE_SOON
+        c.id === 'CRS-FSH-001' ? '2026-08-15' // Sample scenario: 13 days overdue -> status RECERTIFICATION_REQUIRED
+        : c.id === 'CRS-CS-002' ? '2026-09-10' // Sample scenario: 13 days until due -> status DUE_SOON
         : new Date(new Date(issueDate).setFullYear(new Date(issueDate).getFullYear() + (validityMonths / 12 || 1))).toISOString().slice(0, 10)
       ));
       const cleanEmpCode = (user.employeeCode || 'EMP-1042').replace('MMVN-', '');
@@ -1734,16 +1734,16 @@ export function getUserLearningHistory(user) {
   return userHistoryLogs[userId] || userHistoryLogs['USR-1042'] || [];
 }
 
-const WEEKDAY_LABELS_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+const WEEKDAY_LABELS_VI = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sunday'];
 
 /**
- * Tổng giờ học gộp theo THỨ trong tuần (Thứ 2 -> Chủ Nhật), tính từ toàn bộ
- * timeSpent + timestamp thật trong getUserLearningHistory — không giới hạn
- * theo 1 tuần lịch cụ thể, vì các mốc thời gian trong mock data là ngày cố
- * định (2026) không khớp với đồng hồ hệ thống thật lúc chạy demo. Kết quả là
- * "học viên này có xu hướng học nhiều vào thứ mấy", vẫn 100% dữ liệu thật,
- * không phải số bịa, và không bao giờ rỗng cho persona có log (kể cả giới
- * hạn fallback về USR-1042 cho các persona chưa có log riêng).
+ * Total study hours grouped by DAY OF WEEK (Monday -> Sunday), computed from every
+ * real timeSpent + timestamp in getUserLearningHistory — not limited to one specific
+ * calendar week, because the timestamps in the mock data are fixed dates (2026) that
+ * do not line up with the real system clock during a demo. The result answers
+ * "which weekday does this learner tend to study on", still 100% real data,
+ * never invented, and never empty for a persona that has logs (including the
+ * fallback to USR-1042 for personas without their own logs).
  */
 export function weeklyStudyHours(user) {
   const logs = getUserLearningHistory(user);
@@ -1765,15 +1765,15 @@ export const notifications = {
       id: 1, 
       type: 'COURSE_ASSIGNED', 
       title: 'New mandatory course assigned',
-      titleVi: 'Khóa học bắt buộc mới được phân bổ',
+      titleVi: 'A new mandatory course has been assigned',
       titleEn: 'New mandatory course assigned',
       message: 'Risk Management Awareness has been assigned to your Division, due Sep 15.', 
-      messageVi: 'Khóa Quản Trị Rủi Ro & Tuân Thủ đã được gán cho đơn vị của bạn, hạn chót 15/09.',
+      messageVi: 'The Risk Management & Compliance course has been assigned to your unit, due 15/09.',
       messageEn: 'Risk Management Awareness has been assigned to your Division, due Sep 15.',
       time: '2h ago',
-      timeVi: '2 giờ trước',
+      timeVi: '2 hours ago',
       timeEn: '2h ago',
-      tagVi: 'Bắt buộc',
+      tagVi: 'Mandatory',
       tagEn: 'Mandatory',
       unread: true 
     },
@@ -1781,15 +1781,15 @@ export const notifications = {
       id: 2, 
       type: 'DEADLINE_REMINDER', 
       title: 'Due in 12 days', 
-      titleVi: 'Sắp đến hạn trong 12 ngày',
+      titleVi: 'Due in 12 days',
       titleEn: 'Due in 12 days',
       message: 'Information Security Awareness is due Sep 30.', 
-      messageVi: 'Khóa Nhận Thức An Toàn Thông Tin cần hoàn thành trước ngày 30/09.',
+      messageVi: 'The Information Security Awareness course must be completed before 30/09.',
       messageEn: 'Information Security Awareness is due Sep 30.',
       time: '1d ago',
-      timeVi: '1 ngày trước',
+      timeVi: '1 day ago',
       timeEn: '1d ago',
-      tagVi: 'Hạn chót',
+      tagVi: 'Deadline',
       tagEn: 'Deadline',
       unread: true 
     },
@@ -1797,23 +1797,23 @@ export const notifications = {
       id: 3, 
       type: 'COURSE_UNFINISHED', 
       title: 'Continue learning', 
-      titleVi: 'Nhắc nhở tiếp tục học tập',
+      titleVi: 'Reminder to continue learning',
       titleEn: 'Continue learning reminder',
       message: 'You have not continued Corporate Orientation in 6 days.', 
-      messageVi: 'Bạn chưa tiếp tục học khóa Hội Nhập Doanh Nghiệp trong 6 ngày qua.',
+      messageVi: 'You have not continued the Corporate Onboarding course for 6 days.',
       messageEn: 'You have not continued Corporate Orientation in 6 days.',
       time: '5d ago',
-      timeVi: '5 ngày trước',
+      timeVi: '5 days ago',
       timeEn: '5d ago',
-      tagVi: 'Tiến độ',
+      tagVi: 'Progress',
       tagEn: 'Progress',
       unread: false 
     },
   ],
   managerAlerts: [
-    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', messageVi: 'Lisa Wang chưa hoàn thành khóa Quản Trị Rủi Ro đúng hạn.', time: '3h ago', timeVi: '3 giờ trước' },
-    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', messageVi: 'John Doe không có hoạt động học tập trong 15 ngày.', time: '1d ago', timeVi: '1 ngày trước' },
-    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', messageVi: 'Mike Chen chưa đạt bài kiểm tra An Toàn Thông Tin sau 3 lần thi.', time: '2d ago', timeVi: '2 ngày trước' },
+    { id: 1, type: 'EMPLOYEE_OVERDUE', employee: 'Lisa Wang', message: 'Risk Management Awareness is overdue.', messageVi: 'Lisa Wang did not complete the Risk Management course on time.', time: '3h ago', timeVi: '3 hours ago' },
+    { id: 2, type: 'EMPLOYEE_INACTIVE', employee: 'John Doe', message: 'No learning activity in 15 days.', messageVi: 'John Doe has had no learning activity for 15 days.', time: '1d ago', timeVi: '1 day ago' },
+    { id: 3, type: 'ASSESSMENT_FAILED', employee: 'Mike Chen', message: 'Failed Information Security Awareness after 3 attempts.', messageVi: 'Mike Chen has failed the Information Security test after 3 attempts.', time: '2d ago', timeVi: '2 days ago' },
   ],
 };
 
@@ -2091,14 +2091,14 @@ export const classroomSessions = [
     prerequisiteCourse: 'Food Safety & Hygiene Standards (HACCP)',
     prerequisiteCourseId: 'CRS-FSH-001',
     syllabus: [
-      { step: 'Phần 1: Chuẩn bị & Phổ biến Quy định An toàn Vệ sinh (30 phút)', detail: 'Quy tắc vệ sinh Gold HACCP, kiểm tra nhiệt độ lõi tủ mát bảo quản nguyên liệu tươi.' },
-      { step: 'Phần 2: Thao tác Vận hành Lò nướng Thực tế tại Xưởng (90 phút)', detail: 'Vận hành lò nướng công nghiệp Deck Oven, nhào bột & cân chỉnh công thức nướng bánh mì Pháp.' },
-      { step: 'Phần 3: Đánh giá Mẻ bánh & Vệ sinh Khử trùng Thiết bị (60 phút)', detail: 'Kiểm tra độ giòn xốp bánh, vệ sinh khử trùng boong nướng & hoàn tất bảng điểm danh.' },
+      { step: 'Part 1: Preparation & Hygiene Safety Briefing (30 minutes)', detail: 'Gold HACCP hygiene rules and core temperature checks on the chiller holding fresh ingredients.' },
+      { step: 'Part 2: Hands-On Oven Operation In The Workshop (90 minutes)', detail: 'Operating the industrial deck oven, kneading dough & calibrating French bread baking recipes.' },
+      { step: 'Part 3: Evaluating The Bake & Sanitizing The Equipment (60 minutes)', detail: 'Checking the crispness of the bread, sanitizing the deck oven & finalizing the attendance sheet.' },
     ],
     materials: [
-      { id: 'mat-fsh-1', name: 'SOP-OMD-04B: Hướng dẫn Vận hành Lò Nướng Deck Oven (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
-      { id: 'mat-fsh-2', name: 'Slide Bài Giảng: Kiểm soát Nguy cơ Nhiễm khuẩn Chéo (PPT)', type: 'PPT', size: '8.1 MB', url: '#' },
-      { id: 'mat-fsh-3', name: 'Biểu mẫu Checklist Kiểm tra Tiêu chuẩn Vệ sinh ATTP (PDF)', type: 'PDF', size: '1.1 MB', url: '#' },
+      { id: 'mat-fsh-1', name: 'SOP-OMD-04B: Deck Oven Operating Guide (PDF)', type: 'PDF', size: '2.4 MB', url: '#' },
+      { id: 'mat-fsh-2', name: 'Lecture Slides: Controlling Cross-Contamination Risk (PPT)', type: 'PPT', size: '8.1 MB', url: '#' },
+      { id: 'mat-fsh-3', name: 'Food Safety Hygiene Standard Checklist Form (PDF)', type: 'PDF', size: '1.1 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -2138,14 +2138,14 @@ export const classroomSessions = [
     prerequisiteCourse: 'Workplace Health, Safety & Environment (HSE)',
     prerequisiteCourseId: 'CRS-HSE-019',
     syllabus: [
-      { step: 'Phần 1: Nhận diện Nguồn nhiệt & Các cấp độ Báo cháy (45 phút)', detail: 'Nhận biết 4 loại đám cháy (A, B, C, F), phân biệt bình chữa cháy CO2 và Bột ABC.' },
-      { step: 'Phần 2: Diễn tập Dập lửa & Vận hành Vòi cứu hỏa tại Bãi tập (75 phút)', detail: 'Thực hành rút chốt an toàn, hướng vòi dập tắt khay xăng cháy và rải cuộn vòi nước áp lực.' },
-      { step: 'Phần 3: Sơ tán Khách hàng & Kỹ thuật Sơ cấp cứu Căn bản (60 phút)', detail: 'Quy trình dẫn đường thoát hiểm khu vực đông người, ép tim ngoài lồng ngực CPR và băng bó vết thương.' },
+      { step: 'Part 1: Identifying Heat Sources & Fire Alarm Levels (45 minutes)', detail: 'Recognizing the 4 fire classes (A, B, C, F) and telling CO2 from ABC powder extinguishers.' },
+      { step: 'Part 2: Fire Suppression Drill & Hose Operation On The Practice Ground (75 minutes)', detail: 'Practising pulling the safety pin, aiming the nozzle to extinguish a petrol tray fire and rolling out the pressure hose.' },
+      { step: 'Part 3: Customer Evacuation & Basic First Aid Technique (60 minutes)', detail: 'Evacuation guidance for crowded areas, chest-compression CPR and wound dressing.' },
     ],
     materials: [
-      { id: 'mat-hse-1', name: 'Sổ Tay An Toàn PCCC & Kế Hoạch Thoát Hiểm Siêu Thị 2026 (PDF)', type: 'PDF', size: '3.5 MB', url: '#' },
-      { id: 'mat-hse-2', name: 'Slide Bài Giảng: Kỹ Thuật Sử Dụng Bình Khí CO2 & Vòi Cứu Hỏa (PPT)', type: 'PPT', size: '12.0 MB', url: '#' },
-      { id: 'mat-hse-3', name: 'Sơ Đồ Lối Thoát Nạn & Vị Trí Hộp Cứu Hỏa Từng Chi Nhánh (PDF)', type: 'PDF', size: '4.2 MB', url: '#' },
+      { id: 'mat-hse-1', name: 'Fire Safety Handbook & 2026 Store Evacuation Plan (PDF)', type: 'PDF', size: '3.5 MB', url: '#' },
+      { id: 'mat-hse-2', name: 'Lecture Slides: Using CO2 Extinguishers & Fire Hoses (PPT)', type: 'PPT', size: '12.0 MB', url: '#' },
+      { id: 'mat-hse-3', name: 'Evacuation Route Map & Fire Hose Cabinet Locations By Branch (PDF)', type: 'PDF', size: '4.2 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-1120', name: 'Carlos Reyes', position: 'Warehouse Associate', store: 'MM Thang Long', attendance: 'CONFIRMED' },
@@ -2183,13 +2183,13 @@ export const classroomSessions = [
     prerequisiteCourse: 'Information Security & Data Protection Awareness',
     prerequisiteCourseId: 'CRS-ISA-011',
     syllabus: [
-      { step: 'Phần 1: Xu hướng Tấn công Lừa đảo & Giả mạo Email Đối tác (30 phút)', detail: 'Phân tích các email mạo danh nhà cung cấp yêu cầu thay đổi tài khoản ngân hàng thụ hưởng.' },
-      { step: 'Phần 2: Quy trình Cách ly Khẩn cấp Máy POS Khi Bị Mã Độc (30 phút)', detail: 'Thao tác rút cáp mạng LAN, cô lập máy trạm POS và báo cáo sự cố lên SOC IT Security qua hotline.' },
-      { step: 'Phần 3: Hỏi đáp Trực tuyến & Bài tập Tình huống Trắc nghiệm (30 phút)', detail: 'Học viên làm bài quiz tương tác trên MS Teams và giải đáp thắc mắc bảo mật dữ liệu khách hàng.' },
+      { step: 'Part 1: Phishing Attack Trends & Partner Email Spoofing (30 minutes)', detail: 'Analyzing phishing emails that impersonate suppliers and request a change of beneficiary bank account.' },
+      { step: 'Part 2: Emergency POS Isolation Procedure After A Malware Incident (30 minutes)', detail: 'Unplugging the LAN cable, isolating the POS workstation and reporting the incident to the SOC IT Security hotline.' },
+      { step: 'Part 3: Live Q&A & Multiple-Choice Scenario Exercises (30 minutes)', detail: 'Learners take an interactive quiz on MS Teams and get their customer data protection questions answered.' },
     ],
     materials: [
-      { id: 'mat-sec-1', name: 'Hướng Dẫn Phòng Chống Phishing & Lừa Đảo Chuyển Tiền (PDF)', type: 'PDF', size: '1.8 MB', url: '#' },
-      { id: 'mat-sec-2', name: 'Slide Webinar: Bảo Mật Đầu Cuối Hệ Thống Thanh Toán POS (PPT)', type: 'PPT', size: '9.4 MB', url: '#' },
+      { id: 'mat-sec-1', name: 'Phishing & Payment Fraud Prevention Guide (PDF)', type: 'PDF', size: '1.8 MB', url: '#' },
+      { id: 'mat-sec-2', name: 'Webinar Slides: End-To-End Security For The POS Payment System (PPT)', type: 'PPT', size: '9.4 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-1042', name: 'Minh Tran', position: 'Bakery Specialist', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -2227,14 +2227,14 @@ export const classroomSessions = [
     prerequisiteCourse: 'Store Operations Excellence & Planogram Compliance',
     prerequisiteCourseId: 'CRS-STOPS-037',
     syllabus: [
-      { step: 'Phần 1: Kỹ thuật Quét Mã Barcode Tốc Độ Cao & Xử lý Voucher (60 phút)', detail: 'Tư thế đứng chuẩn công thái học, góc quét tia laser và thao tác áp voucher giảm giá trên POS.' },
-      { step: 'Phần 2: Ứng dụng Nguyên tắc L.A.S.T Xử lý Phàn nàn Khách hàng (75 phút)', detail: 'Lắng nghe (Listen) - Đồng cảm (Apologize) - Giải quyết (Solve) - Cảm ơn (Thank). Thực hành đóng vai khách hàng khó tính.' },
-      { step: 'Phần 3: Thi đua Tính giờ Quét 20 Món Hàng Giả Lập & Tổng kết (45 phút)', detail: 'Thử thách quét hàng chuẩn không lỗi trong 90 giây và trao huy hiệu Thu Ngân Siêu Tốc.' },
+      { step: 'Part 1: High-Speed Barcode Scanning Technique & Voucher Handling (60 minutes)', detail: 'Correct ergonomic standing posture, laser scan angle and applying discount vouchers on the POS.' },
+      { step: 'Part 2: Applying The L.A.S.T Principle To Customer Complaints (75 minutes)', detail: 'Listen - Apologize - Solve - Thank. Includes role-play practice with a difficult customer.' },
+      { step: 'Part 3: Timed Contest Scanning 20 Simulated Items & Wrap-Up (45 minutes)', detail: 'A 90-second error-free scanning challenge that awards the Express Cashier badge.' },
     ],
     materials: [
-      { id: 'mat-pos-1', name: 'SOP-CAS-01: Quy Trình Thao Tác Chuẩn Quầy Thu Ngân POS (PDF)', type: 'PDF', size: '2.9 MB', url: '#' },
-      { id: 'mat-pos-2', name: 'Slide Kỹ Năng Giao Tiếp & Xử Lý Tình Huống Khách Hàng (PPT)', type: 'PPT', size: '7.8 MB', url: '#' },
-      { id: 'mat-pos-3', name: 'Bảng Tra Cứu Mã PLU Rau Củ Quả & Hàng Cân Tươi Sống (PDF)', type: 'PDF', size: '1.5 MB', url: '#' },
+      { id: 'mat-pos-1', name: 'SOP-CAS-01: POS Checkout Standard Operating Procedure (PDF)', type: 'PDF', size: '2.9 MB', url: '#' },
+      { id: 'mat-pos-2', name: 'Communication Skills & Customer Scenario Handling Slides (PPT)', type: 'PPT', size: '7.8 MB', url: '#' },
+      { id: 'mat-pos-3', name: 'PLU Code Lookup Table For Produce & Fresh Weighed Goods (PDF)', type: 'PDF', size: '1.5 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-1402', name: 'Vu Thi Lan', position: 'Cashier Staff', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -2272,14 +2272,14 @@ export const classroomSessions = [
     prerequisiteCourse: 'Corporate Orientation & MMVN Cultural Values',
     prerequisiteCourseId: 'CRS-CULT-093',
     syllabus: [
-      { step: 'Phần 1: Giới thiệu Sứ Mệnh, Tầm Nhìn & 5 Giá Trị Cốt Lõi MMVN (45 phút)', detail: 'Lịch sử phát triển MM Mega Market VN, quy chuẩn đạo đức doanh nghiệp và chính sách nhân sự.' },
-      { step: 'Phần 2: Quy Chế Lao Động, Quyền Lợi & Nghĩa Vụ Người Lao Động (75 phút)', detail: 'Chế độ bảo hiểm, thời giờ làm việc, an toàn vệ sinh lao động và quy trình giải quyết quyền lợi.' },
-      { step: 'Phần 3: Hướng Dẫn Sử Dụng Cổng Đào Tạo MM MegaLearn & Q&A (60 phút)', detail: 'Tra cứu lộ trình cấp bậc, đăng ký khóa học và giải đáp trực tiếp các chính sách đãi ngộ.' },
+      { step: 'Part 1: Introducing The MMVN Mission, Vision & 5 Core Values (45 minutes)', detail: 'The history of MM Mega Market VN, the corporate code of ethics and HR policy.' },
+      { step: 'Part 2: Labour Regulations, Employee Rights & Obligations (75 minutes)', detail: 'Insurance entitlements, working hours, occupational health and safety, and the benefits claim process.' },
+      { step: 'Part 3: Using The MM MegaLearn Training Portal & Q&A (60 minutes)', detail: 'Looking up level roadmaps, enrolling in courses and getting direct answers on benefits policy.' },
     ],
     materials: [
-      { id: 'mat-adm-1', name: 'Sổ Tay Nhân Viên MM Mega Market Vietnam 2026 (PDF)', type: 'PDF', size: '4.8 MB', url: '#' },
-      { id: 'mat-adm-2', name: 'Slide Giới Thiệu Văn Hóa Doanh Nghiệp & Quy Định Nội Bộ (PPT)', type: 'PPT', size: '15.2 MB', url: '#' },
-      { id: 'mat-adm-3', name: 'Cẩm Nang Quyền Lợi & Chế Độ Bảo Hiểm Nhân Sự MMVN (PDF)', type: 'PDF', size: '2.1 MB', url: '#' },
+      { id: 'mat-adm-1', name: 'MM Mega Market Vietnam Employee Handbook 2026 (PDF)', type: 'PDF', size: '4.8 MB', url: '#' },
+      { id: 'mat-adm-2', name: 'Corporate Culture & Internal Regulations Introduction Slides (PPT)', type: 'PPT', size: '15.2 MB', url: '#' },
+      { id: 'mat-adm-3', name: 'MMVN Employee Benefits & Insurance Handbook (PDF)', type: 'PDF', size: '2.1 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-2001', name: 'Nguyen Van An', position: 'Store Associate', store: 'MM Binh Phu', attendance: 'CONFIRMED' },
@@ -2320,13 +2320,13 @@ export const classroomSessions = [
     prerequisiteCourse: 'Store General Manager P&L Governance & Budget Ownership',
     prerequisiteCourseId: 'CRS-SUCC-107',
     syllabus: [
-      { step: 'Phần 1: Cấu Trúc Báo Cáo P&L Siêu Thị & Phân Tích Điểm Hòa Vốn (120 phút)', detail: 'Bóc tách chi phí vận hành (OPEX), tối ưu hóa biên lợi nhuận gộp theo từng ngành hàng.' },
-      { step: 'Phần 2: Chiến Lược Kiểm Soát Thất Thoát & Giảm Hủy Hàng Tươi Sống (120 phút)', detail: 'Phân tích chỉ số Shrinkage, quy trình quản trị chuỗi cung ứng và luân chuyển hàng hóa.' },
-      { step: 'Phần 3: Thực Hành Lập Kế Hoạch Kinh Doanh Quý Cho Siêu Thị Mẫu (150 phút)', detail: 'Các nhóm Store Manager lập ngân sách P&L giả định và bảo vệ trước Hội đồng Mentor.' },
+      { step: 'Part 1: Store P&L Report Structure & Break-Even Analysis (120 minutes)', detail: 'Breaking down operating expense (OPEX) and optimizing gross margin by category.' },
+      { step: 'Part 2: Shrinkage Control Strategy & Reducing Fresh Food Write-Offs (120 minutes)', detail: 'Analyzing the shrinkage metric, supply chain management processes and stock rotation.' },
+      { step: 'Part 3: Building A Quarterly Business Plan For A Sample Store (150 minutes)', detail: 'Store Manager groups build a hypothetical P&L budget and defend it before the Mentor Board.' },
     ],
     materials: [
-      { id: 'mat-sgm-1', name: 'Mô Hình Tài Chính P&L Siêu Thị Chuẩn MMVN (Excel / PDF)', type: 'PDF', size: '3.6 MB', url: '#' },
-      { id: 'mat-sgm-2', name: 'Slide Chiến Lược Quản Trị Vận Hành Dành Cho SGM (PPT)', type: 'PPT', size: '18.4 MB', url: '#' },
+      { id: 'mat-sgm-1', name: 'MMVN Standard Store P&L Financial Model (Excel / PDF)', type: 'PDF', size: '3.6 MB', url: '#' },
+      { id: 'mat-sgm-2', name: 'Operations Management Strategy Slides For SGMs (PPT)', type: 'PPT', size: '18.4 MB', url: '#' },
     ],
     enrolledStudents: [
       { id: 'MMVN-3001', name: 'Vu Duc Thang', position: 'Store Manager', store: 'MM An Phu', attendance: 'CONFIRMED' },
@@ -2338,7 +2338,7 @@ export const classroomSessions = [
 ];
 
 // ---------------------------------------------------------------------------
-// Learning Paths (Career Progression, Onboarding, Thánh Gióng, SGM, 10/20/70)
+// Learning Paths (Career Progression, Onboarding, Thanh Giong, SGM, 10/20/70)
 // ---------------------------------------------------------------------------
 
 export const learningPaths = [
@@ -2463,7 +2463,7 @@ export const learningPaths = [
   {
     id: 'lp-thanh-giong',
     code: 'LP-THANH-GIONG',
-    title: 'Thánh Gióng Fast-track Retail Leadership Pipeline',
+    title: 'Thanh Giong Fast-track Retail Leadership Pipeline',
     trackType: 'TALENT_PIPELINE',
     targetBranch: 'OPERATIONS',
     targetRole: 'Hi-Potential Associates -> Shift Leaders / Section Supervisors',
@@ -2472,7 +2472,7 @@ export const learningPaths = [
     completedCourses: 2,
     progressPercent: 40,
     estimatedWeeks: '16 weeks (4 months)',
-    badgeReward: 'Thánh Gióng Leader Emblem',
+    badgeReward: 'Thanh Giong Leader Emblem',
     xpReward: 1500,
     framework702010: {
       formal10: 'Mid-level management leadership, Department P&L management, Shrinkage reduction.',
@@ -2736,7 +2736,7 @@ export const teamSkillGapMatrix = [
     employeeId: 'MMVN-1042',
     employeeName: 'Minh Tran',
     position: 'Bakery Section Specialist',
-    targetRole: 'Bakery Shift Supervisor (Thánh Gióng Pipeline)',
+    targetRole: 'Bakery Shift Supervisor (Thanh Giong Pipeline)',
     readiness: 'READY_IN_6_MONTHS',
     overallGap: -8,
     skills: [
@@ -2779,9 +2779,9 @@ export const teamSkillGapMatrix = [
 // ---------------------------------------------------------------------------
 
 export const costTrackingData = {
-  totalBudgetAnnual: 4500000000, // 4.5 tỷ VNĐ
-  totalSpentYTD: 2850000000, // 2.85 tỷ VNĐ
-  costPerLearnerAvg: 1328000, // ~1.3 triệu / nhân viên
+  totalBudgetAnnual: 4500000000, // VND 4.5 billion
+  totalSpentYTD: 2850000000, // VND 2.85 billion
+  costPerLearnerAvg: 1328000, // ~1.3 million / employee
   budgetUtilization: '63.3%',
   externalPlatformLicenses: [
     { platform: 'LinkedIn Learning Enterprise (B2B Pack)', licenses: 250, costAnnual: 625000000, costPerSeat: 2500000, utilizationRate: '92%', activeLearners: 230 },
@@ -2789,10 +2789,10 @@ export const costTrackingData = {
     { platform: 'Udemy Business Technical & Data Analytics', licenses: 50, costAnnual: 180000000, costPerSeat: 3600000, utilizationRate: '94%', activeLearners: 47 },
   ],
   departmentSpend: [
-    { name: 'Khối Vận hành Siêu thị (Store Operations)', budget: 2200000000, spent: 1540000000, learners: 1450, costPerHead: 1062000, utilization: '70.0%' },
-    { name: 'Khối Trụ sở chính (Supporting Functions / Office)', budget: 1300000000, spent: 820000000, learners: 420, costPerHead: 1952000, utilization: '63.1%' },
-    { name: 'Chuỗi Cung ứng & Logistics DC', budget: 650000000, spent: 340000000, learners: 210, costPerHead: 1619000, utilization: '52.3%' },
-    { name: 'Chương trình Thánh Gióng & SGM Talent Pipeline', budget: 350000000, spent: 150000000, learners: 65, costPerHead: 2307000, utilization: '42.8%' },
+    { name: 'Store Operations', budget: 2200000000, spent: 1540000000, learners: 1450, costPerHead: 1062000, utilization: '70.0%' },
+    { name: 'Supporting Functions / Office', budget: 1300000000, spent: 820000000, learners: 420, costPerHead: 1952000, utilization: '63.1%' },
+    { name: 'Supply Chain & Logistics DC', budget: 650000000, spent: 340000000, learners: 210, costPerHead: 1619000, utilization: '52.3%' },
+    { name: 'Thanh Giong & SGM Talent Pipeline program', budget: 350000000, spent: 150000000, learners: 65, costPerHead: 2307000, utilization: '42.8%' },
   ],
 };
 
@@ -2802,13 +2802,13 @@ export const costTrackingData = {
 
 export const companyHeatmapData = {
   operations: [
-    { entity: 'MM An Phú (Flagship HCMC)', area: 'Miền Nam', foodSafety: 96, coldChain: 94, shrinkControl: 88, posSpeed: 95, customerService: 92, leadership: 86, gapAvg: 8, auditReady: true },
-    { entity: 'MM Bình Phú (Quận 6 HCMC)', area: 'Miền Nam', foodSafety: 91, coldChain: 89, shrinkControl: 82, posSpeed: 90, customerService: 88, leadership: 80, gapAvg: 13, auditReady: true },
-    { entity: 'MM Hiệp Phú (Quận 12 HCMC)', area: 'Miền Nam', foodSafety: 89, coldChain: 86, shrinkControl: 79, posSpeed: 87, customerService: 85, leadership: 78, gapAvg: 16, auditReady: false },
-    { entity: 'MM Thăng Long (Hà Nội)', area: 'Miền Bắc', foodSafety: 94, coldChain: 92, shrinkControl: 86, posSpeed: 93, customerService: 90, leadership: 84, gapAvg: 9, auditReady: true },
-    { entity: 'MM Hà Đông (Hà Nội)', area: 'Miền Bắc', foodSafety: 88, coldChain: 85, shrinkControl: 80, posSpeed: 88, customerService: 86, leadership: 79, gapAvg: 16, auditReady: false },
-    { entity: 'MM Đà Nẵng (Miền Trung)', area: 'Miền Trung', foodSafety: 93, coldChain: 90, shrinkControl: 85, posSpeed: 92, customerService: 89, leadership: 82, gapAvg: 11, auditReady: true },
-    { entity: 'MM Hưng Lợi (Cần Thơ)', area: 'Miền Nam', foodSafety: 90, coldChain: 88, shrinkControl: 81, posSpeed: 89, customerService: 87, leadership: 80, gapAvg: 14, auditReady: true },
+    { entity: 'MM An Phu (Flagship HCMC)', area: 'Southern Region', foodSafety: 96, coldChain: 94, shrinkControl: 88, posSpeed: 95, customerService: 92, leadership: 86, gapAvg: 8, auditReady: true },
+    { entity: 'MM Binh Phu (District 6, HCMC)', area: 'Southern Region', foodSafety: 91, coldChain: 89, shrinkControl: 82, posSpeed: 90, customerService: 88, leadership: 80, gapAvg: 13, auditReady: true },
+    { entity: 'MM Hiep Phu (District 12, HCMC)', area: 'Southern Region', foodSafety: 89, coldChain: 86, shrinkControl: 79, posSpeed: 87, customerService: 85, leadership: 78, gapAvg: 16, auditReady: false },
+    { entity: 'MM Thang Long (Hanoi)', area: 'Northern Region', foodSafety: 94, coldChain: 92, shrinkControl: 86, posSpeed: 93, customerService: 90, leadership: 84, gapAvg: 9, auditReady: true },
+    { entity: 'MM Ha Dong (Hanoi)', area: 'Northern Region', foodSafety: 88, coldChain: 85, shrinkControl: 80, posSpeed: 88, customerService: 86, leadership: 79, gapAvg: 16, auditReady: false },
+    { entity: 'MM Da Nang (Central Region)', area: 'Central Region', foodSafety: 93, coldChain: 90, shrinkControl: 85, posSpeed: 92, customerService: 89, leadership: 82, gapAvg: 11, auditReady: true },
+    { entity: 'MM Hung Loi (Can Tho)', area: 'Southern Region', foodSafety: 90, coldChain: 88, shrinkControl: 81, posSpeed: 89, customerService: 87, leadership: 80, gapAvg: 14, auditReady: true },
   ],
   supportingOffice: [
     { entity: 'OMD - Merchandise & Sourcing', branch: 'Head Office', foodSafety: 95, coldChain: 92, shrinkControl: 90, posSpeed: 75, customerService: 85, leadership: 92, gapAvg: 9, auditReady: true },
@@ -2912,12 +2912,12 @@ export const gamificationData = {
 // Manager Course Approval Requests
 // ---------------------------------------------------------------------------
 
-// Đơn xin học vượt cấp (Sequential Level Gate). Mỗi đơn xin đúng MỘT khóa học
-// nằm cao hơn học viên đúng 1 cấp liền kề. Người duyệt luôn là User Admin
-// hoặc System Admin — 2 role duy nhất còn giữ canApproveLevelSkip — bất kể
-// người gửi đơn là role nào; Manager/Trainer/L&D/HRBP chỉ còn gửi đơn cho
-// chính mình, không duyệt cho ai nữa. 6 đơn dưới đây minh họa cả 5 role đều
-// tự gửi đơn xin vượt cấp cho bản thân, tất cả cùng đổ về 1 hàng đợi chung.
+// Level skip requests (Sequential Level Gate). Each request covers exactly ONE course
+// sits exactly one grade above the learner. The approver is always the User Admin
+// or System Admin — the only 2 roles that still hold canApproveLevelSkip — regardless
+// whichever role submitted it; Manager/Trainer/L&D/HRBP can now only submit requests for
+// themselves, and approve for nobody else. The 6 requests below show all 5 roles
+// submit their own level skip request, all landing in one shared queue.
 export const pendingApprovalRequests = [
   {
     id: 'req-001',
@@ -2933,7 +2933,7 @@ export const pendingApprovalRequests = [
     courseName: 'Bakery & Confectionery Sanitation Protocols',
     requesterRole: 'learner',
     requestDate: '2026-08-19',
-    justification: 'Em đã hoàn thành các khóa vệ sinh cơ bản Level 7 và muốn học sớm quy trình HACCP chuyên sâu của Level 6 để chuẩn bị lên Chuyên viên vận hành quầy bánh.',
+    justification: 'I have completed the Level 7 basic hygiene courses and would like to start the Level 6 advanced HACCP procedures early to prepare for the Bakery Counter Operations Specialist role.',
     courseCost: 'Free (Internal Talent Program)',
     status: 'PENDING', // PENDING, APPROVED, REJECTED
   },
@@ -2951,7 +2951,7 @@ export const pendingApprovalRequests = [
     courseName: 'Hazardous Chemical Handling & Safety Data Sheets (SDS)',
     requesterRole: 'learner',
     requestDate: '2026-08-20',
-    justification: 'Em tham gia đội phản ứng nhanh PCCC của MM An Phú và cần chứng chỉ vận hành thiết bị chuyên dụng ở cấp Chuyên viên.',
+    justification: 'I am on the MM An Phu fire response team and need the specialist-level certification for operating the dedicated equipment.',
     courseCost: 'Free (Internal HSE Program)',
     status: 'PENDING',
   },
@@ -2969,7 +2969,7 @@ export const pendingApprovalRequests = [
     courseName: 'Strategic Thinking & Annual Retail Business Planning',
     requesterRole: 'manager',
     requestDate: '2026-08-21',
-    justification: 'Tôi muốn chuẩn bị năng lực hoạch định chiến lược trước khi được quy hoạch lên vị trí Store General Manager.',
+    justification: 'I want to build strategic planning capability before being nominated for the Store General Manager role.',
     courseCost: 'Internal MMVN complimentary',
     status: 'PENDING',
   },
@@ -2987,7 +2987,7 @@ export const pendingApprovalRequests = [
     courseName: 'Performance Appraisal & KPI Setting Workshops',
     requesterRole: 'trainer',
     requestDate: '2026-08-21',
-    justification: 'Cần chuẩn hóa kỹ năng đánh giá KPI để đồng bộ với khung năng lực Level 2 trước khi triển khai đại trà cho đội giảng viên.',
+    justification: 'KPI evaluation skills need to be standardized against the Level 2 competency framework before rolling out to the full trainer team.',
     courseCost: 'Internal MMVN complimentary',
     status: 'PENDING',
   },
@@ -3005,7 +3005,7 @@ export const pendingApprovalRequests = [
     courseName: 'Emotional Intelligence & Resilient Leadership in Retail',
     requesterRole: 'hrbp',
     requestDate: '2026-08-22',
-    justification: 'Đăng ký học trước khung năng lực lãnh đạo Level 1 phục vụ lộ trình kế nhiệm Trưởng phòng Nhân sự.',
+    justification: 'Early enrollment in the Level 1 leadership framework to support the HR Department Head succession roadmap.',
     courseCost: 'Internal MMVN complimentary',
     status: 'PENDING',
   },
@@ -3023,7 +3023,7 @@ export const pendingApprovalRequests = [
     courseName: 'Emotional Intelligence & Resilient Leadership in Retail',
     requesterRole: 'useradmin',
     requestDate: '2026-08-22',
-    justification: 'Chuẩn bị năng lực lãnh đạo Level 1 trước khi mở rộng phạm vi quản trị nhân sự toàn hệ thống.',
+    justification: 'Building Level 1 leadership capability before expanding HR governance across the whole network.',
     courseCost: 'Internal MMVN complimentary',
     status: 'PENDING',
   },

@@ -46,28 +46,28 @@ export default function LearnerDashboard() {
   const chartData = weeklyStudyHours(user);
   const unreadCount = (notifications.learnerInbox || []).filter((n) => n.unread).length;
 
-  // Lấy các lớp học thực hành / webinar sắp tới
+  // Fetch the upcoming practice classes / webinars
   const upcomingClassrooms = (classrooms || []).filter((s) => s.isEnrolled || s.status === 'UPCOMING' || s.status === 'OPEN').slice(0, 2);
 
-  // Tính toán phân bổ năng lực đào tạo theo nhóm chuyên môn
+  // Computes the training capability distribution by specialist group
   const categoryStats = computeCategoryDistribution(courses);
 
-  // Dữ liệu cho Donut Chart (Biểu đồ tròn)
+  // Data for the donut chart
   const donutChartData = categoryStats.map((c) => ({
     label: c.name,
     value: Math.max(1, c.completedCount),
     tone: c.tone,
   }));
 
-  // Dữ liệu cho Line Chart (Biểu đồ đường)
+  // Data for the line chart
   const lineTrendData = [
-    { label: 'Tuần 1', value: Math.max(1, Math.round(learningHours * 0.2)) },
-    { label: 'Tuần 2', value: Math.max(2, Math.round(learningHours * 0.45)) },
-    { label: 'Tuần 3', value: Math.max(3, Math.round(learningHours * 0.75)) },
-    { label: 'Tuần 4', value: Math.max(4, Math.round(learningHours)) },
+    { label: 'Week 1', value: Math.max(1, Math.round(learningHours * 0.2)) },
+    { label: 'Week 2', value: Math.max(2, Math.round(learningHours * 0.45)) },
+    { label: 'Week 3', value: Math.max(3, Math.round(learningHours * 0.75)) },
+    { label: 'Week 4', value: Math.max(4, Math.round(learningHours)) },
   ];
 
-  // Chỉ số sẵn sàng năng lực (Competency Readiness Score)
+  // Competency Readiness Score
   const competencyScore = courses.length > 0
     ? Math.min(100, Math.round(((completedCount * 1.0 + inProgressCourses.length * 0.4) / Math.max(1, mandatoryCount || courses.length)) * 100))
     : 75;
@@ -82,7 +82,7 @@ export default function LearnerDashboard() {
         className="card card-pad"
         style={{
           marginBottom: 20,
-          background: 'linear-gradient(135deg, #FFFFFF 0%, var(--sage-soft, #ECFDF5) 100%)',
+          background: 'linear-gradient(135deg, var(--paper-raised) 0%, var(--sage-soft) 100%)',
           borderColor: 'var(--sage, #10B981)',
           boxShadow: '0 4px 20px rgba(16, 185, 129, 0.08)',
         }}
@@ -109,17 +109,17 @@ export default function LearnerDashboard() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                  Xin chào, {firstNameOf(user.fullName)}! 👋
+                <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: 'var(--ink)', letterSpacing: '-0.015em' }}>
+                  Hello, {firstNameOf(user.fullName)}! 👋
                 </h1>
                 <Badge tone="rail" icon="ti-map-2">
                   {levelDef.emoji} Level {user.level} &middot; {levelDef.shortVi}
                 </Badge>
                 <Badge tone="amber" icon="ti-flame">
-                  🔥 Chuỗi {streakDays} Ngày Học
+                  🔥 {streakDays}-Day Streak
                 </Badge>
                 <Badge tone="sage" icon="ti-certificate">
-                  📜 {certificates.length} Chứng Chỉ Đạt Chuẩn
+                  📜 {certificates.length} Certificates Earned
                 </Badge>
               </div>
               <p style={{ marginTop: 4, marginBottom: 0, color: 'var(--ink-soft)', fontSize: 13 }}>
@@ -130,14 +130,14 @@ export default function LearnerDashboard() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {isNonLearner && (
               <Button variant="outline" icon="ti-layout-dashboard" onClick={() => navigate(ROLE_HOME[userRole] || '/learner')}>
-                Mở Bảng Điều Khiển {roleDefinition(userRole).shortVi}
+                Open The {roleDefinition(userRole).shortVi} Dashboard
               </Button>
             )}
             <Button variant="outline" icon="ti-calendar-event" onClick={() => navigate('/learner/calendar')}>
-              Lịch Học
+              Class Schedule
             </Button>
             <Button variant="primary" icon="ti-book-2" onClick={() => navigate('/learner/courses')}>
-              Khóa Học Của Tôi ({courses.length})
+              My Courses ({courses.length})
             </Button>
           </div>
         </div>
@@ -165,9 +165,9 @@ export default function LearnerDashboard() {
             />
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: recertAlerts.some((a) => a.recert.isExpired) ? 'var(--rust-soft-text)' : 'var(--amber-soft-text)' }}>
-                Bạn có {recertAlerts.length} khóa học cần hoàn thành sát hạch tái cấp chứng chỉ!
+                You have {recertAlerts.length} courses needing a recertification exam!
               </div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>
                 {recertAlerts.map((a) => `${a.course.title} (${a.recert.statusLabel})`).join(' · ')}
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function LearnerDashboard() {
             icon="ti-refresh"
             onClick={() => navigate('/learner/certificates')}
           >
-            Xem Chứng Chỉ &amp; Thi Tái Cấp
+            View Certificates &amp; Recertification Exam
           </Button>
         </div>
       )}
@@ -187,33 +187,33 @@ export default function LearnerDashboard() {
       {/* 2. FOUR HERO METRIC TILES */}
       <div className="grid grid-4" style={{ marginBottom: 24, gap: 16 }}>
         <StatTile
-          label="Giờ Học"
+          label="Study Hours"
           value={`${learningHours.toFixed(1)}h`}
-          subtext="+2.5h trong 7 ngày qua"
+          subtext="+2.5h in the last 7 days"
           tone="blue"
           icon="ti-clock-hour-4"
           onClick={() => navigate('/learner/history')}
         />
         <StatTile
-          label="Khóa Đã Hoàn Thành"
+          label="Courses Completed"
           value={completedCount}
-          subtext={`${Math.round((completedCount / Math.max(1, courses.length)) * 100)}% tổng số khóa`}
+          subtext={`${Math.round((completedCount / Math.max(1, courses.length)) * 100)}% of all courses`}
           tone="sage"
           icon="ti-circle-check"
           onClick={() => navigate('/learner/courses')}
         />
         <StatTile
-          label="Khóa Bắt Buộc"
+          label="Mandatory Course"
           value={mandatoryCount}
-          subtext={`${mandatoryOutstanding} khóa chưa hoàn thành`}
+          subtext={`${mandatoryOutstanding} courses outstanding`}
           tone="amber"
           icon="ti-alert-triangle"
           onClick={() => navigate('/learner/courses')}
         />
         <StatTile
-          label="Chỉ Số Năng Lực"
+          label="Competency Index"
           value={`${competencyScore}%`}
-          subtext={`Khung chuẩn Level ${user.level}`}
+          subtext={`Level ${user.level} standard framework`}
           tone="rail"
           icon="ti-shield-check"
           onClick={() => navigate('/learner/paths')}
@@ -225,14 +225,14 @@ export default function LearnerDashboard() {
         <div>
           <div className="section-label" style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
             <i className="ti ti-route" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Trục Lộ Trình Đào Tạo &amp; Định Biên
+            Training Roadmap &amp; Requirement Track
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-            Khung chuẩn chức danh theo cấp bậc, đề xuất thăng cấp, chuyên đề tự chọn và khóa học gợi ý thông minh.
+            The standard job-title framework by level, promotion nominations, optional specialist tracks and smart course suggestions.
           </div>
         </div>
         <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/paths')}>
-          Xem Toàn Bộ Học Phần
+          View All Modules
         </Button>
       </div>
 
@@ -243,18 +243,18 @@ export default function LearnerDashboard() {
       {/* 4. MULTI-CHART ANALYTICS (BAR, DONUT, LINE) */}
       <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
         {/* CHART 1: COMPETENCY & DOMAIN DISTRIBUTION */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-chart-pie" style={{ marginRight: 6, color: 'var(--blue)' }} />
-                Phân Bổ Năng Lực Theo Khối Nghiệp Vụ
+                Capability Distribution By Business Area
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Tiến độ hoàn thành theo 5 nhóm kỹ năng trọng tâm
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Completion progress across the 5 core skill groups
               </div>
             </div>
-            <Badge tone="blue">5 Nhóm Kỹ Năng</Badge>
+            <Badge tone="blue">5 Skill Groups</Badge>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -263,10 +263,10 @@ export default function LearnerDashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <i className={`ti ${cat.icon}`} style={{ color: `var(--${cat.tone})`, fontSize: 16 }} />
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>{cat.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{cat.name}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{cat.completedCount}/{cat.totalCount} Khóa</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{cat.completedCount}/{cat.totalCount} Locked</span>
                     <Badge tone={cat.tone} size="sm">{cat.percent}%</Badge>
                   </div>
                 </div>
@@ -277,15 +277,15 @@ export default function LearnerDashboard() {
         </div>
 
         {/* CHART 2: MULTI-VIEW LEARNING ACTIVITY (BAR / DONUT / LINE SWITCHER) */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-chart-bar" style={{ marginRight: 6, color: 'var(--sage)' }} />
-                Thời Lượng Học Tập &amp; Tiến Độ
+                Study Hours &amp; Progress
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Phân tích trực quan theo Biểu Đồ Cột, Tròn và Đường
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Visual analysis with bar, donut and line charts
               </div>
             </div>
 
@@ -302,9 +302,9 @@ export default function LearnerDashboard() {
                   color: activeChartType === 'BAR' ? '#fff' : 'var(--ink-soft)',
                   border: 'none',
                 }}
-                title="Biểu đồ cột theo thứ"
+                title="Bar chart by weekday"
               >
-                📊 Cột
+                📊 Bar
               </button>
               <button
                 type="button"
@@ -317,9 +317,9 @@ export default function LearnerDashboard() {
                   color: activeChartType === 'DONUT' ? '#fff' : 'var(--ink-soft)',
                   border: 'none',
                 }}
-                title="Biểu đồ tròn phân bổ"
+                title="Donut distribution chart"
               >
-                🍩 Tròn
+                🍩 Donut
               </button>
               <button
                 type="button"
@@ -332,9 +332,9 @@ export default function LearnerDashboard() {
                   color: activeChartType === 'LINE' ? '#fff' : 'var(--ink-soft)',
                   border: 'none',
                 }}
-                title="Biểu đồ đường xu hướng tuần"
+                title="Weekly trend line chart"
               >
-                📈 Đường
+                📈 Line
               </button>
             </div>
           </div>
@@ -343,20 +343,20 @@ export default function LearnerDashboard() {
             {activeChartType === 'BAR' && (
               <div style={{ width: '100%' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
-                  Thời Lượng Học Tập Theo Thứ (Giờ)
+                  Study Hours By Weekday
                 </div>
                 <BarChart data={chartData} valueSuffix="h" tone="sage" />
               </div>
             )}
             {activeChartType === 'DONUT' && (
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <DonutChart data={donutChartData} valueSuffix=" khóa" />
+                <DonutChart data={donutChartData} valueSuffix=" course" />
               </div>
             )}
             {activeChartType === 'LINE' && (
               <div style={{ width: '100%' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
-                  Xu Hướng Tích Lũy Giờ Học Qua 4 Tuần Gần Nhất
+                  Study Hours Trend Over The Last 4 Weeks
                 </div>
                 <LineChart data={lineTrendData} valueSuffix="h" tone="rail" />
               </div>
@@ -367,7 +367,7 @@ export default function LearnerDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="ti ti-flame" style={{ color: 'var(--amber)', fontSize: 18 }} />
               <div style={{ fontSize: 12, color: 'var(--ink)' }}>
-                Duy trì <strong>{streakDays} ngày học liên tiếp</strong> &middot; Hoàn thành 88% mục tiêu tháng.
+                Maintain <strong>a {streakDays}-day study streak</strong> &middot; 88% of the monthly goal complete.
               </div>
             </div>
             <Badge tone="sage">+15%</Badge>
@@ -378,26 +378,26 @@ export default function LearnerDashboard() {
       {/* 5. IN-PROGRESS COURSES & UPCOMING LIVE WORKSHOPS */}
       <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
         {/* COLUMN 1: IN-PROGRESS COURSES */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-player-play" style={{ marginRight: 6, color: 'var(--amber)' }} />
-                Khóa Học Đang Theo Dõi ({inProgressCourses.length})
+                Courses In Progress ({inProgressCourses.length})
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Tiếp tục bài học đang dang dở để hoàn thành chứng chỉ
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Continue the lesson in progress to earn your certificate
               </div>
             </div>
             <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/courses')}>
-              Xem Tất Cả
+              View All
             </Button>
           </div>
 
           {inProgressCourses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 12.5 }}>
+            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 13 }}>
               <i className="ti ti-circle-check" style={{ fontSize: 32, color: 'var(--sage)', marginBottom: 6, display: 'block' }} />
-              Bạn đã hoàn thành hết các khóa đang ghi danh! Hãy chọn thêm khóa học mới từ Lộ trình.
+              You have finished every course you are enrolled in! Pick more courses from your roadmap.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -412,7 +412,7 @@ export default function LearnerDashboard() {
                     padding: '12px',
                     border: '1px solid var(--line)',
                     borderRadius: 8,
-                    background: '#fff',
+                    background: 'var(--paper-raised)',
                   }}
                   onClick={() => navigate(`/learner/courses/${c.id}`)}
                 >
@@ -431,7 +431,7 @@ export default function LearnerDashboard() {
                     </div>
                   </div>
                   <Button size="sm" variant="outline" icon="ti-player-play">
-                    Học Tiếp
+                    Continue
                   </Button>
                 </div>
               ))}
@@ -440,26 +440,26 @@ export default function LearnerDashboard() {
         </div>
 
         {/* COLUMN 2: UPCOMING LIVE WORKSHOPS & WEBINARS */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-users-group" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                Lớp Học Trực Tiếp &amp; Workshop Sắp Diễn Ra
+                Upcoming In-Person Classes &amp; Workshops
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Buổi thực hành tại xưởng/siêu thị và lớp webinar trực tuyến
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Hands-on sessions in the workshop/store and online webinar classes
               </div>
             </div>
             <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/learner/classrooms')}>
-              Xem Lớp Học
+              View Classes
             </Button>
           </div>
 
           {upcomingClassrooms.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 12.5 }}>
+            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 13 }}>
               <i className="ti ti-calendar" style={{ fontSize: 32, color: 'var(--rail)', marginBottom: 6, display: 'block' }} />
-              Chưa có lịch lớp thực hành mới. Bấm "Xem Lớp Học" để đăng ký các buổi workshop sắp mở.
+              No new practice class scheduled. Click "View Classes" to register for upcoming workshops.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -481,20 +481,20 @@ export default function LearnerDashboard() {
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                       <Badge tone={cls.modality === 'OFFLINE_STORE' ? 'rust' : 'blue'} size="sm">
-                        {cls.modality === 'OFFLINE_STORE' ? 'Thực Hành Siêu Thị' : 'Webinar Online'}
+                        {cls.modality === 'OFFLINE_STORE' ? 'Store Practice' : 'Webinar Online'}
                       </Badge>
                       <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{cls.code}</span>
                     </div>
                     <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {cls.title}
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
                       <i className="ti ti-map-pin" style={{ marginRight: 4 }} />
-                      {cls.venue} &middot; Giảng viên: <strong>{cls.trainerName}</strong>
+                      {cls.venue} &middot; Trainer: <strong>{cls.trainerName}</strong>
                     </div>
                   </div>
                   <Button size="sm" variant="outline" icon="ti-file-description" onClick={() => navigate('/learner/classrooms')}>
-                    Giáo Trình &amp; QR
+                    Syllabus &amp; QR
                   </Button>
                 </div>
               ))}
@@ -508,25 +508,25 @@ export default function LearnerDashboard() {
         <ResourceCard
           icon="ti-certificate"
           tone="sage"
-          title="Chứng Chỉ Đã Đạt Được"
-          value={`${certificates.length} chứng chỉ điện tử`}
-          subtext="Được chứng thực bảo mật MMVN"
+          title="Certificates Earned"
+          value={`${certificates.length} digital certificates`}
+          subtext="MMVN security verified"
           onClick={() => navigate('/learner/certificates')}
         />
         <ResourceCard
           icon="ti-trophy"
           tone="amber"
-          title="Bảng Thi Đua Học Tập"
-          value={`Top 3 Phòng Ban`}
-          subtext={`Cấp bậc Level ${user.level} · Đạt chuẩn vị trí`}
+          title="Learning Leaderboard"
+          value={`Top 3 Departments`}
+          subtext={`Level ${user.level} · meets the role standard`}
           onClick={() => navigate('/learner/history')}
         />
         <ResourceCard
           icon="ti-bell-ringing"
           tone="rail"
-          title="Thông Báo & Nhắc Nhở"
-          value={`${unreadCount} thông báo mới`}
-          subtext="Cập nhật tiến độ & kỳ sát hạch"
+          title="Notifications & Reminders"
+          value={`${unreadCount} new notifications`}
+          subtext="Progress & examination updates"
         />
       </div>
     </>
@@ -536,9 +536,9 @@ export default function LearnerDashboard() {
 function StatTile({ label, value, subtext, tone, icon, onClick }) {
   const color = tone ? `var(--${tone})` : 'var(--ink)';
   return (
-    <div className="stat card-interactive" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+    <div className="stat card-interactive" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
-        <div className="stat-label" style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
+        <div className="stat-label" style={{ fontSize: 13, fontWeight: 700 }}>{label}</div>
         {icon && (
           <div className="stat-icon-badge" style={{ background: `var(--${tone || 'rail'}-soft)`, color: `var(--${tone || 'rail'}-soft-text)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, width: 36, height: 36, borderRadius: 8 }}>
             <i className={`ti ${icon}`} />
@@ -553,13 +553,13 @@ function StatTile({ label, value, subtext, tone, icon, onClick }) {
 
 function ResourceCard({ icon, tone, title, value, subtext, onClick }) {
   return (
-    <div className={`card card-pad ${onClick ? 'card-interactive' : ''}`} onClick={onClick} style={{ display: 'flex', gap: 14, alignItems: 'center', cursor: onClick ? 'pointer' : 'default', background: '#fff', border: '1px solid var(--line)', borderRadius: 10 }}>
+    <div className={`card card-pad ${onClick ? 'card-interactive' : ''}`} onClick={onClick} style={{ display: 'flex', gap: 14, alignItems: 'center', cursor: onClick ? 'pointer' : 'default', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10 }}>
       <div className="stat-icon-badge" style={{ background: `var(--${tone}-soft)`, color: `var(--${tone}-soft-text)`, width: 44, height: 44, fontSize: 20, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <i className={`ti ${icon}`} />
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: `var(--${tone})`, marginTop: 1 }}>{value}</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: `var(--${tone})`, marginTop: 1 }}>{value}</div>
         {subtext && <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>{subtext}</div>}
       </div>
     </div>
@@ -568,11 +568,11 @@ function ResourceCard({ icon, tone, title, value, subtext, onClick }) {
 
 function computeCategoryDistribution(courses) {
   const groups = [
-    { name: 'Vận Hành & Tiêu Chuẩn Quầy Hàng', tone: 'rail', icon: 'ti-building-store', keywords: ['store', 'operation', 'planogram', 'cashier', 'pos', 'shrinkage', 'trolley', 'stock'] },
-    { name: 'An Toàn Thực Phẩm, HACCP & PCCC', tone: 'rust', icon: 'ti-shield-alert', keywords: ['food', 'safety', 'haccp', 'hygiene', 'cold', 'chain', 'fire', 'pccc', 'evacuation', 'hazard'] },
-    { name: 'Chuyên Môn Ngành Hàng & CNTT', tone: 'blue', icon: 'ti-device-laptop', keywords: ['it', 'security', 'cyber', 'merchandis', 'pricing', 'supply', 'logistics', 'e-commerce', 'forklift'] },
-    { name: 'Lãnh Đạo & Quản Trị Đội Ngũ', tone: 'amber', icon: 'ti-crown', keywords: ['leadership', 'coach', 'conflict', 'management', 'kpi', 'strategic', 'appraisal', 'trainer'] },
-    { name: 'Dịch Vụ Khách Hàng & Văn Hóa', tone: 'sage', icon: 'ti-heart-handshake', keywords: ['customer', 'service', 'horeca', 'culture', 'conduct', 'ethics', 'onboarding'] },
+    { name: 'Operations & Counter Standards', tone: 'rail', icon: 'ti-building-store', keywords: ['store', 'operation', 'planogram', 'cashier', 'pos', 'shrinkage', 'trolley', 'stock'] },
+    { name: 'Food Safety, HACCP & Fire Prevention', tone: 'rust', icon: 'ti-shield-alert', keywords: ['food', 'safety', 'haccp', 'hygiene', 'cold', 'chain', 'fire', 'pccc', 'evacuation', 'hazard'] },
+    { name: 'Category Expertise & IT', tone: 'blue', icon: 'ti-device-laptop', keywords: ['it', 'security', 'cyber', 'merchandis', 'pricing', 'supply', 'logistics', 'e-commerce', 'forklift'] },
+    { name: 'Leadership & Team Management', tone: 'amber', icon: 'ti-crown', keywords: ['leadership', 'coach', 'conflict', 'management', 'kpi', 'strategic', 'appraisal', 'trainer'] },
+    { name: 'Customer Service & Culture', tone: 'sage', icon: 'ti-heart-handshake', keywords: ['customer', 'service', 'horeca', 'culture', 'conduct', 'ethics', 'onboarding'] },
   ];
 
   return groups.map((grp) => {

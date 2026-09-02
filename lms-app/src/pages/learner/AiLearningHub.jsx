@@ -19,8 +19,8 @@ export default function AiLearningHub() {
     {
       id: 1,
       sender: 'bot',
-      text: `Xin chào **${user.fullName}**! Tôi là **Trợ lý AI Đào tạo MM MegaLearn**. Bạn có thể hỏi tôi bất kỳ thắc mắc nào về kiến thức bài học, quy chuẩn an toàn thực phẩm HACCP, hoặc ôn tập câu hỏi trắc nghiệm trước khi thi.`,
-      time: 'Vừa xong',
+      text: `Hello **${user.fullName}**! I am the **MM MegaLearn AI Training Assistant**. Ask me anything about lesson content, HACCP food safety standards, or revise quiz questions before your exam.`,
+      time: 'Just now',
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -30,7 +30,7 @@ export default function AiLearningHub() {
   // Recommends courses created by Admin that the user has NOT completed yet
   const uncompletedCourses = allCourses.filter((c) => {
     const isCompleted = c.enrollment?.status === 'COMPLETED';
-    // Thang cấp bậc đảo ngược: số càng nhỏ càng cao, nên Level > 4 nghĩa là dưới cấp Quản lý.
+    // The level scale is inverted: a smaller number is more senior, so Level > 4 means below manager grade.
     const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && levelValue(user.level) > 4;
     return !isCompleted && !isManagerCourse;
   });
@@ -46,25 +46,25 @@ export default function AiLearningHub() {
 
   function getAiReason(course) {
     if (course.code?.startsWith('FSH') || course.domain === 'Food Safety & Hygiene') {
-      return `Đề xuất trực tiếp cho vị trí ${user.position}: Cần thiết để đáp ứng tiêu chuẩn kiểm định an toàn vệ sinh thực phẩm HACCP tại xưởng chế biến.`;
+      return `Recommended directly for the ${user.position} role: required to meet HACCP food hygiene and safety audit standards in the processing workshop.`;
     }
     if (course.code?.startsWith('COLD') || course.domain === 'Cold Chain') {
-      return `Bổ trợ nghiệp vụ bảo quản hàng lạnh và chống sốc nhiệt cho nhóm sản phẩm tươi sống tại siêu thị.`;
+      return `Supplementary training on chilled goods storage and thermal shock prevention for fresh products in store.`;
     }
     if (course.code?.startsWith('HSE') || course.domain === 'Health & Safety') {
-      return `Khóa học tuân thủ bắt buộc định kỳ về PCCC và An toàn lao động cho toàn bộ nhân sự khối Vận hành.`;
+      return `A recurring mandatory compliance course on fire safety and occupational safety for all Operations division staff.`;
     }
     if (course.code?.startsWith('STOPS') || course.domain === 'Store Operations') {
-      return `Chuẩn hóa kỹ năng vận hành quầy kệ, chống hao hụt và nâng cao trải nghiệm khách hàng tại MM Mega Market.`;
+      return `Standardizes shelf and counter operations, shrinkage prevention and the customer experience at MM Mega Market.`;
     }
-    return `Khóa học tự chọn nâng cao năng lực chuyên môn trong danh mục đào tạo của Ban L&D MM Mega Market.`;
+    return `An optional course to deepen professional capability within the MM Mega Market L&D catalog.`;
   }
 
   function handleSend(textToSend) {
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
-    const userMsg = { id: Date.now(), sender: 'user', text: text, time: 'Vừa xong' };
+    const userMsg = { id: Date.now(), sender: 'user', text: text, time: 'Just now' };
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputText('');
     setIsTyping(true);
@@ -72,19 +72,30 @@ export default function AiLearningHub() {
     setTimeout(() => {
       let reply = '';
       const lower = text.toLowerCase();
-      if (lower.includes('haccp') || lower.includes('vệ sinh') || lower.includes('nhiệt độ') || lower.includes('bánh')) {
-        reply = `🥖 **Quy Chuẩn An Toàn Thực Phẩm Quầy Bánh (SOP-OMD-04)**:\n• **Tủ ủ bột**: Duy trì nhiệt độ **28°C – 32°C**, độ ẩm tương đối 80-85%.\n• **Lò nướng đối lưu**: Kiểm tra cảm biến nhiệt trước mỗi ca nướng.\n• **Ghi chép nhật ký**: Ghi nhiệt độ vào Biểu mẫu SOP-OMD-04B mỗi **120 phút**.\n• **Xử lý sự cố**: Nếu nhiệt độ lệch quá ±3°C, tạm dừng nướng mẻ mới và báo ngay cho Trưởng ca.`;
-      } else if (lower.includes('pccc') || lower.includes('cháy') || lower.includes('thoát hiểm') || lower.includes('bình')) {
-        reply = `🔥 **Quy Trình Ứng Phó Sự Cố PCCC Siêu Thị (HSE-PCCC-02)**:\n1. Bấm chuông báo cháy khẩn cấp gần nhất.\n2. Sử dụng bình khí CO2 (cho thiết bị điện) hoặc bình Bọt Foam (cho khu vực dầu mỡ xưởng nấu/nướng).\n3. Hướng dẫn khách hàng di chuyển theo đèn Exit dạ quang ra **Khu vực tập kết an toàn số 1 tại bãi đỗ xe**.`;
-      } else if (lower.includes('bài thi') || lower.includes('trắc nghiệm') || lower.includes('điểm đạt')) {
-        reply = `🎯 **Thông Tin Bài Thi Đánh Giá (Final Assessment)**:\n• Điểm đạt chuẩn là **80%** (tương đương đúng 4/5 câu hỏi).\n• Mỗi học viên có tối đa **3 lần thi lại**.\n• Thời gian làm bài tiêu chuẩn là **15 phút**. Chúc bạn ôn tập tốt và đạt điểm tối đa!`;
+      if (lower.includes('haccp') || lower.includes('hygiene') || lower.includes('temperature') || lower.includes('bakery')) {
+        reply = `🥖 **Bakery Counter Food Safety Standard (SOP-OMD-04)**:
+• **Proofing cabinet**: maintain **28°C – 32°C**, relative humidity 80-85%.
+• **Convection oven**: check the temperature sensor before every baking shift.
+• **Logging**: record the temperature on form SOP-OMD-04B every **120 minutes**.
+• **Incident handling**: if the temperature deviates by more than ±3°C, stop baking new batches and notify the shift leader immediately.`;
+      } else if (lower.includes('pccc') || lower.includes('fire') || lower.includes('evacuation') || lower.includes('extinguisher')) {
+        reply = `🔥 **Store Fire Incident Response Procedure (HSE-PCCC-02)**:
+1. Press the nearest emergency fire alarm.
+2. Use a CO2 extinguisher (for electrical equipment) or a foam extinguisher (for oil/grease areas in the cooking/baking workshop).
+3. Guide customers along the luminous exit signs to **Safe Assembly Point 1 in the car park**.`;
+      } else if (lower.includes('exam') || lower.includes('quiz') || lower.includes('pass mark')) {
+        reply = `🎯 **Final Assessment Information**:
+• The pass mark is **80%** (exactly 4 of 5 questions).
+• Each learner gets up to **3 retakes**.
+• The standard time limit is **15 minutes**. Good luck with your revision — aim for full marks!`;
       } else {
-        reply = `💡 **Giải Đáp Từ AI Tutor MM MegaLearn**:\nNội dung câu hỏi của bạn đã được đối soát với các khóa học và quy chuẩn đào tạo hiện hành của MM Mega Market. Bạn có thể bấm vào tab **"Gợi Ý Khóa Học Cá Nhân Hóa"** để xem và vào học trực tiếp các khóa liên quan.`;
+        reply = `💡 **Answer From The MM MegaLearn AI Tutor**:
+Your question has been cross-checked against MM Mega Market's current courses and training standards. Click the **"Personalized Course Suggestions"** tab to see and open the related courses directly.`;
       }
 
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, sender: 'bot', text: reply, time: 'Vừa xong' },
+        { id: Date.now() + 1, sender: 'bot', text: reply, time: 'Just now' },
       ]);
       setIsTyping(false);
     }, 600);
@@ -96,11 +107,11 @@ export default function AiLearningHub() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>AI Learning Hub &amp; Gợi Ý Khóa Học</h1>
-            <Badge tone="ai" icon="ti-sparkles">Trợ Lý AI Doanh Nghiệp</Badge>
+            <h1>AI Learning Hub &amp; Course Suggestions</h1>
+            <Badge tone="ai" icon="ti-sparkles">Enterprise AI Assistant</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Hệ thống AI tự động phân tích chức danh <strong>{user.position}</strong> ({user.branchName || 'Khối Vận hành Siêu thị'}) để gợi ý các khóa học chưa hoàn thành từ kho bài giảng của L&amp;D Admin.
+            The AI system analyzes job titles automatically <strong>{user.position}</strong> ({user.branchName || 'Store Operations Division'}) to suggest the unfinished courses from the L&amp;D Admin library.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -109,14 +120,14 @@ export default function AiLearningHub() {
             icon="ti-bulb"
             onClick={() => setActiveTab('recommendations')}
           >
-            Khóa Học Được Gợi Ý ({recommendedCourses.length})
+            Suggested Courses ({recommendedCourses.length})
           </Button>
           <Button
             variant={activeTab === 'tutor' ? 'primary' : 'outline'}
             icon="ti-message-chatbot"
             onClick={() => setActiveTab('tutor')}
           >
-            Hỏi Đáp Cùng AI Tutor
+            Ask The AI Tutor
           </Button>
         </div>
       </div>
@@ -124,8 +135,8 @@ export default function AiLearningHub() {
       {/* Tabs */}
       <Tabs
         tabs={[
-          { id: 'recommendations', label: 'Gợi Ý Khóa Học Cá Nhân Hóa (Từ Danh Mục Admin)', icon: 'ti-bulb', count: recommendedCourses.length },
-          { id: 'tutor', label: 'Trợ Lý AI Hỏi Đáp & Ôn Tập Bài Học', icon: 'ti-message-chatbot' },
+          { id: 'recommendations', label: 'Personalized Course Suggestions (From The Admin Catalog)', icon: 'ti-bulb', count: recommendedCourses.length },
+          { id: 'tutor', label: 'AI Assistant For Lesson Q&A And Revision', icon: 'ti-message-chatbot' },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -139,15 +150,15 @@ export default function AiLearningHub() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Lọc theo chuyên ngành:</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Filter by specialization:</span>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {[
-                  { id: 'ALL', label: 'Tất Cả Khóa Gợi Ý' },
-                  { id: 'FRESH_FOOD', label: 'Thực Phẩm Tươi Sống & Bánh Mì (HACCP)' },
-                  { id: 'STORE_OPS', label: 'Vận Hành Quầy Kệ Siêu Thị' },
-                  { id: 'SAFETY', label: 'An Toàn PCCC & Bảo Mật' },
-                  { id: 'DIGITAL', label: 'Thương Mại Điện Tử & Đơn Hàng' },
+                  { id: 'ALL', label: 'All Suggested Courses' },
+                  { id: 'FRESH_FOOD', label: 'Fresh Food & Bakery (HACCP)' },
+                  { id: 'STORE_OPS', label: 'Store Shelf & Counter Operations' },
+                  { id: 'SAFETY', label: 'Fire Safety & Security' },
+                  { id: 'DIGITAL', label: 'E-Commerce & Orders' },
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -155,7 +166,7 @@ export default function AiLearningHub() {
                     style={{
                       border: '1px solid',
                       borderColor: categoryFilter === f.id ? 'var(--blue)' : 'var(--line)',
-                      background: categoryFilter === f.id ? 'var(--blue)' : '#fff',
+                      background: categoryFilter === f.id ? 'var(--blue)' : 'var(--paper-raised)',
                       color: categoryFilter === f.id ? '#fff' : 'var(--ink)',
                       padding: '5px 14px',
                       borderRadius: 20,
@@ -176,7 +187,7 @@ export default function AiLearningHub() {
             {recommendedCourses.length === 0 ? (
               <div className="card card-pad empty-state" style={{ gridColumn: '1 / -1' }}>
                 <i className="ti ti-circle-check" style={{ fontSize: 40, color: 'var(--sage)' }} />
-                <p>Tuyệt vời! Bạn đã hoàn thành toàn bộ các khóa học trong nhóm chuyên ngành này.</p>
+                <p>Excellent! You have completed every course in this specialist group.</p>
               </div>
             ) : (
               recommendedCourses.map((course) => {
@@ -201,11 +212,11 @@ export default function AiLearningHub() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{course.code}</span>
                           <Badge tone={isInPerson ? 'amber' : 'blue'}>
-                            {isInPerson ? 'Thực Hành Xưởng (ILT)' : (course.format || 'E-learning')}
+                            {isInPerson ? 'Workshop Practice (ILT)' : (course.format || 'E-learning')}
                           </Badge>
                         </div>
                         <Badge tone={course.courseType === 'MANDATORY' ? 'amber' : 'sage'}>
-                          {course.courseType === 'MANDATORY' ? 'Khóa Bắt Buộc' : 'Tự Chọn Bổ Trợ'}
+                          {course.courseType === 'MANDATORY' ? 'Mandatory Course' : 'Optional Supplementary'}
                         </Badge>
                       </div>
 
@@ -215,24 +226,24 @@ export default function AiLearningHub() {
                       </div>
 
                       {/* AI Matching Justification */}
-                      <div style={{ background: '#F0FDF4', borderRadius: 8, padding: '8px 12px', marginBottom: 12, border: '1px solid #DCFCE7' }}>
-                        <div style={{ fontSize: 11.5, color: '#166534', lineHeight: 1.45 }}>
+                      <div style={{ background: 'var(--sage-soft)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, border: '1px solid #DCFCE7' }}>
+                        <div style={{ fontSize: 12, color: 'var(--sage-soft-text)', lineHeight: 1.45 }}>
                           <i className="ti ti-sparkles" style={{ marginRight: 4, color: '#16A34A' }} />
-                          <strong>Lý do AI đề xuất:</strong> {getAiReason(course)}
+                          <strong>Why the AI recommends it:</strong> {getAiReason(course)}
                         </div>
                       </div>
 
                       {/* Meta specs */}
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12, display: 'flex', gap: 12 }}>
-                        <span><i className="ti ti-clock" style={{ marginRight: 4 }} /> Thời lượng: <strong>{course.estimatedDuration || '3h'}</strong></span>
-                        <span><i className="ti ti-award" style={{ marginRight: 4 }} /> Điểm đạt: <strong>{course.passingScore || 80}%</strong></span>
+                        <span><i className="ti ti-clock" style={{ marginRight: 4 }} /> Duration: <strong>{course.estimatedDuration || '3h'}</strong></span>
+                        <span><i className="ti ti-award" style={{ marginRight: 4 }} /> Pass score: <strong>{course.passingScore || 80}%</strong></span>
                       </div>
                     </div>
 
                     {/* Action Row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-                      <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
-                        {isInPerson && course.trainerName ? `GV: ${course.trainerName}` : 'Do L&D Admin ban hành'}
+                      <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                        {isInPerson && course.trainerName ? `Trainer: ${course.trainerName}` : 'Issued by the L&D Admin'}
                       </span>
                       <Button
                         size="sm"
@@ -247,7 +258,7 @@ export default function AiLearningHub() {
                           }
                         }}
                       >
-                        {isInPerson ? 'Xem Lịch Thực Hành' : isEnrolled ? 'Vào Học Ngay' : 'Đăng Ký & Vào Học'}
+                        {isInPerson ? 'View The Practice Schedule' : isEnrolled ? 'Start Learning' : 'Enroll & Start Learning'}
                       </Button>
                     </div>
                   </div>
@@ -266,9 +277,9 @@ export default function AiLearningHub() {
               <i className="ti ti-message-chatbot" />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>Trợ Lý AI Hỏi Đáp Bài Học (AI Tutor)</div>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>AI Lesson Q&A Assistant (AI Tutor)</div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                Hỗ trợ giải đáp kiến thức về các khóa học HACCP, PCCC, An toàn thông tin và quy trình vận hành MM Mega Market.
+                Answers questions on the HACCP, fire safety and information security courses, and MM Mega Market operating procedures.
               </div>
             </div>
           </div>
@@ -276,9 +287,9 @@ export default function AiLearningHub() {
           {/* Quick Prompts */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             {[
-              'Quy chuẩn nhiệt độ tủ ủ bột bánh mì là bao nhiêu?',
-              'Quy trình PCCC khi xảy ra chập cháy tại siêu thị?',
-              'Bài thi trắc nghiệm cần đạt bao nhiêu điểm?',
+              'What is the standard proofing cabinet temperature for bread?',
+              'What is the fire procedure for an electrical fire in the store?',
+              'What score is required to pass the quiz?',
             ].map((p, i) => (
               <button
                 key={i}
@@ -321,7 +332,7 @@ export default function AiLearningHub() {
             {isTyping && (
               <div style={{ alignSelf: 'flex-start', background: 'var(--paper-sunken)', padding: '8px 14px', borderRadius: 12, fontSize: 12, color: 'var(--ink-soft)' }}>
                 <i className="ti ti-loader" style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />
-                AI Tutor đang soạn câu trả lời...
+                The AI Tutor is composing an answer...
               </div>
             )}
           </div>
@@ -332,13 +343,13 @@ export default function AiLearningHub() {
               type="text"
               className="field-input"
               style={{ flex: 1 }}
-              placeholder="Nhập câu hỏi của bạn về bài học..."
+              placeholder="Ask a question about the lesson..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             />
             <Button variant="primary" icon="ti-send" onClick={() => handleSend()}>
-              Gửi
+              Send
             </Button>
           </div>
         </div>

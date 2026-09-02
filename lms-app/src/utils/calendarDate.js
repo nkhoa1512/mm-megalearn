@@ -1,11 +1,11 @@
 // src/utils/calendarDate.js
 //
-// Ngày trong toàn bộ codebase là chuỗi 'YYYY-MM-DD' thuần (xem isoPlusDays()
-// trong mockData.js) — các hàm ở đây tuyệt đối không dùng new Date(isoString)
-// để tránh lỗi lệch múi giờ khi parse chuỗi ISO (JS coi 'YYYY-MM-DD' là UTC
-// midnight; .getDate() ở múi giờ có offset âm có thể lùi 1 ngày). Chỉ dùng
-// constructor số new Date(year, monthIndex, day) cho toán ngày, và luôn
-// format ngược lại bằng ghép chuỗi thủ công, không dùng .toISOString().
+// Dates across the codebase are plain 'YYYY-MM-DD' strings (see isoPlusDays()
+// in mockData.js) — the functions here must never use new Date(isoString)
+// to avoid timezone drift when parsing an ISO string (JS treats 'YYYY-MM-DD' as UTC
+// midnight; .getDate() in a negative-offset zone can go back a day). Only use
+// the numeric constructor new Date(year, monthIndex, day) for date maths, and always
+// format back by manual string concatenation, never .toISOString().
 
 export function pad2(n) {
   return String(n).padStart(2, '0');
@@ -20,7 +20,7 @@ export function parseDateString(dateStr) {
   const y = parts[0] || 2026;
   const m = parts[1] || 1;
   const d = parts[2] || 1;
-  return { y, m, d }; // m là số tháng lịch (1-12), không phải zero-indexed
+  return { y, m, d }; // m is the calendar month number (1-12), not zero-indexed
 }
 
 export function formatDateString(y, m, d) {
@@ -92,10 +92,10 @@ export function getWeekDays(dateStr) {
   return days;
 }
 
-const MONTH_LABELS_VI = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+const MONTH_LABELS_VI = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTH_LABELS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const WEEKDAY_NAMES_VI = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+const WEEKDAY_NAMES_VI = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const WEEKDAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function formatMonthLabel(monthStr, language = 'vi') {
@@ -113,21 +113,21 @@ export function formatFullDateLabel(dateStr, language = 'vi') {
   if (language === 'en') {
     return `${WEEKDAY_NAMES_EN[weekday]}, ${MONTH_LABELS_EN[m - 1]} ${d}, ${y}`;
   }
-  return `${WEEKDAY_NAMES_VI[weekday]}, ngày ${d} ${MONTH_LABELS_VI[m - 1]}, ${y}`;
+  return `${WEEKDAY_NAMES_VI[weekday]}, ${d} ${MONTH_LABELS_VI[m - 1]}, ${y}`;
 }
 
 export function formatRelativeDay(dateStr, language = 'vi') {
   const today = todayDateString();
   if (dateStr === today) {
-    return language === 'en' ? 'Today' : 'Hôm nay';
+    return language === 'en' ? 'Today' : 'Today';
   }
   const tomorrow = addDays(today, 1);
   if (dateStr === tomorrow) {
-    return language === 'en' ? 'Tomorrow' : 'Ngày mai';
+    return language === 'en' ? 'Tomorrow' : 'Tomorrow';
   }
   const yesterday = addDays(today, -1);
   if (dateStr === yesterday) {
-    return language === 'en' ? 'Yesterday' : 'Hôm qua';
+    return language === 'en' ? 'Yesterday' : 'Yesterday';
   }
 
   // Calculate day difference
@@ -136,13 +136,13 @@ export function formatRelativeDay(dateStr, language = 'vi') {
   const diffDays = Math.round((new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1)) / (1000 * 60 * 60 * 24));
 
   if (diffDays > 0) {
-    return language === 'en' ? `In ${diffDays} days` : `Còn ${diffDays} ngày`;
+    return language === 'en' ? `In ${diffDays} days` : `${diffDays} days left`;
   }
-  return language === 'en' ? `${Math.abs(diffDays)} days ago` : `Đã qua ${Math.abs(diffDays)} ngày`;
+  return language === 'en' ? `${Math.abs(diffDays)} days ago` : `${Math.abs(diffDays)} days ago`;
 }
 
 /**
- * Xuất file .ics iCalendar chuẩn cho Outlook, Google Calendar, Apple Calendar
+ * Exports a standard .ics iCalendar file for Outlook, Google Calendar and Apple Calendar
  */
 export function generateIcsFile(events = [], calendarTitle = 'MM MegaLearn Calendar') {
   const cleanTitle = calendarTitle.replace(/[^a-zA-Z0-9_\- ]/g, '');
@@ -162,8 +162,8 @@ export function generateIcsFile(events = [], calendarTitle = 'MM MegaLearn Calen
     const { y, m, d } = parseDateString(ev.date || todayDateString());
     const dateFormatted = `${y}${pad2(m)}${pad2(d)}`;
     const uid = `${ev.id || Math.random().toString(36).substr(2, 9)}@megalearn.mmvn.com`;
-    const summary = (ev.title || 'Sự kiện đào tạo MM MegaLearn').replace(/,/g, '\\,');
-    const description = `${ev.subtitle || ''} [MM MegaLearn - Cấp Bậc & Đào Tạo]`.replace(/\n/g, '\\n');
+    const summary = (ev.title || 'MM MegaLearn training event').replace(/,/g, '\\,');
+    const description = `${ev.subtitle || ''} [MM MegaLearn - Job Levels & Training]`.replace(/\n/g, '\\n');
     const location = (ev.venue || 'MM Mega Market LMS').replace(/,/g, '\\,');
 
     icsContent.push('BEGIN:VEVENT');

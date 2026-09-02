@@ -149,7 +149,7 @@ export default function LearnerHistory() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{log.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>{log.moduleTitle}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{log.moduleTitle}</div>
                       {log.details && (
                         <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 3, fontStyle: 'italic' }}>
                           &bull; {log.details}
@@ -186,7 +186,7 @@ export default function LearnerHistory() {
                         <Badge tone="amber" icon="ti-clock">In-Progress</Badge>
                       )}
                     </td>
-                    <td style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                    <td style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
                       {log.timestamp}
                     </td>
                     <td>

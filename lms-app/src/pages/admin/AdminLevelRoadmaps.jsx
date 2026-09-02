@@ -27,7 +27,7 @@ function labelForSubDepartment(id) {
   return subDepartments.find((d) => d.id === id)?.name || id;
 }
 
-/** Nhãn phân tầng dễ đọc cho 1 Scope Key, vd. "Khối Vận Hành Siêu Thị › Merchandise Division › Processed Fresh Food › Level 7". */
+/** A readable hierarchical label for one Scope Key, e.g. "Store Operations › Merchandise Division › Processed Fresh Food › Level 7". */
 function scopeBreadcrumb(scopeKey) {
   const { buId, divisionId, departmentId, subDepartmentId, level } = parseScopeKey(scopeKey);
   const bu = SCOPE_BUSINESS_UNITS.find((b) => b.id === buId);
@@ -49,14 +49,14 @@ function positionLabel(row) {
 }
 
 const ROADMAP_GROUP_BY_OPTIONS = [
-  { id: 'DIVISION', label: 'Theo Division (Phòng/Ban)' },
-  { id: 'DEPARTMENT', label: 'Theo Department (Bộ Phận)' },
-  { id: 'LEVEL', label: 'Theo Cấp Bậc (Level)' },
-  { id: 'STATUS', label: 'Theo Trạng Thái Lộ Trình' },
-  { id: 'NONE', label: 'Không gộp nhóm' },
+  { id: 'DIVISION', label: 'By Division' },
+  { id: 'DEPARTMENT', label: 'By Department' },
+  { id: 'LEVEL', label: 'By Job Level' },
+  { id: 'STATUS', label: 'By Roadmap Status' },
+  { id: 'NONE', label: 'No grouping' },
 ];
 
-/** Danh sách khóa học của 1 lộ trình + nút Thêm/Xóa — dùng chung cho modal Chỉnh Sửa & Tạo Mới. */
+/** The course list of one roadmap plus Add/Remove buttons — shared by the Edit & Create modals. */
 function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
@@ -75,9 +75,9 @@ function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ fontWeight: 700, fontSize: 13 }}>{courseIds.length} khóa học trong lộ trình</div>
+        <div style={{ fontWeight: 700, fontSize: 13 }}>{courseIds.length} courses in the roadmap</div>
         <Button size="sm" variant="primary" icon="ti-plus" onClick={() => setPickerOpen((v) => !v)}>
-          {pickerOpen ? 'Đóng Danh Mục' : 'Thêm Khóa Học'}
+          {pickerOpen ? 'Close The Catalog' : 'Add Course'}
         </Button>
       </div>
 
@@ -86,23 +86,23 @@ function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
           <input
             type="text"
             className="field-input"
-            placeholder="Tìm theo tên, mã hoặc lĩnh vực khóa học..."
+            placeholder="Search by course name, code or area..."
             value={pickerSearch}
             onChange={(e) => setPickerSearch(e.target.value)}
             style={{ width: '100%', marginBottom: 10 }}
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
             {candidates.length === 0 ? (
-              <div style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', padding: 14 }}>Không tìm thấy khóa học phù hợp.</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', padding: 14 }}>No matching course found.</div>
             ) : (
               candidates.map((course) => (
-                <div key={course.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff' }}>
+                <div key={course.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper-raised)' }}>
                   <img src={getCourseImage(course)} alt={course.title} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={course.title}>{course.title}</div>
-                    <div style={{ fontSize: 10.5, color: 'var(--ink-faint)' }}>{course.code} · {course.domain || course.category} · Level {course.targetLevel}</div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{course.code} · {course.domain || course.category} · Level {course.targetLevel}</div>
                   </div>
-                  <Button size="sm" variant="primary" icon="ti-plus" onClick={() => onChange([...courseIds, course.id])}>Thêm</Button>
+                  <Button size="sm" variant="primary" icon="ti-plus" onClick={() => onChange([...courseIds, course.id])}>Add</Button>
                 </div>
               ))
             )}
@@ -111,7 +111,7 @@ function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
       )}
 
       {courseIds.length === 0 ? (
-        <div style={{ fontSize: 12.5, color: 'var(--ink-faint)', padding: '16px 0', textAlign: 'center' }}>Chưa có khóa học nào — bấm &quot;Thêm Khóa Học&quot; để bắt đầu.</div>
+        <div style={{ fontSize: 13, color: 'var(--ink-faint)', padding: '16px 0', textAlign: 'center' }}>No course yet — click &quot;Add Course&quot; to start.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {courseIds.map((id, idx) => {
@@ -119,19 +119,19 @@ function CourseListEditor({ courseIds, onChange, courses, onCustomizeImage }) {
             if (!course) return null;
             return (
               <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--rail, #005BAA)', color: '#fff', textAlign: 'center', lineHeight: '22px', fontSize: 10.5, fontWeight: 800, flexShrink: 0 }}>{idx + 1}</div>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--rail, #005BAA)', color: '#fff', textAlign: 'center', lineHeight: '22px', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{idx + 1}</div>
                 <img
                   src={getCourseImage(course)}
                   alt={course.title}
                   style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0, cursor: onCustomizeImage ? 'pointer' : 'default' }}
                   onClick={() => onCustomizeImage && onCustomizeImage(course)}
-                  title={onCustomizeImage ? 'Bấm để đổi ảnh mốc lộ trình' : undefined}
+                  title={onCustomizeImage ? 'Click to change the roadmap milestone image' : undefined}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={course.title}>{course.title}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={course.title}>{course.title}</div>
                   <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{course.code} · {course.domain || course.category} · Level {course.targetLevel}</div>
                 </div>
-                <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => onChange(courseIds.filter((cid) => cid !== id))} title="Xóa khỏi lộ trình" />
+                <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => onChange(courseIds.filter((cid) => cid !== id))} title="Remove from the roadmap" />
               </div>
             );
           })}
@@ -220,8 +220,8 @@ export default function AdminLevelRoadmaps() {
     return (
       <div className="empty-state">
         <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
-        <p>{language === 'en' ? 'You do not have permission to manage Level Roadmaps.' : 'Bạn không có quyền quản lý Lộ trình Cấp bậc.'}</p>
-        <Link to="/">{language === 'en' ? 'Back to Home' : 'Về trang chủ'}</Link>
+        <p>{language === 'en' ? 'You do not have permission to manage Level Roadmaps.' : 'You do not have permission to manage level roadmaps.'}</p>
+        <Link to="/">{language === 'en' ? 'Back to Home' : 'Back to home'}</Link>
       </div>
     );
   }
@@ -252,10 +252,10 @@ export default function AdminLevelRoadmaps() {
   });
 
   function groupKeyOf(r) {
-    if (groupBy === 'DIVISION') return { key: r.divisionId || 'NONE', label: r.divisionId ? labelForDivision(r.divisionId) : 'Toàn Khối (không gắn Division)', icon: 'ti-building' };
-    if (groupBy === 'DEPARTMENT') return { key: r.departmentId || 'NONE', label: r.departmentId ? labelForDepartment(r.departmentId) : 'Toàn Division (không gắn Department)', icon: 'ti-stack-2' };
+    if (groupBy === 'DIVISION') return { key: r.divisionId || 'NONE', label: r.divisionId ? labelForDivision(r.divisionId) : 'Whole Business Unit (no division attached)', icon: 'ti-building' };
+    if (groupBy === 'DEPARTMENT') return { key: r.departmentId || 'NONE', label: r.departmentId ? labelForDepartment(r.departmentId) : 'Whole Division (no department attached)', icon: 'ti-stack-2' };
     if (groupBy === 'LEVEL') return { key: r.level, label: `Level ${r.level} — ${levelShortLabel(r.level)}`, icon: 'ti-stairs-up' };
-    if (groupBy === 'STATUS') return { key: r.isInherited ? 'INHERITED' : 'CUSTOM', label: r.isInherited ? 'Lộ Trình Đang Kế Thừa Chuẩn' : 'Lộ Trình Đã Tùy Biến Riêng', icon: r.isInherited ? 'ti-git-branch' : 'ti-award' };
+    if (groupBy === 'STATUS') return { key: r.isInherited ? 'INHERITED' : 'CUSTOM', label: r.isInherited ? 'Roadmap Inherits The Standard' : 'Roadmap Customized Separately', icon: r.isInherited ? 'ti-git-branch' : 'ti-award' };
     return { key: 'ALL', label: '', icon: '' };
   }
 
@@ -293,47 +293,47 @@ export default function AdminLevelRoadmaps() {
 
   function renderTable(rows) {
     return (
-      <div className="card" style={{ overflowX: 'auto', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card" style={{ overflowX: 'auto', background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Vị Trí Cơ Cấu Trực Thuộc</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', width: 110, fontWeight: 700 }}>Cấp Bậc</th>
-              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Nhân Sự</th>
-              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Khóa Học</th>
-              <th style={{ padding: '12px 14px', textAlign: 'left', width: 180, fontWeight: 700 }}>Trạng Thái Lộ Trình</th>
-              <th style={{ padding: '12px 14px', textAlign: 'right', width: 170, fontWeight: 700 }}>Thao Tác</th>
+            <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+              <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Parent Org Position</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', width: 110, fontWeight: 700 }}>Job Level</th>
+              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Employee</th>
+              <th style={{ padding: '12px 14px', textAlign: 'center', width: 90, fontWeight: 700 }}>Course</th>
+              <th style={{ padding: '12px 14px', textAlign: 'left', width: 180, fontWeight: 700 }}>Roadmap Status</th>
+              <th style={{ padding: '12px 14px', textAlign: 'right', width: 170, fontWeight: 700 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--ink-soft)' }}>Không có vị trí nào khớp bộ lọc.</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--ink-soft)' }}>No position matches the filters.</td></tr>
             ) : (
               rows.map((r) => (
                 <tr key={r.scopeKey} style={{ borderBottom: '1px solid var(--line)' }}>
-                  <td style={{ padding: '12px 14px', fontSize: 12.5, fontWeight: 600, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={positionLabel(r)}>
+                  <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={positionLabel(r)}>
                     {positionLabel(r)}
                   </td>
                   <td style={{ padding: '12px 14px' }}>
                     <Badge tone="blue">Level {r.level}</Badge>
                   </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 12.5, fontWeight: 700 }}>
+                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 13, fontWeight: 700 }}>
                     {r.headcount}
                   </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--blue, #005BAA)' }}>
+                  <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--blue, #005BAA)' }}>
                     {r.courseCount}
                   </td>
-                  <td style={{ padding: '12px 14px' }} title={r.isInherited ? `Kế thừa từ: ${scopeBreadcrumb(r.resolvedScopeKey)}` : undefined}>
+                  <td style={{ padding: '12px 14px' }} title={r.isInherited ? `Inherited from: ${scopeBreadcrumb(r.resolvedScopeKey)}` : undefined}>
                     {r.isInherited ? (
-                      <Badge tone="amber">Kế Thừa</Badge>
+                      <Badge tone="amber">Inherited</Badge>
                     ) : (
-                      <Badge tone="sage">Riêng · {r.currentVersion}</Badge>
+                      <Badge tone="sage">Own · {r.currentVersion}</Badge>
                     )}
                   </td>
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                       <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setDetailRow(r)}>Xem</Button>
-                      <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Sửa</Button>
+                      <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Edit</Button>
                     </div>
                   </td>
                 </tr>
@@ -356,7 +356,7 @@ export default function AdminLevelRoadmaps() {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              background: '#fff',
+              background: 'var(--paper-raised)',
               borderRadius: 10,
               border: '1px solid var(--line)',
             }}
@@ -365,25 +365,25 @@ export default function AdminLevelRoadmaps() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
                 <Badge tone="blue">Level {r.level}</Badge>
                 {r.isInherited ? (
-                  <Badge tone="amber">Kế Thừa</Badge>
+                  <Badge tone="amber">Inherited</Badge>
                 ) : (
-                  <Badge tone="sage">Riêng · {r.currentVersion}</Badge>
+                  <Badge tone="sage">Own · {r.currentVersion}</Badge>
                 )}
               </div>
 
-              <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0F172A', marginBottom: 8, lineHeight: 1.4 }} title={positionLabel(r)}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 8, lineHeight: 1.4 }} title={positionLabel(r)}>
                 {positionLabel(r)}
               </div>
 
               <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 12, marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
-                <span>Nhân sự đang học: <strong>{r.headcount}</strong></span>
-                <span style={{ color: 'var(--blue, #005BAA)', fontWeight: 700 }}>{r.courseCount} Khóa học</span>
+                <span>Learners studying: <strong>{r.headcount}</strong></span>
+                <span style={{ color: 'var(--blue, #005BAA)', fontWeight: 700 }}>{r.courseCount} courses</span>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 6 }}>
               <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setDetailRow(r)}>Xem</Button>
-              <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Sửa</Button>
+              <Button size="sm" variant="primary" icon="ti-pencil" onClick={() => setEditRow(r)}>Edit</Button>
             </div>
           </div>
         ))}
@@ -396,51 +396,51 @@ export default function AdminLevelRoadmaps() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Danh Bạ Lộ Trình Cấp Bậc (Level Roadmaps)</h1>
-            <Badge tone="blue">{directoryRows.length} Lộ Trình</Badge>
+            <h1>Level Roadmap Directory</h1>
+            <Badge tone="blue">{directoryRows.length} Roadmap</Badge>
           </div>
           <p>
-            Toàn bộ lộ trình học tập theo từng Cấp Bậc × Vị trí (Khối / Division / Department / Tổ-Quầy) mà học viên thực tế
-            đang có mặt — lọc/gộp nhóm để tìm nhanh, bấm &quot;Xem&quot; để xem toàn bộ khóa học, &quot;Sửa&quot; để chỉnh sửa
-            (tự động tạo phiên bản mới, không ảnh hưởng học viên đã hoàn thành/đang học dở).
+            Every learning roadmap by Job Level × Position (Division / Department / Section-Counter) that learners actually
+            occupy — filter/group to find one fast, click &quot;View&quot; to see all its courses, &quot;Edit&quot; to change it
+            (a new version is created automatically, leaving completed/in-progress learners untouched).
           </p>
         </div>
-        <Button variant="primary" icon="ti-plus" onClick={() => setCreateOpen(true)}>Tạo Lộ Trình Mới</Button>
+        <Button variant="primary" icon="ti-plus" onClick={() => setCreateOpen(true)}>Create A New Roadmap</Button>
       </div>
 
       {/* METRICS ROW */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Vị Trí &amp; Cấp Bậc</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Positions &amp; Levels</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--blue, #005BAA)', marginTop: 2 }}>{directoryRows.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Bao phủ 2 khối lớn &middot; 7 cấp bậc MMVN</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Covers 2 major divisions &middot; 7 MMVN job levels</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Đã Tùy Biến Lộ Trình Riêng</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Roadmap Customized</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginTop: 2 }}>
             {directoryRows.filter((r) => r.hasOwnOverride).length}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Có phiên bản quản lý riêng theo bộ phận</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Has a version managed separately by sub-department</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Đang Kế Thừa Lộ Trình Chuẩn</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Inheriting The Standard Roadmap</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#D97706', marginTop: 2 }}>
             {directoryRows.filter((r) => r.isInherited).length}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Tự động kế thừa từ Division / Cấp Cha</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Automatically inherited from the Division / parent</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Nhân Sự Đang Áp Dụng</div>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees Covered</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: '#7C3AED', marginTop: 2 }}>{totalHeadcount}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Học viên thực tế trên toàn hệ thống</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Actual learners across the whole system</div>
         </div>
       </div>
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
-      <div className="card card-pad" style={{ marginBottom: 18, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ marginBottom: 18, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* ROW 1: SEARCH, GROUP BY, FILTER TOGGLE, VIEW MODE */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           {/* Search Input */}
@@ -450,7 +450,7 @@ export default function AdminLevelRoadmaps() {
               type="text"
               className="field-input"
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder="Tìm theo tên vị trí, cấp bậc, đơn vị..."
+              placeholder="Search by position name, level, unit..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -469,14 +469,14 @@ export default function AdminLevelRoadmaps() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={groupBy}
                 onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: groupBy !== 'NONE' ? 700 : 500,
                   color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
@@ -497,9 +497,9 @@ export default function AdminLevelRoadmaps() {
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeFiltersCount}
                 </span>
               )}
@@ -513,20 +513,20 @@ export default function AdminLevelRoadmaps() {
                 onClick={() => setViewMode('TABLE')}
                 className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Bảng (List View)"
+                title="List View"
               >
                 <i className="ti ti-list" />
-                <span>Bảng</span>
+                <span>Table</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('GRID')}
                 className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Lưới (Grid View)"
+                title="Grid View"
               >
                 <i className="ti ti-layout-grid" />
-                <span>Lưới</span>
+                <span>Grid</span>
               </button>
             </div>
           </div>
@@ -536,27 +536,27 @@ export default function AdminLevelRoadmaps() {
         {showFilters && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-              {/* Filter 1: Khối (Business Unit) */}
+              {/* Filter 1: Business Unit */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Khối (Business Unit)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Business Unit
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: filterBuId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: filterBuId !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: filterBuId !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: filterBuId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: filterBuId !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: filterBuId !== 'ALL' ? 700 : 500,
                   }}
                   value={filterBuId}
                   onChange={(e) => setFilterBuId(e.target.value)}
                 >
-                  <option value="ALL">Tất cả Khối ({SCOPE_BUSINESS_UNITS.length})</option>
+                  <option value="ALL">All Division ({SCOPE_BUSINESS_UNITS.length})</option>
                   {SCOPE_BUSINESS_UNITS.map((bu) => (
                     <option key={bu.id} value={bu.id}>{bu.name}</option>
                   ))}
@@ -565,25 +565,25 @@ export default function AdminLevelRoadmaps() {
 
               {/* Filter 2: Division */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Phòng / Ban Lớn (Division)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Division
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: filterDivisionId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: filterDivisionId !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: filterDivisionId !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: filterDivisionId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: filterDivisionId !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: filterDivisionId !== 'ALL' ? 700 : 500,
                   }}
                   value={filterDivisionId}
                   onChange={(e) => handleDivisionFilterChange(e.target.value)}
                 >
-                  <option value="ALL">Tất cả Division ({divisions.length})</option>
+                  <option value="ALL">All Division ({divisions.length})</option>
                   {divisions.map((d) => (
                     <option key={d.id} value={d.id}>{d.code} · {d.name}</option>
                   ))}
@@ -592,26 +592,26 @@ export default function AdminLevelRoadmaps() {
 
               {/* Filter 3: Department */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Bộ Phận Trực Thuộc (Department)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Parent Department
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: filterDepartmentId !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: filterDepartmentId !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: filterDepartmentId !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: filterDepartmentId !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: filterDepartmentId !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: filterDepartmentId !== 'ALL' ? 700 : 500,
                   }}
                   value={filterDepartmentId}
                   onChange={(e) => setFilterDepartmentId(e.target.value)}
                 >
                   <option value="ALL">
-                    {filterDivisionId !== 'ALL' ? `Tất cả Department (${departmentFilterOptions.length})` : `Tất cả Department (${departments.length})`}
+                    {filterDivisionId !== 'ALL' ? `All Departments (${departmentFilterOptions.length})` : `All Departments (${departments.length})`}
                   </option>
                   {departmentFilterOptions.map((d) => (
                     <option key={d.id} value={d.id}>{d.code} · {d.name}</option>
@@ -619,27 +619,27 @@ export default function AdminLevelRoadmaps() {
                 </select>
               </div>
 
-              {/* Filter 4: Cấp Bậc (Level) */}
+              {/* Filter 4: Job Level */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Cấp Bậc (Job Level)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Job Level
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: filterLevel !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: filterLevel !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: filterLevel !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: filterLevel !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: filterLevel !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: filterLevel !== 'ALL' ? 700 : 500,
                   }}
                   value={filterLevel}
                   onChange={(e) => setFilterLevel(e.target.value)}
                 >
-                  <option value="ALL">Tất cả cấp bậc (7 Levels)</option>
+                  <option value="ALL">All levels (7 levels)</option>
                   {[...LEVEL_DEFINITIONS].map((def) => (
                     <option key={def.level} value={def.level}>
                       Level {def.level} — {def.titleVi || def.shortVi}
@@ -648,29 +648,29 @@ export default function AdminLevelRoadmaps() {
                 </select>
               </div>
 
-              {/* Filter 5: Trạng Thái Lộ Trình */}
+              {/* Filter 5: Roadmap Status */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Trạng Thái Lộ Trình
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Roadmap Status
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: filterStatus !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: filterStatus !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: filterStatus !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: filterStatus !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: filterStatus !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: filterStatus !== 'ALL' ? 700 : 500,
                   }}
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                 >
-                  <option value="ALL">Tất cả trạng thái</option>
-                  <option value="CUSTOM">Lộ trình riêng (Đã tùy biến)</option>
-                  <option value="INHERITED">Kế thừa từ cấp cha</option>
+                  <option value="ALL">All statuses</option>
+                  <option value="CUSTOM">Own roadmap (customized)</option>
+                  <option value="INHERITED">Inherited from the parent</option>
                 </select>
               </div>
             </div>
@@ -681,53 +681,53 @@ export default function AdminLevelRoadmaps() {
         {(search || activeFiltersCount > 0 || groupBy !== 'DIVISION') && (
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
 
               {search && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Từ khóa: <strong>"{search}"</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Search term: <strong>"{search}"</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                 </span>
               )}
 
               {filterBuId !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Khối: <strong>{SCOPE_BUSINESS_UNITS.find(b => b.id === filterBuId)?.name}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Division: <strong>{SCOPE_BUSINESS_UNITS.find(b => b.id === filterBuId)?.name}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterBuId('ALL')} />
                 </span>
               )}
 
               {filterDivisionId !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   Division: <strong>{labelForDivision(filterDivisionId)}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterDivisionId('ALL')} />
                 </span>
               )}
 
               {filterDepartmentId !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   Department: <strong>{labelForDepartment(filterDepartmentId)}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterDepartmentId('ALL')} />
                 </span>
               )}
 
               {filterLevel !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Cấp bậc: <strong>Level {filterLevel}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Job level: <strong>Level {filterLevel}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterLevel('ALL')} />
                 </span>
               )}
 
               {filterStatus !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Trạng thái: <strong>{filterStatus === 'CUSTOM' ? 'Lộ trình riêng' : 'Kế thừa'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Status: <strong>{filterStatus === 'CUSTOM' ? 'Own roadmap' : 'Inherited'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('ALL')} />
                 </span>
               )}
 
               {groupBy !== 'DIVISION' && (
-                <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Gộp nhóm: <strong>{ROADMAP_GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
+                <span className="badge" style={{ background: 'var(--paper-sunken)', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Group by: <strong>{ROADMAP_GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('DIVISION')} />
                 </span>
               )}
@@ -737,12 +737,12 @@ export default function AdminLevelRoadmaps() {
                 onClick={resetAllFilters}
                 style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
               >
-                Xóa tất cả bộ lọc
+                Clear all filters
               </button>
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Tìm thấy <strong>{filteredRows.length}</strong> / {directoryRows.length} lộ trình cấp bậc
+              Found <strong>{filteredRows.length}</strong> / {directoryRows.length} level roadmaps
             </div>
           </div>
         )}
@@ -750,13 +750,13 @@ export default function AdminLevelRoadmaps() {
 
       {/* CONTENT: RENDER GROUPED OR FLAT LIST */}
       {filteredRows.length === 0 ? (
-        <div className="empty-state" style={{ background: '#fff', padding: 40, borderRadius: 10, border: '1px solid var(--line)' }}>
+        <div className="empty-state" style={{ background: 'var(--paper-raised)', padding: 40, borderRadius: 10, border: '1px solid var(--line)' }}>
           <i className="ti ti-stairs-up" aria-hidden="true" style={{ fontSize: 36, color: 'var(--ink-faint)' }} />
           <p style={{ marginTop: 10, color: 'var(--ink-soft)' }}>
-            Không tìm thấy vị trí hoặc lộ trình cấp bậc nào phù hợp với bộ lọc hiện tại.
+            No position or level roadmap matches the current filters.
           </p>
           <div style={{ marginTop: 14 }}>
-            <Button size="sm" variant="outline" onClick={resetAllFilters}>Xóa Bộ Lọc</Button>
+            <Button size="sm" variant="outline" onClick={resetAllFilters}>Clear Filters</Button>
           </div>
         </div>
       ) : groupBy === 'NONE' || !groups ? (
@@ -766,7 +766,7 @@ export default function AdminLevelRoadmaps() {
           {groups.map((g) => {
             const isCollapsed = collapsedGroups.has(g.key);
             return (
-              <div key={g.key} className="card" style={{ overflow: 'hidden', background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <div key={g.key} className="card" style={{ overflow: 'hidden', background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
                 <button
                   onClick={() => toggleCollapsed(g.key)}
                   style={{
@@ -775,7 +775,7 @@ export default function AdminLevelRoadmaps() {
                     alignItems: 'center',
                     gap: 12,
                     padding: '14px 18px',
-                    background: '#F8FAFC',
+                    background: 'var(--paper-sunken)',
                     border: 'none',
                     borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
                     cursor: 'pointer',
@@ -783,11 +783,11 @@ export default function AdminLevelRoadmaps() {
                   }}
                 >
                   <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} style={{ color: 'var(--ink-faint)' }} />
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: '#EFF6FF', color: 'var(--blue, #005BAA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue-soft)', color: 'var(--blue, #005BAA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <i className={`ti ${g.icon}`} style={{ fontSize: 16 }} />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: '#0F172A' }}>{g.label}</div>
-                  <Badge tone="slate">{g.rows.length} lộ trình</Badge>
+                  <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{g.label}</div>
+                  <Badge tone="slate">{g.rows.length} roadmaps</Badge>
                 </button>
                 {!isCollapsed && (
                   <div style={{ padding: 12 }}>
@@ -800,8 +800,8 @@ export default function AdminLevelRoadmaps() {
         </div>
       )}
 
-      {/* MODAL: XEM CHI TIẾT (READ-ONLY) */}
-      <Modal isOpen={Boolean(detailRow)} onClose={() => setDetailRow(null)} title="Chi Tiết Lộ Trình" subtitle={detailRow ? positionLabel(detailRow) + ` · Level ${detailRow.level}` : ''} size="lg">
+      {/* MODAL: VIEW DETAILS (READ-ONLY) */}
+      <Modal isOpen={Boolean(detailRow)} onClose={() => setDetailRow(null)} title="Roadmap Details" subtitle={detailRow ? positionLabel(detailRow) + ` · Level ${detailRow.level}` : ''} size="lg">
         {detailRow && (() => {
           const entry = roadmapsConfig[detailRow.resolvedScopeKey];
           const courseIds = entry?.courseIds || [];
@@ -810,20 +810,20 @@ export default function AdminLevelRoadmaps() {
             <div>
               {detailRow.isInherited && (
                 <div style={{ fontSize: 12, background: 'var(--paper-sunken)', padding: '8px 12px', borderRadius: 6, marginBottom: 14 }}>
-                  Vị trí này chưa có lộ trình riêng — đang <strong>kế thừa</strong> từ: <strong>{scopeBreadcrumb(detailRow.resolvedScopeKey)}</strong>.
+                  This position has no roadmap of its own — it is <strong>inherited</strong> from: <strong>{scopeBreadcrumb(detailRow.resolvedScopeKey)}</strong>.
                 </div>
               )}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
-                <Badge tone="blue">{courseIds.length} khóa học</Badge>
-                {entry?.currentVersion && <Badge tone="sage">Phiên bản {entry.currentVersion}</Badge>}
+                <Badge tone="blue">{courseIds.length} courses</Badge>
+                {entry?.currentVersion && <Badge tone="sage">Version {entry.currentVersion}</Badge>}
               </div>
               <VisualRoadmapTimeline milestones={milestones} />
               {entry?.versionHistory?.length > 0 && (
                 <div style={{ marginTop: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 8 }}>Lịch Sử Phiên Bản</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Version History</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {entry.versionHistory.map((h, i) => (
-                      <div key={i} style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6 }}>
+                      <div key={i} style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken)', padding: '6px 10px', borderRadius: 6 }}>
                         <strong>{h.version}</strong> · {h.updatedBy} · {h.updatedAt} — {h.note}
                       </div>
                     ))}
@@ -831,15 +831,15 @@ export default function AdminLevelRoadmaps() {
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
-                <Button variant="outline" onClick={() => setDetailRow(null)}>Đóng</Button>
-                <Button variant="primary" icon="ti-pencil" onClick={() => { setEditRow(detailRow); setDetailRow(null); }}>Chỉnh Sửa</Button>
+                <Button variant="outline" onClick={() => setDetailRow(null)}>Close</Button>
+                <Button variant="primary" icon="ti-pencil" onClick={() => { setEditRow(detailRow); setDetailRow(null); }}>Edit</Button>
               </div>
             </div>
           );
         })()}
       </Modal>
 
-      {/* MODAL: CHỈNH SỬA (EDIT) */}
+      {/* MODAL: EDIT */}
       {editRow && (
         <EditRoadmapModal
           row={editRow}
@@ -854,7 +854,7 @@ export default function AdminLevelRoadmaps() {
         />
       )}
 
-      {/* MODAL: TẠO LỘ TRÌNH MỚI */}
+      {/* MODAL: CREATE A NEW ROADMAP */}
       {createOpen && (
         <CreateRoadmapModal
           courses={courses}
@@ -867,9 +867,9 @@ export default function AdminLevelRoadmaps() {
         />
       )}
 
-      {/* MODAL: TÙY CHỈNH ẢNH MỐC LỘ TRÌNH */}
+      {/* MODAL: CUSTOMIZE THE ROADMAP MILESTONE IMAGE */}
       {imageModalCourse && (
-        <Modal isOpen={Boolean(imageModalCourse)} onClose={() => setImageModalCourse(null)} title="Tùy Chỉnh Ảnh Mốc Lộ Trình" subtitle={imageModalCourse.title} size="lg">
+        <Modal isOpen={Boolean(imageModalCourse)} onClose={() => setImageModalCourse(null)} title="Customize The Roadmap Milestone Image" subtitle={imageModalCourse.title} size="lg">
           <div style={{ marginBottom: 16 }}>
             <CourseImagePickerStudio
               imageUrl={customImageUrl}
@@ -882,8 +882,8 @@ export default function AdminLevelRoadmaps() {
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button variant="outline" onClick={() => setImageModalCourse(null)}>Hủy</Button>
-            <Button variant="primary" icon="ti-check" onClick={() => handleSaveMilestoneImage(customImageUrl)}>Lưu Ảnh Mốc</Button>
+            <Button variant="outline" onClick={() => setImageModalCourse(null)}>Cancel</Button>
+            <Button variant="primary" icon="ti-check" onClick={() => handleSaveMilestoneImage(customImageUrl)}>Save The Milestone Image</Button>
           </div>
         </Modal>
       )}
@@ -891,7 +891,7 @@ export default function AdminLevelRoadmaps() {
   );
 }
 
-/** Modal Chỉnh Sửa: scope cố định theo `row`, seed danh sách từ lộ trình đang hiệu lực (kế thừa hoặc riêng). */
+/** Edit modal: the scope is fixed by `row`, seeding the list from the roadmap in effect (inherited or its own). */
 function EditRoadmapModal({ row, courses, roadmapsConfig, onClose, onCustomizeImage, onSave }) {
   const [courseIds, setCourseIds] = useState(() => {
     const pseudoUser = { branch: branchForBuId(row.buId), divisionId: row.divisionId, departmentId: row.departmentId, subDepartmentId: row.subDepartmentId };
@@ -900,31 +900,31 @@ function EditRoadmapModal({ row, courses, roadmapsConfig, onClose, onCustomizeIm
   const [note, setNote] = useState('');
 
   return (
-    <Modal isOpen onClose={onClose} title="Chỉnh Sửa Lộ Trình" subtitle={positionLabel(row) + ` · Level ${row.level}`} size="lg">
+    <Modal isOpen onClose={onClose} title="Edit Roadmap" subtitle={positionLabel(row) + ` · Level ${row.level}`} size="lg">
       {row.isInherited && (
         <div style={{ fontSize: 12, background: 'var(--paper-sunken)', padding: '8px 12px', borderRadius: 6, marginBottom: 14 }}>
-          Vị trí này đang kế thừa lộ trình từ cấp cha. Lưu thay đổi sẽ tạo một lộ trình <strong>riêng</strong> cho đúng vị trí này,
-          bắt đầu từ danh sách đang kế thừa.
+          This position currently inherits its roadmap from a parent level. Saving will create a roadmap <strong>own</strong> for this exact position,
+          starting from the inherited list.
         </div>
       )}
       <CourseListEditor courseIds={courseIds} onChange={setCourseIds} courses={courses} onCustomizeImage={onCustomizeImage} />
       <div style={{ marginTop: 16 }}>
-        <label className="field-label">Ghi chú thay đổi (tùy chọn)</label>
-        <input type="text" className="field-input" style={{ width: '100%' }} placeholder="Vd: Thêm khóa An Toàn Thực Phẩm mới ban hành..." value={note} onChange={(e) => setNote(e.target.value)} />
+        <label className="field-label">Change note (optional)</label>
+        <input type="text" className="field-input" style={{ width: '100%' }} placeholder="E.g. Added the newly issued Food Safety course..." value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.5 }}>
-        Lưu sẽ tự động phát hành phiên bản mới — học viên đã hoàn thành hoặc đang học dở lộ trình này tiếp tục thấy đúng nội
-        dung cũ họ đã bắt đầu; chỉ học viên chưa từng tham gia mới thấy danh sách mới này.
+      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.5 }}>
+        Saving automatically publishes a new version — learners who completed or are part-way through this roadmap keep seeing the
+        content they started with; only learners who have never joined see this new list.
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <Button variant="outline" onClick={onClose}>Hủy</Button>
-        <Button variant="primary" icon="ti-check" onClick={() => onSave(courseIds, note)}>Lưu Thay Đổi</Button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" icon="ti-check" onClick={() => onSave(courseIds, note)}>Save Changes</Button>
       </div>
     </Modal>
   );
 }
 
-/** Modal Tạo Mới: admin tự chọn Level + BU/Division/Department/Sub-Department. */
+/** Create modal: the admin picks the Level + BU/Division/Department/Sub-Department. */
 function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
   const [buId, setBuId] = useState(SCOPE_BUSINESS_UNITS[1].id);
   const [divisionId, setDivisionId] = useState('');
@@ -942,21 +942,21 @@ function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
 
   function handleCreate() {
     if (alreadyExists) {
-      setError('Lộ trình này đã tồn tại — hãy dùng "Sửa" trên Danh Bạ Lộ Trình thay vì tạo mới.');
+      setError('This roadmap already exists — use "Edit" in the Roadmap Directory instead of creating a new one.');
       return;
     }
     if (courseIds.length === 0) {
-      setError('Hãy thêm ít nhất 1 khóa học cho lộ trình mới.');
+      setError('Please add at least 1 course to the new roadmap.');
       return;
     }
     onCreate(scopeKey, courseIds, note);
   }
 
   return (
-    <Modal isOpen onClose={onClose} title="Tạo Lộ Trình Mới" subtitle="Chọn Cấp Bậc và Vị Trí Tổ Chức (Khối / Division / Department / Tổ-Quầy), sau đó thêm khóa học." size="lg">
+    <Modal isOpen onClose={onClose} title="Create A New Roadmap" subtitle="Choose the job level and the organizational position (Division / Department / Section-Counter), then add courses." size="lg">
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
-          <div className="field-label" style={{ marginBottom: 6 }}>Khối (Business Unit)</div>
+          <div className="field-label" style={{ marginBottom: 6 }}>Business Unit</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {SCOPE_BUSINESS_UNITS.map((bu) => (
               <button key={bu.id} onClick={() => setBuId(bu.id)} className="btn btn-sm" style={{ background: buId === bu.id ? 'var(--rail, #005BAA)' : 'var(--paper-raised)', color: buId === bu.id ? '#fff' : 'var(--ink)', borderColor: buId === bu.id ? 'var(--rail)' : 'var(--line-strong)' }}>{bu.name}</button>
@@ -965,29 +965,29 @@ function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
         </div>
         <div style={{ minWidth: 180 }}>
           <div className="field-label" style={{ marginBottom: 6 }}>Division</div>
-          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={divisionId} onChange={(e) => { setDivisionId(e.target.value); setDepartmentId(''); setSubDepartmentId(''); }}>
-            <option value="">— Toàn Khối —</option>
+          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 13 }} value={divisionId} onChange={(e) => { setDivisionId(e.target.value); setDepartmentId(''); setSubDepartmentId(''); }}>
+            <option value="">— Whole Business Unit —</option>
             {divisions.map((d) => (<option key={d.id} value={d.id}>{d.code} · {d.name}</option>))}
           </select>
         </div>
         <div style={{ minWidth: 180 }}>
           <div className="field-label" style={{ marginBottom: 6 }}>Department</div>
-          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={departmentId} onChange={(e) => { setDepartmentId(e.target.value); setSubDepartmentId(''); }} disabled={!divisionId}>
-            <option value="">{divisionId ? '— Toàn Division —' : 'Chọn Division trước'}</option>
+          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 13 }} value={departmentId} onChange={(e) => { setDepartmentId(e.target.value); setSubDepartmentId(''); }} disabled={!divisionId}>
+            <option value="">{divisionId ? '— Whole Division —' : 'Choose a division first'}</option>
             {departmentOptions.map((d) => (<option key={d.id} value={d.id}>{d.code} · {d.name}</option>))}
           </select>
         </div>
         <div style={{ minWidth: 200 }}>
           <div className="field-label" style={{ marginBottom: 6 }}>Sub-Department</div>
-          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 12.5 }} value={subDepartmentId} onChange={(e) => setSubDepartmentId(e.target.value)} disabled={!departmentId || subDepartmentOptions.length === 0}>
-            <option value="">{!departmentId ? 'Chọn Department trước' : subDepartmentOptions.length === 0 ? 'Không có Tổ/Quầy con' : '— Toàn Department —'}</option>
+          <select className="field-select" style={{ width: '100%', height: 34, fontSize: 13 }} value={subDepartmentId} onChange={(e) => setSubDepartmentId(e.target.value)} disabled={!departmentId || subDepartmentOptions.length === 0}>
+            <option value="">{!departmentId ? 'Choose a department first' : subDepartmentOptions.length === 0 ? 'No child section/counter' : '— Whole Department —'}</option>
             {subDepartmentOptions.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
           </select>
         </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div className="field-label" style={{ marginBottom: 6 }}>Cấp Bậc</div>
+        <div className="field-label" style={{ marginBottom: 6 }}>Job Level</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {LEVEL_DEFINITIONS.map((lvl) => (
             <button key={lvl.level} onClick={() => setLevel(lvl.level)} className="btn btn-sm" style={{ background: level === lvl.level ? 'var(--rail, #005BAA)' : 'var(--paper-raised)', color: level === lvl.level ? '#fff' : 'var(--ink)', borderColor: level === lvl.level ? 'var(--rail)' : 'var(--line-strong)' }}>{lvl.emoji} Level {lvl.level}</button>
@@ -995,23 +995,23 @@ function CreateRoadmapModal({ courses, roadmapsConfig, onClose, onCreate }) {
         </div>
       </div>
 
-      <div style={{ fontSize: 12, marginBottom: 14, padding: '8px 12px', borderRadius: 6, background: alreadyExists ? '#FEF2F2' : 'var(--paper-sunken)', color: alreadyExists ? '#991B1B' : 'var(--ink-soft)' }}>
-        Vị trí: <strong>{scopeBreadcrumb(scopeKey)}</strong>
-        {alreadyExists && ' — lộ trình này đã tồn tại, hãy dùng "Sửa" thay vì tạo mới.'}
+      <div style={{ fontSize: 12, marginBottom: 14, padding: '8px 12px', borderRadius: 6, background: alreadyExists ? 'var(--rust-soft)' : 'var(--paper-sunken)', color: alreadyExists ? 'var(--rust-soft-text)' : 'var(--ink-soft)' }}>
+        Position: <strong>{scopeBreadcrumb(scopeKey)}</strong>
+        {alreadyExists && ' — this roadmap already exists; use "Edit" instead of creating a new one.'}
       </div>
 
       <CourseListEditor courseIds={courseIds} onChange={setCourseIds} courses={courses} />
 
       <div style={{ marginTop: 16 }}>
-        <label className="field-label">Ghi chú (tùy chọn)</label>
+        <label className="field-label">Note (optional)</label>
         <input type="text" className="field-input" style={{ width: '100%' }} value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
 
       {error && <div style={{ color: 'var(--rust)', fontSize: 12, marginTop: 10 }}>{error}</div>}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <Button variant="outline" onClick={onClose}>Hủy</Button>
-        <Button variant="primary" icon="ti-plus" onClick={handleCreate}>Tạo Lộ Trình</Button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" icon="ti-plus" onClick={handleCreate}>Create Roadmap</Button>
       </div>
     </Modal>
   );

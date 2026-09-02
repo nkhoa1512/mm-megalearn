@@ -36,7 +36,7 @@ export default function ManagerDashboard() {
   const needsAttention = teamMembers.filter((m) => m.status === 'OVERDUE' || m.status === 'FAILED' || m.inactiveDays >= 3);
   const avgCompletion = total > 0 ? Math.round(teamMembers.reduce((s, m) => s + m.progress, 0) / total) : 0;
 
-  // Lọc danh sách nhân sự cần can thiệp theo tab
+  // Filter the intervention list by tab
   const filteredAttentionList = needsAttention.filter((m) => {
     if (filterType === 'OVERDUE') return m.status === 'OVERDUE';
     if (filterType === 'FAILED') return m.status === 'FAILED';
@@ -44,30 +44,30 @@ export default function ManagerDashboard() {
     return true;
   });
 
-  // Dữ liệu Biểu đồ Tròn (Donut Chart): Phân bổ trạng thái học tập
+  // Donut chart data: learning status breakdown
   const statusDonutData = [
-    { label: 'Hoàn Thành (Completed)', value: completed, tone: 'sage' },
-    { label: 'Đang Học (In Progress)', value: inProgress, tone: 'rail' },
-    { label: 'Chưa Bắt Đầu (Not Started)', value: notStarted, tone: 'slate' },
-    { label: 'Quá Hạn (Overdue)', value: overdue, tone: 'rust' },
-    { label: 'Trượt Kỳ Thi (Failed)', value: failed, tone: 'amber' },
+    { label: 'Completed', value: completed, tone: 'sage' },
+    { label: 'In Progress', value: inProgress, tone: 'rail' },
+    { label: 'Not Started', value: notStarted, tone: 'slate' },
+    { label: 'Overdue', value: overdue, tone: 'rust' },
+    { label: 'Failed', value: failed, tone: 'amber' },
   ].filter((d) => d.value > 0);
 
-  // Dữ liệu Biểu đồ Cột (Bar Chart): Tiến độ theo chủ đề đào tạo trọng tâm của Team
+  // Bar chart data: progress across the team's core training topics
   const teamTopicProgress = [
-    { label: 'An Toàn VSTP & HACCP', value: 85, tone: 'sage' },
-    { label: 'PCCC & Thoát Hiểm Khẩn Cấp', value: 90, tone: 'sage' },
-    { label: 'Tiêu Chuẩn Quầy Kệ Fresh', value: 65, tone: 'rail' },
-    { label: 'Bảo Mật & Phòng Chống Phishing', value: 55, tone: 'amber' },
-    { label: 'Văn Hóa MMVN & Hội Nhập', value: 45, tone: 'rust' },
+    { label: 'Food Safety & HACCP', value: 85, tone: 'sage' },
+    { label: 'Fire Safety & Emergency Evacuation', value: 90, tone: 'sage' },
+    { label: 'Fresh Counter Standards', value: 65, tone: 'rail' },
+    { label: 'Security & Phishing Prevention', value: 55, tone: 'amber' },
+    { label: 'MMVN Culture & Onboarding', value: 45, tone: 'rust' },
   ];
 
-  // Dữ liệu Biểu đồ Đường (Line Chart): Xu hướng hoàn thành trung bình của Đội ngũ qua 4 tuần
+  // Line chart data: the team's average completion trend over 4 weeks
   const teamWeeklyTrend = [
-    { label: 'Tuần 1', value: 35 },
-    { label: 'Tuần 2', value: 42 },
-    { label: 'Tuần 3', value: 50 },
-    { label: 'Tuần 4', value: avgCompletion || 57 },
+    { label: 'Week 1', value: 35 },
+    { label: 'Week 2', value: 42 },
+    { label: 'Week 3', value: 50 },
+    { label: 'Week 4', value: avgCompletion || 57 },
   ];
 
   function handleSendReminder() {
@@ -80,7 +80,7 @@ export default function ManagerDashboard() {
   }
 
   function handleUnlockRetake(member) {
-    alert(`Đã mở khóa thêm 01 lượt thi sát hạch cho ${member.name} (Khóa: ${member.course}). Thông báo đã gửi đến học viên!`);
+    alert(`One extra examination attempt has been unlocked for ${member.name} (course: ${member.course}). The learner has been notified!`);
   }
 
   return (
@@ -90,7 +90,7 @@ export default function ManagerDashboard() {
         className="card card-pad"
         style={{
           marginBottom: 20,
-          background: 'linear-gradient(135deg, #FFFFFF 0%, #FEF3C7 100%)',
+          background: 'linear-gradient(135deg, var(--paper-raised) 0%, var(--amber-soft) 100%)',
           borderColor: 'var(--amber, #F59E0B)',
           boxShadow: '0 4px 20px rgba(245, 158, 11, 0.08)',
         }}
@@ -117,25 +117,25 @@ export default function ManagerDashboard() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                  Bảng Điều Khiển Vận Hành &amp; Giám Sát Đào Tạo Đội Ngũ
+                <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: 'var(--ink)', letterSpacing: '-0.015em' }}>
+                  Team Training Operations &amp; Monitoring Dashboard
                 </h1>
                 <Badge tone="amber" icon="ti-briefcase">
                   {activeManager.divisionCode} &middot; {activeManager.departmentName || activeManager.departmentCode}
                 </Badge>
                 <Badge tone="sage" icon="ti-users">
-                  {total} Nhân Sự Trực Thuộc
+                  {total} Direct Reports
                 </Badge>
               </div>
               <p style={{ marginTop: 4, marginBottom: 0, color: 'var(--ink-soft)', fontSize: 13 }}>
-                Quản lý: <strong>{activeManager.fullName}</strong> ({activeManager.position}) &middot; Khối vận hành <strong>{activeManager.divisionName || 'Store Operations'}</strong> &middot; Mã QL: <strong>{activeManager.employeeCode || 'MMVN-0245'}</strong>
+                Manager: <strong>{activeManager.fullName}</strong> ({activeManager.position}) &middot; Operations division <strong>{activeManager.divisionName || 'Store Operations'}</strong> &middot; Manager code: <strong>{activeManager.employeeCode || 'MMVN-0245'}</strong>
               </p>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
-              Xem Giao Diện Học Tập Cá Nhân
+              View The Personal Learning Interface
             </Button>
             <Button
               variant="outline"
@@ -143,14 +143,14 @@ export default function ManagerDashboard() {
               icon="ti-bell-ringing"
               onClick={() => {
                 setIsBatchRemind(true);
-                setRemindTarget({ name: `Toàn bộ ${needsAttention.length} nhân sự chậm tiến độ`, course: 'Các khóa học quy định' });
+                setRemindTarget({ name: `All ${needsAttention.length} employees behind schedule`, course: 'Regulatory courses' });
               }}
             >
-              Nhắc Nhở Cả Đội Ngũ ({needsAttention.length})
+              Remind The Whole Team ({needsAttention.length})
             </Button>
             {pendingApprovals.length > 0 && (
               <Button variant="primary" tone="amber" icon="ti-clipboard-check" onClick={() => navigate('/manager/approvals')}>
-                Duyệt {pendingApprovals.length} Yêu Cầu Chờ
+                Approve {pendingApprovals.length} Pending Requests
               </Button>
             )}
           </div>
@@ -160,33 +160,33 @@ export default function ManagerDashboard() {
       {/* 2. FOUR HERO MANAGEMENT KPI TILES */}
       <div className="grid grid-4" style={{ marginBottom: 24, gap: 16 }}>
         <StatTile
-          label="Tổng Nhân Sự Trực Thuộc"
-          value={`${total} Nhân Sự`}
-          subtext="100% đã được gán lộ trình chuẩn"
+          label="Total Employees Reporting"
+          value={`${total} Employees`}
+          subtext="100% assigned the standard roadmap"
           tone="blue"
           icon="ti-users"
           onClick={() => navigate('/manager/team')}
         />
         <StatTile
-          label="Khóa Đã Hoàn Thành"
-          value={`${completed} / ${total} Khóa`}
-          subtext={`${Math.round((completed / Math.max(1, total)) * 100)}% tỷ lệ hoàn thành`}
+          label="Courses Completed"
+          value={`${completed} / ${total} Courses`}
+          subtext={`${Math.round((completed / Math.max(1, total)) * 100)}% completion rate`}
           tone="sage"
           icon="ti-circle-check"
           onClick={() => navigate('/manager/courses')}
         />
         <StatTile
-          label="Tiến Độ Hoàn Thành TB"
+          label="Avg Completion Progress"
           value={`${avgCompletion}%`}
-          subtext="Mục tiêu quý: ≥80% hoàn thành"
+          subtext="Quarterly goal: ≥80% completion"
           tone="rail"
           icon="ti-chart-pie"
           onClick={() => navigate('/manager/team')}
         />
         <StatTile
-          label="Cần Quản Lý Can Thiệp"
-          value={`${needsAttention.length} Nhân Sự`}
-          subtext={`${overdue} quá hạn · ${failed} trượt thi · ${needsAttention.length - overdue - failed} ngừng học`}
+          label="Requires Manager Intervention"
+          value={`${needsAttention.length} Employees`}
+          subtext={`${overdue} overdue · ${failed} failed · ${needsAttention.length - overdue - failed} inactive`}
           tone="rust"
           icon="ti-alert-triangle"
           onClick={() => navigate('/manager/team')}
@@ -196,30 +196,30 @@ export default function ManagerDashboard() {
       {/* 3. DUAL-CHART MANAGEMENT ANALYTICS (DONUT + BAR/LINE SWITCHER) */}
       <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
         {/* CHART 1: TEAM STATUS DISTRIBUTION (DONUT CHART + STACKED BAR) */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-chart-donut" style={{ marginRight: 6, color: 'var(--amber)' }} />
-                Phân Bổ Trạng Thái Học Tập Của Đội Ngũ
+                Team Learning Status Breakdown
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Tỷ lệ hoàn thành, trễ hạn và kết quả sát hạch thực tế
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Real completion rates, overdue counts and examination results
               </div>
             </div>
             <Badge tone={needsAttention.length > 0 ? 'rust' : 'sage'}>
-              {needsAttention.length > 0 ? `${needsAttention.length} Cảnh Báo` : 'Đúng Tiến Độ'}
+              {needsAttention.length > 0 ? `${needsAttention.length} Alerts` : 'On Schedule'}
             </Badge>
           </div>
 
           {/* DONUT SVG CHART */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, minHeight: 180 }}>
-            <DonutChart data={statusDonutData} valueSuffix=" nhân sự" />
+            <DonutChart data={statusDonutData} valueSuffix=" employees" />
           </div>
 
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
-              Thanh Tổng Quan Tiến Độ Tuyến Tính:
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 8 }}>
+              Linear Progress Overview Bar:
             </div>
             <StatusStackedBar
               segments={[
@@ -234,15 +234,15 @@ export default function ManagerDashboard() {
         </div>
 
         {/* CHART 2: TOPIC PROGRESS & TREND ANALYTICS (BAR & LINE SWITCHER) */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-chart-bar" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                Tiến Độ Theo Chuyên Đề &amp; Xu Hướng Tuần
+                Progress By Topic &amp; Weekly Trend
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Phân tích độ phủ các chuyên đề bắt buộc &amp; nhịp độ hoàn thành
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Analysis of mandatory topic coverage &amp; completion pace
               </div>
             </div>
 
@@ -259,9 +259,9 @@ export default function ManagerDashboard() {
                   color: activeChartTab === 'BAR' ? '#fff' : 'var(--ink-soft)',
                   border: 'none',
                 }}
-                title="Biểu đồ cột theo chuyên đề"
+                title="Bar chart by topic"
               >
-                📊 Chuyên Đề
+                📊 Topics
               </button>
               <button
                 type="button"
@@ -274,9 +274,9 @@ export default function ManagerDashboard() {
                   color: activeChartTab === 'LINE' ? '#fff' : 'var(--ink-soft)',
                   border: 'none',
                 }}
-                title="Biểu đồ đường xu hướng 4 tuần"
+                title="4-week trend line chart"
               >
-                📈 Xu Hướng
+                📈 Trend
               </button>
             </div>
           </div>
@@ -285,14 +285,14 @@ export default function ManagerDashboard() {
             {activeChartTab === 'BAR' ? (
               <div style={{ width: '100%' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
-                  Tỷ Lệ Hoàn Thành Theo 5 Chuyên Đề Trọng Tâm Của Bộ Phận (%)
+                  Completion Rate Across The Department's 5 Core Topics (%)
                 </div>
                 <BarChart data={teamTopicProgress} valueSuffix="%" tone="rail" />
               </div>
             ) : (
               <div style={{ width: '100%' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
-                  Xu Hướng Tỷ Lệ Hoàn Thành Trung Bình Của Team Qua 4 Tuần Gần Nhất
+                  The Team's Average Completion Trend Over The Last 4 Weeks
                 </div>
                 <LineChart data={teamWeeklyTrend} valueSuffix="%" tone="amber" />
               </div>
@@ -303,24 +303,24 @@ export default function ManagerDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="ti ti-info-circle" style={{ color: 'var(--amber)', fontSize: 18 }} />
               <div style={{ fontSize: 12, color: 'var(--ink)' }}>
-                Chuyên đề <strong>Văn Hóa MMVN &amp; Hội Nhập</strong> đang có tỷ lệ hoàn thành thấp (45%).
+                Topic <strong>MMVN Culture &amp; Onboarding</strong> currently has a low completion rate (45%).
               </div>
             </div>
-            <Badge tone="amber">Cần Đôn Đốc</Badge>
+            <Badge tone="amber">Needs A Nudge</Badge>
           </div>
         </div>
       </div>
 
       {/* 4. ASSOCIATES REQUIRING MANAGER FOLLOW-UP (ACTION CENTER) */}
       <div className="card" style={{ marginBottom: 24, border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', background: '#fff', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ padding: '16px 20px', background: 'var(--paper-raised)', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
               <i className="ti ti-user-exclamation" style={{ marginRight: 6, color: 'var(--rust)' }} />
-              Danh Sách Nhân Sự Cần Quản Lý Can Thiệp &amp; Đôn Đốc ({needsAttention.length})
+              Employees Requiring Manager Intervention &amp; Follow-Up ({needsAttention.length})
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-              Xử lý nhân sự quá hạn đào tạo bắt buộc, trượt bài thi sát hạch hoặc ngừng học dài ngày
+              Handle employees overdue on mandatory training, failing the exam or inactive for a long time
             </div>
           </div>
 
@@ -331,52 +331,52 @@ export default function ManagerDashboard() {
               className="btn btn-sm"
               onClick={() => setFilterType('ALL')}
               style={{
-                fontSize: 11.5,
-                background: filterType === 'ALL' ? 'var(--ink)' : 'var(--paper-sunken)',
+                fontSize: 12,
+                background: filterType === 'ALL' ? 'var(--rail)' : 'var(--paper-sunken)',
                 color: filterType === 'ALL' ? '#fff' : 'var(--ink-soft)',
                 border: '1px solid var(--line)',
               }}
             >
-              Tất Cả ({needsAttention.length})
+              All ({needsAttention.length})
             </button>
             <button
               type="button"
               className="btn btn-sm"
               onClick={() => setFilterType('OVERDUE')}
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 background: filterType === 'OVERDUE' ? 'var(--rust)' : 'var(--paper-sunken)',
                 color: filterType === 'OVERDUE' ? '#fff' : 'var(--ink-soft)',
                 border: '1px solid var(--line)',
               }}
             >
-              🔴 Quá Hạn ({overdue})
+              🔴 Overdue ({overdue})
             </button>
             <button
               type="button"
               className="btn btn-sm"
               onClick={() => setFilterType('FAILED')}
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 background: filterType === 'FAILED' ? '#B91C1C' : 'var(--paper-sunken)',
                 color: filterType === 'FAILED' ? '#fff' : 'var(--ink-soft)',
                 border: '1px solid var(--line)',
               }}
             >
-              ⚠️ Trượt Bài Thi ({failed})
+              ⚠️ Failed The Exam ({failed})
             </button>
             <button
               type="button"
               className="btn btn-sm"
               onClick={() => setFilterType('INACTIVE')}
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 background: filterType === 'INACTIVE' ? 'var(--amber)' : 'var(--paper-sunken)',
                 color: filterType === 'INACTIVE' ? '#fff' : 'var(--ink-soft)',
                 border: '1px solid var(--line)',
               }}
             >
-              🟡 Ngừng Học &gt;3 Ngày ({needsAttention.length - overdue - failed})
+              🟡 Inactive &gt;3 Days ({needsAttention.length - overdue - failed})
             </button>
           </div>
         </div>
@@ -384,8 +384,8 @@ export default function ManagerDashboard() {
         {filteredAttentionList.length === 0 ? (
           <div className="empty-state" style={{ padding: '32px 20px', textAlign: 'center' }}>
             <i className="ti ti-square-check" style={{ fontSize: 36, color: 'var(--sage)', marginBottom: 8, display: 'block' }} />
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>Không có nhân sự nào trong danh mục này!</div>
-            <p style={{ color: 'var(--ink-soft)', fontSize: 12.5, margin: '4px 0 0 0' }}>Tất cả thành viên đều đang duy trì tiến độ học tập ổn định.</p>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>No employee in this category!</div>
+            <p style={{ color: 'var(--ink-soft)', fontSize: 13, margin: '4px 0 0 0' }}>Every team member is keeping a steady learning pace.</p>
           </div>
         ) : (
           filteredAttentionList.map((m, i) => (
@@ -399,27 +399,27 @@ export default function ManagerDashboard() {
                 gap: 14,
                 padding: '16px 20px',
                 borderBottom: i < filteredAttentionList.length - 1 ? '1px solid var(--line)' : 'none',
-                background: m.status === 'FAILED' ? '#FEF2F2' : m.status === 'OVERDUE' ? '#FFFBEB' : '#fff',
+                background: m.status === 'FAILED' ? 'var(--rust-soft)' : m.status === 'OVERDUE' ? 'var(--amber-soft)' : 'var(--paper-raised)',
               }}
             >
               <div style={{ flex: 1, minWidth: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{m.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', padding: '2px 6px', borderRadius: 4 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-faint)', background: 'var(--paper-sunken)', padding: '2px 6px', borderRadius: 4 }}>
                     {m.employeeId}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>&middot; {m.position}</span>
                 </div>
 
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 6 }}>
-                  Khóa học: <strong>{m.course}</strong> &middot; Tiến độ: <strong>{m.progress}%</strong> &middot; Hạn chót: <strong>{m.dueDate || 'Chưa đặt'}</strong>
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 6 }}>
+                  Courses: <strong>{m.course}</strong> &middot; Progress: <strong>{m.progress}%</strong> &middot; Deadline: <strong>{m.dueDate || 'Not set'}</strong>
                 </div>
 
                 {m.reason && (
                   <div
                     style={{
                       fontSize: 12,
-                      color: m.status === 'FAILED' ? '#B91C1C' : m.status === 'OVERDUE' ? '#B45309' : 'var(--ink-soft)',
+                      color: m.status === 'FAILED' ? 'var(--rust-soft-text)' : m.status === 'OVERDUE' ? 'var(--amber-soft-text)' : 'var(--ink-soft)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
@@ -436,28 +436,28 @@ export default function ManagerDashboard() {
                 {m.status === 'FAILED' ? (
                   <>
                     <Badge tone="rust" icon="ti-x">
-                      Trượt Sát Hạch ({m.score}%)
+                      Failed The Exam ({m.score}%)
                     </Badge>
                     <Button size="sm" variant="danger" icon="ti-lock-open" onClick={() => handleUnlockRetake(m)}>
-                      Mở Khóa Thi Lại
+                      Unlock A Retake
                     </Button>
                   </>
                 ) : m.status === 'OVERDUE' ? (
                   <>
                     <Badge tone="rust" icon="ti-alert-circle">
-                      Quá Hạn (Ngừng {m.inactiveDays} ngày)
+                      Overdue (inactive {m.inactiveDays} days)
                     </Badge>
                     <Button size="sm" icon="ti-brand-zalo" variant="primary" tone="danger" onClick={() => setRemindTarget(m)}>
-                      Gửi Zalo / Teams Ping
+                      Send A Zalo / Teams Ping
                     </Button>
                   </>
                 ) : (
                   <>
                     <Badge tone="amber" icon="ti-clock-pause">
-                      Ngừng Học {m.inactiveDays} Ngày
+                      Inactive {m.inactiveDays} Days
                     </Badge>
                     <Button size="sm" icon="ti-bell" variant="outline" onClick={() => setRemindTarget(m)}>
-                      Gửi Nhắc Nhở Đa Kênh
+                      Send A Multi-Channel Reminder
                     </Button>
                   </>
                 )}
@@ -470,26 +470,26 @@ export default function ManagerDashboard() {
       {/* 5. QUICK PENDING APPROVALS & SYSTEM AUTOMATED ALERT LOG (DUAL PANELS) */}
       <div className="grid grid-2" style={{ gap: 20, marginBottom: 24, alignItems: 'start' }}>
         {/* PANEL 1: PENDING APPROVAL QUEUE */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-clipboard-check" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                Yêu Cầu Chờ Phê Duyệt ({pendingApprovals.length})
+                Requests Awaiting Approval ({pendingApprovals.length})
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Đơn xin học vượt cấp và đăng ký khóa học của nhân sự
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Employees' level skip requests and course registrations
               </div>
             </div>
             <Button size="sm" variant="ghost" icon="ti-arrow-right" onClick={() => navigate('/manager/approvals')}>
-              Xem Tất Cả
+              View All
             </Button>
           </div>
 
           {pendingApprovals.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 12.5 }}>
+            <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)', fontSize: 13 }}>
               <i className="ti ti-circle-check" style={{ fontSize: 32, color: 'var(--sage)', marginBottom: 6, display: 'block' }} />
-              Không có yêu cầu nào đang chờ duyệt!
+              No request is awaiting approval!
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -512,12 +512,12 @@ export default function ManagerDashboard() {
                     <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
                       {req.learnerName || req.userName} ({req.employeeId || 'MMVN'})
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                      Khóa học: <strong>{req.courseTitle || req.courseName}</strong> &middot; Cấp bậc: Level {req.currentLevel} &rarr; Level {req.targetLevel}
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                      Courses: <strong>{req.courseTitle || req.courseName}</strong> &middot; Job level: Level {req.currentLevel} &rarr; Level {req.targetLevel}
                     </div>
                   </div>
                   <Button size="sm" variant="primary" icon="ti-check" onClick={() => navigate('/manager/approvals')}>
-                    Xử Lý Đơn
+                    Handle Requests
                   </Button>
                 </div>
               ))}
@@ -526,18 +526,18 @@ export default function ManagerDashboard() {
         </div>
 
         {/* PANEL 2: SYSTEM AUTOMATED ALERT LOG */}
-        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: '#fff', borderRadius: 10 }}>
+        <div className="card card-pad" style={{ border: '1px solid var(--line)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                 <i className="ti ti-bell-ringing" style={{ marginRight: 6, color: 'var(--rust)' }} />
-                Nhật Ký Cảnh Báo Tự Động Từ Hệ Thống
+                Automatic System Alert Log
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Ghi nhận vi phạm tiến độ &amp; sát hạch thời gian thực
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                Real-time record of progress &amp; examination breaches
               </div>
             </div>
-            <Badge tone="rust">Thời Gian Thực</Badge>
+            <Badge tone="rust">Real Time</Badge>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -572,8 +572,8 @@ export default function ManagerDashboard() {
                   <i className="ti ti-alert-triangle" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>{a.employee}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{a.employee}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {a.message}
                   </div>
                 </div>
@@ -591,8 +591,8 @@ export default function ManagerDashboard() {
           setRemindTarget(null);
           setIsBatchRemind(false);
         }}
-        title={isBatchRemind ? 'Gửi Thông Báo Đôn Đốc Cho Toàn Bộ Đội Ngũ' : 'Gửi Nhắc Nhở Đào Tạo Đa Kênh Cho Nhân Sự'}
-        subtitle={remindTarget ? `Đối tượng nhận: ${remindTarget.name} ${remindTarget.position ? `(${remindTarget.position})` : ''}` : ''}
+        title={isBatchRemind ? 'Send A Nudge To The Whole Team' : 'Send A Multi-Channel Training Reminder'}
+        subtitle={remindTarget ? `Recipient: ${remindTarget.name} ${remindTarget.position ? `(${remindTarget.position})` : ''}` : ''}
         size="md"
         footer={
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -603,10 +603,10 @@ export default function ManagerDashboard() {
                 setIsBatchRemind(false);
               }}
             >
-              Hủy
+              Cancel
             </Button>
             <Button variant="primary" icon="ti-send" onClick={handleSendReminder}>
-              {remindSent ? 'Đã Điều Phối Thông Báo Thành Công!' : 'Gửi Nhắc Nhở Ngay'}
+              {remindSent ? 'Notifications Dispatched Successfully!' : 'Send The Reminder Now'}
             </Button>
           </div>
         }
@@ -614,25 +614,25 @@ export default function ManagerDashboard() {
         {remindTarget && (
           <div>
             <div style={{ background: 'var(--paper-sunken)', padding: '12px 16px', borderRadius: 8, marginBottom: 16, border: '1px solid var(--line)' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Nội dung tin nhắn mẫu:</div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 4, fontStyle: 'italic' }}>
-                "Nhắc nhở từ Quản lý: Đề nghị bạn hoàn thành khóa học bắt buộc <strong>{remindTarget.course}</strong> trước hạn quy định để đảm bảo tuân thủ pháp quy MMVN."
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Sample message text:</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 4, fontStyle: 'italic' }}>
+                "Reminder from your manager: please complete the mandatory course <strong>{remindTarget.course}</strong> before the deadline to stay compliant with MMVN regulations."
               </div>
             </div>
 
-            <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10, color: 'var(--ink)' }}>Kênh điều phối tự động:</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--ink)' }}>Automatic dispatch channels:</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13 }}>
                 <input type="checkbox" defaultChecked />
-                <span><strong>Zalo ZNS / SMS</strong> (Tối ưu cho nhân sự đứng quầy &amp; bếp)</span>
+                <span><strong>Zalo ZNS / SMS</strong> (Optimized for counter &amp; kitchen staff)</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13 }}>
                 <input type="checkbox" defaultChecked />
-                <span><strong>Microsoft Teams / Email Công Ty</strong> (Thông báo kèm link trực tiếp)</span>
+                <span><strong>Microsoft Teams / Company Email</strong> (The notification includes a direct link)</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13 }}>
                 <input type="checkbox" defaultChecked />
-                <span><strong>Thông Báo Đẩy Ứng Dụng (In-App Push)</strong></span>
+                <span><strong>In-App Push Notification</strong></span>
               </label>
             </div>
           </div>
@@ -650,14 +650,14 @@ function StatTile({ label, value, subtext, tone, icon, onClick }) {
       onClick={onClick}
       style={{
         cursor: onClick ? 'pointer' : 'default',
-        background: '#fff',
+        background: 'var(--paper-raised)',
         border: '1px solid var(--line)',
         borderRadius: 10,
         padding: 16,
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
-        <div className="stat-label" style={{ fontSize: 12.5, fontWeight: 700 }}>
+        <div className="stat-label" style={{ fontSize: 13, fontWeight: 700 }}>
           {label}
         </div>
         {icon && (

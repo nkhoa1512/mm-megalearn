@@ -3,11 +3,11 @@ import { UNIVERSAL_COMPLIANCE_COURSE_IDS } from '../data/generated100Data';
 import { teamSkillGapMatrix } from '../data/mockData';
 
 /**
- * Tính toán báo cáo tuân thủ theo từng siêu thị dựa trên danh sách người dùng thực tế
- * và ghi danh của 3 khóa đào tạo tuân thủ bắt buộc:
- * - CRS-ISA-011 (An ninh thông tin)
- * - CRS-HSE-019 (An toàn PCCC)
- * - CRS-STOPS-037 (Vận hành & An toàn thực phẩm HACCP)
+ * Computes the compliance report per store from the real user list
+ * and the enrollments of the 3 mandatory compliance courses:
+ * - CRS-ISA-011 (information security)
+ * - CRS-HSE-019 (fire safety)
+ * - CRS-STOPS-037 (operations & HACCP food safety)
  */
 export function complianceByStore(users = [], enrollments = {}, courses = []) {
   return retailStores.map((store) => {
@@ -48,16 +48,16 @@ export function complianceByStore(users = [], enrollments = {}, courses = []) {
     const haccp = totalStaff > 0 ? Math.round(haccpTotal / totalStaff) : 95;
     const overall = Number(((sec + pccc + haccp) / 3).toFixed(1));
 
-    let status = 'ĐẠT_CHUẨN';
-    if (overall >= 95) status = 'CHUẨN_XUẤT_SẮC';
-    else if (overall < 88) status = 'CẦN_CẢNH_BÁO';
+    let status = 'MEETS_STANDARD';
+    if (overall >= 95) status = 'EXCELLENT_STANDARD';
+    else if (overall < 88) status = 'WARNING_REQUIRED';
 
     const regionLabel =
       store.areaId === 'area-north'
-        ? 'Miền Bắc'
+        ? 'Northern Region'
         : store.areaId === 'area-central'
-        ? 'Miền Trung'
-        : 'Miền Nam';
+        ? 'Central Region'
+        : 'Southern Region';
 
     return {
       id: store.id,
@@ -76,7 +76,7 @@ export function complianceByStore(users = [], enrollments = {}, courses = []) {
 }
 
 /**
- * Tỷ lệ tuân thủ đào tạo trung bình toàn vùng (dùng cho KPI Header và Badge Tab)
+ * Region-wide average training compliance rate (used by the KPI header and the tab badge)
  */
 export function regionalComplianceRate(users = [], enrollments = {}, courses = []) {
   const storeList = complianceByStore(users, enrollments, courses);
@@ -86,14 +86,14 @@ export function regionalComplianceRate(users = [], enrollments = {}, courses = [
 }
 
 /**
- * Tổng số nhân sự trong phạm vi HRBP phụ trách
+ * Total headcount within the HRBP's scope
  */
 export function headcountInScope(users = []) {
   return (users || []).length || 100;
 }
 
 /**
- * Danh sách khoảng cách năng lực tổng hợp từ teamSkillGapMatrix
+ * The consolidated competency gap list from teamSkillGapMatrix
  */
 export function skillGapRows(matrix = teamSkillGapMatrix, users = []) {
   const rows = [];
@@ -119,12 +119,12 @@ export function skillGapRows(matrix = teamSkillGapMatrix, users = []) {
           required: sk.required,
           impact:
             sk.status === 'CRITICAL_GAP'
-              ? 'Khoảng cách kỹ năng lớn, ảnh hưởng trực tiếp đến chất lượng vận hành ca và an toàn.'
-              : 'Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình định biên.',
+              ? 'A large skill gap that directly affects shift operating quality and safety.'
+              : 'A hands-on class is needed to standardize the required process.',
           recommendedCourseId: sk.suggestedCourseId || 'CRS-FSH-001',
-          recommendedCourse: sk.suggestedCourse || 'Chương Trình Đào Tạo Bổ Trợ Chuẩn Hóa',
+          recommendedCourse: sk.suggestedCourse || 'Standardized Supplementary Training Program',
           trainer: 'Nguyen Van Hung (Master Trainer)',
-          status: sk.status === 'CRITICAL_GAP' ? 'CẦN CAN THIỆP GẤP' : 'ĐANG THEO DÕI',
+          status: sk.status === 'CRITICAL_GAP' ? 'URGENT INTERVENTION NEEDED' : 'MONITORING',
         });
       }
     });
@@ -134,30 +134,30 @@ export function skillGapRows(matrix = teamSkillGapMatrix, users = []) {
     ? rows
     : [
         {
-          unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
+          unit: 'Bakery & Fresh Food Counter (MM An Phu)',
           deptCode: 'PPF',
           skill: 'HACCP & Cold-Chain Storage Protocols',
           gap: -18,
           current: 72,
           required: 90,
-          impact: 'Ảnh hưởng trực tiếp đến tỷ lệ hao hụt hàng hóa và vệ sinh an toàn thực phẩm.',
+          impact: 'Directly affects the shrinkage rate and food hygiene and safety.',
           recommendedCourseId: 'CRS-FSH-001',
           recommendedCourse: 'Food Safety & Hygiene Standards (HACCP)',
           trainer: 'Nguyen Van Hung (Master Trainer)',
-          status: 'CẦN CAN THIỆP GẤP',
+          status: 'URGENT INTERVENTION NEEDED',
         },
         {
-          unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
+          unit: 'Cashier & Customer Service Department (MM Binh Phu)',
           deptCode: 'FE',
           skill: 'Cash Handling, POS Speed & Shrinkage Control',
           gap: -14,
           current: 76,
           required: 90,
-          impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
+          impact: 'Average checkout time rose by 15s per transaction during peak hours.',
           recommendedCourseId: 'CRS-CSERV-087',
           recommendedCourse: 'Service Mindset & Cashier POS Fast Operation',
           trainer: 'Le Hoang Nam',
-          status: 'ĐANG THEO DÕI',
+          status: 'MONITORING',
         },
       ];
 }

@@ -19,12 +19,12 @@ export default function PostTrainingSurveyModal() {
   const [l3ProductivityGain, setL3ProductivityGain] = useState('+15%');
   const [l3ManagerNote, setL3ManagerNote] = useState('');
 
-  // CLASSROOM_CSAT Form state (bắt buộc sau khi điểm danh lớp trực tiếp)
+  // CLASSROOM_CSAT form state (mandatory after checking in to an in-person class)
   const [csatTrainerRating, setCsatTrainerRating] = useState(5);
   const [csatContentRating, setCsatContentRating] = useState(5);
   const [csatFacilityRating, setCsatFacilityRating] = useState(5);
   const [csatComment, setCsatComment] = useState(
-    'Buổi học thực hành rất trực quan, giảng viên hướng dẫn nhiệt tình và giải thích cặn kẽ từng bước thao tác.'
+    'The hands-on session was very clear; the trainer was enthusiastic and explained every step thoroughly.'
   );
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -71,12 +71,12 @@ export default function PostTrainingSurveyModal() {
       onClose={closeSurveyModal}
       title={
         isL1 ? 'Post-Course Feedback & Action Plan (Kirkpatrick Level 1 CSAT)'
-        : isClassroomCsat ? 'Khảo Sát Đánh Giá Chất Lượng Đào Tạo (Level 1 CSAT)'
+        : isClassroomCsat ? 'Training Quality Survey (Level 1 CSAT)'
         : 'Post-Training Impact Review 3-6 Months (Kirkpatrick Level 3)'
       }
       subtitle={
         isL1 ? `Course: ${courseTitle}`
-        : isClassroomCsat ? `${course?.title || ''} · Giảng viên: ${course?.trainerName || ''}`
+        : isClassroomCsat ? `${course?.title || ''} · Trainer: ${course?.trainerName || ''}`
         : `Evaluating Direct Report: ${learner?.name || learner?.fullName || 'Minh Tran'}`
       }
       size="md"
@@ -88,7 +88,7 @@ export default function PostTrainingSurveyModal() {
             </Button>
           )}
           <Button variant="primary" icon={isSubmitted ? 'ti-check' : 'ti-send'} onClick={handleSubmit} disabled={isSubmitted}>
-            {isSubmitted ? 'Saved!' : isL1 ? 'Submit CSAT & Unlock Certificate' : isClassroomCsat ? 'Gửi Đánh Giá' : 'Confirm Level 3 Evaluation'}
+            {isSubmitted ? 'Saved!' : isL1 ? 'Submit CSAT & Unlock Certificate' : isClassroomCsat ? 'Submit Feedback' : 'Confirm Level 3 Evaluation'}
           </Button>
         </div>
       }
@@ -99,31 +99,31 @@ export default function PostTrainingSurveyModal() {
             <i className="ti ti-check" />
           </div>
           <h3 style={{ fontSize: 18, color: 'var(--sage)', marginBottom: 8 }}>
-            {isL1 ? 'Thank you for completing your evaluation!' : isClassroomCsat ? 'Cảm Ơn Bạn Đã Gửi Đánh Giá!' : 'Level 3 Evaluation Recorded!'}
+            {isL1 ? 'Thank you for completing your evaluation!' : isClassroomCsat ? 'Thank You For Your Feedback!' : 'Level 3 Evaluation Recorded!'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>
             {isL1
               ? 'Your digital certificate of completion is now unlocked. Your action plan has been routed to your Line Manager.'
               : isClassroomCsat
-              ? `Ý kiến của bạn đã được chuyển trực tiếp cho Giảng viên ${course?.trainerName || ''} và Ban L&D để cải tiến các khóa học tiếp theo.`
+              ? `Your feedback has gone straight to trainer ${course?.trainerName || ''} and the L&D team to improve future courses.`
               : 'Behavioral impact scores have been updated in enterprise training analytics.'}
           </p>
         </div>
       ) : isClassroomCsat ? (
-        /* CLASSROOM CSAT (bắt buộc sau khi điểm danh lớp trực tiếp) */
+        /* CLASSROOM CSAT (mandatory after checking in to an in-person class) */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Badge tone="amber" icon="ti-alert-circle">
-            Bắt buộc: học viên tham gia lớp trực tiếp phải gửi đánh giá này
+            Mandatory: learners attending an in-person class must submit this feedback
           </Badge>
 
           {[
-            { label: `1. Mức độ hài lòng về kỹ năng giảng dạy của ${course?.trainerName || 'Giảng viên'}`, value: csatTrainerRating, set: setCsatTrainerRating },
-            { label: '2. Chất lượng nội dung & tài liệu thực hành', value: csatContentRating, set: setCsatContentRating },
-            { label: '3. Cơ sở vật chất / Xưởng thực hành', value: csatFacilityRating, set: setCsatFacilityRating },
+            { label: `1. How satisfied are you with ${course?.trainerName || 'the trainer'}'s teaching?`, value: csatTrainerRating, set: setCsatTrainerRating },
+            { label: '2. Quality of the content & practice materials', value: csatContentRating, set: setCsatContentRating },
+            { label: '3. Facilities / practice workshop', value: csatFacilityRating, set: setCsatFacilityRating },
           ].map((q, qi) => (
             <div key={qi} className="card card-pad" style={{ padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{q.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{q.label}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{q.value} / 5 Sao</span>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
@@ -151,20 +151,20 @@ export default function PostTrainingSurveyModal() {
           ))}
 
           <div>
-            <label className="field-label">Nhận xét thêm (tùy chọn)</label>
+            <label className="field-label">Additional comments (optional)</label>
             <textarea
               className="field-input"
               rows={3}
               value={csatComment}
               onChange={(e) => setCsatComment(e.target.value)}
-              style={{ width: '100%', fontSize: 12.5 }}
+              style={{ width: '100%', fontSize: 13 }}
             />
           </div>
         </div>
       ) : isL1 ? (
         /* LEVEL 1 SURVEY (Learner) */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '10px 14px', borderRadius: 8, fontSize: 12.5 }}>
+          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '10px 14px', borderRadius: 8, fontSize: 13 }}>
             <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
             Your feedback directly drives curriculum quality and learning excellence across MM Mega Market &amp; Big C.
           </div>
@@ -172,7 +172,7 @@ export default function PostTrainingSurveyModal() {
           {/* Question 1: Trainer Rating */}
           <div className="card card-pad" style={{ padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>1. Instructor Effectiveness &amp; Teaching Quality</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>1. Instructor Effectiveness &amp; Teaching Quality</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{trainerRating} / 5 Stars</span>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -201,7 +201,7 @@ export default function PostTrainingSurveyModal() {
           {/* Question 2: Course Content */}
           <div className="card card-pad" style={{ padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>2. Course Content, Visual Materials &amp; Media Quality</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>2. Course Content, Visual Materials &amp; Media Quality</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{contentRating} / 5 Stars</span>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -230,7 +230,7 @@ export default function PostTrainingSurveyModal() {
           {/* Question 3: Usability */}
           <div className="card card-pad" style={{ padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>3. Practical Applicability to Daily Store Operations</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>3. Practical Applicability to Daily Store Operations</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{usabilityRating} / 5 Stars</span>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -270,7 +270,7 @@ export default function PostTrainingSurveyModal() {
               placeholder="e.g. Conduct cold-chain temperature checks every 120 minutes and mentor 2 team associates..."
               value={actionPlanCommitment}
               onChange={(e) => setActionPlanCommitment(e.target.value)}
-              style={{ fontSize: 12.5, width: '100%', marginBottom: 10 }}
+              style={{ fontSize: 13, width: '100%', marginBottom: 10 }}
             />
             <input
               type="text"
@@ -278,20 +278,20 @@ export default function PostTrainingSurveyModal() {
               placeholder="Target KPI / Metric (e.g. Reduce bakery product shrinkage by 10% in 90 days)"
               value={kpiTarget}
               onChange={(e) => setKpiTarget(e.target.value)}
-              style={{ fontSize: 12.5, width: '100%' }}
+              style={{ fontSize: 13, width: '100%' }}
             />
           </div>
         </div>
       ) : (
         /* LEVEL 3 SURVEY (Manager Review after 3-6 months) */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '10px 14px', borderRadius: 8, fontSize: 12.5 }}>
+          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '10px 14px', borderRadius: 8, fontSize: 13 }}>
             <i className="ti ti-clock" style={{ marginRight: 6 }} />
             Periodic 3-6 month post-training evaluation: Line Manager reviews on-the-job behavioral changes and metric gains.
           </div>
 
           <div className="card card-pad">
-            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
               1. Behavioral Progression &amp; SOP Execution on the Sales Floor
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -318,7 +318,7 @@ export default function PostTrainingSurveyModal() {
           </div>
 
           <div className="card card-pad">
-            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
               2. Operational Efficiency Gains &amp; Shrinkage Reduction
             </div>
             <input
@@ -329,14 +329,14 @@ export default function PostTrainingSurveyModal() {
               placeholder="e.g. +15% cashier checkout speed, 20% spoilage reduction..."
               style={{ fontSize: 13, width: '100%', marginBottom: 10 }}
             />
-            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 6 }}>Manager Observations &amp; Sign-off Notes:</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Manager Observations &amp; Sign-off Notes:</div>
             <textarea
               className="field-input"
               rows={3}
               value={l3ManagerNote}
               onChange={(e) => setL3ManagerNote(e.target.value)}
               placeholder="Notes on employee attitude, team support, and procedure compliance..."
-              style={{ fontSize: 12.5, width: '100%' }}
+              style={{ fontSize: 13, width: '100%' }}
             />
           </div>
         </div>

@@ -6,14 +6,14 @@ import VisualRoadmapTimeline from './VisualRoadmapTimeline';
 import { getCourseImage } from '../../data/courseImages';
 
 const TABS = [
-  { id: 'CURRENT', label: 'Lộ Trình Hiện Tại', labelVi: 'Lộ Trình Hiện Tại', labelEn: 'Current Level Roadmap', icon: 'ti-map-pin' },
-  { id: 'SUCCESSION', label: 'Lộ Trình Kế Cận', labelVi: 'Lộ Trình Kế Cận', labelEn: 'Succession Roadmap', icon: 'ti-arrow-up-circle' },
-  { id: 'SELF_PROPOSED', label: 'Lộ Trình Tự Đề Xuất', labelVi: 'Lộ Trình Tự Đề Xuất', labelEn: 'Self-Proposed Tracks', icon: 'ti-list-details' },
-  { id: 'RECOMMENDED', label: 'Khóa Học Gợi Ý', labelVi: 'Khóa Học Gợi Ý', labelEn: 'Recommended Courses', icon: 'ti-sparkles' },
+  { id: 'CURRENT', label: 'Current Roadmap', labelVi: 'Current Roadmap', labelEn: 'Current Level Roadmap', icon: 'ti-map-pin' },
+  { id: 'SUCCESSION', label: 'Succession Roadmap', labelVi: 'Succession Roadmap', labelEn: 'Succession Roadmap', icon: 'ti-arrow-up-circle' },
+  { id: 'SELF_PROPOSED', label: 'Self-Proposed Roadmap', labelVi: 'Self-Proposed Roadmap', labelEn: 'Self-Proposed Tracks', icon: 'ti-list-details' },
+  { id: 'RECOMMENDED', label: 'Suggested Courses', labelVi: 'Suggested Courses', labelEn: 'Recommended Courses', icon: 'ti-sparkles' },
 ];
 
-// 4 tab lộ trình học tập dùng chung — dùng ở cả trang /learner/paths riêng
-// lẫn nhúng trực tiếp trên Personal Learning Dashboard.
+// The shared 4-tab learning roadmap — used on the standalone /learner/paths page
+// and embedded directly on the Personal Learning Dashboard.
 export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
   const navigate = useNavigate();
   const { getUserRoadmapTabs, requestRoadmapPromotion, levelAdvanceRequestsFor, enrollCourse, language, t } = useCourseStore();
@@ -69,10 +69,10 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
         <div className="card card-pad">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 15 }}>
-              {language === 'en' ? `Level ${roadmap.level} Framework` : `Định Biên Level ${roadmap.level}`}
+              {language === 'en' ? `Level ${roadmap.level} Framework` : `Level ${roadmap.level} Requirements`}
             </div>
             <Badge tone={roadmap.current.done ? 'sage' : 'amber'}>
-              {roadmap.current.percent}% {language === 'en' ? 'Completed' : 'Hoàn Thành'}
+              {roadmap.current.percent}% {language === 'en' ? 'Completed' : 'Completed'}
             </Badge>
           </div>
           <ProgressBar value={roadmap.current.percent} tone={roadmap.current.done ? 'sage' : 'rail'} />
@@ -87,29 +87,29 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
           {!roadmap.nextLevel ? (
             <div className="empty-state">
               <i className="ti ti-crown" style={{ color: 'var(--amber)' }} />
-              <p>{language === 'en' ? 'Already at the highest level (Level 1) — no succession roadmap.' : 'Đã ở cấp bậc cao nhất (Level 1) — không còn Lộ trình kế cận.'}</p>
+              <p>{language === 'en' ? 'Already at the highest level (Level 1) — no succession roadmap.' : 'You are at the highest level (Level 1) — there is no succession roadmap.'}</p>
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18, padding: '12px 16px', borderRadius: 8, background: roadmap.succession.locked ? '#FEF2F2' : '#F0FDF4', color: roadmap.succession.locked ? '#991B1B' : '#166534' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18, padding: '12px 16px', borderRadius: 8, background: roadmap.succession.locked ? 'var(--rust-soft)' : 'var(--sage-soft)', color: roadmap.succession.locked ? 'var(--rust-soft-text)' : 'var(--sage-soft-text)' }}>
                 <i className={`ti ${roadmap.succession.locked ? 'ti-lock' : 'ti-confetti'}`} style={{ fontSize: 20 }} />
                 <span style={{ fontSize: 13, fontWeight: 600 }}>
                   {roadmap.succession.locked
                     ? (language === 'en'
                         ? `You must complete 100% of your Current Level Roadmap (Level ${roadmap.level}) to participate in this track.`
-                        : `Bạn phải hoàn thành 100% Lộ trình hiện tại (Level ${roadmap.level}) để tham gia lộ trình này.`)
+                        : `You must complete 100% of your current roadmap (Level ${roadmap.level}) to join this one.`)
                     : (language === 'en'
                         ? `Completed Level ${roadmap.level}! Succession Roadmap Level ${roadmap.nextLevel} is now unlocked.`
-                        : `Đã hoàn thành định biên Level ${roadmap.level}. Lộ trình kế cận Level ${roadmap.nextLevel} đã được mở khóa!`)}
+                        : `Level ${roadmap.level} requirements complete. The Level ${roadmap.nextLevel} succession roadmap is now unlocked!`)}
                 </span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, fontSize: 15 }}>
-                  {language === 'en' ? `Succession Level ${roadmap.nextLevel}` : `Kế Cận Level ${roadmap.nextLevel}`}
+                  {language === 'en' ? `Succession Level ${roadmap.nextLevel}` : `Succession Level ${roadmap.nextLevel}`}
                 </div>
                 <Badge tone={roadmap.succession.percent >= 100 ? 'sage' : 'amber'}>
-                  {roadmap.succession.percent}% {language === 'en' ? 'Completed' : 'Hoàn Thành'}
+                  {roadmap.succession.percent}% {language === 'en' ? 'Completed' : 'Completed'}
                 </Badge>
               </div>
               <ProgressBar value={roadmap.succession.percent} tone={roadmap.succession.percent >= 100 ? 'sage' : 'rail'} />
@@ -123,16 +123,16 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                   {roadmap.succession.percent >= 100 ? (
                     alreadyRequested || requestState === 'ok' ? (
                       <Badge tone="sage" icon="ti-clock">
-                        {language === 'en' ? 'Promotion review request is pending Admin approval' : 'Hồ sơ đề xuất đang chờ User Admin / System Admin duyệt'}
+                        {language === 'en' ? 'Promotion review request is pending Admin approval' : 'Nomination pending User Admin / System Admin approval'}
                       </Badge>
                     ) : (
                       <Button variant="primary" icon="ti-award" onClick={handleRequestPromotion}>
-                        {language === 'en' ? 'Submit Promotion & Succession Review Request' : 'Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp'}
+                        {language === 'en' ? 'Submit Promotion & Succession Review Request' : 'Submit Promotion Review Nomination'}
                       </Button>
                     )
                   ) : (
                     <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                      {language === 'en' ? 'Complete 100% of courses above to unlock the promotion request button.' : 'Hoàn thành 100% các khóa trên để mở nút đề xuất thăng cấp.'}
+                      {language === 'en' ? 'Complete 100% of courses above to unlock the promotion request button.' : 'Complete 100% of the courses above to unlock the promotion nomination button.'}
                     </span>
                   )}
                 </div>
@@ -144,22 +144,22 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
 
       {activeTab === 'SELF_PROPOSED' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ background: 'var(--rail-soft)', color: 'var(--rail-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="ti ti-route-2" style={{ fontSize: 18 }} />
               <span>
                 {language === 'en'
                   ? 'Specialized elective career tracks automatically tailored to your Department, Job Role and Level.'
-                  : `Lộ trình chuyên đề tự chọn được cá nhân hóa tự động theo đúng Phòng Ban (${user?.departmentName || user?.departmentCode || 'Bộ phận'}), Chức danh và Cấp bậc hiện tại.`}
+                  : `An optional specialist roadmap personalized automatically to your department (${user?.departmentName || user?.departmentCode || 'Sub-Department'}), job title and current level.`}
               </span>
             </div>
-            <Badge tone="rail">{roadmap.selfProposed.tracks.length} Chuyên Đề Nâng Cao</Badge>
+            <Badge tone="rail">{roadmap.selfProposed.tracks.length} Advanced Tracks</Badge>
           </div>
 
           {roadmap.selfProposed.tracks.length === 0 ? (
             <div className="card empty-state">
               <i className="ti ti-mood-empty" />
-              <p>{language === 'en' ? 'No tracks available for current level.' : 'Chưa có track nào phù hợp cấp bậc hiện tại.'}</p>
+              <p>{language === 'en' ? 'No tracks available for current level.' : 'No track matches your current level yet.'}</p>
             </div>
           ) : (
             roadmap.selfProposed.tracks.map((track) => (
@@ -170,17 +170,17 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                       <i className={`ti ${track.icon}`} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--ink)' }}>{language === 'en' ? (track.titleEn || track.titleVi) : track.titleVi}</div>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)' }}>{language === 'en' ? (track.titleEn || track.titleVi) : track.titleVi}</div>
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{track.description}</div>
                     </div>
                   </div>
                   {track.joined ? (
                     <Badge tone={track.percent >= 100 ? 'sage' : 'amber'}>
-                      {track.percent}% {language === 'en' ? 'Completed' : 'Hoàn Thành'}
+                      {track.percent}% {language === 'en' ? 'Completed' : 'Completed'}
                     </Badge>
                   ) : (
                     <Button size="sm" variant="primary" icon="ti-plus" onClick={() => joinTrack(track)}>
-                      {language === 'en' ? 'Start This Track' : 'Bắt Đầu Track Này'}
+                      {language === 'en' ? 'Start This Track' : 'Start This Track'}
                     </Button>
                   )}
                 </div>
@@ -191,8 +191,8 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                   </div>
                 )}
 
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>
-                  {language === 'en' ? 'Courses in this track (click to study):' : 'Các khóa học trong lộ trình (bấm để xem chi tiết & vào học):'}
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>
+                  {language === 'en' ? 'Courses in this track (click to study):' : 'Courses on this roadmap (click to view details & start learning):'}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {track.milestones.map(({ course, completed, status }) => (
@@ -202,7 +202,7 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                       onClick={() => openCourse(course)}
                       className="card-interactive"
                       style={{
-                        background: completed ? '#F0FDF4' : status === 'IN_PROGRESS' ? '#FEF3C7' : 'var(--paper-sunken)',
+                        background: completed ? 'var(--sage-soft)' : status === 'IN_PROGRESS' ? 'var(--amber-soft)' : 'var(--paper-sunken)',
                         border: `1px solid ${completed ? '#BBF7D0' : status === 'IN_PROGRESS' ? '#FDE68A' : 'var(--line)'}`,
                         borderRadius: 6,
                         padding: '6px 10px',
@@ -218,8 +218,8 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                         className={`ti ${completed ? 'ti-circle-check' : status === 'IN_PROGRESS' ? 'ti-clock' : 'ti-book-2'}`}
                         style={{ color: completed ? 'var(--sage)' : status === 'IN_PROGRESS' ? 'var(--amber)' : 'var(--ink-soft)' }}
                       />
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)' }}>{course.code}</span>
-                      <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>{course.code}</span>
+                      <span style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {course.title}
                       </span>
                     </button>
@@ -233,21 +233,21 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
 
       {activeTab === 'RECOMMENDED' && (
         <div>
-          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 12.5, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '12px 16px', borderRadius: 8, fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="ti ti-sparkles" style={{ fontSize: 18, color: 'var(--amber)' }} />
               <span>
-                Gợi ý dựa trên cấp bậc, khối công tác hiện tại và các khóa học chưa hoàn thành.
+                Suggested from your job level, your current division and the courses you have not finished.
                 {language === 'en' && ' (Recommendations based on job level & department)'}
               </span>
             </div>
-            <Badge tone="amber">{roadmap.recommended.length} Khóa Phù Hợp</Badge>
+            <Badge tone="amber">{roadmap.recommended.length} Matching Courses</Badge>
           </div>
 
           {roadmap.recommended.length === 0 ? (
             <div className="card empty-state">
               <i className="ti ti-mood-empty" />
-              <p>{language === 'en' ? 'No new recommendations — you have completed most relevant courses.' : 'Không có gợi ý mới — bạn đã hoàn thành hầu hết các khóa phù hợp.'}</p>
+              <p>{language === 'en' ? 'No new recommendations — you have completed most relevant courses.' : 'No new suggestions — you have completed most of the courses that fit you.'}</p>
             </div>
           ) : (
             <div className="grid grid-3" style={{ gap: 16 }}>
@@ -273,7 +273,7 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                   </div>
                   <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginBottom: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginBottom: 4 }}>
                         <span>{course.code}</span>
                         <span>{course.duration || '2-4h'}</span>
                       </div>
@@ -282,11 +282,11 @@ export default function RoadmapTabsPanel({ user, initialTab = 'CURRENT' }) {
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 12 }}>
                         <i className="ti ti-category" style={{ marginRight: 4 }} />
-                        {course.domain} &middot; {course.modality === 'IN_PERSON_CLASSROOM' ? 'Lớp Trực Tiếp' : 'E-Learning'}
+                        {course.domain} &middot; {course.modality === 'IN_PERSON_CLASSROOM' ? 'In-Person Class' : 'E-Learning'}
                       </div>
                     </div>
                     <Button size="sm" variant="primary" icon="ti-player-play" block onClick={() => openCourse(course)}>
-                      {language === 'en' ? 'Start Course' : 'Bắt Đầu Học Ngay'}
+                      {language === 'en' ? 'Start Course' : 'Start Learning Now'}
                     </Button>
                   </div>
                 </div>

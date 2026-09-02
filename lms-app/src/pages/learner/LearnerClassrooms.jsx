@@ -89,22 +89,22 @@ export default function LearnerClassrooms() {
 
   // Grouped sessions
   const groupedSessions = useMemo(() => {
-    if (groupBy === 'NONE') return { 'Tất Cả Lớp': filteredSessions };
+    if (groupBy === 'NONE') return { 'All Classes': filteredSessions };
     const groups = {};
 
     filteredSessions.forEach((s) => {
-      let key = 'Khác';
+      let key = 'Other';
       if (groupBy === 'MODALITY') {
-        key = s.modality === 'OFFLINE_STORE' ? '🏪 Thực Hành Tại Xưởng Siêu Thị' : '💻 Hội Thảo Trực Tuyến (Teams Webinar)';
+        key = s.modality === 'OFFLINE_STORE' ? '🏪 Hands-On At The Store Workshop' : '💻 Online Webinar (Teams Webinar)';
       } else if (groupBy === 'STATUS') {
-        if (s.attendanceStatus === 'CHECKED_IN') key = '✅ Đã Điểm Danh';
-        else if (s.isEnrolled) key = '⏳ Chờ Đến Lớp Quét QR';
-        else if (s.status === 'COMPLETED') key = '🏁 Đã Kết Thúc';
-        else key = '🟢 Mở Đăng Ký';
+        if (s.attendanceStatus === 'CHECKED_IN') key = '✅ Attendance Recorded';
+        else if (s.isEnrolled) key = '⏳ Awaiting In-Class QR Scan';
+        else if (s.status === 'COMPLETED') key = '🏁 Finished';
+        else key = '🟢 Open For Registration';
       } else if (groupBy === 'VENUE') {
-        key = s.venue || 'Chưa xác định địa điểm';
+        key = s.venue || 'Venue not yet decided';
       } else if (groupBy === 'TRAINER') {
-        key = `👨‍🏫 ${s.trainerName || 'Chưa phân công'}`;
+        key = `👨‍🏫 ${s.trainerName || 'Not assigned'}`;
       }
 
       if (!groups[key]) groups[key] = [];
@@ -170,31 +170,31 @@ export default function LearnerClassrooms() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Badge tone={session.modality === 'OFFLINE_STORE' ? 'amber' : 'blue'} icon={session.modality === 'OFFLINE_STORE' ? 'ti-building-store' : 'ti-video'}>
-                {session.modality === 'OFFLINE_STORE' ? 'Thực Hành Tại Xưởng' : 'Teams Webinar'}
+                {session.modality === 'OFFLINE_STORE' ? 'Workshop Practice' : 'Teams Webinar'}
               </Badge>
-              <span style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{session.code}</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{session.code}</span>
             </div>
 
             {isCheckedIn ? (
-              <Badge tone="sage" icon="ti-circle-check">Đã Điểm Danh</Badge>
+              <Badge tone="sage" icon="ti-circle-check">Attendance Recorded</Badge>
             ) : session.isEnrolled ? (
-              <Badge tone="amber" icon="ti-clock">Chờ Đến Lớp Quét QR</Badge>
+              <Badge tone="amber" icon="ti-clock">Awaiting In-Class QR Scan</Badge>
             ) : (
               <Badge tone={session.status === 'COMPLETED' ? 'slate' : 'rail'}>
-                {session.status === 'COMPLETED' ? 'Đã Kết Thúc' : 'Mở Đăng Ký'}
+                {session.status === 'COMPLETED' ? 'Finished' : 'Open For Registration'}
               </Badge>
             )}
           </div>
 
           {/* Title & Description */}
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', marginBottom: 6 }}>{session.title}</div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.5, marginBottom: 14 }}>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5, marginBottom: 14 }}>
             {session.description}
           </p>
 
           {/* Session Meta Specs */}
           <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <i className="ti ti-calendar-event" style={{ color: 'var(--blue)', fontSize: 16 }} />
               <span style={{ fontWeight: 700 }}>{session.date}</span> &middot; <span style={{ color: 'var(--ink-soft)' }}>{session.time}</span>
             </div>
@@ -204,15 +204,15 @@ export default function LearnerClassrooms() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
               <i className="ti ti-user-check" style={{ color: 'var(--sage)', fontSize: 16 }} />
-              <span>Giảng viên đứng lớp: <strong>{session.trainerName}</strong> ({session.trainerTitle})</span>
+              <span>Teaching trainer: <strong>{session.trainerName}</strong> ({session.trainerTitle})</span>
             </div>
           </div>
 
           {/* Capacity Progress */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
-              <span>Sĩ số lớp: <strong>{session.enrolledCount}/{session.maxCapacity} Học viên</strong></span>
-              <span>{isFull ? 'Lớp đã đủ chỗ' : `Còn trống ${session.maxCapacity - session.enrolledCount} chỗ`}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
+              <span>Class size: <strong>{session.enrolledCount}/{session.maxCapacity} Learner</strong></span>
+              <span>{isFull ? 'The class is full' : `${session.maxCapacity - session.enrolledCount} seats left`}</span>
             </div>
             <ProgressBar value={Math.round((session.enrolledCount / session.maxCapacity) * 100)} tone={isFull ? 'rust' : 'rail'} size="sm" />
           </div>
@@ -220,9 +220,9 @@ export default function LearnerClassrooms() {
 
         {/* Card Action Row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14, flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
             <i className="ti ti-award" style={{ marginRight: 4, color: 'var(--sage)' }} />
-            Chứng nhận tham gia &amp; Ghi nhận hồ sơ đào tạo
+            Attendance certificate &amp; training record entry
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -233,13 +233,13 @@ export default function LearnerClassrooms() {
               icon="ti-file-description"
               onClick={() => setViewingMaterialsSession(session)}
             >
-              Giáo Trình &amp; Slide
+              Syllabus &amp; Slides
             </Button>
 
             {/* CASE 1: Learner is enrolled and needs to scan Trainer's QR */}
             {session.isEnrolled && !isCheckedIn && session.status !== 'COMPLETED' && (
               <Button variant="primary" size="sm" icon="ti-camera" onClick={() => handleOpenScanner(session)}>
-                📷 Quét QR Điểm Danh
+                📷 Scan The Attendance QR
               </Button>
             )}
 
@@ -252,14 +252,14 @@ export default function LearnerClassrooms() {
                 disabled={isFull}
                 onClick={() => enrollClassroom(session.id)}
               >
-                {isFull ? 'Lớp Đã Đủ Chỗ' : 'Đăng Ký Tham Gia'}
+                {isFull ? 'Class Full' : 'Register To Attend'}
               </Button>
             )}
 
             {/* CASE 3: Learner has checked in -> Can submit CSAT rating */}
             {isCheckedIn && (
               <Button variant="outline" size="sm" icon="ti-star" onClick={() => handleOpenSurvey(session)}>
-                ⭐ Đánh Giá Buổi Học (CSAT)
+                ⭐ Rate The Session (CSAT)
               </Button>
             )}
           </div>
@@ -274,16 +274,16 @@ export default function LearnerClassrooms() {
       <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', marginBottom: 16 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC' }}>
-              <th style={{ width: 100 }}>Mã Lớp</th>
-              <th>Buổi Đào Tạo &amp; Nội Dung</th>
-              <th style={{ width: 140 }}>Hình Thức</th>
-              <th style={{ width: 160 }}>Địa Điểm / Siêu Thị</th>
-              <th style={{ width: 140 }}>Thời Gian</th>
-              <th style={{ width: 150 }}>Giảng Viên</th>
-              <th style={{ width: 120 }}>Sĩ Số</th>
-              <th style={{ width: 130 }}>Trạng Thái</th>
-              <th style={{ textAlign: 'right', width: 220 }}>Thao Tác</th>
+            <tr style={{ background: 'var(--paper-sunken)' }}>
+              <th style={{ width: 100 }}>Class Code</th>
+              <th>Training Session &amp; Content</th>
+              <th style={{ width: 140 }}>Format</th>
+              <th style={{ width: 160 }}>Venue / Store</th>
+              <th style={{ width: 140 }}>Time</th>
+              <th style={{ width: 150 }}>Trainer</th>
+              <th style={{ width: 120 }}>Class Size</th>
+              <th style={{ width: 130 }}>Status</th>
+              <th style={{ textAlign: 'right', width: 220 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -292,18 +292,18 @@ export default function LearnerClassrooms() {
               const isCheckedIn = s.attendanceStatus === 'CHECKED_IN';
               return (
                 <tr key={s.id}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: 700, color: 'var(--blue)' }}>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--blue)' }}>
                     {s.code}
                   </td>
                   <td>
                     <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{s.title}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {s.description}
                     </div>
                   </td>
                   <td>
                     <Badge tone={s.modality === 'OFFLINE_STORE' ? 'amber' : 'blue'} size="sm" icon={s.modality === 'OFFLINE_STORE' ? 'ti-building-store' : 'ti-video'}>
-                      {s.modality === 'OFFLINE_STORE' ? 'Xưởng Siêu Thị' : 'Webinar'}
+                      {s.modality === 'OFFLINE_STORE' ? 'Store Workshop' : 'Webinar'}
                     </Badge>
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--ink)' }}>
@@ -319,33 +319,33 @@ export default function LearnerClassrooms() {
                     <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{s.trainerTitle}</div>
                   </td>
                   <td>
-                    <div style={{ fontSize: 11.5, fontWeight: 700 }}>{s.enrolledCount}/{s.maxCapacity}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{s.enrolledCount}/{s.maxCapacity}</div>
                     <ProgressBar value={Math.round((s.enrolledCount / s.maxCapacity) * 100)} tone={isFull ? 'rust' : 'rail'} size="sm" />
                   </td>
                   <td>
                     {isCheckedIn ? (
-                      <Badge tone="sage" size="sm" icon="ti-circle-check">Đã Điểm Danh</Badge>
+                      <Badge tone="sage" size="sm" icon="ti-circle-check">Attendance Recorded</Badge>
                     ) : s.isEnrolled ? (
-                      <Badge tone="amber" size="sm" icon="ti-clock">Đã Đăng Ký</Badge>
+                      <Badge tone="amber" size="sm" icon="ti-clock">Registered</Badge>
                     ) : (
                       <Badge tone={s.status === 'COMPLETED' ? 'slate' : 'rail'} size="sm">
-                        {s.status === 'COMPLETED' ? 'Đã Kết Thúc' : 'Mở Đăng Ký'}
+                        {s.status === 'COMPLETED' ? 'Finished' : 'Open For Registration'}
                       </Badge>
                     )}
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <Button variant="ghost" size="sm" icon="ti-file-description" title="Giáo Trình & Slide" onClick={() => setViewingMaterialsSession(s)}>
+                      <Button variant="ghost" size="sm" icon="ti-file-description" title="Syllabus & Slides" onClick={() => setViewingMaterialsSession(s)}>
                         Slide
                       </Button>
                       {s.isEnrolled && !isCheckedIn && s.status !== 'COMPLETED' && (
                         <Button variant="primary" size="sm" icon="ti-camera" onClick={() => handleOpenScanner(s)}>
-                          Quét QR
+                          Scan QR
                         </Button>
                       )}
                       {!s.isEnrolled && s.status !== 'COMPLETED' && (
                         <Button variant="primary" size="sm" icon="ti-plus" disabled={isFull} onClick={() => enrollClassroom(s.id)}>
-                          Đăng Ký
+                          Register
                         </Button>
                       )}
                       {isCheckedIn && (
@@ -369,31 +369,31 @@ export default function LearnerClassrooms() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Lớp Đào Tạo Trực Tiếp &amp; Quét QR Điểm Danh (ILT Workshops)</h1>
-            <Badge tone="blue" icon="ti-chalkboard">Đào Tạo Trực Tiếp Tại Siêu Thị</Badge>
+            <h1>In-Person Classes &amp; QR Attendance Scanning (ILT Workshops)</h1>
+            <Badge tone="blue" icon="ti-chalkboard">In-Person Training At The Store</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Lớp học thực hành tại xưởng bánh, bãi tập PCCC siêu thị và hội thảo trực tuyến do Giảng viên chuyên trách (Trainer) đứng lớp.
+            Hands-on classes in the bakery workshop, the store fire drill ground and online webinars, delivered by a dedicated trainer.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <Button variant="outline" icon="ti-camera" onClick={() => handleOpenScanner(classrooms[0])}>
-            📷 Mở Camera Quét QR Giảng Viên
+            📷 Open The Camera To Scan The Trainer QR
           </Button>
         </div>
       </div>
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
-      <div className="card card-pad" style={{ marginBottom: 20, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ marginBottom: 20, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* ROW 0: QUICK FILTER PILLS */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {[
-            { id: 'ALL', label: 'Tất Cả Buổi Đào Tạo', count: classrooms.length },
-            { id: 'MY_SESSIONS', label: 'Lớp Tôi Được Gán / Đã Đăng Ký', count: classrooms.filter(s => s.isEnrolled).length },
-            { id: 'UPCOMING', label: 'Lớp Sắp Diễn Ra', count: classrooms.filter(s => s.status === 'UPCOMING' || s.status === 'OPEN').length },
-            { id: 'STORE', label: 'Thực Hành Xưởng Siêu Thị', count: classrooms.filter(s => s.modality === 'OFFLINE_STORE').length },
-            { id: 'WEBINAR', label: 'Hội Thảo Trực Tuyến (Webinar)', count: classrooms.filter(s => s.modality === 'ONLINE_WEBINAR').length },
-            { id: 'CHECKED_IN', label: 'Đã Điểm Danh', count: classrooms.filter(s => s.attendanceStatus === 'CHECKED_IN').length },
+            { id: 'ALL', label: 'All Training Sessions', count: classrooms.length },
+            { id: 'MY_SESSIONS', label: 'Classes Assigned / Registered', count: classrooms.filter(s => s.isEnrolled).length },
+            { id: 'UPCOMING', label: 'Upcoming Classes', count: classrooms.filter(s => s.status === 'UPCOMING' || s.status === 'OPEN').length },
+            { id: 'STORE', label: 'Store Workshop Practice', count: classrooms.filter(s => s.modality === 'OFFLINE_STORE').length },
+            { id: 'WEBINAR', label: 'Online Webinar', count: classrooms.filter(s => s.modality === 'ONLINE_WEBINAR').length },
+            { id: 'CHECKED_IN', label: 'Attendance Recorded', count: classrooms.filter(s => s.attendanceStatus === 'CHECKED_IN').length },
           ].map((f) => (
             <button
               key={f.id}
@@ -417,7 +417,7 @@ export default function LearnerClassrooms() {
                 color: quickFilter === f.id ? '#fff' : 'var(--ink-soft)',
                 padding: '1px 6px',
                 borderRadius: 10,
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
               }}>
                 {f.count}
@@ -435,7 +435,7 @@ export default function LearnerClassrooms() {
               type="text"
               className="field-input"
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder="Tìm theo tên lớp, mã lớp, giảng viên, phòng lab, siêu thị..."
+              placeholder="Search by class name, class code, trainer, lab, store..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -454,25 +454,25 @@ export default function LearnerClassrooms() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={groupBy}
                 onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: groupBy !== 'NONE' ? 700 : 500,
                   color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
                   outline: 'none',
                 }}
               >
-                <option value="NONE">Không gộp nhóm</option>
-                <option value="MODALITY">Theo Hình Thức Đào Tạo</option>
-                <option value="STATUS">Theo Trạng Thái Lớp</option>
-                <option value="VENUE">Theo Địa Điểm / Siêu Thị</option>
-                <option value="TRAINER">Theo Giảng Viên Đứng Lớp</option>
+                <option value="NONE">No grouping</option>
+                <option value="MODALITY">By Delivery Format</option>
+                <option value="STATUS">By Class Status</option>
+                <option value="VENUE">By Venue / Store</option>
+                <option value="TRAINER">By Teaching Trainer</option>
               </select>
             </div>
 
@@ -484,9 +484,9 @@ export default function LearnerClassrooms() {
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeFiltersCount}
                 </span>
               )}
@@ -500,20 +500,20 @@ export default function LearnerClassrooms() {
                 onClick={() => setViewMode('TABLE')}
                 className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Bảng (List View)"
+                title="List View"
               >
                 <i className="ti ti-list" />
-                <span>Bảng</span>
+                <span>Table</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('GRID')}
                 className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Lưới (Grid View)"
+                title="Grid View"
               >
                 <i className="ti ti-layout-grid" />
-                <span>Lưới</span>
+                <span>Grid</span>
               </button>
             </div>
           </div>
@@ -525,8 +525,8 @@ export default function LearnerClassrooms() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               {/* Dropdown 1: Modality */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  HÌNH THỨC ĐÀO TẠO
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  DELIVERY FORMAT
                 </label>
                 <select
                   className="field-select"
@@ -535,7 +535,7 @@ export default function LearnerClassrooms() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: modalityFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: modalityFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: modalityFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: modalityFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: modalityFilter !== 'ALL' ? 700 : 500,
@@ -543,16 +543,16 @@ export default function LearnerClassrooms() {
                   value={modalityFilter}
                   onChange={(e) => setModalityFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả hình thức</option>
-                  <option value="OFFLINE_STORE">🏪 Thực hành tại xưởng siêu thị (Store Lab)</option>
-                  <option value="ONLINE_WEBINAR">💻 Trực tuyến Teams Webinar</option>
+                  <option value="ALL">All types</option>
+                  <option value="OFFLINE_STORE">🏪 Hands-on at the store workshop (Store Lab)</option>
+                  <option value="ONLINE_WEBINAR">💻 Online Teams Webinar</option>
                 </select>
               </div>
 
               {/* Dropdown 2: Status */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  TRẠNG THÁI BUỔI HỌC
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  SESSION STATUS
                 </label>
                 <select
                   className="field-select"
@@ -561,7 +561,7 @@ export default function LearnerClassrooms() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: statusFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: statusFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: statusFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: statusFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: statusFilter !== 'ALL' ? 700 : 500,
@@ -569,18 +569,18 @@ export default function LearnerClassrooms() {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả trạng thái</option>
-                  <option value="ENROLLED">⏳ Đã đăng ký / Được gán</option>
-                  <option value="CHECKED_IN">✅ Đã điểm danh thành công</option>
-                  <option value="OPEN">🟢 Mở đăng ký / Sắp diễn ra</option>
-                  <option value="COMPLETED">🏁 Đã hoàn thành / Kết thúc</option>
+                  <option value="ALL">All statuses</option>
+                  <option value="ENROLLED">⏳ Registered / Assigned</option>
+                  <option value="CHECKED_IN">✅ Attendance recorded successfully</option>
+                  <option value="OPEN">🟢 Open For Registration / Upcoming</option>
+                  <option value="COMPLETED">🏁 Completed / Finished</option>
                 </select>
               </div>
 
               {/* Dropdown 3: Venue */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  ĐỊA ĐIỂM / SIÊU THỊ
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  VENUE / STORE
                 </label>
                 <select
                   className="field-select"
@@ -589,7 +589,7 @@ export default function LearnerClassrooms() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: venueFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: venueFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: venueFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: venueFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: venueFilter !== 'ALL' ? 700 : 500,
@@ -597,7 +597,7 @@ export default function LearnerClassrooms() {
                   value={venueFilter}
                   onChange={(e) => setVenueFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả địa điểm</option>
+                  <option value="ALL">All venues</option>
                   {venueList.map((ven) => (
                     <option key={ven} value={ven}>{ven}</option>
                   ))}
@@ -606,8 +606,8 @@ export default function LearnerClassrooms() {
 
               {/* Dropdown 4: Trainer */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  GIẢNG VIÊN ĐỨNG LỚP
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  TEACHING TRAINER
                 </label>
                 <select
                   className="field-select"
@@ -616,7 +616,7 @@ export default function LearnerClassrooms() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: trainerFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: trainerFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: trainerFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: trainerFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: trainerFilter !== 'ALL' ? 700 : 500,
@@ -624,7 +624,7 @@ export default function LearnerClassrooms() {
                   value={trainerFilter}
                   onChange={(e) => setTrainerFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả giảng viên</option>
+                  <option value="ALL">All trainers</option>
                   {trainerList.map((tr) => (
                     <option key={tr} value={tr}>{tr}</option>
                   ))}
@@ -638,46 +638,46 @@ export default function LearnerClassrooms() {
         {(search || quickFilter !== 'ALL' || modalityFilter !== 'ALL' || statusFilter !== 'ALL' || venueFilter !== 'ALL' || trainerFilter !== 'ALL' || groupBy !== 'NONE') && (
           <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
               {search && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Từ khóa: <strong>"{search}"</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Search term: <strong>"{search}"</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                 </span>
               )}
               {quickFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Dải chọn nhanh: <strong>{quickFilter === 'MY_SESSIONS' ? 'Lớp của tôi' : quickFilter === 'UPCOMING' ? 'Sắp diễn ra' : quickFilter === 'STORE' ? 'Xưởng siêu thị' : quickFilter === 'WEBINAR' ? 'Webinar' : 'Đã điểm danh'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Quick range: <strong>{quickFilter === 'MY_SESSIONS' ? 'My classes' : quickFilter === 'UPCOMING' ? 'Upcoming' : quickFilter === 'STORE' ? 'Store workshop' : quickFilter === 'WEBINAR' ? 'Webinar' : 'Attendance recorded'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setQuickFilter('ALL')} />
                 </span>
               )}
               {modalityFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Hình thức: <strong>{modalityFilter === 'OFFLINE_STORE' ? 'Xưởng Siêu Thị' : 'Webinar'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Format: <strong>{modalityFilter === 'OFFLINE_STORE' ? 'Store Workshop' : 'Webinar'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setModalityFilter('ALL')} />
                 </span>
               )}
               {statusFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Trạng thái: <strong>{statusFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Status: <strong>{statusFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setStatusFilter('ALL')} />
                 </span>
               )}
               {venueFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Địa điểm: <strong>{venueFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Location: <strong>{venueFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setVenueFilter('ALL')} />
                 </span>
               )}
               {trainerFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Giảng viên: <strong>{trainerFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Trainer: <strong>{trainerFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setTrainerFilter('ALL')} />
                 </span>
               )}
               {groupBy !== 'NONE' && (
                 <span className="badge" style={{ background: '#F3E8FF', color: '#6B21A8', border: '1px solid #DDD6FE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Gộp nhóm: <strong>{groupBy}</strong>
+                  Group by: <strong>{groupBy}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('NONE')} />
                 </span>
               )}
@@ -686,11 +686,11 @@ export default function LearnerClassrooms() {
                 onClick={handleResetAllFilters}
                 style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
               >
-                Xóa tất cả bộ lọc
+                Clear all filters
               </button>
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Tìm thấy <strong>{filteredSessions.length}</strong> / {classrooms.length} buổi đào tạo
+              Found <strong>{filteredSessions.length}</strong> / {classrooms.length} training sessions
             </div>
           </div>
         )}
@@ -701,13 +701,13 @@ export default function LearnerClassrooms() {
         <div className="card empty-state" style={{ padding: '48px 16px', textAlign: 'center' }}>
           <i className="ti ti-chalkboard-off" style={{ fontSize: 36, color: 'var(--ink-faint)', display: 'block', marginBottom: 10 }} />
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>
-            Không tìm thấy buổi đào tạo nào phù hợp
+            No matching training session found
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', maxWidth: 450, margin: '0 auto 16px' }}>
-            Không có lớp đào tạo trực tiếp hoặc webinar nào khớp với các tiêu chí tìm kiếm và bộ lọc hiện tại của bạn.
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', maxWidth: 450, margin: '0 auto 16px' }}>
+            No in-person class or webinar matches your current search and filters.
           </p>
           <Button variant="outline" size="sm" onClick={handleResetAllFilters}>
-            Xóa Tất Cả Bộ Lọc
+            Clear All Filters
           </Button>
         </div>
       ) : groupBy === 'NONE' ? (
@@ -729,7 +729,7 @@ export default function LearnerClassrooms() {
                   onClick={() => toggleGroup(groupTitle)}
                   style={{
                     padding: '12px 18px',
-                    background: '#F8FAFC',
+                    background: 'var(--paper-sunken)',
                     cursor: 'pointer',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -741,8 +741,8 @@ export default function LearnerClassrooms() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <i className={`ti ${isCollapsed ? 'ti-chevron-right' : 'ti-chevron-down'}`} style={{ fontSize: 14, color: 'var(--ink-soft)' }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{groupTitle}</span>
-                    <span className="badge" style={{ background: '#EFF6FF', color: 'var(--blue)', fontWeight: 700, fontSize: 11 }}>
-                      {list.length} buổi đào tạo
+                    <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue)', fontWeight: 700, fontSize: 11 }}>
+                      {list.length} training sessions
                     </span>
                   </div>
                 </div>
@@ -769,7 +769,7 @@ export default function LearnerClassrooms() {
         <Modal
           isOpen={Boolean(scanningSession)}
           onClose={() => setScanningSession(null)}
-          title="Quét Mã QR Điểm Danh Tại Lớp Học"
+          title="Scan The Attendance QR Code In Class"
           size="sm"
         >
           <div style={{ textAlign: 'center', padding: '6px 0' }}>
@@ -777,7 +777,7 @@ export default function LearnerClassrooms() {
               {scanningSession.title}
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 14 }}>
-              Giảng viên: <strong>{scanningSession.trainerName}</strong> &middot; {scanningSession.venue}
+              Trainer: <strong>{scanningSession.trainerName}</strong> &middot; {scanningSession.venue}
             </div>
 
             {/* Camera Viewfinder Box */}
@@ -799,13 +799,13 @@ export default function LearnerClassrooms() {
               {scanState === 'SUCCESS' ? (
                 <div style={{ color: '#10B981', animation: 'scaleUp 0.3s ease' }}>
                   <i className="ti ti-circle-check" style={{ fontSize: 72 }} />
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 8 }}>ĐIỂM DANH THÀNH CÔNG!</div>
-                  <div style={{ fontSize: 12, color: '#10B981' }}>Đã Xác Nhận Tham Gia Khóa Học</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 8 }}>ATTENDANCE RECORDED!</div>
+                  <div style={{ fontSize: 12, color: '#10B981' }}>Course Attendance Confirmed</div>
                 </div>
               ) : scanState === 'VERIFYING' ? (
                 <div style={{ color: '#fff' }}>
                   <i className="ti ti-loader" style={{ fontSize: 48, animation: 'spin 1s linear infinite' }} />
-                  <div style={{ fontSize: 13, marginTop: 10 }}>Đang xác thực mã Token Giảng viên...</div>
+                  <div style={{ fontSize: 13, marginTop: 10 }}>Verifying the trainer token...</div>
                 </div>
               ) : (
                 <>
@@ -832,26 +832,26 @@ export default function LearnerClassrooms() {
                       boxShadow: '0 0 10px #EF4444',
                     }} />
                   </div>
-                  <div style={{ color: '#94A3B8', fontSize: 11, marginTop: 10, padding: '0 10px' }}>
-                    Hướng camera về phía mã QR đang chiếu trên màn hình của Thầy/Cô
+                  <div style={{ color: 'var(--ink-faint)', fontSize: 11, marginTop: 10, padding: '0 10px' }}>
+                    Point your camera at the QR code on the trainer's screen
                   </div>
                 </>
               )}
             </div>
 
             <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, margin: '0 0 16px' }}>
-              Học viên <strong>{currentUser.fullName}</strong> ({currentUser.employeeCode}) đang quét mã điểm danh của lớp <strong>{scanningSession.code}</strong>.
+              Learner <strong>{currentUser.fullName}</strong> ({currentUser.employeeCode}) is scanning the attendance code for class <strong>{scanningSession.code}</strong>.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-              <Button variant="ghost" onClick={() => setScanningSession(null)}>Đóng Camera</Button>
+              <Button variant="ghost" onClick={() => setScanningSession(null)}>Close The Camera</Button>
               <Button
                 variant="primary"
                 icon="ti-scan"
                 disabled={scanState !== 'SCANNING'}
                 onClick={handleSimulateScan}
               >
-                {scanState === 'SCANNING' ? 'Bấm Quét Mã QR Giảng Viên' : scanState === 'VERIFYING' ? 'Đang Xử Lý...' : 'Đã Điểm Danh!'}
+                {scanState === 'SCANNING' ? 'Tap To Scan The Trainer QR Code' : scanState === 'VERIFYING' ? 'Processing...' : 'Attendance Recorded!'}
               </Button>
             </div>
           </div>
@@ -863,19 +863,19 @@ export default function LearnerClassrooms() {
         <Modal
           isOpen={Boolean(viewingMaterialsSession)}
           onClose={() => { setViewingMaterialsSession(null); setPreviewDoc(null); }}
-          title={`Giáo Trình & Tài Liệu — ${viewingMaterialsSession.title}`}
-          subtitle={`Mã Lớp: ${viewingMaterialsSession.code} · Giảng viên: ${viewingMaterialsSession.trainerName}`}
+          title={`Syllabus & Materials — ${viewingMaterialsSession.title}`}
+          subtitle={`Class code: ${viewingMaterialsSession.code} · Trainer: ${viewingMaterialsSession.trainerName}`}
           size="lg"
         >
           <div>
             {/* Section 1: Syllabus Agenda */}
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--blue)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-list-check" /> Khung Chương Trình Buổi Học (Session Agenda)
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-list-check" /> Session Agenda
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {(viewingMaterialsSession.syllabus || []).length === 0 ? (
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
-                  Khung bài giảng đang được Giảng viên cập nhật.
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
+                  The trainer is still updating the syllabus.
                 </div>
               ) : (
                 viewingMaterialsSession.syllabus.map((step, idx) => (
@@ -895,30 +895,30 @@ export default function LearnerClassrooms() {
             </div>
 
             {/* Section 2: Attachments */}
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--bigc-green, #007A38)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-paperclip" /> Tài Liệu &amp; Slide Đính Kèm (Class Attachments)
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bigc-green, #007A38)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-paperclip" /> Attached Materials &amp; Slides (Class Attachments)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {(viewingMaterialsSession.materials || []).length === 0 ? (
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
-                  Chưa có tài liệu hoặc slide đính kèm cho lớp này.
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontStyle: 'italic', padding: 8 }}>
+                  No material or slide is attached to this class yet.
                 </div>
               ) : (
                 viewingMaterialsSession.materials.map((mat, idx) => (
-                  <div key={idx} style={{ background: '#fff', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={idx} style={{ background: 'var(--paper-raised)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <i className={`ti ${mat.type === 'PDF' ? 'ti-file-type-pdf' : 'ti-file-type-ppt'}`} style={{ fontSize: 22, color: mat.type === 'PDF' ? 'var(--rust)' : 'var(--amber)' }} />
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)' }}>{mat.title}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{mat.size} &middot; Cập nhật bởi {viewingMaterialsSession.trainerName}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{mat.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{mat.size} &middot; Updated by {viewingMaterialsSession.trainerName}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setPreviewDoc(mat)}>
-                        Xem Trước
+                        Preview
                       </Button>
-                      <Button size="sm" variant="ghost" icon="ti-download" onClick={() => alert(`Đang tải tài liệu: ${mat.title}`)}>
-                        Tải Về
+                      <Button size="sm" variant="ghost" icon="ti-download" onClick={() => alert(`Loading material: ${mat.title}`)}>
+                        Download
                       </Button>
                     </div>
                   </div>
@@ -930,13 +930,13 @@ export default function LearnerClassrooms() {
             {previewDoc && (
               <div style={{ marginTop: 16, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700 }}>Đang xem: {previewDoc.title}</span>
-                  <Button size="sm" variant="ghost" icon="ti-x" onClick={() => setPreviewDoc(null)}>Đóng xem trước</Button>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>Viewing: {previewDoc.title}</span>
+                  <Button size="sm" variant="ghost" icon="ti-x" onClick={() => setPreviewDoc(null)}>Close the preview</Button>
                 </div>
                 <div style={{ height: 260, background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--ink-soft)' }}>
                   <i className="ti ti-file-text" style={{ fontSize: 40, color: 'var(--blue)' }} />
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Khung Xem Trước Slide / Giáo Trình PDF</div>
-                  <div style={{ fontSize: 11.5 }}>Trang 1 / 18 &middot; Tài liệu chuẩn hóa nội bộ MM Mega Market</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Slide / Syllabus PDF Preview</div>
+                  <div style={{ fontSize: 12 }}>Page 1 / 18 &middot; MM Mega Market internal standard material</div>
                 </div>
               </div>
             )}

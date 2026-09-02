@@ -53,58 +53,58 @@ const PAGE_META = {
   '/learner/leaderboard': { title: 'Honor Roll & Gamification XP', crumb: 'Learner (Store & HO)' },
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
-  '/learner/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Learner (Store & HO)' },
-  '/learner/calendar': { title: 'Lịch Học Tập Cá Nhân', crumb: 'Learner (Store & HO)' },
+  '/learner/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'Learner (Store & HO)' },
+  '/learner/calendar': { title: 'Personal Learning Calendar', crumb: 'Learner (Store & HO)' },
 
-  '/my-learning': { title: 'Cổng Học Tập Cá Nhân — Mọi Role Đều Là Learner', crumb: 'Học tập của tôi' },
-  '/my-learning-calendar': { title: 'Lịch Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
-  '/my-learning-dashboard': { title: 'Bảng Điều Khiển Học Tập Cá Nhân — Mọi Role', crumb: 'Học tập của tôi' },
-  '/my-learning-path': { title: 'Lộ Trình Học Tập Của Tôi — Mọi Role', crumb: 'Học tập của tôi' },
-  '/my-certificates': { title: 'Chứng Chỉ & Văn Bằng Số Của Tôi', crumb: 'Học tập của tôi' },
-  '/trainer-ratings': { title: 'Đánh Giá Giảng Viên (CSAT) — Công Khai Cho Mọi Role', crumb: 'Học tập của tôi' },
-  '/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Cấp quản lý' },
+  '/my-learning': { title: 'Personal Learning Portal — Every Role Is A Learner', crumb: 'My Learning' },
+  '/my-learning-calendar': { title: 'Personal Learning Calendar — Every Role', crumb: 'My Learning' },
+  '/my-learning-dashboard': { title: 'Personal Learning Dashboard — Every Role', crumb: 'My Learning' },
+  '/my-learning-path': { title: 'My Learning Roadmap — Every Role', crumb: 'My Learning' },
+  '/my-certificates': { title: 'My Certificates & Digital Credentials', crumb: 'My Learning' },
+  '/trainer-ratings': { title: 'Trainer Ratings (CSAT) — Visible To Every Role', crumb: 'My Learning' },
+  '/approvals': { title: 'Level Skip Request Approvals (Sequential Level Gate)', crumb: 'Management' },
 
-  '/trainer': { title: 'Lớp Giảng Dạy & Mã Live QR Điểm Danh', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/attendance': { title: 'Quản Lý Điểm Danh Học Viên Theo Lớp', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/feedback': { title: 'Báo Cáo Đánh Giá CSAT Từ Học Viên', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/courses': { title: 'Tạo & Quản Lý Khóa Học (SCORM, ILT, Lab)', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/training-ops': { title: 'Lịch Giảng Dạy, Xưởng Thực Hành & Phòng Lab', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/dashboard': { title: 'Bảng Điều Khiển L&D & Trợ Lý AI Chiến Lược', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/reports': { title: 'Kirkpatrick ROI, Heatmap & Ngân Sách Đào Tạo', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer': { title: 'Teaching Classes & Live QR Attendance Code', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/attendance': { title: 'Learner Attendance Management By Class', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/feedback': { title: 'Learner CSAT Feedback Report', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/courses': { title: 'Create & Manage Courses (SCORM, ILT, Lab)', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/training-ops': { title: 'Teaching Schedule, Practice Workshops & Labs', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/dashboard': { title: 'L&D Dashboard & Strategic AI Assistant', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/reports': { title: 'Kirkpatrick ROI, Heatmap & Training Budget', crumb: 'Trainer / L&D (Level 3)' },
 
-  '/hrbp': { title: 'Ma Trận Khoảng Cách Năng Lực (Skill Gap Matrix)', crumb: 'HRBP (Level 2)' },
-  '/hrbp/succession': { title: 'Lộ Trình Kế Nhiệm 70-20-10 & Thánh Gióng Pipeline', crumb: 'HRBP (Level 2)' },
-  '/hrbp/compliance': { title: 'Báo Cáo Tuân Thủ Đào Tạo Theo Vùng & Siêu Thị', crumb: 'HRBP (Level 2)' },
-  '/hrbp/curriculum': { title: 'Giáo Trình Phân Bổ & Đề Xuất Nhân Tài', crumb: 'HRBP (Level 2)' },
-  '/hrbp/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'HRBP (Level 2)' },
+  '/hrbp': { title: 'Competency Gap Matrix (Skill Gap Matrix)', crumb: 'HRBP (Level 2)' },
+  '/hrbp/succession': { title: '70-20-10 Succession Roadmap & Thanh Giong Pipeline', crumb: 'HRBP (Level 2)' },
+  '/hrbp/compliance': { title: 'Training Compliance Report By Region & Store', crumb: 'HRBP (Level 2)' },
+  '/hrbp/curriculum': { title: 'Curriculum Allocation & Talent Nomination', crumb: 'HRBP (Level 2)' },
+  '/hrbp/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'HRBP (Level 2)' },
 
-  '/user-admin': { title: 'Quản Trị Danh Mục 100+ Nhân Sự (Employee Master)', crumb: 'User Admin (Level 2)' },
-  '/user-admin/hierarchy': { title: 'Cây Cơ Cấu Tổ Chức 2 Nhánh (Dual-Branch Org Tree)', crumb: 'User Admin (Level 2)' },
-  '/user-admin/job-levels': { title: 'Khung 7 Cấp Bậc Định Biên (Level 7 → Level 1)', crumb: 'User Admin (Level 2)' },
-  '/user-admin/allocation': { title: 'Phân Bổ Khóa Học Cho Khối / Phòng Ban', crumb: 'User Admin (Level 2)' },
-  '/user-admin/trainers': { title: 'Phân Công Giảng Viên Đứng Lớp Tại Chi Nhánh', crumb: 'User Admin (Level 2)' },
+  '/user-admin': { title: 'Employee Master — 100+ Personnel Directory', crumb: 'User Admin (Level 2)' },
+  '/user-admin/hierarchy': { title: 'Dual-Branch Organization Tree', crumb: 'User Admin (Level 2)' },
+  '/user-admin/job-levels': { title: '7-Level Job Grade Framework (Level 7 → Level 1)', crumb: 'User Admin (Level 2)' },
+  '/user-admin/allocation': { title: 'Course Allocation By Division / Department', crumb: 'User Admin (Level 2)' },
+  '/user-admin/trainers': { title: 'Trainer Assignment By Branch', crumb: 'User Admin (Level 2)' },
 
-  '/sysadmin': { title: 'Hạ Tầng IT & API Pipeline Đồng Bộ SAP HRIS', crumb: 'System Admin IT (Level 1)' },
-  '/sysadmin/audit': { title: 'Nhật Ký Bảo Mật & Giám Sát Phiên (ISO 27001)', crumb: 'System Admin IT (Level 1)' },
-  '/sysadmin/policies': { title: 'Chính Sách Chống Gian Lận & Watermark', crumb: 'System Admin IT (Level 1)' },
-  '/sysadmin/roles': { title: 'Quản Trị Toàn Bộ 6 Role & Ma Trận Phân Quyền', crumb: 'System Admin IT (Level 1)' },
-  '/sysadmin/org-config': { title: 'Cấu Hình Cây Tổ Chức & Đồng Bộ HRIS', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin': { title: 'IT Infrastructure & SAP HRIS Sync API Pipeline', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/audit': { title: 'Security Audit Log & Session Monitoring (ISO 27001)', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/policies': { title: 'Anti-Cheating Policy & Watermark', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/roles': { title: 'Governance For All 6 Roles & Permission Matrix', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/org-config': { title: 'Org Tree Configuration & HRIS Sync', crumb: 'System Admin IT (Level 1)' },
 
-  '/manager': { title: 'Bảng Điều Khiển Vận Hành Đội Ngũ', crumb: 'Manager (Level 4)' },
-  '/manager/team': { title: 'Quản Lý Đào Tạo & Năng Lực Đội Ngũ', crumb: 'Manager (Level 4)' },
-  '/manager/approvals': { title: 'Phê Duyệt Đơn Xin Học Vượt Cấp (Sequential Level Gate)', crumb: 'Manager (Level 4)' },
-  '/manager/courses': { title: 'Chương Trình Bắt Buộc Của Phòng Ban', crumb: 'Manager (Level 4)' },
-  '/manager/reports': { title: 'Quản Lý Đào Tạo & Năng Lực Đội Ngũ', crumb: 'Manager (Level 4)' },
-  '/manager/catalog': { title: 'Danh Mục Toàn Bộ Khóa Học (Chỉ Xem & Tham Gia Học)', crumb: 'Manager (Level 4)' },
+  '/manager': { title: 'Team Operations Dashboard', crumb: 'Manager (Level 4)' },
+  '/manager/team': { title: 'Team Training & Competency Management', crumb: 'Manager (Level 4)' },
+  '/manager/approvals': { title: 'Level Skip Request Approvals (Sequential Level Gate)', crumb: 'Manager (Level 4)' },
+  '/manager/courses': { title: 'Department Mandatory Programs', crumb: 'Manager (Level 4)' },
+  '/manager/reports': { title: 'Team Training & Competency Management', crumb: 'Manager (Level 4)' },
+  '/manager/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'Manager (Level 4)' },
 
   '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
-  '/admin/training-ops': { title: 'Đặt Phòng Thực Hành & Upload Danh Sách Học Viên', crumb: 'L&D Faculty' },
-  '/admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'L&D Faculty' },
-  '/user-admin/roadmaps': { title: 'Quản Lý Lộ Trình Cấp Bậc (Level Roadmaps)', crumb: 'User Admin (Level 2)' },
+  '/admin/training-ops': { title: 'Lab Room Booking & Participant List Upload', crumb: 'L&D Faculty' },
+  '/admin/roadmaps': { title: 'Level Roadmap Management (Level Roadmaps)', crumb: 'L&D Faculty' },
+  '/user-admin/roadmaps': { title: 'Level Roadmap Management (Level Roadmaps)', crumb: 'User Admin (Level 2)' },
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
-  '/admin/certifications': { title: 'Quản Lý Chứng Chỉ (Certificate Templates)', crumb: 'System Administration' },
-  '/admin/categories': { title: 'Quản Lý Danh Mục (Category Taxonomy)', crumb: 'System Administration' },
+  '/admin/certifications': { title: 'Certificate Management (Certificate Templates)', crumb: 'System Administration' },
+  '/admin/categories': { title: 'Category Management (Category Taxonomy)', crumb: 'System Administration' },
   '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
 };
 
@@ -128,16 +128,16 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'system-ui, sans-serif', background: '#F8FAFC', color: '#1E293B' }}>
-          <div style={{ maxWidth: 500, width: '100%', background: '#fff', borderRadius: 12, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'system-ui, sans-serif', background: 'var(--paper-sunken)', color: 'var(--ink)' }}>
+          <div style={{ maxWidth: 500, width: '100%', background: 'var(--paper-raised)', borderRadius: 12, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--rust-soft)', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>
               ⚠️
             </div>
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Something went wrong</h2>
-            <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 20px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 20px', lineHeight: 1.5 }}>
               An unexpected render issue occurred. You can reset your session cache and reload the application.
             </p>
-            <div style={{ background: '#F1F5F9', padding: 12, borderRadius: 8, fontSize: 12, fontFamily: 'monospace', color: '#475569', textAlign: 'left', marginBottom: 20, overflowX: 'auto' }}>
+            <div style={{ background: 'var(--slate-soft)', padding: 12, borderRadius: 8, fontSize: 12, fontFamily: 'monospace', color: 'var(--ink-soft)', textAlign: 'left', marginBottom: 20, overflowX: 'auto' }}>
               {this.state.error?.message || 'Unknown render error'}
             </div>
             <button
@@ -183,7 +183,7 @@ function Shell({ role, setRole }) {
         <Route path="/learner/catalog" element={<AdminCourses />} />
         <Route path="/learner/calendar" element={<LearnerCalendar basePath="/learner/courses" />} />
 
-        {/* Cổng học tập cá nhân dùng chung cho cả 6 role */}
+        {/* Shared personal learning portal for all 6 roles */}
         <Route path="/my-learning" element={<MyLearning />} />
         <Route path="/my-learning/:courseId" element={<LearnerCourseDetail basePath="/my-learning" />} />
         <Route path="/my-learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/my-learning" />} />
@@ -195,7 +195,7 @@ function Shell({ role, setRole }) {
         <Route path="/my-certificates" element={<MyCertificates />} />
         <Route path="/trainer-ratings" element={<TrainerRatingsDirectory />} />
 
-        {/* Phê duyệt học vượt cấp: mọi role từ Manager trở lên */}
+        {/* Level skip approvals: every role from Manager upward */}
         <Route path="/approvals" element={<ManagerApprovals />} />
 
         {/* Manager Routes */}
@@ -248,7 +248,7 @@ function Shell({ role, setRole }) {
         <Route path="/trainer/dashboard" element={<AdminDashboard />} />
         <Route path="/trainer/reports" element={<AdminReports />} />
 
-        {/* Đường dẫn /admin/* của bản cũ (role admin nay là trainer) */}
+        {/* Legacy /admin/* paths (the former admin role is now trainer) */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/courses" element={<AdminCourses />} />
         <Route path="/admin/courses/new" element={<AdminCourseBuilder />} />

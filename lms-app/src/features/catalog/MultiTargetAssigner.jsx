@@ -234,7 +234,7 @@ export default function MultiTargetAssigner({
 
       if (invalidUsers.length > 0 && strictLevelFilter) {
         setValidationError(
-          `🚫 Không thể phân bổ: Có ${invalidUsers.length} nhân sự (${invalidUsers.map((i) => `${i.user.fullName} - Lvl ${i.user.level}`).join(', ')}) không đủ điều kiện cấp bậc so với định biên khóa học (Level ${lowestCourseLevel}). Vui lòng bỏ chọn các nhân sự này hoặc tắt Bộ Lọc Nghiêm Ngặt.`
+          `🚫 Cannot allocate: ${invalidUsers.length} employees (${invalidUsers.map((i) => `${i.user.fullName} - Lvl ${i.user.level}`).join(', ')}) do not meet the course level requirement (Level ${lowestCourseLevel}). Please deselect them or turn off the Strict Filter.`
         );
         return;
       }
@@ -264,14 +264,14 @@ export default function MultiTargetAssigner({
 
   // Define the cascading scopes list
   const SCOPE_BUTTONS = [
-    { id: 'BUSINESS_UNIT', label: '0. Toàn Cty (BU)', icon: 'ti-building-skyscraper' },
-    { id: 'DIVISION', label: '1. Khối (Division)', icon: 'ti-building' },
-    { id: 'DEPARTMENT', label: '2. Phòng Ban (Dept)', icon: 'ti-building-community' },
-    { id: 'SUBDEPARTMENT', label: '3. Sub-Dept (Bộ Phận)', icon: 'ti-git-branch' },
-    { id: 'LEVEL', label: '4. Cấp Bậc (Level)', icon: 'ti-stairs-up' },
-    { id: 'STORE', label: '5. Chi Nhánh / Siêu Thị', icon: 'ti-map-pin' },
-    { id: 'USER', label: '6. Từng Nhân Sự (User)', icon: 'ti-user' },
-    { id: 'GROUP', label: '👥 Nhóm Tùy Chỉnh', icon: 'ti-users-group' },
+    { id: 'BUSINESS_UNIT', label: '0. Company-Wide (BU)', icon: 'ti-building-skyscraper' },
+    { id: 'DIVISION', label: '1. Division', icon: 'ti-building' },
+    { id: 'DEPARTMENT', label: '2. Department (Dept)', icon: 'ti-building-community' },
+    { id: 'SUBDEPARTMENT', label: '3. Sub-Dept', icon: 'ti-git-branch' },
+    { id: 'LEVEL', label: '4. Job Level', icon: 'ti-stairs-up' },
+    { id: 'STORE', label: '5. Branch / Store', icon: 'ti-map-pin' },
+    { id: 'USER', label: '6. Individual User', icon: 'ti-user' },
+    { id: 'GROUP', label: '👥 Custom Group', icon: 'ti-users-group' },
   ];
 
   return (
@@ -279,7 +279,7 @@ export default function MultiTargetAssigner({
       {/* Header */}
       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: isHrbp ? '#0369A1' : 'var(--rail)' }}>
         <i className={isHrbp ? 'ti ti-send' : 'ti-sitemap'} />
-        {isHrbp ? 'Đề Xuất Phân Bổ Phân Tầng (Gửi Lên User Admin Phê Duyệt)' : 'Phân Bổ Phân Tầng Theo Cơ Cấu Tổ Chức (Cascading Drill-Down)'}
+        {isHrbp ? 'Propose A Drill-Down Allocation (Sent To User Admin For Approval)' : 'Cascading Drill-Down Allocation By Org Structure'}
       </div>
 
       {/* Course Target Level Banner */}
@@ -288,7 +288,7 @@ export default function MultiTargetAssigner({
           style={{
             padding: '8px 12px',
             borderRadius: 8,
-            background: '#EFF6FF',
+            background: 'var(--blue-soft)',
             border: '1px solid #BFDBFE',
             marginBottom: 12,
             display: 'flex',
@@ -300,11 +300,11 @@ export default function MultiTargetAssigner({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 16 }}>🎯</span>
-            <div style={{ fontSize: 12, color: '#1E40AF' }}>
-              <strong>Định Biên Cấp Bậc: {courseTargetLevels.map((l) => `Level ${l}`).join(', ')}</strong> — Nhân sự Level 1..${lowestCourseLevel} đủ điều kiện học tự do.
+            <div style={{ fontSize: 12, color: 'var(--blue-soft-text)' }}>
+              <strong>Required Job Level: {courseTargetLevels.map((l) => `Level ${l}`).join(', ')}</strong> — employees at Level 1..${lowestCourseLevel} may enroll freely.
             </div>
           </div>
-          <Badge tone="blue" size="sm">Định Biên: Lvl {courseTargetLevels.join(' & ')}</Badge>
+          <Badge tone="blue" size="sm">Required: Lvl {courseTargetLevels.join(' & ')}</Badge>
         </div>
       )}
 
@@ -314,10 +314,10 @@ export default function MultiTargetAssigner({
           style={{
             padding: '10px 14px',
             borderRadius: 8,
-            background: '#FEF2F2',
+            background: 'var(--rust-soft)',
             border: '1px solid #FECACA',
-            color: '#B91C1C',
-            fontSize: 12.5,
+            color: 'var(--rust-soft-text)',
+            fontSize: 13,
             fontWeight: 600,
             marginBottom: 12,
             lineHeight: 1.4,
@@ -331,8 +331,8 @@ export default function MultiTargetAssigner({
       <form onSubmit={handleSubmit}>
         {/* STEP 1: CASCADING SCOPE SELECTION TABS */}
         <div style={{ marginBottom: 12 }}>
-          <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-            Chọn Cấp Độ Phân Bổ Mục Tiêu (Dừng ở cấp nào &rarr; Gán đối tượng ở cấp đó):
+          <label className="field-label" style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
+            Choose The Target Allocation Level (whichever level you stop at &rarr; assign the audience there):
           </label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {SCOPE_BUTTONS.map((btn) => {
@@ -345,10 +345,10 @@ export default function MultiTargetAssigner({
                   style={{
                     padding: '6px 12px',
                     borderRadius: 6,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: active ? 700 : 500,
                     border: active ? '1.5px solid var(--rail, #007A38)' : '1px solid var(--line)',
-                    background: active ? 'var(--rail-soft, #ECFDF5)' : '#fff',
+                    background: active ? 'var(--rail-soft, #ECFDF5)' : 'var(--paper-raised)',
                     color: active ? 'var(--rail, #007A38)' : 'var(--ink)',
                     cursor: 'pointer',
                     display: 'flex',
@@ -369,25 +369,25 @@ export default function MultiTargetAssigner({
 
         {/* Case A1: DIVISION Scope Filter (BU Filter for multiple BU scalability) */}
         {assignScope === 'DIVISION' && (
-          <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
-              <span>Bộ Lọc Doanh Nghiệp / BU (Filter by Business Unit):</span>
+              <span>Filter by Business Unit:</span>
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                (Chọn BU để lọc danh sách các Khối trực thuộc)
+                (Choose a BU to filter the Divisions below it)
               </span>
             </div>
             <div style={{ maxWidth: 450 }}>
               <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                🏢 Chọn Business Unit (BU)
+                🏢 Choose Business Unit (BU)
               </label>
               <select
                 className="field-select"
-                style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                style={{ fontSize: 12, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                 value={buFilter}
                 onChange={(e) => handleBuFilterChange(e.target.value)}
               >
-                <option value="ALL">-- Tất Cả Business Unit ({businessUnits.length}) --</option>
+                <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
                 {businessUnits.map((b) => (
                   <option key={b.id} value={b.id}>
                     [{b.code || 'BU'}] {b.name}
@@ -400,12 +400,12 @@ export default function MultiTargetAssigner({
 
         {/* Case A2: DEPARTMENT Scope Filter (BU & Division Filters) */}
         {assignScope === 'DEPARTMENT' && (
-          <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
-              <span>Bộ Lọc Phân Tầng Cấp Trên (Cascading Filters):</span>
+              <span>Parent-Level Cascading Filters:</span>
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                (Chọn Khối sẽ tự động link sang BU cha tương ứng)
+                (Choosing a Division automatically links to its parent BU)
               </span>
             </div>
             <div className="grid grid-2" style={{ gap: 10 }}>
@@ -415,11 +415,11 @@ export default function MultiTargetAssigner({
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Business Unit ({businessUnits.length}) --</option>
+                  <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
                   {businessUnits.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
@@ -429,15 +429,15 @@ export default function MultiTargetAssigner({
               </div>
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🏢 2. Khối (Division)
+                  🏢 2. Division
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={divisionFilter}
                   onChange={(e) => handleDivisionFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Khối ({availableDivisions.length}) --</option>
+                  <option value="ALL">-- All Division ({availableDivisions.length}) --</option>
                   {availableDivisions.map((d) => (
                     <option key={d.id} value={d.id}>
                       [{d.code}] {d.name}
@@ -451,12 +451,12 @@ export default function MultiTargetAssigner({
 
         {/* Case B: SUBDEPARTMENT Scope Filters (BU, Division & Department Filters) */}
         {assignScope === 'SUBDEPARTMENT' && (
-          <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
-              <span>Bộ Lọc Phân Tầng Cấp Trên (Cascading Filters):</span>
+              <span>Parent-Level Cascading Filters:</span>
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                (Chọn Phòng ban sẽ tự động nhận diện Khối và BU cha)
+                (Choosing a Department automatically resolves its parent Division and BU)
               </span>
             </div>
             <div className="grid grid-3" style={{ gap: 10 }}>
@@ -466,11 +466,11 @@ export default function MultiTargetAssigner({
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Business Unit ({businessUnits.length}) --</option>
+                  <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
                   {businessUnits.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
@@ -480,15 +480,15 @@ export default function MultiTargetAssigner({
               </div>
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🏢 2. Khối (Division)
+                  🏢 2. Division
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={divisionFilter}
                   onChange={(e) => handleDivisionFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Khối ({availableDivisions.length}) --</option>
+                  <option value="ALL">-- All Division ({availableDivisions.length}) --</option>
                   {availableDivisions.map((d) => (
                     <option key={d.id} value={d.id}>
                       [{d.code}] {d.name}
@@ -498,15 +498,15 @@ export default function MultiTargetAssigner({
               </div>
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🏛️ 3. Phòng Ban (Department)
+                  🏛️ 3. Department
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: deptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: deptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={deptFilter}
                   onChange={(e) => handleDeptFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                  <option value="ALL">-- All Department ({availableDepts.length}) --</option>
                   {availableDepts.map((d) => (
                     <option key={d.id} value={d.id}>
                       [{d.code}] {d.name}
@@ -520,12 +520,12 @@ export default function MultiTargetAssigner({
 
         {/* Case C: USER Scope Filters (Full Cascading Multi-Filter Matrix with BU) */}
         {assignScope === 'USER' && (
-          <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="ti ti-filter" style={{ color: 'var(--blue)' }} />
-              <span>Bộ Lọc Nhân Sự Phân Tầng Liên Hoàn (Cascading User Filters):</span>
+              <span>Cascading User Filters:</span>
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                (Tự động liên kết 2 chiều BU &rarr; Khối &rarr; Phòng Ban &rarr; Sub-Dept)
+                (Automatically links both ways BU &rarr; Division &rarr; Department &rarr; Sub-Dept)
               </span>
             </div>
 
@@ -537,11 +537,11 @@ export default function MultiTargetAssigner({
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: buFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả BU ({businessUnits.length}) --</option>
+                  <option value="ALL">-- All BU ({businessUnits.length}) --</option>
                   {businessUnits.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
@@ -553,15 +553,15 @@ export default function MultiTargetAssigner({
               {/* Division Filter */}
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🏢 2. Khối (Division)
+                  🏢 2. Division
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: divisionFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={divisionFilter}
                   onChange={(e) => handleDivisionFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Khối ({availableDivisions.length}) --</option>
+                  <option value="ALL">-- All Division ({availableDivisions.length}) --</option>
                   {availableDivisions.map((d) => (
                     <option key={d.id} value={d.id}>
                       [{d.code}] {d.name}
@@ -573,15 +573,15 @@ export default function MultiTargetAssigner({
               {/* Department Filter */}
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🏛️ 3. Phòng Ban (Department)
+                  🏛️ 3. Department
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: deptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: deptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={deptFilter}
                   onChange={(e) => handleDeptFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                  <option value="ALL">-- All Department ({availableDepts.length}) --</option>
                   {availableDepts.map((d) => (
                     <option key={d.id} value={d.id}>
                       [{d.code}] {d.name}
@@ -593,15 +593,15 @@ export default function MultiTargetAssigner({
               {/* Sub-Department Filter */}
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🌿 4. Sub-Dept (Bộ phận)
+                  🌿 4. Sub-Dept
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: subDeptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: subDeptFilter !== 'ALL' ? 'var(--rail)' : 'var(--line)' }}
                   value={subDeptFilter}
                   onChange={(e) => handleSubDeptFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- Tất Cả Sub-Dept ({availableSubDepts.length}) --</option>
+                  <option value="ALL">-- All Sub-Dept ({availableSubDepts.length}) --</option>
                   {availableSubDepts.map((s) => (
                     <option key={s.id} value={s.id}>
                       [{s.code}] {s.name}
@@ -615,18 +615,18 @@ export default function MultiTargetAssigner({
               {/* Job Level Filter */}
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  🎯 5. Cấp Bậc (Job Level)
+                  🎯 5. Job Level
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: levelFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: levelFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)' }}
                   value={levelFilter}
                   onChange={(e) => {
                     setLevelFilter(e.target.value);
                     setSelectedIds([]);
                   }}
                 >
-                  <option value="ALL">-- Tất Cả Cấp Bậc (Level 1 - 7) --</option>
+                  <option value="ALL">-- All Levels (Level 1 - 7) --</option>
                   {jobLevels.map((l) => (
                     <option key={l.level} value={String(l.level)}>
                       Level {l.level} — {l.title}
@@ -638,18 +638,18 @@ export default function MultiTargetAssigner({
               {/* Location / Store Filter */}
               <div>
                 <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-                  📍 6. Chi Nhánh / Siêu Thị (Location)
+                  📍 6. Branch / Store (Location)
                 </label>
                 <select
                   className="field-select"
-                  style={{ fontSize: 11.5, height: 32, width: '100%', borderColor: storeFilter !== 'ALL' ? 'var(--amber)' : 'var(--line)' }}
+                  style={{ fontSize: 12, height: 32, width: '100%', borderColor: storeFilter !== 'ALL' ? 'var(--amber)' : 'var(--line)' }}
                   value={storeFilter}
                   onChange={(e) => {
                     setStoreFilter(e.target.value);
                     setSelectedIds([]);
                   }}
                 >
-                  <option value="ALL">-- Tất Cả Chi Nhánh ({retailStores.length}) --</option>
+                  <option value="ALL">-- All Branches ({retailStores.length}) --</option>
                   {retailStores.map((st) => (
                     <option key={st.id} value={st.id}>
                       [{st.code}] {st.name}
@@ -662,21 +662,21 @@ export default function MultiTargetAssigner({
         )}
 
         {/* GUIDANCE / STOPPING LEVEL BANNER */}
-        <div style={{ padding: '8px 12px', background: '#F8FAFC', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '8px 12px', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
             <span style={{ fontSize: 14 }}>💡</span>
             <span>
-              Đang dừng &amp; hiển thị danh sách để gán ở cấp: <strong>{assignmentTypeLabel(assignScope)}</strong>
+              Currently stopped at &amp; listing the audience to assign at level: <strong>{assignmentTypeLabel(assignScope)}</strong>
             </span>
           </div>
           <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
-            {visibleOptions.length} mục khả dụng theo bộ lọc
+            {visibleOptions.length} items available under the filters
           </span>
         </div>
 
         {/* USER: Strict Level Filter Toggle */}
         {assignScope === 'USER' && course && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid var(--line)', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '8px 12px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', flexWrap: 'wrap', gap: 6 }}>
             <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 700, color: strictLevelFilter ? '#1D4ED8' : 'var(--ink)' }}>
               <input
                 type="checkbox"
@@ -684,19 +684,19 @@ export default function MultiTargetAssigner({
                 onChange={(e) => setStrictLevelFilter(e.target.checked)}
                 style={{ accentColor: '#1D4ED8' }}
               />
-              <span>🛡️ Bộ Lọc Cấp Bậc Nghiêm Ngặt (Ẩn nhân sự không đủ cấp bậc)</span>
+              <span>🛡️ Strict Level Filter (hide employees below the required level)</span>
             </label>
-            <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-              Đủ điều kiện: Level 1..${lowestCourseLevel} {Number(lowestCourseLevel) < 7 ? `& Level ${Number(lowestCourseLevel) + 1} (Vượt 1 cấp)` : ''}
+            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Eligible: Level 1..${lowestCourseLevel} {Number(lowestCourseLevel) < 7 ? `& Level ${Number(lowestCourseLevel) + 1} (One grade above)` : ''}
             </span>
           </div>
         )}
 
         {/* GROUP: Member Breakdown & Policy Selector */}
         {assignScope === 'GROUP' && course && (
-          <div style={{ padding: '10px 14px', background: '#F8FAFC', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+          <div style={{ padding: '10px 14px', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-              Chính Sách Phân Bổ Thành Viên Trong Nhóm (Group Policy):
+              Group Member Allocation Policy:
             </div>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
@@ -706,7 +706,7 @@ export default function MultiTargetAssigner({
                   checked={groupPolicy === 'ELIGIBLE_ONLY'}
                   onChange={() => setGroupPolicy('ELIGIBLE_ONLY')}
                 />
-                <span>🟢 <strong>Chỉ gán cho thành viên đủ cấp bậc</strong> (Tự động lọc bỏ thành viên lệch &ge; 2 cấp - Khuyến nghị)</span>
+                <span>🟢 <strong>Only assign to members who meet the level</strong> (Automatically drops members &ge; 2 grades away - recommended)</span>
               </label>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -715,7 +715,7 @@ export default function MultiTargetAssigner({
                   checked={groupPolicy === 'ALL_MEMBERS'}
                   onChange={() => setGroupPolicy('ALL_MEMBERS')}
                 />
-                <span>🟡 <strong>Gán toàn bộ nhóm</strong> (Bao gồm thành viên lệch cấp - Admin Override)</span>
+                <span>🟡 <strong>Assign the whole group</strong> (Includes members below the level - Admin Override)</span>
               </label>
             </div>
           </div>
@@ -729,7 +729,7 @@ export default function MultiTargetAssigner({
               type="text"
               className="field-input"
               style={{ fontSize: 12, height: 34, paddingLeft: 28, width: '100%' }}
-              placeholder={`Tìm kiếm nhanh trong ${visibleOptions.length} ${assignmentTypeLabel(assignScope)}...`}
+              placeholder={`Quick search across ${visibleOptions.length} ${assignmentTypeLabel(assignScope)}...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -737,10 +737,10 @@ export default function MultiTargetAssigner({
         </div>
 
         {/* Dynamic Selection Checklist Box */}
-        <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+        <div style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--line-light)' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
-              Danh sách lựa chọn ({visibleOptions.length} mục) &middot; <span style={{ color: 'var(--rail, #15803d)' }}>Đã chọn: {selectedIds.length} đối tượng</span>
+              Options list ({visibleOptions.length} items) &middot; <span style={{ color: 'var(--rail, #15803d)' }}>Selected: {selectedIds.length} targets</span>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
@@ -750,7 +750,7 @@ export default function MultiTargetAssigner({
                 onClick={selectAll}
                 disabled={visibleOptions.length === 0}
               >
-                Chọn tất cả ({visibleOptions.length})
+                Select all ({visibleOptions.length})
               </button>
               <button
                 type="button"
@@ -759,7 +759,7 @@ export default function MultiTargetAssigner({
                 onClick={clearAll}
                 disabled={selectedIds.length === 0}
               >
-                Bỏ chọn
+                Deselect
               </button>
             </div>
           </div>
@@ -777,16 +777,16 @@ export default function MultiTargetAssigner({
                 if (course) {
                   if (evalRes.matchType === 'EXACT_MATCH') {
                     tone = 'sage';
-                    tagText = `✅ Lvl ${opt.level} (Đúng cấp)`;
+                    tagText = `✅ Lvl ${opt.level} (correct level)`;
                   } else if (evalRes.matchType === 'HIGHER_LEVEL') {
                     tone = 'blue';
-                    tagText = `👑 Lvl ${opt.level} (Cấp cao hơn)`;
+                    tagText = `👑 Lvl ${opt.level} (higher level)`;
                   } else if (evalRes.matchType === 'GAP_ONE_STEP') {
                     tone = 'amber';
-                    tagText = `⚠️ Lvl ${opt.level} (Vượt 1 cấp)`;
+                    tagText = `⚠️ Lvl ${opt.level} (one grade above)`;
                   } else {
                     tone = 'crimson';
-                    tagText = `🚫 Lvl ${opt.level} (Lệch ${evalRes.gap} cấp)`;
+                    tagText = `🚫 Lvl ${opt.level} (${evalRes.gap} grades away)`;
                   }
                 }
 
@@ -799,7 +799,7 @@ export default function MultiTargetAssigner({
                       gap: 8,
                       padding: '6px 8px',
                       borderRadius: 6,
-                      background: checked ? (isBlocked ? '#FEF2F2' : 'var(--rail-soft, #f0fdf4)') : (isBlocked ? '#FFF1F2' : 'transparent'),
+                      background: checked ? (isBlocked ? 'var(--rust-soft)' : 'var(--rail-soft, #f0fdf4)') : (isBlocked ? 'var(--rust-soft)' : 'transparent'),
                       border: checked ? (isBlocked ? '1px solid #FECACA' : '1px solid #bbf7d0') : '1px solid transparent',
                       cursor: isBlocked && strictLevelFilter ? 'not-allowed' : 'pointer',
                       fontSize: 12,
@@ -815,7 +815,7 @@ export default function MultiTargetAssigner({
                       style={{ cursor: isBlocked && strictLevelFilter ? 'not-allowed' : 'pointer', accentColor: isBlocked ? '#E11D48' : 'var(--rail)' }}
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 700, color: 'var(--ink)' }}>
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--paper-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--ink)' }}>
                         {opt.avatar || (opt.fullName ? opt.fullName.slice(0, 2).toUpperCase() : 'NV')}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -865,8 +865,8 @@ export default function MultiTargetAssigner({
                         )}
                       </div>
                       {groupEval && (
-                        <span style={{ fontSize: 11.5, color: groupEval.ineligibleCount > 0 ? '#B45309' : '#15803D', fontWeight: 600 }}>
-                          ({groupEval.eligibleCount}/{groupEval.totalMembers} hợp lệ{groupEval.ineligibleCount > 0 ? ` · ⚠️ ${groupEval.ineligibleCount} lệch cấp` : ''})
+                        <span style={{ fontSize: 12, color: groupEval.ineligibleCount > 0 ? 'var(--amber-soft-text)' : 'var(--sage-soft-text)', fontWeight: 600 }}>
+                          ({groupEval.eligibleCount}/{groupEval.totalMembers} eligible{groupEval.ineligibleCount > 0 ? ` · ⚠️ ${groupEval.ineligibleCount} below level` : ''})
                         </span>
                       )}
                     </div>
@@ -881,7 +881,7 @@ export default function MultiTargetAssigner({
                 const isGap1 = Number(lvlStr) === Number(lowestCourseLevel) + 1;
 
                 let tone = isTarget ? 'sage' : isHigher ? 'blue' : isGap1 ? 'amber' : 'crimson';
-                let tag = isTarget ? '✅ Cấp mục tiêu' : isHigher ? '👑 Cấp cao hơn' : isGap1 ? '⚠️ Vượt 1 cấp' : '🚫 Lệch cấp';
+                let tag = isTarget ? '✅ Target level' : isHigher ? '👑 Higher level' : isGap1 ? '⚠️ One grade above' : '🚫 Below level';
 
                 return (
                   <label
@@ -960,7 +960,7 @@ export default function MultiTargetAssigner({
             })}
             {visibleOptions.length === 0 && (
               <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--ink-faint)', fontSize: 12 }}>
-                Không có đối tượng nào phù hợp bộ lọc tìm kiếm hoặc tiêu chuẩn cấp bậc.
+                No audience matches the search filter or the level requirement.
               </div>
             )}
           </div>
@@ -968,7 +968,7 @@ export default function MultiTargetAssigner({
 
         <div className="grid grid-2" style={{ gap: 10, marginBottom: 14 }}>
           <div>
-            <label className="field-label" style={{ fontSize: 11.5 }}>Hạn hoàn thành (Due Date)</label>
+            <label className="field-label" style={{ fontSize: 12 }}>Completion Due Date</label>
             <input
               type="date"
               className="field-input"
@@ -978,12 +978,12 @@ export default function MultiTargetAssigner({
             />
           </div>
           <div>
-            <label className="field-label" style={{ fontSize: 11.5 }}>Ghi chú / Lý do phân bổ</label>
+            <label className="field-label" style={{ fontSize: 12 }}>Notes / Allocation reason</label>
             <input
               type="text"
               className="field-input"
               style={{ fontSize: 12, height: 34, width: '100%' }}
-              placeholder="VD: Đào tạo định kỳ 2026, Chuẩn hóa an toàn..."
+              placeholder="E.g. 2026 recurring training, safety standardization..."
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
             />
@@ -993,7 +993,7 @@ export default function MultiTargetAssigner({
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           {onCancel && (
             <Button size="sm" variant="ghost" onClick={onCancel}>
-              Hủy
+              Cancel
             </Button>
           )}
           <Button
@@ -1003,7 +1003,7 @@ export default function MultiTargetAssigner({
             type="submit"
             disabled={selectedIds.length === 0}
           >
-            {saveButtonLabel || `Lưu Phân Bổ (${selectedIds.length} đối tượng)`}
+            {saveButtonLabel || `Save Allocation (${selectedIds.length} targets)`}
           </Button>
         </div>
       </form>

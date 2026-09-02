@@ -19,7 +19,7 @@ const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 // CRS-FSH-005 (used below as the "1 level up, requires approval" fixture)
 // lands in mockData's date-driven CLOSED lifecycle bucket by pure index
 // cycling (~10% of courses are seeded CLOSED). Since AdminCourses now shows
-// CLOSED courses to non-admin roles (labeled "Đã Qua Thời Gian Tham Gia") and
+// CLOSED courses to non-admin roles (labeled "Enrollment Window Closed") and
 // LearnerCourseDetail correctly blocks registration on them, that unrelated
 // seeding coincidence was pre-empting these level-gate assertions. Force this
 // one fixture course back into an OPEN window so the level-gate tests below
@@ -296,11 +296,11 @@ for (const role of ROLE_ORDER) {
   if (!html) continue;
   const persona = personaForRole(role);
   const def = roleDefinition(role);
-  // AppHeader render các mục tự học ngay trong hàng tab ngang, không còn
-  // group label "Học tập của tôi" riêng như Sidebar dọc cũ — kiểm tra sự có
-  // mặt của chính mục "Khóa Học Của Tôi" (có ở cả ROLE_WORK_NAV.learner lẫn
-  // LEARNER_SELF_NAV dùng chung cho 5 role còn lại) thay vì group label.
-  const hasLearningGroup = html.includes('Khóa Học Của Tôi');
+  // AppHeader renders the self-study items inside the horizontal tab row; there is
+  // no longer a separate "My Learning" group label the way the old vertical sidebar
+  // had one — so assert on the "My Courses" item itself (present in both
+  // ROLE_WORK_NAV.learner and the LEARNER_SELF_NAV shared by the other 5 roles).
+  const hasLearningGroup = html.includes('My Courses');
   const esc = (t) => t.replace(/&/g, '&amp;');
   check(`Sidebar/${role}: persona ${persona.fullName} + learner access`,
     html.includes(esc(persona.fullName)) && html.includes(esc(def.labelVi)) && hasLearningGroup);
@@ -309,15 +309,15 @@ for (const role of ROLE_ORDER) {
 console.log('\n=== 3. Sequential level gate — Minh Tran (Level 7 learner) ===');
 {
   const p = byRole.learner;
-  check('L7 course opens without approval', !p['CourseDetail L7 (open)'].includes('Xin Phê Duyệt Học Vượt Cấp'));
-  check('L6 course offers the approval request', p['CourseDetail L6 (1 level up)'].includes('Xin Phê Duyệt Học Vượt Cấp'));
-  check('L1 course is hard-blocked as a level jump', p['CourseDetail L1 (blocked)'].includes('Bị Chặn Nhảy Cóc Cấp Bậc'));
-  check('blocked course shows the roadmap it must climb', p['CourseDetail L1 (blocked)'].includes('Lộ trình bắt buộc phải đi qua'));
-  check('lesson player opens for an L7 course', !p['LessonPlayer L7'].includes('Lesson not found') && !p['LessonPlayer L7'].includes('chưa mở theo quy tắc'));
-  check('lesson player blocks an L1 course', p['LessonPlayer L1 blocked'].includes('chưa mở theo quy tắc'));
+  check('L7 course opens without approval', !p['CourseDetail L7 (open)'].includes('Request Level Skip Approval'));
+  check('L6 course offers the approval request', p['CourseDetail L6 (1 level up)'].includes('Request Level Skip Approval'));
+  check('L1 course is hard-blocked as a level jump', p['CourseDetail L1 (blocked)'].includes('Grade Skipping Blocked'));
+  check('blocked course shows the roadmap it must climb', p['CourseDetail L1 (blocked)'].includes('The roadmap you must follow'));
+  check('lesson player opens for an L7 course', !p['LessonPlayer L7'].includes('Lesson not found') && !p['LessonPlayer L7'].includes('not open under the sequential level rule'));
+  check('lesson player blocks an L1 course', p['LessonPlayer L1 blocked'].includes('not open under the sequential level rule'));
   check('assessment player opens for an L7 course', !p['AssessmentPlayer L7'].includes('Assessment not found'));
   check('catalog states the level-gate rule', p['LearnerCourses'].includes('Sequential Level Gate'));
-  check('learner cannot open the approvals queue', p['ManagerApprovals'].includes('không có quyền phê duyệt'));
+  check('learner cannot open the approvals queue', p['ManagerApprovals'].includes('do not have permission to approve level skips'));
 }
 
 console.log('\n=== 4. Approvals queue: ONLY User Admin & SysAdmin (Manager/Trainer/HRBP removed) ===');
@@ -325,29 +325,29 @@ console.log('\n=== 4. Approvals queue: ONLY User Admin & SysAdmin (Manager/Train
   for (const role of ['useradmin', 'sysadmin']) {
     const html = byRole[role]['ManagerApprovals'];
     check(`${role} sees the level-skip queue`,
-      html.includes('Học vượt cấp') && html.includes('Phê Duyệt Đơn Học Vượt Cấp'));
+      html.includes('Level skip') && html.includes('Approve The Level Skip Request'));
   }
   for (const role of ['manager', 'trainer', 'hrbp']) {
     const html = byRole[role]['ManagerApprovals'];
     check(`${role} no longer has the approvals queue (permission denied)`,
-      html.includes('không có quyền phê duyệt'));
+      html.includes('do not have permission to approve level skips'));
     actAs(role);
     const sidebarHtml = render(`Sidebar-noapproval/${role}`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
-    check(`${role} has no "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
-      sidebarHtml && !sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
+    check(`${role} has no "Approve Level Skip Requests" nav item in the sidebar`,
+      sidebarHtml && !sidebarHtml.includes('Approve Level Skip Requests'));
   }
   for (const role of ['useradmin', 'sysadmin']) {
     actAs(role);
     const sidebarHtml = render(`Sidebar-approval/${role}`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
-    check(`${role} still has "Duyệt Đơn Học Vượt Cấp" nav item in the sidebar`,
-      sidebarHtml && sidebarHtml.includes('Duyệt Đơn Học Vượt Cấp'));
+    check(`${role} still has "Approve Level Skip Requests" nav item in the sidebar`,
+      sidebarHtml && sidebarHtml.includes('Approve Level Skip Requests'));
   }
 }
 
 console.log('\n=== 5. Seeded approval requests: all visible to User Admin & SysAdmin, hidden elsewhere ===');
 {
-  // Không còn chia theo cấp — mọi đơn cùng đổ về 1 hàng đợi chung mà chỉ User
-  // Admin và SysAdmin xử lý được, bất kể ai gửi đơn.
+  // No longer split by level — every request lands in one shared queue that only
+  // User Admin and SysAdmin can act on, whoever submitted it.
   for (const req of pendingApprovalRequests) {
     for (const approverRole of ['useradmin', 'sysadmin']) {
       check(`request from ${req.employeeName} is listed for ${approverRole}`,
@@ -358,7 +358,7 @@ console.log('\n=== 5. Seeded approval requests: all visible to User Admin & SysA
         !byRole[otherRole]['ManagerApprovals'].includes(req.employeeName));
     }
   }
-  check('request cards mark a 1-level jump as valid', byRole.useradmin['ManagerApprovals'].includes('Vượt đúng 1 cấp liền kề — hợp lệ'));
+  check('request cards mark a 1-level jump as valid', byRole.useradmin['ManagerApprovals'].includes('Exactly one grade above — valid'));
 }
 
 console.log('\n=== 6. Every role reaches its own learning portal ===');
@@ -366,7 +366,7 @@ for (const role of ROLE_ORDER) {
   const html = byRole[role]['MyLearning'];
   const persona = personaForRole(role);
   check(`${role} sees a personal catalog at their own level`,
-    html.includes(persona.fullName) && html.includes('Lộ Trình Học Vượt Cấp Tuần Tự'));
+    html.includes(persona.fullName) && html.includes('Sequential Level Gate'));
 }
 
 console.log('\n=== 7. Request -> approve -> unlock state transitions (L7 -> L6) ===');
@@ -382,33 +382,33 @@ console.log('\n=== 7. Request -> approve -> unlock state transitions (L7 -> L6) 
 
   store.set(APPROVAL_KEY, JSON.stringify([req]));
   let html = render('pending detail', <LearnerCourseDetail />, '/learner/courses/CRS-FSH-005', '/learner/courses/:courseId');
-  check('while PENDING the course shows waiting-for-approval', html.includes('Đang Chờ Duyệt'));
-  check('while PENDING the request button is gone', !html.includes('Xin Phê Duyệt Học Vượt Cấp'));
+  check('while PENDING the course shows waiting-for-approval', html.includes('Awaiting Approval'));
+  check('while PENDING the request button is gone', !html.includes('Request Level Skip Approval'));
 
   store.set(APPROVAL_KEY, JSON.stringify([{ ...req, status: 'APPROVED' }]));
   html = render('approved detail', <LearnerCourseDetail />, '/learner/courses/CRS-FSH-005', '/learner/courses/:courseId');
-  check('once APPROVED the L6 course unlocks', html.includes('Đã Duyệt Học Vượt'));
+  check('once APPROVED the L6 course unlocks', html.includes('Approved Studying Up To'));
   const lessonHtml = render('approved lesson', <LessonPlayer />, '/learner/courses/CRS-FSH-005/lessons/les-1-1-CRS-FSH-005', '/learner/courses/:courseId/lessons/:lessonId');
-  check('once APPROVED the lesson player opens', !lessonHtml.includes('chưa mở theo quy tắc'));
+  check('once APPROVED the lesson player opens', !lessonHtml.includes('not open under the sequential level rule'));
 
   store.set(APPROVAL_KEY, JSON.stringify([{ ...req, status: 'REJECTED' }]));
   html = render('rejected detail', <LearnerCourseDetail />, '/learner/courses/CRS-FSH-005', '/learner/courses/:courseId');
-  check('once REJECTED the learner may re-apply', html.includes('Xin Phê Duyệt Học Vượt Cấp') && html.includes('từ chối'));
+  check('once REJECTED the learner may re-apply', html.includes('Request Level Skip Approval') && html.includes('rejected this level skip request'));
 
   store.set(APPROVAL_KEY, JSON.stringify([{ ...req, courseId: 'CRS-LEAD-058', courseLevel: '1', status: 'APPROVED' }]));
   html = render('approved 2-level jump', <LearnerCourseDetail />, '/learner/courses/CRS-LEAD-058', '/learner/courses/:courseId');
-  check('an approval cannot unlock a 2+ level jump', html.includes('Bị Chặn Nhảy Cóc Cấp Bậc'));
+  check('an approval cannot unlock a 2+ level jump', html.includes('Grade Skipping Blocked'));
   store.delete(APPROVAL_KEY);
 }
 
-console.log('\n=== 8. Manager "Chi Tiết" drill-down opens without crashing, and cannot assign courses ===');
+console.log('\n=== 8. Manager "Details" drill-down opens without crashing, and cannot assign courses ===');
 {
-  // Trước đây UserTranscriptModal gọi enrollmentsForUser(courses, targetUser) —
-  // sai thứ tự tham số và sai kiểu trả về (object, không phải mảng) — nên bấm
-  // "Chi Tiết" từ Manager/Trainer/HRBP luôn crash "userCourses.filter is not a
-  // function". Static page render không bắt được lỗi này vì modal chỉ mở khi
-  // transcriptUser !== null, nên phải render trực tiếp UserTranscriptModal với
-  // isOpen=true để tái hiện đúng đường crash.
+  // UserTranscriptModal used to call enrollmentsForUser(courses, targetUser) — wrong
+  // argument order and wrong return type (an object, not an array) — so opening
+  // "Details" from Manager/Trainer/HRBP always crashed with "userCourses.filter is
+  // not a function". A static page render does not catch this because the modal only
+  // opens when transcriptUser !== null, so render UserTranscriptModal directly with
+  // isOpen=true to reproduce the exact crash path.
   actAs('manager');
   const minhTran = personaForRole('learner');
   const html = render(
@@ -422,29 +422,29 @@ console.log('\n=== 8. Manager "Chi Tiết" drill-down opens without crashing, an
   }
 
   const teamHtml = byRole.manager['ManagerTeam'];
-  check('Manager sees "Chi Tiết" (view-only) on direct reports', teamHtml.includes('Chi Tiết'));
-  check('Manager has no "Gán Khóa" / assign-course action', !teamHtml.includes('Gán Khóa') && !teamHtml.includes('Assign Developmental Course') && !teamHtml.includes('Assign Now'));
+  check('Manager sees "Detail" (view-only) on direct reports', teamHtml.includes('Detail'));
+  check('Manager has no assign-course action', !teamHtml.includes('Assign Course') && !teamHtml.includes('Assign Developmental Course') && !teamHtml.includes('Assign Now'));
 
   for (const role of ['trainer', 'hrbp']) {
     const html2 = byRole[role]['ManagerApprovals'];
-    check(`${role} approvals page has no assign/allocate action either`, !html2.includes('Gán Khóa'));
+    check(`${role} approvals page has no assign/allocate action either`, !html2.includes('Assign Course'));
   }
 }
 
 console.log('\n=== 9. .table CSS cannot collapse an unconstrained column to a few characters ===');
 {
-  // Bug thực tế: overflow-wrap:anywhere trên .table tham gia vào tính
-  // min-content-width của table-layout:auto, nên cột "Khóa Học" (không đặt
-  // width cố định) bị co lại khi đứng cạnh các cột có width cố định khác,
-  // làm tiêu đề khóa học vỡ chữ dọc trang thay vì xuống dòng bình thường.
-  // word-break:break-word tương đương HỆT overflow-wrap:anywhere theo spec
-  // (cả cách ngắt chữ lẫn cách tính min-content-width) dù tên nghe an toàn
-  // hơn — chỉ overflow-wrap:break-word mới không co min-width. Đây là lỗi
-  // thuần CSS, server-rendered HTML text vẫn đúng dù layout vỡ, nên không
-  // thể bắt bằng cách check nội dung text; phải khoá trực tiếp CSS.
+  // The real bug: overflow-wrap:anywhere on .table feeds into the min-content-width
+  // calculation of table-layout:auto, so the "Course" column (which sets no fixed
+  // width) collapses next to columns that do, breaking course titles vertically down
+  // the page instead of wrapping normally.
+  // word-break:break-word is EXACTLY equivalent to overflow-wrap:anywhere per spec
+  // (both in how it breaks and in how min-content-width is computed) despite the
+  // safer-sounding name — only overflow-wrap:break-word leaves min-width alone. This
+  // is a pure CSS defect: the server-rendered HTML text is still correct even when
+  // the layout breaks, so it cannot be caught by checking text; lock the CSS instead.
   const fs = await import('node:fs');
-  // Bỏ comment /* ... */ trước khi match, vì chính comment giải thích lý do
-  // tránh các giá trị này lại chứa cụm từ đó trong văn bản.
+  // Strip /* ... */ comments before matching, because the comment explaining why
+  // these values are avoided contains the very phrases we search for.
   const css = fs.readFileSync('src/styles/app.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const tableRule = css.match(/\.table\s*\{[\s\S]*?\}/);
   check('.table rule exists in app.css', Boolean(tableRule));
@@ -460,25 +460,25 @@ console.log('\n=== 9. .table CSS cannot collapse an unconstrained column to a fe
 
 console.log('\n=== 10. Course authoring permission matrix (Online vs Offline vs none) ===');
 {
-  // HRBP: không có quyền tạo khóa nào cả.
-  check('hrbp sees a permission-denied CourseBuilder', byRole.hrbp['AdminCourseBuilder'].includes('không có quyền tạo hoặc chỉnh sửa khóa học'));
+  // HRBP: no permission to create any course at all.
+  check('hrbp sees a permission-denied CourseBuilder', byRole.hrbp['AdminCourseBuilder'].includes('do not have permission to create or edit courses'));
   check('hrbp has no "Create New Course" button on AdminCourses', !byRole.hrbp['AdminCourses'].includes('Create New Course'));
   check('manager has no "Create New Course" button either', !byRole.manager['AdminCourses'].includes('Create New Course'));
   check('learner has no "Create New Course" button either', !byRole.learner['AdminCourses'].includes('Create New Course'));
 
-  // Trainer/L&D: chỉ tạo Offline, tự động là giảng viên đứng lớp.
+  // Trainer/L&D: in-person courses only, and always the teaching trainer.
   const trainerBuilder = byRole.trainer['AdminCourseBuilder'];
-  check('trainer sees the CourseBuilder (not permission-denied)', !trainerBuilder.includes('không có quyền tạo hoặc chỉnh sửa khóa học'));
-  check('trainer does NOT see the Online delivery mode option', !trainerBuilder.includes('Khóa Học Trực Tuyến (Online E-learning)'));
-  check('trainer sees the offline-only notice', trainerBuilder.includes('chỉ tạo được khóa Trực Tiếp'));
-  check('trainer is locked in as their own instructor (chính bạn)', trainerBuilder.includes('(chính bạn)'));
+  check('trainer sees the CourseBuilder (not permission-denied)', !trainerBuilder.includes('do not have permission to create or edit courses'));
+  check('trainer does NOT see the Online delivery mode option', !trainerBuilder.includes('Online E-learning Course'));
+  check('trainer sees the offline-only notice', trainerBuilder.includes('may only create and edit In-Person (ILT) courses'));
+  check('trainer is locked in as their own instructor (yourself)', trainerBuilder.includes('(yourself)'));
   check('trainer has a "Create New Course" button on AdminCourses', byRole.trainer['AdminCourses'].includes('Create New Course'));
 
-  // User Admin & SysAdmin: toàn quyền cả 2 hình thức.
+  // User Admin & SysAdmin: full rights over both formats.
   for (const role of ['useradmin', 'sysadmin']) {
     const html = byRole[role]['AdminCourseBuilder'];
-    check(`${role} sees the Online delivery mode option`, html.includes('Khóa Học Trực Tuyến (Online E-learning)'));
-    check(`${role} sees the Offline/In-person delivery mode option`, html.includes('Khóa Đào Tạo Trực Tiếp (In-Person Workshop)'));
+    check(`${role} sees the Online delivery mode option`, html.includes('Online E-learning Course'));
+    check(`${role} sees the Offline/In-person delivery mode option`, html.includes('In-Person Workshop'));
     check(`${role} has a "Create New Course" button on AdminCourses`, byRole[role]['AdminCourses'].includes('Create New Course'));
   }
 }
@@ -519,11 +519,11 @@ console.log('\n=== 11. Teaching capability opened to L&D, HRBP, User Admin, SysA
 {
   for (const role of ['trainer', 'hrbp', 'useradmin', 'sysadmin']) {
     const html = byRole[role]['TrainerHub/CLASSES'];
-    check(`${role} can open "Lớp Giảng Dạy & Live QR"`, !html.includes('không được phân công đứng lớp'));
+    check(`${role} can open "Teaching Classes & Live QR"`, !html.includes('not assigned to teach classes'));
   }
   for (const role of ['manager', 'learner']) {
     const html = byRole[role]['TrainerHub/CLASSES'];
-    check(`${role} is blocked from the teaching portal`, html.includes('không được phân công đứng lớp'));
+    check(`${role} is blocked from the teaching portal`, html.includes('not assigned to teach classes'));
   }
 }
 
@@ -533,7 +533,7 @@ console.log('\n=== 12. Trainer Ratings Directory (CSAT) is public to all 6 roles
   const eligible = mockAgain.teachingEligibleUsers();
   for (const role of ROLE_ORDER) {
     const html = byRole[role]['TrainerRatingsDirectory'];
-    check(`${role} can open the CSAT directory`, html.includes('Đánh Giá Giảng Viên'));
+    check(`${role} can open the CSAT directory`, html.includes('Trainer Ratings'));
     check(`${role} sees every eligible trainer listed`, eligible.every((t) => html.includes(t.fullName)));
   }
   check('HRBP/UserAdmin/SysAdmin personas appear in the eligible-trainer pool',
@@ -543,8 +543,8 @@ console.log('\n=== 12. Trainer Ratings Directory (CSAT) is public to all 6 roles
 console.log('\n=== 13. Training Ops trimmed to Room Booking + Batch Upload only ===');
 {
   const html = byRole.trainer['AdminTrainingOps'] || render('AdminTrainingOps direct', <AdminTrainingOps />, '/admin/training-ops', '/admin/training-ops');
-  check('Room Booking tab present', Boolean(html && html.includes('Đặt Phòng / Xưởng Thực Hành')));
-  check('Batch Upload tab present', Boolean(html && html.includes('Upload Danh Sách Học Viên')));
+  check('Room Booking tab present', Boolean(html && html.includes('Room Booking')));
+  check('Batch Upload tab present', Boolean(html && html.includes('Batch Upload')));
   check('Faculty Directory / CSAT tab removed (moved to shared directory)', Boolean(html && !html.includes('Faculty Directory & CSAT Ratings')));
   check('duplicate Calendar tab removed', Boolean(html && !html.includes('Enterprise Master Training Calendar')));
 }
@@ -553,37 +553,37 @@ console.log('\n=== 14. 4-Tab Universal Learning Roadmap (Current / Succession / 
 {
   for (const role of ['useradmin', 'sysadmin']) {
     const html = byRole[role]['AdminLevelRoadmaps'];
-    check(`${role} sees the Level/Branch roadmap editor`, html.includes('Cấp Bậc') && html.includes('Khối') && html.includes('Level 7'));
+    check(`${role} sees the Level/Branch roadmap editor`, html.includes('Job Level') && html.includes('Division') && html.includes('Level 7'));
   }
   for (const role of ['manager', 'trainer', 'hrbp', 'learner']) {
     const html = byRole[role]['AdminLevelRoadmaps'];
-    check(`${role} sees the permission-denied empty state on AdminLevelRoadmaps`, html.includes('Bạn không có quyền quản lý Lộ trình Cấp bậc'));
+    check(`${role} sees the permission-denied empty state on AdminLevelRoadmaps`, html.includes('do not have permission to manage level roadmaps'));
   }
 
   const currentHtml = byRole.learner['LearnerLearningPaths/CURRENT'];
-  check('learner sees all 4 tab labels', ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => currentHtml.includes(label)));
-  check('CURRENT tab renders the timeline (start icon + finish flag)', (currentHtml.includes('ti-user') || currentHtml.includes('ti-player-play') || currentHtml.includes('Xuất Phát')) && (currentHtml.includes('ti-flag') || currentHtml.includes('Về Đích')));
+  check('learner sees all 4 tab labels', ['Current Roadmap', 'Succession Roadmap', 'Self-Proposed Roadmap', 'Suggested Courses'].every((label) => currentHtml.includes(label)));
+  check('CURRENT tab renders the timeline (start icon + finish flag)', (currentHtml.includes('ti-user') || currentHtml.includes('ti-player-play') || currentHtml.includes('Start')) && (currentHtml.includes('ti-flag') || currentHtml.includes('Finish')));
 
   const successionHtmlFresh = byRole.learner['LearnerLearningPaths/SUCCESSION'];
-  check('fresh learner sees the SUCCESSION tab locked banner', successionHtmlFresh.includes('phải hoàn thành 100% Lộ trình hiện tại'));
-  check('fresh learner does NOT see the promotion-request button yet', !successionHtmlFresh.includes('Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp'));
+  check('fresh learner sees the SUCCESSION tab locked banner', successionHtmlFresh.includes('must complete 100% of your current roadmap'));
+  check('fresh learner does NOT see the promotion-request button yet', !successionHtmlFresh.includes('Submit Promotion Review Nomination'));
 
   const selfProposedHtml = byRole.learner['LearnerLearningPaths/SELF_PROPOSED'];
-  check('SELF_PROPOSED tab lists at least one track', selfProposedHtml.includes('Bắt Đầu Track Này') || selfProposedHtml.includes('Hoàn Thành'));
+  check('SELF_PROPOSED tab lists at least one track', selfProposedHtml.includes('Start This Track') || selfProposedHtml.includes('Complete'));
 
   const recommendedHtml = byRole.learner['LearnerLearningPaths/RECOMMENDED'];
-  check('RECOMMENDED tab renders its guidance banner', recommendedHtml.includes('Gợi ý dựa trên cấp bậc'));
+  check('RECOMMENDED tab renders its guidance banner', recommendedHtml.includes('Suggested from your job level'));
 }
 
-console.log('\n=== 14b. Lộ Trình Học Tập là của TOÀN BỘ 6 role, không riêng Learner ===');
+console.log('\n=== 14b. The Learning Roadmap belongs to ALL 6 roles, not only the Learner ===');
 {
   for (const role of ['manager', 'trainer', 'hrbp', 'useradmin', 'sysadmin']) {
     const html = byRole[role]['SharedLearningPath'];
     check(`${role} can open the shared /my-learning-path and sees the 4 tabs`,
-      Boolean(html && ['Lộ Trình Hiện Tại', 'Lộ Trình Kế Cận', 'Lộ Trình Tự Đề Xuất', 'Khóa Học Gợi Ý'].every((label) => html.includes(label))));
+      Boolean(html && ['Current Roadmap', 'Succession Roadmap', 'Self-Proposed Roadmap', 'Suggested Courses'].every((label) => html.includes(label))));
 
     actAs(role);
-    const sidebarHtml = render(`${role} sidebar has Lộ Trình Học Tập nav item`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
+    const sidebarHtml = render(`${role} sidebar has Learning Roadmap nav item`, <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />, '/', '/');
     check(`${role} sidebar links to /my-learning-path`, Boolean(sidebarHtml && sidebarHtml.includes('my-learning-path')));
   }
   const learnerSidebarHtml = byRole.learner ? render('learner sidebar uses its own /learner/paths, not the shared route', <AppHeader role="learner" onRoleChange={() => {}} title="" crumb="" />, '/', '/') : null;
@@ -606,10 +606,10 @@ console.log('\n=== 15. End-to-end: Tab 1 + Tab 2 completion -> promotion request
   actAs('learner');
   const successionReadyHtml = render('Minh (Tab1+Tab2 100%) sees the unlocked + ready succession tab',
     <LearnerLearningPaths initialTab="SUCCESSION" />, '/learner/paths', '/learner/paths');
-  check('succession tab shows the unlock celebration banner', Boolean(successionReadyHtml && successionReadyHtml.includes('đã được mở khóa')));
+  check('succession tab shows the unlock celebration banner', Boolean(successionReadyHtml && successionReadyHtml.includes('succession roadmap is now unlocked')));
   check('succession tab shows an ENABLED promotion-request button', Boolean(successionReadyHtml
-    && successionReadyHtml.includes('Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp')
-    && !/disabled[^>]*>[^<]*Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp/.test(successionReadyHtml)));
+    && successionReadyHtml.includes('Submit Promotion Review Nomination')
+    && !/disabled[^>]*>[^<]*Submit Promotion Review Nomination/.test(successionReadyHtml)));
 
   store.set(APPROVAL_KEY, JSON.stringify([
     {
@@ -621,11 +621,11 @@ console.log('\n=== 15. End-to-end: Tab 1 + Tab 2 completion -> promotion request
   ]));
   actAs('useradmin');
   const adminApprovalHtml = render('useradmin sees the pending e2e roadmap promotion', <ManagerApprovals />, '/approvals', '/approvals');
-  check("useradmin sees Minh Tran's roadmap promotion request", Boolean(adminApprovalHtml && adminApprovalHtml.includes(minh.fullName) && adminApprovalHtml.includes('Đề xuất Thăng cấp Lộ trình')));
+  check("useradmin sees Minh Tran's roadmap promotion request", Boolean(adminApprovalHtml && adminApprovalHtml.includes(minh.fullName) && adminApprovalHtml.includes('Roadmap Promotion Proposal')));
 
   actAs('manager');
   const managerApprovalHtml = render('manager still cannot see any approvals queue', <ManagerApprovals />, '/manager/approvals', '/manager/approvals');
-  check('manager still sees the permission-denied empty state', Boolean(managerApprovalHtml && managerApprovalHtml.includes('Bạn không có quyền phê duyệt học vượt cấp')));
+  check('manager still sees the permission-denied empty state', Boolean(managerApprovalHtml && managerApprovalHtml.includes('You do not have permission to approve level skips')));
 
   const fs = await import('node:fs');
   const storeSource = fs.readFileSync('src/store/CourseStore.jsx', 'utf8');
@@ -652,7 +652,7 @@ console.log('\n=== 16. AppHeader replaces Sidebar+Topbar: nav drawer, role badge
   check('nav drawer DOM exists but is not marked open by default', Boolean(drawerHtml
     && drawerHtml.includes('app-nav-drawer') && !/app-nav-drawer open"/.test(drawerHtml)));
   check('nav drawer still contains the work-nav item labels (hidden via CSS, not removed from DOM)',
-    Boolean(drawerHtml && drawerHtml.includes('Nhân Viên &amp; Khoảng Cách Năng Lực')));
+    Boolean(drawerHtml && drawerHtml.includes('Employee &amp; Competency Gap')));
 }
 
 console.log('\n=== 17. RoadmapTabsPanel extraction + hover-popover (non-modal) timeline detail ===');
@@ -660,16 +660,16 @@ console.log('\n=== 17. RoadmapTabsPanel extraction + hover-popover (non-modal) t
   actAs('learner');
   const pathsHtml = render('LearnerLearningPaths still shows all 4 tabs after extraction', <LearnerLearningPaths initialTab="CURRENT" />, '/learner/paths', '/learner/paths');
   check('extracted RoadmapTabsPanel still renders all 4 tab labels', Boolean(pathsHtml
-    && pathsHtml.includes('Lộ Trình Hiện Tại') && pathsHtml.includes('Lộ Trình Kế Cận')
-    && pathsHtml.includes('Lộ Trình Tự Đề Xuất') && pathsHtml.includes('Khóa Học Gợi Ý')));
+    && pathsHtml.includes('Current Roadmap') && pathsHtml.includes('Succession Roadmap')
+    && pathsHtml.includes('Self-Proposed Roadmap') && pathsHtml.includes('Suggested Courses')));
 
   const fs = await import('node:fs');
   const timelineSource = fs.readFileSync('src/features/roadmaps/VisualRoadmapTimeline.jsx', 'utf8');
   check('VisualRoadmapTimeline no longer imports Modal', !/import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*'\.\/ui'/.test(timelineSource));
-  // Thiết kế hiện tại: hover vào 1 mốc hiện popover thông tin (portal ra
-  // document.body vì thẻ cha ".card" có overflow:hidden), bấm vào mốc điều
-  // hướng thẳng vào khóa học — không còn trạng thái "selected" hiện thẻ chi
-  // tiết inline như thiết kế cũ (đã được thay thế theo yêu cầu người dùng).
+  // Current design: hovering a milestone shows an information popover (portalled to
+  // document.body because the parent ".card" has overflow:hidden), and clicking a
+  // milestone navigates straight to the course — there is no longer a "selected"
+  // state rendering an inline detail card as in the old design.
   check('VisualRoadmapTimeline shows a hover-triggered popover portaled to document.body',
     timelineSource.includes('createPortal(') && timelineSource.includes('document.body'));
   check('VisualRoadmapTimeline opens the course directly on click (no inline selection state)',
@@ -682,24 +682,24 @@ console.log('\n=== 18. LearnerDashboard restructure: real fields only, reachable
   actAs('learner');
   const dashHtml = render('learner dashboard renders the restructured layout', <LearnerDashboard />, '/learner', '/learner');
   check('dashboard shows the 3 real stat tiles', Boolean(dashHtml
-    && dashHtml.includes('Giờ Học') && dashHtml.includes('Khóa Đã Hoàn Thành')
-    && dashHtml.includes('Khóa Bắt Buộc')));
-  check('dashboard no longer has a standalone "Lộ Trình Kế Cận" stat tile (only the tab label remains)',
-    Boolean(dashHtml) && (dashHtml.match(/Lộ Trình Kế Cận/g) || []).length === 1);
-  check('dashboard embeds the 4-tab roadmap panel inline', Boolean(dashHtml && dashHtml.includes('Trục Lộ Trình Đào Tạo')));
-  check('dashboard shows the weekly study-hours chart section', Boolean(dashHtml && dashHtml.includes('Thời Lượng Học Tập')));
+    && dashHtml.includes('Study Hours') && dashHtml.includes('Courses Completed')
+    && dashHtml.includes('Mandatory Course')));
+  check('dashboard no longer has a standalone "Succession Roadmap" stat tile (only the tab label remains)',
+    Boolean(dashHtml) && (dashHtml.match(/Succession Roadmap/g) || []).length === 1);
+  check('dashboard embeds the 4-tab roadmap panel inline', Boolean(dashHtml && dashHtml.includes('Training Roadmap')));
+  check('dashboard shows the weekly study-hours chart section', Boolean(dashHtml && dashHtml.includes('Study Hours')));
   check('dashboard does NOT show any fabricated field (favorites/wishlist/SOP library/daily goal)',
-    !dashHtml.includes('yêu thích') && !dashHtml.includes('Kho tài liệu') && !dashHtml.includes('kế hoạch L&D'));
+    !dashHtml.includes('Favourites') && !dashHtml.includes('Document Library') && !dashHtml.includes('L&D plan'));
 
   const minhForChart = generated100Users.find((u) => u.userId === 'USR-1042');
   const hours = seedWeeklyHours(minhForChart);
-  check('weeklyStudyHours returns 7 Mon-Sun entries', Array.isArray(hours) && hours.length === 7 && hours[0].label === 'Thứ 2' && hours[6].label === 'Chủ Nhật');
+  check('weeklyStudyHours returns 7 Mon-Sun entries', Array.isArray(hours) && hours.length === 7 && hours[0].label === 'Mon' && hours[6].label === 'Sunday');
   check('weeklyStudyHours is not all-zero for a persona with real history logs', hours.some((h) => h.value > 0));
 
   for (const role of ['manager', 'trainer', 'hrbp', 'useradmin', 'sysadmin']) {
     actAs(role);
     const html = render(`${role} can open the shared /my-learning-dashboard`, <LearnerDashboard />, '/my-learning-dashboard', '/my-learning-dashboard');
-    check(`${role} sees the personal dashboard with its own real data`, Boolean(html && html.includes('Trục Lộ Trình Đào Tạo')));
+    check(`${role} sees the personal dashboard with its own real data`, Boolean(html && html.includes('Training Roadmap')));
   }
 }
 
@@ -808,40 +808,40 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
   actAs('hrbp');
   const hrbpCurriculumHtml = render('HRBP Curriculum Tab renders without crashing', <HrbpDashboard initialTab="CURRICULUM" />, '/hrbp/curriculum', '/hrbp/curriculum');
   check('HRBP Curriculum Tab renders tab switcher and filter controls',
-    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('Giáo Trình Của Bản Thân')
-      && hrbpCurriculumHtml.includes('Giáo Trình Tôi Đã Đề Xuất')
-      && hrbpCurriculumHtml.includes('Toàn Bộ Giáo Trình')));
+    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('My Own Curricula')
+      && hrbpCurriculumHtml.includes('Curricula I Have Proposed')
+      && hrbpCurriculumHtml.includes('All Curricula')));
   check('HRBP Curriculum Tab renders proposal tracking table',
-    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('Hàng Đợi Theo Dõi Đơn Đề Xuất Của Bạn')));
+    Boolean(hrbpCurriculumHtml && hrbpCurriculumHtml.includes('Your Proposal Tracking Queue')));
 
   actAs('useradmin');
   const userAdminCoursesHtml = render('useradmin AdminCourses curriculum tab renders without crashing', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
-  check('useradmin sees Curriculum tab and Chi Tiết & Phân Bổ buttons',
-    Boolean(userAdminCoursesHtml && userAdminCoursesHtml.includes('Chi Tiết &amp; Phân Bổ')));
+  check('useradmin sees Curriculum tab and Details & Allocation buttons',
+    Boolean(userAdminCoursesHtml && userAdminCoursesHtml.includes('Details &amp; Allocation')));
 
   actAs('sysadmin');
   const sysAdminCoursesHtml = render('sysadmin AdminCourses curriculum tab renders without crashing', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
-  check('sysadmin sees Curriculum tab and Chi Tiết & Phân Bổ buttons',
-    Boolean(sysAdminCoursesHtml && sysAdminCoursesHtml.includes('Chi Tiết &amp; Phân Bổ')));
+  check('sysadmin sees Curriculum tab and Details & Allocation buttons',
+    Boolean(sysAdminCoursesHtml && sysAdminCoursesHtml.includes('Details &amp; Allocation')));
 
   // Section 20: Multi-Target Assignment & Builder Multi-Level Support
   console.log('\n--- Section 20: Multi-Target Batch Assignment, CourseBuilder Multi-Levels & Learner Badges ---');
   actAs('useradmin');
   const courseBuilderHtml = render('CourseBuilder renders with multi-level selector', <AdminCourseBuilder />, '/admin/courses/new', '/admin/courses/new');
   check('CourseBuilder renders Level 1 through Level 7 multi-selector buttons',
-    Boolean(courseBuilderHtml && courseBuilderHtml.includes('Level 1') && courseBuilderHtml.includes('Level 7') && courseBuilderHtml.includes('Chọn Tất Cả (Lv 1 - 7)')));
+    Boolean(courseBuilderHtml && courseBuilderHtml.includes('Level 1') && courseBuilderHtml.includes('Level 7') && courseBuilderHtml.includes('Select All (Lv 1 - 7)')));
 
   actAs('learner');
   const learnerCoursesHtml = render('LearnerCourses renders without Level badges in table/cards', <LearnerCourses />, '/learner/courses', '/learner/courses');
   check('LearnerCourses does not render JobLevelBadge in catalog table header',
-    Boolean(learnerCoursesHtml && !learnerCoursesHtml.includes('>Cấp Bậc<')));
+    Boolean(learnerCoursesHtml && !learnerCoursesHtml.includes('>Job Level<')));
 
   // Section 21: Curriculum Editor Modal & Editing Flow
   console.log('\n--- Section 21: Curriculum Editor Modal & Detail Modal Rendering ---');
   actAs('useradmin');
   const userAdminCurriculaHtml = render('User Admin Curriculum tab render', <AdminCourses />, '/admin/courses?tab=curriculum', '/admin/courses');
   check('User Admin can view curriculum list with Edit buttons',
-    Boolean(userAdminCurriculaHtml && userAdminCurriculaHtml.includes('Sửa') && userAdminCurriculaHtml.includes('Chi Tiết &amp; Phân Bổ')));
+    Boolean(userAdminCurriculaHtml && userAdminCurriculaHtml.includes('Edit') && userAdminCurriculaHtml.includes('Details &amp; Allocation')));
 
   const mockCurriculumDraft = { id: 'CUR-TEST', title: 'Test Curriculum', category: 'Store Operations', courseIds: ['course-fs-001'], status: 'PUBLISHED', assignments: [] };
   const editorHtml = render(
@@ -856,7 +856,7 @@ console.log('\n=== 19. Curriculum Permissions, HRBP Curriculum Tab, Analytics & 
     '/admin/courses', '/admin/courses'
   );
   check('CurriculumEditorModal renders with title input and course list',
-    Boolean(editorHtml && editorHtml.includes('Chỉnh Sửa Giáo Trình') && editorHtml.includes('Danh sách khóa E-Learning')));
+    Boolean(editorHtml && editorHtml.includes('Edit Curriculum') && editorHtml.includes('E-Learning course list')));
 }
 
 // ---------------------------------------------------------------------------
@@ -899,7 +899,7 @@ console.log('\n=== Section 22: Personal Learning Calendar — date math ===');
 
   check('August 1st 2026 is flagged inMonth', flatDays.find((d) => d.date === '2026-08-01')?.inMonth === true);
 
-  check('formatMonthLabel vi', formatMonthLabel('2026-08-01', 'vi') === 'Tháng 8, 2026', formatMonthLabel('2026-08-01', 'vi'));
+  check('formatMonthLabel vi', formatMonthLabel('2026-08-01', 'vi') === 'August, 2026', formatMonthLabel('2026-08-01', 'vi'));
   check('formatMonthLabel en', formatMonthLabel('2026-08-01', 'en') === 'August 2026', formatMonthLabel('2026-08-01', 'en'));
 }
 
@@ -958,7 +958,7 @@ console.log('\n=== Section 24: MonthCalendarGrid — standalone render ===');
 
   const fixtureEventsByDate = new Map([
     ['2026-08-15', [
-      { id: 'deadline-CRS-X', date: '2026-08-15', kind: 'DEADLINE', title: 'Sample Course Title', subtitle: 'Hạn hoàn thành', statusLabel: 'Đang Học', tone: 'blue', courseId: 'CRS-X' },
+      { id: 'deadline-CRS-X', date: '2026-08-15', kind: 'DEADLINE', title: 'Sample Course Title', subtitle: 'Completion deadline', statusLabel: 'In Progress', tone: 'blue', courseId: 'CRS-X' },
     ]],
   ]);
 
@@ -974,7 +974,7 @@ console.log('\n=== Section 24: MonthCalendarGrid — standalone render ===');
     />,
     '/x', '/x'
   );
-  check('MonthCalendarGrid output contains the month label', Boolean(gridHtml && gridHtml.includes('Tháng 8, 2026')));
+  check('MonthCalendarGrid output contains the month label', Boolean(gridHtml && gridHtml.includes('August, 2026')));
   check('MonthCalendarGrid output contains the fixture event chip title', Boolean(gridHtml && gridHtml.includes('Sample Course Title')));
   check('MonthCalendarGrid marks the selected day', Boolean(gridHtml && gridHtml.includes('selected')));
   check('MonthCalendarGrid renders 42 day cells', Boolean(gridHtml && (gridHtml.match(/cal-cell-daynum/g) || []).length === 42));
@@ -991,7 +991,7 @@ console.log('\n=== Section 25: LearnerCalendar page renders at both routes ===')
     <LearnerCalendar basePath="/learner/courses" />,
     '/learner/calendar', '/learner/calendar'
   );
-  check('LearnerCalendar (/learner/calendar) renders the page title', Boolean(learnerRouteHtml && learnerRouteHtml.includes('Lịch Học Tập')));
+  check('LearnerCalendar (/learner/calendar) renders the page title', Boolean(learnerRouteHtml && learnerRouteHtml.includes('Learning &amp; Operations')));
   check('LearnerCalendar (/learner/calendar) renders the month grid', Boolean(learnerRouteHtml && learnerRouteHtml.includes('cal-grid-card')));
 
   const sharedRouteHtml = render(
@@ -1009,12 +1009,12 @@ console.log('\n=== Section 26: Learning Calendar nav entry — all 6 roles ===')
   for (const role of nonLearnerRoles) {
     actAs(role);
     const headerHtml = render(
-      `${role} header has Lịch Học Tập nav item`,
+      `${role} header has Learning Calendar nav item`,
       <AppHeader role={role} onRoleChange={() => {}} title="" crumb="" />,
       '/', '/'
     );
     check(`${role} header links to /my-learning-calendar`,
-      Boolean(headerHtml && headerHtml.includes('Lịch Học Tập') && headerHtml.includes('my-learning-calendar')));
+      Boolean(headerHtml && headerHtml.includes('Learning Calendar') && headerHtml.includes('my-learning-calendar')));
   }
 
   actAs('learner');
@@ -1033,7 +1033,7 @@ console.log('\n=== Section 27: SharedLearningCalendar renders for all 6 roles (f
   for (const role of ROLE_ORDER) {
     const html = byRole[role]['SharedLearningCalendar'];
     check(`${role} renders /my-learning-calendar with the calendar page title`,
-      Boolean(html && html.includes('Lịch Học Tập')));
+      Boolean(html && html.includes('Learning &amp; Operations')));
     check(`${role} renders /my-learning-calendar with the month grid`,
       Boolean(html && html.includes('cal-grid-card')));
   }
@@ -1048,7 +1048,7 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
   // Test fixture: unassigned Mandatory Course (created without target audience)
   const unassignedMandatoryCourse = {
     id: 'CRS-TEST-MANDATORY-001',
-    title: 'An Toàn Vận Hành Xe Nâng Cao Cấp',
+    title: 'Advanced Forklift Operation Safety',
     courseType: 'MANDATORY',
     targetLevel: '6',
     assignments: [],
@@ -1059,7 +1059,7 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
   // Test fixture: Optional Course
   const optionalCourseL6 = {
     id: 'CRS-TEST-OPTIONAL-001',
-    title: 'Kỹ Năng Đàm Phán Với Nhà Cung Cấp',
+    title: 'Supplier Negotiation Skills',
     courseType: 'OPTIONAL',
     targetLevel: '6',
     assignments: [],
@@ -1069,7 +1069,7 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
 
   const optionalCourseL5 = {
     id: 'CRS-TEST-OPTIONAL-002',
-    title: 'Chiến Lược Quản Trị Danh Mục Ngành Hàng',
+    title: 'Merchandise Category Management Strategy',
     courseType: 'OPTIONAL',
     targetLevel: '5',
     assignments: [],
@@ -1079,7 +1079,7 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
 
   const optionalCourseL7 = {
     id: 'CRS-TEST-OPTIONAL-003',
-    title: 'Quy Chuẩn Trưng Bày Hàng Hóa Quầy Kệ',
+    title: 'Shelf Merchandising Standards',
     courseType: 'OPTIONAL',
     targetLevel: '7',
     assignments: [],
@@ -1131,7 +1131,7 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
         id: 'asg-test-1',
         assignmentType: 'DEPARTMENT',
         targetId: 'dept-bakery',
-        targetLabel: 'Bộ Phận Bánh Mì',
+        targetLabel: 'Bakery Sub-Department',
         targetLevel: '7',
         dueDate: '2026-10-15',
         assignedBy: 'System Admin',
@@ -1147,13 +1147,13 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
   // 6. Org Unit Grouping (courseOrgUnitGroups & buildCourseGroups) handles multi-target assignments
   const multiAssignedCourse = {
     id: 'CRS-TEST-MULTI-001',
-    title: 'Khóa Huấn Luyện Đa Phòng Ban',
+    title: 'Multi-Department Training Course',
     courseType: 'MANDATORY',
     targetLevel: '6',
     assignments: [
-      { id: 'asg-1', assignmentType: 'BUSINESS_UNIT', targetId: 'bu-mmvn', targetLabel: 'Khối Toàn Quốc' },
-      { id: 'asg-2', assignmentType: 'DIVISION', targetId: 'div-opt', targetLabel: 'Khối Vận Hành' },
-      { id: 'asg-3', assignmentType: 'DEPARTMENT', targetId: 'dept-bakery', targetLabel: 'Phòng Bánh Mì' },
+      { id: 'asg-1', assignmentType: 'BUSINESS_UNIT', targetId: 'bu-mmvn', targetLabel: 'Nationwide Business Unit' },
+      { id: 'asg-2', assignmentType: 'DIVISION', targetId: 'div-opt', targetLabel: 'Division Operations' },
+      { id: 'asg-3', assignmentType: 'DEPARTMENT', targetId: 'dept-bakery', targetLabel: 'Bakery Department' },
     ],
   };
 

@@ -1,126 +1,126 @@
 // ===========================================================================
-// MM MegaLearn - 6 Role Phân Cấp (rank 1 = thấp nhất, rank 6 = cao nhất)
+// MM MegaLearn - 6 Ranked Roles (rank 1 = lowest, rank 6 = highest)
 //
 //   User Learner -> Manager -> Trainer / L&D -> HRBP -> User Admin -> System Admin (IT)
 //
-// Cả 6 role đều là Learner: mọi role đều có cổng học tập cá nhân.
-// Mỗi role quản lý được toàn bộ các role có rank thấp hơn (Cascading Hierarchy).
+// All 6 roles are Learners: every role has a personal learning portal.
+// Each role manages every role ranked below it (Cascading Hierarchy).
 // ===========================================================================
 
 export const ROLE_DEFINITIONS = [
   {
     id: 'learner',
     rank: 1,
-    labelVi: 'Nhân Viên / Học Viên (User Learner)',
+    labelVi: 'Employee / Learner (User Learner)',
     labelEn: 'User Learner',
-    shortVi: 'Học Viên',
+    shortVi: 'Learner',
     defaultLevel: '7',
     icon: 'ti-user',
     tone: 'rail',
     home: '/learner',
-    summaryVi: 'Học các khóa thuộc cấp bậc của mình và gửi đơn xin học vượt đúng 1 cấp liền kề.',
+    summaryVi: 'Takes the courses at their own level and submits requests to study exactly one grade above.',
     capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewCsat'],
   },
   {
     id: 'manager',
     rank: 2,
-    labelVi: 'Quản Lý Trực Tiếp (Manager)',
+    labelVi: 'Line Manager (Manager)',
     labelEn: 'Line Manager',
-    shortVi: 'Quản Lý',
+    shortVi: 'Manager',
     defaultLevel: '4',
     icon: 'ti-briefcase',
     tone: 'amber',
     home: '/manager',
-    summaryVi: 'Quản lý nhân viên phòng ban và theo dõi tiến độ học tập của đội ngũ.',
-    // Duyệt đơn học vượt cấp KHÔNG còn ở Manager — chỉ User Admin/SysAdmin
-    // mới thấy và duyệt (xem roles useradmin/sysadmin bên dưới).
-    // Trung Tâm Chi Phí Đào Tạo CHỈ dành riêng cho User Admin & SysAdmin.
+    summaryVi: 'Manages department staff and tracks the team\'s learning progress.',
+    // Level skip approval is NO LONGER with the Manager — only User Admin/SysAdmin
+    // see and approve them (see the useradmin/sysadmin roles below).
+    // The Training Cost Center is reserved for User Admin & SysAdmin only.
     capabilities: ['canLearn', 'canRequestLevelSkip', 'canViewTeam', 'canViewCsat'],
   },
   {
     id: 'trainer',
     rank: 3,
-    labelVi: 'Giảng Viên / L&D (Trainer)',
+    labelVi: 'Trainer / L&D (Trainer)',
     labelEn: 'Trainer / L&D',
-    shortVi: 'Giảng Viên',
+    shortVi: 'Trainer',
     defaultLevel: '3',
     icon: 'ti-school',
     tone: 'sage',
     home: '/trainer',
-    summaryVi: 'Tạo khóa học trực tiếp, đứng lớp, chiếu Live QR điểm danh và theo dõi CSAT.',
+    summaryVi: 'Creates in-person courses, teaches, displays the Live QR for attendance and tracks CSAT.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canViewTeam',
-      // Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy) — không có
-      // canAuthorOnlineCourses, không có canAssignTrainers (chỉ tự đứng lớp).
-      // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
+      // Trainer/L&D can only create in-person courses (that they teach) — without
+      // canAuthorOnlineCourses, without canAssignTrainers (they only teach themselves).
+      // No level skip approval — only User Admin/SysAdmin may approve.
       'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance', 'canViewCsat',
     ],
   },
   {
     id: 'hrbp',
     rank: 4,
-    labelVi: 'Đối Tác Nhân Sự (HRBP)',
+    labelVi: 'HR Business Partner (HRBP)',
     labelEn: 'HR Business Partner',
     shortVi: 'HRBP',
     defaultLevel: '2',
     icon: 'ti-users',
     tone: 'blue',
     home: '/hrbp',
-    summaryVi: 'Phân tích Skill Gap, quy hoạch kế nhiệm 70-20-10 và giám sát tuân thủ theo vùng.',
+    summaryVi: 'Skill gap analysis, 70-20-10 succession planning and regional compliance monitoring.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canViewTeam',
       'canViewOrgProgress', 'canManageSkillMatrix', 'canManageSuccession', 'canViewCsat',
-      // HRBP không có quyền tạo khóa học (online lẫn offline) — chỉ có thể
-      // được User Admin/SysAdmin phân công đứng lớp các khóa cấp cao.
-      // Không duyệt đơn học vượt cấp — chỉ User Admin/SysAdmin mới duyệt.
+      // HRBP cannot create courses (online or offline) — they may only
+      // are assigned by User Admin/SysAdmin to teach the senior-level courses.
+      // No level skip approval — only User Admin/SysAdmin may approve.
       'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
-      // Giáo trình: HRBP CHỈ được xem (không sửa/xóa) và đề xuất ứng viên nhân
-      // tài vào học — đề xuất phải qua User Admin/SysAdmin duyệt mới có hiệu lực.
+      // Curriculum: HRBP may ONLY view (not edit/delete) and nominate talent
+      // candidates for enrollment — a nomination only takes effect once User Admin/SysAdmin approves it.
       'canProposeCurriculum',
     ],
   },
   {
     id: 'useradmin',
     rank: 5,
-    labelVi: 'Quản Trị Nhân Sự (User Admin)',
+    labelVi: 'People Administration (User Admin)',
     labelEn: 'User Administrator',
     shortVi: 'User Admin',
     defaultLevel: '2',
     icon: 'ti-users-group',
     tone: 'blue',
     home: '/user-admin',
-    summaryVi: 'Quản trị hồ sơ 100+ nhân sự, phân bổ khóa học và phân công Giảng viên đứng lớp.',
+    summaryVi: 'Manages 100+ employee records, allocates courses and assigns trainers to classes.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
       'canViewOrgProgress', 'canManageUsers', 'canAllocateCourses',
       'canAssignTrainers', 'canConfigureOrg', 'canViewCsat',
-      // Toàn quyền tạo cả khóa Online lẫn Offline, và có thể tự đứng lớp.
+      // Full authority to create both Online and Offline courses, and may teach them.
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
-      // Chỉ User Admin & SysAdmin cấu hình Lộ trình Cấp bậc (Tab 1/Tab 2).
+      // Only User Admin & SysAdmin configure Level Roadmaps (Tab 1/Tab 2).
       'canManageLevelRoadmaps',
-      // Chỉ User Admin & SysAdmin được tạo/sửa/xóa Giáo trình và phân bổ trực
-      // tiếp cho đối tượng học — các role khác chỉ xem phần được phân bổ.
+      // Only User Admin & SysAdmin may create/edit/delete Curricula and allocate them
+      // directly to a learning audience — other roles only see what is allocated to them.
       'canManageCurriculum',
-      // Toàn quyền Trung Tâm Chi Phí: xem báo cáo thu/chi toàn công ty và gán
-      // giá tham gia cho khóa học.
+      // Full Cost Center authority: view company-wide income/expense reports and assign
+      // participation rating for the course.
       'canViewCostCenter', 'canViewAllCostCenters', 'canManageCostCenter',
-      // User Admin & SysAdmin đều toàn quyền tạo cả 3 hình thức khóa học
-      // (E-Learning, Virtual Class Zoom/Teams, In-Person ILT) và chỉ định
-      // Giảng viên chủ trì — Trainer/L&D chỉ tạo được khóa Trực Tiếp (tự dạy).
+      // User Admin & SysAdmin both have full authority to create all 3 course formats
+      // (E-Learning, Virtual Class Zoom/Teams, In-Person ILT) and name
+      // the hosting trainer — Trainer/L&D can only create in-person courses (that they teach).
       'canCreateVirtualClass',
     ],
   },
   {
     id: 'sysadmin',
     rank: 6,
-    labelVi: 'Quản Trị Hệ Thống IT (System Admin)',
+    labelVi: 'IT System Administration (System Admin)',
     labelEn: 'System Administrator (IT)',
     shortVi: 'System Admin',
     defaultLevel: '1',
     icon: 'ti-shield-lock',
     tone: 'rust',
     home: '/sysadmin',
-    summaryVi: 'Toàn quyền hạ tầng, API, audit log ISO 27001 và quản trị mọi role kể cả User Admin.',
+    summaryVi: 'Full authority over infrastructure, APIs, ISO 27001 audit logs and every role including User Admin.',
     capabilities: [
       'canLearn', 'canRequestLevelSkip', 'canApproveLevelSkip', 'canViewTeam',
       'canViewOrgProgress', 'canManageUsers', 'canAllocateCourses',
@@ -129,8 +129,8 @@ export const ROLE_DEFINITIONS = [
       'canAuthorOnlineCourses', 'canAuthorOfflineCourses', 'canTeach', 'canBeAssignedToClass', 'canManageAttendance',
       'canManageLevelRoadmaps', 'canManageCurriculum',
       'canViewCostCenter', 'canViewAllCostCenters', 'canManageCostCenter',
-      // Toàn quyền tạo cả 3 hình thức khóa học (E-Learning, Virtual Class
-      // Zoom/Teams, In-Person ILT) và chỉ định Giảng viên chủ trì — như User Admin.
+      // Full authority to create all 3 course formats (E-Learning, Virtual Class
+      // Zoom/Teams, In-Person ILT) and names the hosting trainer — same as User Admin.
       'canCreateVirtualClass',
     ],
   },
@@ -138,8 +138,8 @@ export const ROLE_DEFINITIONS = [
 
 export const ROLE_ORDER = ROLE_DEFINITIONS.map((r) => r.id);
 
-// Role cũ trong dữ liệu/localStorage được quy về mô hình 6 role.
-// `admin` (L&D Admin) trở thành `trainer` (Trainer / L&D) theo kiến trúc mới.
+// Legacy roles in the data/localStorage are normalized onto the 6-role model.
+// `admin` (L&D Admin) becomes `trainer` (Trainer / L&D) under the new architecture.
 export const LEGACY_ROLE_ALIAS = {
   admin: 'trainer',
   lnd: 'trainer',
@@ -150,7 +150,7 @@ export const LEGACY_ROLE_ALIAS = {
   it: 'sysadmin',
 };
 
-/** Chuẩn hóa role bất kỳ về 1 trong 6 roleId hợp lệ. */
+/** Normalizes any role onto one of the 6 valid roleIds. */
 export function normalizeRole(role) {
   if (!role) return 'learner';
   const raw = String(role).trim().toLowerCase();
@@ -176,13 +176,13 @@ export const ROLE_HOME = ROLE_DEFINITIONS.reduce((acc, r) => {
   return acc;
 }, {});
 
-/** Trả về mảng roleId mà `role` được phép quản lý (mọi rank thấp hơn). */
+/** Returns the roleIds that `role` is allowed to manage (every lower rank). */
 export function managedRolesOf(role) {
   const rank = roleRank(role);
   return ROLE_DEFINITIONS.filter((r) => r.rank < rank).map((r) => r.id);
 }
 
-/** `actorRole` có quản lý được `targetRole` không? */
+/** Can `actorRole` manage `targetRole`? */
 export function canManage(actorRole, targetRole) {
   return roleRank(actorRole) > roleRank(targetRole);
 }
@@ -195,22 +195,22 @@ export function hasCapability(role, capability) {
   return capabilitiesOf(role).includes(capability);
 }
 
-/** Được tạo khóa học ở bất kỳ hình thức nào (Online hoặc Offline/ILT)? Dùng để
- *  quyết định có hiện nút "Tạo Khóa Học Mới" hay không. */
+/** May they create a course in any format (Online or Offline/ILT)? Used to
+ *  decide whether the "Create New Course" button is shown. */
 export function canAuthorAnyCourse(role) {
   return hasCapability(role, 'canAuthorOnlineCourses') || hasCapability(role, 'canAuthorOfflineCourses');
 }
 
-/** Được xem TOÀN BỘ danh mục Giáo trình (không chỉ phần được phân bổ cho mình)?
- *  User Admin/SysAdmin xem để quản trị; HRBP xem để đề xuất ứng viên nhân tài.
- *  Learner/Manager/Trainer chỉ thấy giáo trình đã được phân bổ cho chính họ. */
+/** May they view the ENTIRE curriculum catalog (not just what is allocated to them)?
+ *  User Admin/SysAdmin view it to administer; HRBP views it to nominate talent candidates.
+ *  Learner/Manager/Trainer only see the curricula allocated to them. */
 export function canSeeAllCurricula(role) {
   return hasCapability(role, 'canManageCurriculum') || hasCapability(role, 'canProposeCurriculum');
 }
 
-/** Nhãn mô tả phạm vi quản lý, dùng cho header các trang team/scope. */
+/** Label describing the management scope, used in team/scope page headers. */
 export function managedScopeLabel(role) {
   const managed = managedRolesOf(role);
-  if (managed.length === 0) return 'Không quản lý nhân sự khác (chỉ hồ sơ học tập cá nhân)';
+  if (managed.length === 0) return 'Does not manage other employees (only their own learning record)';
   return managed.map((id) => roleDefinition(id).shortVi).join(', ');
 }

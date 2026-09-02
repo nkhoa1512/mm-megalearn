@@ -48,7 +48,7 @@ export function targetOptionsFor(assignmentType, customGroupsList = null) {
         id: g.id,
         code: g.code,
         title: g.title || g.name,
-        label: `👥 ${g.title || g.name} (${g.memberCount || g.memberUserIds?.length || 0} thành viên)`,
+        label: `👥 ${g.title || g.name} (${g.memberCount || g.memberUserIds?.length || 0} members)`,
         memberCount: g.memberCount || g.memberUserIds?.length || 0,
         memberUserIds: g.memberUserIds || [],
         type: g.type,
@@ -100,7 +100,7 @@ export function targetOptionsFor(assignmentType, customGroupsList = null) {
 }
 
 /**
- * Lọc danh sách đối tượng linh hoạt theo phân tầng (Cascading Drill-Down).
+ * Flexible cascading drill-down filtering of the target list.
  */
 export function getCascadingTargetOptions({
   scope = 'DIVISION', // 'BUSINESS_UNIT' | 'DIVISION' | 'DEPARTMENT' | 'SUBDEPARTMENT' | 'LEVEL' | 'STORE' | 'USER' | 'GROUP'
@@ -129,7 +129,7 @@ export function getCascadingTargetOptions({
           code: b.code || 'MMVN',
           name: b.name,
           label: `🏢 [${b.code || 'MMVN'}] ${b.name}`,
-          subtitle: `${divCount || divisions.length} Khối · ${deptCount || departments.length} Phòng Ban (Toàn Doanh Nghiệp)`,
+          subtitle: `${divCount || divisions.length} Divisions · ${deptCount || departments.length} Departments (Enterprise-Wide)`,
           badge: b.code || 'BU',
         };
       });
@@ -152,7 +152,7 @@ export function getCascadingTargetOptions({
           name: d.name,
           businessUnitId: d.businessUnitId,
           label: `🏢 [${d.code}] ${d.name}`,
-          subtitle: `${deptCount} Phòng ban trực thuộc${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
+          subtitle: `${deptCount} departments below${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
           badge: d.code,
         };
       });
@@ -180,7 +180,7 @@ export function getCascadingTargetOptions({
           divisionId: dept.divisionId,
           businessUnitId: div ? div.businessUnitId : null,
           label: `🏛️ [${dept.code}] ${dept.name} (${div ? div.code : 'MMVN'})`,
-          subtitle: `${subCount} Sub-Departments · Khối: ${div ? div.name : 'MMVN'}${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
+          subtitle: `${subCount} Sub-Departments · Division: ${div ? div.name : 'MMVN'}${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
           badge: dept.code,
         };
       });
@@ -212,7 +212,7 @@ export function getCascadingTargetOptions({
           divisionId: parentDept ? parentDept.divisionId : null,
           businessUnitId: parentDiv ? parentDiv.businessUnitId : null,
           label: `🌿 [${s.code}] ${s.name} (${parentDept ? parentDept.name : 'MMVN'})`,
-          subtitle: `Phòng: ${parentDept ? parentDept.name : 'MMVN'} · Khối: ${parentDiv ? parentDiv.name : 'MMVN'}${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
+          subtitle: `Department: ${parentDept ? parentDept.name : 'MMVN'} · Division: ${parentDiv ? parentDiv.name : 'MMVN'}${bu ? ` · BU: ${bu.code || bu.name}` : ''}`,
           badge: s.code,
         };
       });
@@ -239,7 +239,7 @@ export function getCascadingTargetOptions({
         id: String(l.level),
         level: String(l.level),
         label: `🎯 Level ${l.level} — ${l.title}`,
-        subtitle: `Định biên chức danh: ${l.name || l.title}`,
+        subtitle: `Job title headcount: ${l.name || l.title}`,
         badge: `Level ${l.level}`,
       }));
       if (levelFilter !== 'ALL') {
@@ -257,7 +257,7 @@ export function getCascadingTargetOptions({
         code: st.code,
         name: st.name,
         label: `📍 [${st.code}] ${st.name}`,
-        subtitle: st.address || 'Hệ thống MM Mega Market',
+        subtitle: st.address || 'MM Mega Market system',
         badge: st.code,
       }));
       if (storeFilter !== 'ALL') {
@@ -275,8 +275,8 @@ export function getCascadingTargetOptions({
         id: g.id,
         code: g.code,
         title: g.title || g.name,
-        label: `👥 ${g.title || g.name} (${g.memberCount || g.memberUserIds?.length || 0} thành viên · ${g.code})`,
-        subtitle: g.description || 'Nhóm tùy chỉnh do User Admin quản lý',
+        label: `👥 ${g.title || g.name} (${g.memberCount || g.memberUserIds?.length || 0} members · ${g.code})`,
+        subtitle: g.description || 'Custom groups managed by the User Admin',
         memberCount: g.memberCount || g.memberUserIds?.length || 0,
         memberUserIds: g.memberUserIds || [],
         type: g.type,
@@ -358,23 +358,23 @@ export function getCascadingTargetOptions({
 
 export function assignmentTypeLabel(t) {
   return {
-    GROUP: 'Nhóm Người Dùng Tùy Chỉnh (Custom Group)',
-    BUSINESS_UNIT: 'Business Unit (Khối Toàn Quốc)',
-    DIVISION: 'Khối (Division)',
-    DEPARTMENT: 'Phòng Ban (Department)',
-    SUBDEPARTMENT: 'Bộ Phận Trực Thuộc (Sub-Department)',
-    AREA: 'Vùng Vận Hành (Operations Area)',
-    STORE_TYPE: 'Mô Hình Siêu Thị (Store Type)',
-    CLUSTER: 'Cụm Siêu Thị (Cluster)',
-    STORE: 'Địa Điểm / Siêu Thị Cụ Thể (Store)',
-    LEVEL: 'Khung Cấp Bậc (Job Level 1-7)',
-    ROLE: 'Vai Trò Hệ Thống (Role)',
-    USER: 'Từng Nhân Sự Cụ Thể (Individual User)',
+    GROUP: 'Custom User Group',
+    BUSINESS_UNIT: 'Business Unit (Nationwide)',
+    DIVISION: 'Division',
+    DEPARTMENT: 'Department',
+    SUBDEPARTMENT: 'Sub-Department',
+    AREA: 'Operations Area',
+    STORE_TYPE: 'Store Type',
+    CLUSTER: 'Store Cluster',
+    STORE: 'Specific Location / Store',
+    LEVEL: 'Job Level Framework (Level 1-7)',
+    ROLE: 'System Role',
+    USER: 'Individual User',
   }[t] || t;
 }
 
 export function resolveTargetLabel(assignmentType, targetId) {
-  if (!targetId) return 'Toàn bộ';
+  if (!targetId) return 'All';
   if (assignmentType === 'BUSINESS_UNIT') {
     const bu = businessUnits.find((b) => b.id === targetId || b.code === targetId);
     if (bu) return `🏢 [${bu.code || 'MMVN'}] ${bu.name}`;

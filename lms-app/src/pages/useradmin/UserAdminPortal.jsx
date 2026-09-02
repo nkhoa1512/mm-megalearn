@@ -56,12 +56,12 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const [transcriptUser, setTranscriptUser] = useState(null);
 
   const USER_GROUP_BY_OPTIONS = [
-    { id: 'NONE', label: 'Không gộp nhóm' },
-    { id: 'DIVISION', label: 'Theo Khối (Division)' },
-    { id: 'DEPARTMENT', label: 'Theo Phòng Ban' },
-    { id: 'LEVEL', label: 'Theo Cấp Bậc (Job Level)' },
-    { id: 'BRANCH', label: 'Theo Trụ Sở / Siêu Thị' },
-    { id: 'ROLE', label: 'Theo Vai Trò Hệ Thống' },
+    { id: 'NONE', label: 'No grouping' },
+    { id: 'DIVISION', label: 'By Division' },
+    { id: 'DEPARTMENT', label: 'By Department' },
+    { id: 'LEVEL', label: 'By Job Level' },
+    { id: 'BRANCH', label: 'By Head Office / Store' },
+    { id: 'ROLE', label: 'By System Role' },
   ];
 
   // User Modal State
@@ -178,16 +178,16 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     const map = {};
     filteredUsers.forEach((u) => {
       let key = 'OTHER';
-      let title = 'Chưa phân loại';
+      let title = 'Uncategorized';
       let icon = 'ti-folder';
 
       if (userGroupBy === 'DIVISION') {
         key = u.divisionId || u.divisionCode || 'UNKNOWN';
-        title = u.divisionName || u.divisionCode || 'Khối Chưa Phân Loại';
+        title = u.divisionName || u.divisionCode || 'Unclassified Division';
         icon = 'ti-building';
       } else if (userGroupBy === 'DEPARTMENT') {
         key = u.departmentId || u.department || 'UNKNOWN';
-        title = u.departmentName || u.department || 'Phòng Ban Chung';
+        title = u.departmentName || u.department || 'General Department';
         icon = 'ti-folders';
       } else if (userGroupBy === 'LEVEL') {
         key = String(u.level || '7');
@@ -197,12 +197,12 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       } else if (userGroupBy === 'BRANCH') {
         const isOps = u.branch === 'OPERATIONS' || Boolean(u.store);
         key = isOps ? 'OPERATIONS' : 'HEAD_OFFICE';
-        title = isOps ? '🛒 Siêu Thị & Trung Tâm Vận Hành' : '🏢 Trụ Sở Văn Phòng (Head Office)';
+        title = isOps ? '🛒 Stores & Operations Centers' : '🏢 Head Office';
         icon = isOps ? 'ti-building-store' : 'ti-building';
       } else if (userGroupBy === 'ROLE') {
         key = u.role || 'learner';
         const rDef = roleDefinition(u.role || 'learner');
-        title = `Vai trò: ${rDef.titleVi || u.role}`;
+        title = `Role: ${rDef.titleVi || u.role}`;
         icon = 'ti-shield-check';
       }
 
@@ -287,7 +287,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   // Bulk User Import Handlers
   function handleDownloadTemplate(format = 'csv') {
     if (format === 'csv') {
-      const csvHeader = 'Mã Nhân Viên,Họ và Tên,Email,Chức Danh,Cấp Bậc (1-7),Vai Trò (learner/manager/trainer/hrbp/useradmin/sysadmin),Mã Khối (Division Code),Mã Phòng Ban (Dept Code),Mã Sub-Dept (Sub-Dept Code)\n';
+      const csvHeader = 'Employee Code,Full Name,Email,Job Title,Level (1-7),Role (learner/manager/trainer/hrbp/useradmin/sysadmin),Division Code,Dept Code,Sub-Dept Code\n';
       const sampleRows = [
         'MMVN-3001,Nguyen Van An,an.nguyen3001@mmvietnam.com,Bakery Specialist,7,learner,1010_AP,FF_ST,SUB-BAKERY',
         'MMVN-3002,Tran Thi Binh,binh.tran3002@mmvietnam.com,Customer Service Lead,5,learner,1010_AP,CS_ST,SUB-FO',
@@ -364,15 +364,15 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     }
 
     const firstLine = lines[0].toLowerCase();
-    const hasHeader = firstLine.includes('mã') || firstLine.includes('code') || firstLine.includes('tên') || firstLine.includes('email');
+    const hasHeader = firstLine.includes('code') || firstLine.includes('code') || firstLine.includes('name') || firstLine.includes('email');
     const dataLines = hasHeader ? lines.slice(1) : lines;
 
     const parsedList = dataLines.map((line, idx) => {
       const cols = line.split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
       const empCode = cols[0] || `MMVN-IMP-${1000 + idx}`;
-      const fullName = cols[1] || 'Nhân Viên Mới';
+      const fullName = cols[1] || 'New Employee';
       const email = cols[2] || `${empCode.toLowerCase()}@mmvietnam.com`;
-      const title = cols[3] || 'Chuyên Viên';
+      const title = cols[3] || 'Executive';
       const level = cols[4] || '7';
       const role = cols[5] || 'learner';
       const divCode = cols[6] || '';
@@ -413,10 +413,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     return {
       userId: u.userId || rawEmpCode,
       employeeCode: rawEmpCode,
-      fullName: u.fullName || 'Nhân Viên Mới',
+      fullName: u.fullName || 'New Employee',
       email: u.email || `${rawEmpCode.toLowerCase()}@mmvietnam.com`,
-      title: u.title || u.position || 'Chuyên Viên',
-      position: u.position || u.title || 'Chuyên Viên',
+      title: u.title || u.position || 'Executive',
+      position: u.position || u.title || 'Executive',
       level: normalizeLevel(u.level || '7'),
       role: normalizeRole(u.role || 'learner'),
       branch: matchedDiv?.branch || (matchedDiv?.code && isNaN(parseInt(matchedDiv.code[0])) ? 'SUPPORTING' : 'OPERATIONS'),
@@ -440,7 +440,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   function handleExecuteImport() {
     if (!parsedPreview || parsedPreview.length === 0) return;
     importUsers(parsedPreview);
-    setImportFeedback(`Đã nạp thành công ${parsedPreview.length} nhân sự vào hệ thống!`);
+    setImportFeedback(`Successfully loaded ${parsedPreview.length} employees into the system!`);
     setTimeout(() => {
       setImportFeedback(null);
       setImportModal(false);
@@ -455,13 +455,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     setLevelForm({
       level: nextLvlNum,
       titleEn: `Level ${nextLvlNum}`,
-      titleVi: `Nhân Viên Cấp ${nextLvlNum}`,
-      viTitle: `Nhân Viên Cấp ${nextLvlNum}`,
+      titleVi: `Level ${nextLvlNum} Employee`,
+      viTitle: `Level ${nextLvlNum} Employee`,
       title: `Level ${nextLvlNum}`,
       code: `L${nextLvlNum}_STAFF`,
       authority: 'STANDARD',
       band: 'GENERAL',
-      descVi: 'Cấp bậc định biên trong khung tiêu chuẩn năng lực MM Mega Market.',
+      descVi: 'The job level within the MM Mega Market competency standard framework.',
       emoji: '⭐',
       headcount: 0,
       colors: { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
@@ -521,10 +521,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   }
 
   const TABS = [
-    { id: 'DIRECTORY', labelVi: 'Danh Mục Nhân Sự', labelEn: 'Staff Directory', icon: 'ti-address-book', count: userList.length },
-    { id: 'GROUPS', labelVi: 'Nhóm Tùy Chỉnh (Custom Groups)', labelEn: 'Custom Groups', icon: 'ti-users-group', count: customGroups.length },
-    { id: 'HIERARCHY', labelVi: 'Cây Cơ Cấu Tổ Chức (42 Khối)', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
-    { id: 'JOB_LEVELS', labelVi: 'Khung Cấp Bậc (7 Cấp)', labelEn: 'Job Level Framework', icon: 'ti-id-badge-2', count: jobLevels.length },
+    { id: 'DIRECTORY', labelVi: 'Employee Directory', labelEn: 'Staff Directory', icon: 'ti-address-book', count: userList.length },
+    { id: 'GROUPS', labelVi: 'Custom Groups', labelEn: 'Custom Groups', icon: 'ti-users-group', count: customGroups.length },
+    { id: 'HIERARCHY', labelVi: 'Organization Tree (42 Divisions)', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
+    { id: 'JOB_LEVELS', labelVi: 'Job Level Framework (7 Levels)', labelEn: 'Job Level Framework', icon: 'ti-id-badge-2', count: jobLevels.length },
   ];
 
   return (
@@ -533,19 +533,19 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)' }}>
-              {language === 'en' ? 'User Administration & Org Structure' : 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức'}
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.015em' }}>
+              {language === 'en' ? 'User Administration & Org Structure' : 'People Administration & Org Structure'}
             </h1>
             <Badge tone="blue" icon="ti-shield-check">User Administrator</Badge>
           </div>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
-            Quản trị viên: <strong>{userAdminUser.fullName}</strong> &middot; {userAdminUser.departmentName || userAdminUser.department} &middot; Quản lý hồ sơ nhân sự &amp; định biên sơ đồ MM Mega Market
+            Administrator: <strong>{userAdminUser.fullName}</strong> &middot; {userAdminUser.departmentName || userAdminUser.department} &middot; Manages employee records &amp; the MM Mega Market org structure
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button variant="outline" icon="ti-user-circle" onClick={() => navigate('/my-learning-dashboard')}>
-            Giao Diện Cá Nhân
+            Personal Interface
           </Button>
         </div>
       </div>
@@ -555,7 +555,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         style={{
           display: 'flex',
           gap: 6,
-          background: '#fff',
+          background: 'var(--paper-raised)',
           padding: '6px',
           borderRadius: 12,
           border: '1px solid var(--line)',
@@ -574,7 +574,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               style={{
                 padding: '9px 18px',
                 borderRadius: 8,
-                fontSize: 13.5,
+                fontSize: 14,
                 fontWeight: isActive ? 700 : 500,
                 cursor: 'pointer',
                 border: 'none',
@@ -612,17 +612,17 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {activeTab === 'DIRECTORY' && (() => {
         function renderUserTable(usersToRender) {
           return (
-            <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', background: '#fff' }}>
+            <div className="card" style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--paper-raised)' }}>
               <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Mã Nhân Viên</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Họ và Tên</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Chức Danh &amp; Vị Trí</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Cơ Cấu &amp; Bộ Phận Trực Thuộc</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Cấp Bậc (Level)</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Vai Trò Hệ Thống</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>Thao Tác</th>
+                  <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Employee Code</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Full Name</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Job Title &amp; Position</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Structure &amp; Parent Sub-Department</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>Job Level</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>System Role</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -630,7 +630,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     <tr>
                       <td colSpan={7} style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--ink-soft)' }}>
                         <i className="ti ti-users" style={{ fontSize: 32, display: 'block', marginBottom: 8, color: 'var(--ink-faint)' }} />
-                        Không tìm thấy nhân sự phù hợp với bộ lọc hiện tại.
+                        No employee matches the current filters.
                       </td>
                     </tr>
                   ) : (
@@ -641,17 +641,17 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         </td>
                         <td>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{u.fullName}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.email}</div>
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{u.email}</div>
                         </td>
                         <td>
-                          <div style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--ink)' }}>{u.position || u.title || 'Store Associate'}</div>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink)' }}>{u.position || u.title || 'Store Associate'}</div>
                         </td>
                         <td>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
                             {u.divisionName || u.storeName || u.departmentName || 'MM Mega Market VN'}
                           </div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                            Phòng: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong>
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                            Department: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong>
                           </div>
                           {u.subDepartmentName ? (
                             <div style={{
@@ -660,8 +660,8 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                               gap: 4,
                               fontSize: 11,
                               fontWeight: 600,
-                              color: '#1E40AF',
-                              background: '#EFF6FF',
+                              color: 'var(--blue-soft-text)',
+                              background: 'var(--blue-soft)',
                               border: '1px solid #BFDBFE',
                               padding: '2px 8px',
                               borderRadius: 4,
@@ -672,11 +672,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                             </div>
                           ) : (
                             <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 2 }}>
-                              Chưa gán sub-dept
+                              No sub-dept assigned
                             </div>
                           )}
-                          <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-                            {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Trụ sở Head Office' : '🛒 Siêu thị Vận hành'}
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
+                            {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? '🏢 Head Office' : '🛒 Store Operations'}
                           </div>
                         </td>
                         <td>
@@ -697,20 +697,20 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                               variant="primary"
                               icon="ti-id-badge-2"
                               onClick={() => setTranscriptUser(u)}
-                              title="Mở hồ sơ nhân sự: thông tin, khóa học, thăng cấp"
+                              title="Open the employee profile: details, courses, promotion"
                               style={{
                                 background: 'linear-gradient(135deg, #1E40AF 0%, #4338CA 100%)',
-                                fontSize: 11.5,
+                                fontSize: 12,
                               }}
                             >
-                              Hồ Sơ
+                              Profile
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               icon="ti-edit"
                               onClick={() => handleOpenEditUser(u)}
-                              title="Chỉnh sửa thông tin nhân sự"
+                              title="Edit the employee details"
                             />
                             <Button
                               size="sm"
@@ -721,12 +721,12 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                                   isOpen: true,
                                   type: 'USER',
                                   id: u.userId,
-                                  title: `Xóa Nhân Sự ${u.fullName}`,
-                                  message: `Bạn có chắc chắn muốn xóa nhân sự "${u.fullName}" (${u.employeeCode || u.userId}) khỏi danh mục?`,
+                                  title: `Delete Employee ${u.fullName}`,
+                                  message: `Are you sure you want to remove the employee "${u.fullName}" (${u.employeeCode || u.userId}) from the directory?`,
                                 })
                               }
                               style={{ color: '#E11D48' }}
-                              title="Xóa nhân sự"
+                              title="Delete employee"
                             />
                           </div>
                         </td>
@@ -742,9 +742,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         function renderUserGrid(usersToRender) {
           if (usersToRender.length === 0) {
             return (
-              <div className="card card-pad" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-soft)', background: '#fff', border: '1px solid var(--line)', borderRadius: 10 }}>
+              <div className="card card-pad" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-soft)', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10 }}>
                 <i className="ti ti-users" style={{ fontSize: 36, display: 'block', marginBottom: 8, color: 'var(--ink-faint)' }} />
-                Không tìm thấy nhân sự phù hợp với bộ lọc hiện tại.
+                No employee matches the current filters.
               </div>
             );
           }
@@ -756,7 +756,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   key={u.userId || u.employeeCode}
                   className="card card-pad"
                   style={{
-                    background: '#fff',
+                    background: 'var(--paper-raised)',
                     border: '1px solid var(--line)',
                     borderRadius: 10,
                     display: 'flex',
@@ -785,8 +785,8 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                           {u.fullName?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{u.fullName}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--blue, #005BAA)', fontFamily: 'monospace', fontWeight: 600 }}>{u.employeeCode || u.userId}</div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{u.fullName}</div>
+                          <div style={{ fontSize: 12, color: 'var(--blue, #005BAA)', fontFamily: 'monospace', fontWeight: 600 }}>{u.employeeCode || u.userId}</div>
                         </div>
                       </div>
                       <Badge tone={roleDefinition(u.role).tone}>
@@ -798,20 +798,20 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       {u.email}
                     </div>
 
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
                       {u.position || u.title || 'Store Associate'}
                     </div>
 
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', background: 'var(--paper-sunken, #F8FAFC)', padding: '8px 10px', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 3, border: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-sunken, #F8FAFC)', padding: '8px 10px', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 3, border: '1px solid var(--line)' }}>
                       <div>🏢 <strong>{u.divisionName || u.storeName || 'MM Mega Market'}</strong></div>
-                      <div>Phòng: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong></div>
+                      <div>Department: <strong>{u.departmentName || u.departmentCode || u.department || 'Chung'}</strong></div>
                       {u.subDepartmentName ? (
-                        <div style={{ color: '#1E40AF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ color: 'var(--blue-soft-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <i className="ti ti-git-branch" style={{ fontSize: 11 }} /> {u.subDepartmentName}
                         </div>
                       ) : (
                         <div style={{ color: 'var(--ink-faint)', fontStyle: 'italic', fontSize: 11 }}>
-                          {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? 'Trụ sở Head Office' : 'Siêu thị Vận hành'}
+                          {u.branch === 'HEAD_OFFICE' || u.branch === 'SUPPORTING' ? 'Head Office' : 'Store Operations'}
                         </div>
                       )}
                     </div>
@@ -821,10 +821,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     <JobLevelBadge level={u.level} compact />
                     <div style={{ display: 'flex', gap: 4 }}>
                       <Button size="sm" variant="primary" icon="ti-id-badge-2" onClick={() => setTranscriptUser(u)} style={{ fontSize: 11, padding: '4px 8px' }}>
-                        Hồ Sơ
+                        Profile
                       </Button>
                       <Button size="sm" variant="outline" icon="ti-edit" onClick={() => handleOpenEditUser(u)} style={{ padding: '4px 6px' }} />
-                      <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => setDeleteConfirm({ isOpen: true, type: 'USER', id: u.userId, title: `Xóa Nhân Sự ${u.fullName}`, message: `Bạn có chắc muốn xóa nhân sự "${u.fullName}"?` })} style={{ color: '#E11D48', padding: '4px 6px' }} />
+                      <Button size="sm" variant="ghost" icon="ti-trash" onClick={() => setDeleteConfirm({ isOpen: true, type: 'USER', id: u.userId, title: `Delete Employee ${u.fullName}`, message: `Are you sure you want to delete the employee "${u.fullName}"?` })} style={{ color: '#E11D48', padding: '4px 6px' }} />
                     </div>
                   </div>
                 </div>
@@ -836,7 +836,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Filter & Toolbar Card */}
-            <div className="card" style={{ padding: '16px 20px', background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+            <div className="card" style={{ padding: '16px 20px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
               {/* Row 1: Search + Group By + Filters Toggle + View Mode Switcher + Action Buttons */}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
                 {/* Search Input */}
@@ -846,7 +846,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     type="text"
                     className="field-input"
                     style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-                    placeholder="Tìm kiếm theo tên, mã NV, email, chức danh, phòng ban..."
+                    placeholder="Search by name, employee code, email, job title, department..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -865,14 +865,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   {/* Group By Select */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken, #F8FAFC)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-                    <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
                     <select
                       value={userGroupBy}
                       onChange={(e) => setUserGroupBy(e.target.value)}
                       style={{
                         border: 'none',
                         background: 'transparent',
-                        fontSize: 12.5,
+                        fontSize: 13,
                         fontWeight: userGroupBy !== 'NONE' ? 700 : 500,
                         color: userGroupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                         cursor: 'pointer',
@@ -893,9 +893,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
                   >
                     <i className="ti ti-filter" />
-                    <span>Bộ Lọc</span>
+                    <span>Filters</span>
                     {activeUserFiltersCount > 0 && (
-                      <span style={{ background: '#fff', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                      <span style={{ background: 'var(--paper-raised)', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                         {activeUserFiltersCount}
                       </span>
                     )}
@@ -909,30 +909,30 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       onClick={() => setUserViewMode('GRID')}
                       className={`btn btn-sm ${userViewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                       style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                      title="Dạng Lưới (Grid View)"
+                      title="Grid View"
                     >
                       <i className="ti ti-layout-grid" />
-                      <span>Lưới</span>
+                      <span>Grid</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setUserViewMode('TABLE')}
                       className={`btn btn-sm ${userViewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                       style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                      title="Dạng Bảng (List View)"
+                      title="List View"
                     >
                       <i className="ti ti-list" />
-                      <span>Bảng</span>
+                      <span>Table</span>
                     </button>
                   </div>
 
                   {/* Action Buttons */}
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => setImportModal(true)} style={{ height: 38 }}>
-                      Import Hàng Loạt
+                      Bulk Import
                     </Button>
                     <Button size="sm" variant="primary" icon="ti-user-plus" onClick={handleOpenAddUser} style={{ height: 38 }}>
-                      Thêm Nhân Viên
+                      Add An Employee
                     </Button>
                   </div>
                 </div>
@@ -942,10 +942,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               {showUserFilters && (
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-                    {/* Filter 1: Trụ sở / Siêu thị */}
+                    {/* Filter 1: Head Office / Store */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Trụ Sở / Siêu Thị
+                        Head Office / Store
                       </label>
                       <select
                         className="field-select"
@@ -954,23 +954,23 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedBranch !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedBranch !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedBranch !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedBranch !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả chi nhánh</option>
-                        <option value="HEAD_OFFICE">🏢 Trụ sở Head Office</option>
-                        <option value="OPERATIONS">🛒 Siêu thị Vận hành</option>
+                        <option value="ALL">All branches</option>
+                        <option value="HEAD_OFFICE">🏢 Head Office</option>
+                        <option value="OPERATIONS">🛒 Store Operations</option>
                       </select>
                     </div>
 
-                    {/* Filter 2: Khối (Division) */}
+                    {/* Filter 2: Division */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Khối (Division)
+                        Division
                       </label>
                       <select
                         className="field-select"
@@ -983,14 +983,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedDiv !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedDiv !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedDiv !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedDiv !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả khối ({divisions.length})</option>
+                        <option value="ALL">All divisions ({divisions.length})</option>
                         {divisions.map((d) => (
                           <option key={d.id} value={d.id}>
                             {d.code} - {d.name}
@@ -999,10 +999,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       </select>
                     </div>
 
-                    {/* Filter 3: Phòng ban (Department) */}
+                    {/* Filter 3: Department */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Phòng Ban (Department)
+                        Department
                       </label>
                       <select
                         className="field-select"
@@ -1014,14 +1014,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedDept !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedDept !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả phòng ban</option>
+                        <option value="ALL">All departments</option>
                         {(selectedDiv === 'ALL' ? departments : departments.filter((d) => d.divisionId === selectedDiv)).map((d) => (
                           <option key={d.id} value={d.id}>
                             {d.code} - {d.name}
@@ -1033,7 +1033,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     {/* Filter 4: Sub-Department */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Bộ Phận Con (Sub-Dept)
+                        Sub-Department
                       </label>
                       <select
                         className="field-select"
@@ -1042,14 +1042,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedSubDept !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedSubDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedSubDept !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedSubDept !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả sub-dept</option>
+                        <option value="ALL">All sub-departments</option>
                         {(selectedDept === 'ALL'
                           ? subDepartments
                           : subDepartments.filter((s) => s.departmentId === selectedDept)
@@ -1061,10 +1061,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       </select>
                     </div>
 
-                    {/* Filter 5: Cấp bậc */}
+                    {/* Filter 5: Job level */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Cấp Bậc (Job Level)
+                        Job Level
                       </label>
                       <select
                         className="field-select"
@@ -1073,14 +1073,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedLevel !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedLevel !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedLevel !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedLevel !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả cấp bậc</option>
+                        <option value="ALL">All job levels</option>
                         {jobLevels.map((lvl) => (
                           <option key={lvl.level} value={lvl.level}>
                             Level {lvl.level} — {lvl.title || lvl.viTitle}
@@ -1089,10 +1089,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       </select>
                     </div>
 
-                    {/* Filter 6: Vai trò hệ thống */}
+                    {/* Filter 6: System role */}
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                        Vai Trò (System Role)
+                        System Role
                       </label>
                       <select
                         className="field-select"
@@ -1101,18 +1101,18 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         style={{
                           width: '100%',
                           height: 38,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           borderRadius: 6,
                           borderColor: selectedRole !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                          background: selectedRole !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                          background: selectedRole !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                           fontWeight: selectedRole !== 'ALL' ? 700 : 500,
                         }}
                       >
-                        <option value="ALL">Tất cả vai trò</option>
-                        <option value="learner">Học Viên (Learner)</option>
-                        <option value="manager">Cán Bộ Quản Lý (Manager)</option>
-                        <option value="trainer">Giảng Viên Nội Bộ (Trainer)</option>
-                        <option value="hrbp">HRBP / Nhân Sự</option>
+                        <option value="ALL">All roles</option>
+                        <option value="learner">Learner</option>
+                        <option value="manager">Manager</option>
+                        <option value="trainer">Internal Trainer</option>
+                        <option value="hrbp">HRBP / People</option>
                         <option value="useradmin">User Administrator</option>
                         <option value="sysadmin">System Administrator</option>
                       </select>
@@ -1122,7 +1122,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   {/* Reset Filters / Filter Summary */}
                   {activeUserFiltersCount > 0 && (
                     <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--ink-soft)', paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
-                      <span>Đang áp dụng <strong>{activeUserFiltersCount}</strong> tiêu chí lọc</span>
+                      <span>Applied <strong>{activeUserFiltersCount}</strong> filter criteria</span>
                       <button
                         type="button"
                         onClick={handleClearAllUserFilters}
@@ -1139,7 +1139,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         }}
                       >
                         <i className="ti ti-trash-x" />
-                        Xóa tất cả bộ lọc
+                        Clear all filters
                       </button>
                     </div>
                   )}
@@ -1161,7 +1161,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                       key={group.id}
                       className="card"
                       style={{
-                        background: '#fff',
+                        background: 'var(--paper-raised)',
                         border: '1px solid var(--line)',
                         borderRadius: 12,
                         overflow: 'hidden',
@@ -1188,12 +1188,12 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                             {group.title}
                           </span>
                           <Badge tone="blue">
-                            {group.users.length} nhân sự
+                            {group.users.length} employees
                           </Badge>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-soft)' }}>
-                          <span style={{ fontSize: 12 }}>{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                          <span style={{ fontSize: 12 }}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
                           <i className={`ti ${isCollapsed ? 'ti-chevron-down' : 'ti-chevron-up'}`} />
                         </div>
                       </div>
@@ -1211,7 +1211,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             )}
 
             <div style={{ fontSize: 12, color: 'var(--ink-soft)', textAlign: 'right' }}>
-              Hiển thị <strong>{filteredUsers.length}</strong> / {userList.length} nhân sự
+              Display <strong>{filteredUsers.length}</strong> / {userList.length} employees
             </div>
           </div>
         );
@@ -1229,21 +1229,21 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
       )}
 
-      {/* TAB 4: KHUNG CẤP BẬC */}
+      {/* TAB 4: JOB LEVEL FRAMEWORK */}
       {activeTab === 'JOB_LEVELS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--line)' }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 12, border: '1px solid var(--line)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>
-                  Khung Cấp Bậc Định Biên — Thang ĐẢO NGƯỢC (7 → 1)
+                  Job Level Framework — INVERTED Scale (7 → 1)
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
-                  <strong>Level 7 là cấp THẤP NHẤT</strong> (Nhân viên) và <strong>Level 1 là cấp CAO NHẤT</strong> (Giám đốc / Lãnh đạo cấp cao).
+                  <strong>Level 7 is the LOWEST grade</strong> (staff) and <strong>Level 1 is the HIGHEST grade</strong> (Director / senior leadership).
                 </p>
               </div>
               <Button size="sm" variant="primary" icon="ti-plus" onClick={handleOpenAddLevel}>
-                + Thêm Cấp Bậc Mới
+                + Add A New Job Level
               </Button>
             </div>
           </div>
@@ -1265,23 +1265,23 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     gap: 16,
                     flexWrap: 'wrap',
                     alignItems: 'center',
-                    background: '#fff',
+                    background: 'var(--paper-raised)',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 320 }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
                       <JobLevelBadge level={lvl.level} />
-                      <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>
                         {lvl.titleEn || lvl.title} {lvl.titleVi ? `— ${lvl.titleVi}` : (lvl.viTitle ? `— ${lvl.viTitle}` : '')}
                       </span>
                       <span
                         style={{
                           fontFamily: 'monospace',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: 700,
-                          color: '#1E40AF',
-                          background: '#EFF6FF',
+                          color: 'var(--blue-soft-text)',
+                          background: 'var(--blue-soft)',
                           border: '1px solid #BFDBFE',
                           padding: '2px 8px',
                           borderRadius: 4,
@@ -1290,23 +1290,23 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                         {lvl.code}
                       </span>
                     </div>
-                    <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                      {lvl.descVi || `${lvl.titleVi || lvl.titleEn || 'Cấp bậc chuẩn hóa'}`}
+                    <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
+                      {lvl.descVi || `${lvl.titleVi || lvl.titleEn || 'Standard job level'}`}
                     </p>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <span>Mã định biên: <strong style={{ color: 'var(--blue, #005BAA)' }}>{lvl.code}</strong></span>
-                      <span>Nhóm quyền: <strong>{lvl.authority || lvl.band || 'STANDARD'}</strong></span>
-                      {roleNames && <span>Role hệ thống điển hình: <strong>{roleNames}</strong></span>}
+                    <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <span>Level code: <strong style={{ color: 'var(--blue, #005BAA)' }}>{lvl.code}</strong></span>
+                      <span>Authority band: <strong>{lvl.authority || lvl.band || 'STANDARD'}</strong></span>
+                      {roleNames && <span>Typical system role: <strong>{roleNames}</strong></span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     <div style={{ textAlign: 'right', minWidth: 100 }}>
                       <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue, #005BAA)' }}>{headcount}</div>
-                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>nhân sự ở cấp này</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>employees at this level</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <Button size="sm" variant="outline" icon="ti-edit" onClick={() => handleOpenEditLevel(lvl)}>
-                        Sửa
+                        Edit
                       </Button>
                       <Button
                         size="sm"
@@ -1317,13 +1317,13 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                             isOpen: true,
                             type: 'JOB_LEVEL',
                             id: lvl.level,
-                            title: `Xóa Cấp Bậc ${lvl.level}`,
-                            message: `Bạn có chắc chắn muốn xóa cấp bậc "${lvl.titleEn || lvl.viTitle || lvl.title}" (${lvl.code})?`,
+                            title: `Delete Job Level ${lvl.level}`,
+                            message: `Are you sure you want to delete the job level "${lvl.titleEn || lvl.viTitle || lvl.title}" (${lvl.code})?`,
                           })
                         }
                         style={{ color: '#E11D48' }}
                       >
-                        Xóa
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -1337,14 +1337,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {/* MODAL: ADD / EDIT USER */}
       {userModal.isOpen && (
         <Modal
-          title={userModal.mode === 'ADD' ? 'Thêm Nhân Viên Mới' : `Hồ Sơ Nhân Sự — ${userForm.fullName || userForm.employeeCode}`}
+          title={userModal.mode === 'ADD' ? 'Add A New Employee' : `Employee Profile — ${userForm.fullName || userForm.employeeCode}`}
           onClose={() => setUserModal({ isOpen: false, mode: 'ADD' })}
           size="md"
         >
           <form onSubmit={handleSaveUserSubmit}>
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Mã Nhân Viên (Employee ID) *</label>
+                <label className="field-label">Employee ID *</label>
                 <input
                   className="field-input"
                   value={userForm.employeeCode || userForm.userId}
@@ -1353,7 +1353,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Họ và Tên *</label>
+                <label className="field-label">Full Name *</label>
                 <input
                   className="field-input"
                   value={userForm.fullName}
@@ -1365,7 +1365,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Email Doanh Nghiệp *</label>
+                <label className="field-label">Business Email *</label>
                 <input
                   className="field-input"
                   type="email"
@@ -1375,7 +1375,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Chức Danh Công Việc</label>
+                <label className="field-label">Job Title</label>
                 <input
                   className="field-input"
                   value={userForm.title || userForm.position || ''}
@@ -1386,7 +1386,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div className="grid grid-2" style={{ marginBottom: 16 }}>
               <div>
-                <label className="field-label">Cấp Bậc Định Biên (Job Level)</label>
+                <label className="field-label">Job Level</label>
                 <select
                   className="field-select"
                   value={normalizeLevel(userForm.level)}
@@ -1400,7 +1400,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 </select>
               </div>
               <div>
-                <label className="field-label">Vai Trò Quyền Hạn Hệ Thống</label>
+                <label className="field-label">System Authority Role</label>
                 <select
                   className="field-select"
                   value={normalizeRole(userForm.role)}
@@ -1417,7 +1417,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Khối Trực Thuộc (Division)</label>
+                <label className="field-label">Parent Division</label>
                 <select
                   className="field-select"
                   value={userForm.divisionId || ''}
@@ -1442,14 +1442,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     }));
                   }}
                 >
-                  <option value="">-- Chọn Khối (Division) --</option>
+                  <option value="">-- Choose A Division --</option>
                   {divisions.map((d) => (
                     <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="field-label">Phòng Ban Trực Thuộc (Department)</label>
+                <label className="field-label">Parent Department</label>
                 <select
                   className="field-select"
                   value={userForm.departmentId || ''}
@@ -1471,7 +1471,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     }));
                   }}
                 >
-                  <option value="">-- Chọn phòng ban --</option>
+                  <option value="">-- Choose a department --</option>
                   {(userForm.divisionId
                     ? departments.filter((d) => d.divisionId === userForm.divisionId)
                     : departments
@@ -1483,7 +1483,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Vị Trí / Sub-Department Con</label>
+              <label className="field-label">Position / Child Sub-Department</label>
               <select
                 className="field-select"
                 value={userForm.subDepartmentId || ''}
@@ -1498,7 +1498,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                   }));
                 }}
               >
-                <option value="">-- Chọn Sub-Department --</option>
+                <option value="">-- Choose A Sub-Department --</option>
                 {(userForm.departmentId
                   ? subDepartments.filter((s) => s.departmentId === userForm.departmentId)
                   : subDepartments
@@ -1509,9 +1509,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setUserModal({ isOpen: false, mode: 'ADD' })}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setUserModal({ isOpen: false, mode: 'ADD' })}>Cancel</Button>
               <Button variant="primary" icon="ti-check" type="submit">
-                {saveSuccess ? 'Đã Lưu Thành Công!' : userModal.mode === 'ADD' ? 'Tạo Nhân Sự' : 'Lưu Thay Đổi'}
+                {saveSuccess ? 'Saved Successfully!' : userModal.mode === 'ADD' ? 'Create Employee' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -1521,28 +1521,28 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {/* MODAL: BULK USER IMPORT */}
       {importModal && (
         <Modal
-          title="📥 Import Hàng Loạt Danh Sách Nhân Sự"
+          title="📥 Bulk Import The Employee List"
           onClose={() => setImportModal(false)}
           size="lg"
         >
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '12px 16px', borderRadius: 8, marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-sunken)', padding: '12px 16px', borderRadius: 8, marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Tải file mẫu định dạng chuẩn MMVN</div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Hỗ trợ file CSV hoặc JSON với đầy đủ thông tin phân cấp BU &gt; Div &gt; Dept &gt; Sub-Dept</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Download the standard MMVN template file</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Supports CSV or JSON files with the full BU &gt; Div &gt; Dept &gt; Sub-Dept hierarchy</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('csv')}>
-                  Tải Mẫu CSV
+                  Download The CSV Template
                 </Button>
                 <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('json')}>
-                  Tải Mẫu JSON
+                  Download The JSON Template
                 </Button>
               </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Chọn File Từ Máy Tính (.csv, .json)</label>
+              <label className="field-label">Choose A File From Your Computer (.csv, .json)</label>
               <input
                 type="file"
                 accept=".csv,.json,.txt"
@@ -1553,11 +1553,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Hoặc Dán Nội Dung Dữ Liệu CSV / JSON Trực Tiếp</label>
+              <label className="field-label">Or Paste The CSV / JSON Data Directly</label>
               <textarea
                 className="field-input"
                 rows={4}
-                placeholder="Dán nội dung CSV (Mã NV, Họ Tên, Email, Chức Danh, Level, Role, Division, Dept, Sub-Dept) hoặc JSON..."
+                placeholder="Paste CSV content (employee code, full name, email, job title, level, role, division, dept, sub-dept) or JSON..."
                 value={importText}
                 onChange={(e) => {
                   setImportText(e.target.value);
@@ -1572,21 +1572,21 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
-                    🔍 Xem trước {parsedPreview.length} nhân sự hợp lệ
+                    🔍 Preview {parsedPreview.length} valid employees
                   </div>
-                  <Badge tone="green" size="sm">Sẵn Sàng Nạp</Badge>
+                  <Badge tone="green" size="sm">Ready To Load</Badge>
                 </div>
                 <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6 }}>
                   <table className="table" style={{ width: '100%', fontSize: 12 }}>
                     <thead>
                       <tr>
-                        <th>Mã NV</th>
-                        <th>Họ và Tên</th>
+                        <th>Employee Code</th>
+                        <th>Full Name</th>
                         <th>Email</th>
-                        <th>Cấp Bậc</th>
+                        <th>Job Level</th>
                         <th>Role</th>
-                        <th>Khối (Div)</th>
-                        <th>Phòng Ban (Dept)</th>
+                        <th>Division</th>
+                        <th>Department</th>
                         <th>Sub-Dept</th>
                       </tr>
                     </thead>
@@ -1610,20 +1610,20 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             )}
 
             {importFeedback && (
-              <div style={{ marginBottom: 12, padding: '8px 12px', background: '#ECFDF5', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+              <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--sage-soft)', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
                 <i className="ti ti-check" style={{ marginRight: 6 }} />{importFeedback}
               </div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setImportModal(false)}>Hủy</Button>
+              <Button variant="ghost" type="button" onClick={() => setImportModal(false)}>Cancel</Button>
               <Button
                 variant="primary"
                 icon="ti-bolt"
                 disabled={parsedPreview.length === 0}
                 onClick={handleExecuteImport}
               >
-                Xác Nhận Nạp {parsedPreview.length} Nhân Sự
+                Confirm Loading {parsedPreview.length} Employees
               </Button>
             </div>
           </div>
@@ -1633,14 +1633,14 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       {/* MODAL: ADD / EDIT JOB LEVEL */}
       {levelModal.isOpen && (
         <Modal
-          title={levelModal.mode === 'ADD' ? 'Thêm Cấp Bậc Định Biên Mới' : `Chỉnh Sửa Cấp Bậc ${levelForm.level}`}
+          title={levelModal.mode === 'ADD' ? 'Add A New Job Level' : `Edit Job Level ${levelForm.level}`}
           onClose={() => setLevelModal({ isOpen: false, mode: 'ADD', data: null })}
           size="md"
         >
           <form onSubmit={handleSaveLevelSubmit}>
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Cấp Bậc Số (Level Number) *</label>
+                <label className="field-label">Level Number *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. 1, 2, 8, 9..."
@@ -1650,7 +1650,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Mã Cấp Bậc (Code) *</label>
+                <label className="field-label">Job Level Code *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. LVL-1, LVL-8..."
@@ -1663,7 +1663,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Tên Hiển Thị Tiếng Anh (English Title) *</label>
+                <label className="field-label">English Title *</label>
                 <input
                   className="field-input"
                   placeholder="e.g. Director, Manager, Executive, Staff..."
@@ -1673,10 +1673,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Tên Tiếng Việt (Vietnamese Title) *</label>
+                <label className="field-label">Vietnamese Title *</label>
                 <input
                   className="field-input"
-                  placeholder="e.g. Giám đốc, Quản lý, Chuyên viên, Nhân viên..."
+                  placeholder="e.g. Director, Manager, Executive, Staff..."
                   value={levelForm.titleVi || levelForm.viTitle}
                   onChange={(e) => setLevelForm((p) => ({ ...p, titleVi: e.target.value, viTitle: e.target.value }))}
                   required
@@ -1695,7 +1695,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 />
               </div>
               <div>
-                <label className="field-label">Màu Viền Huy Hiệu (Hex)</label>
+                <label className="field-label">Badge Border Color (Hex)</label>
                 <input
                   className="field-input"
                   placeholder="#3B82F6"
@@ -1711,27 +1711,27 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label className="field-label">Nhóm Quyền (Authority Band)</label>
+              <label className="field-label">Authority Band</label>
               <select
                 className="field-select"
                 value={levelForm.authority}
                 onChange={(e) => setLevelForm((p) => ({ ...p, authority: e.target.value }))}
               >
-                <option value="EXECUTIVE">EXECUTIVE (Ban Điều Hành / BOM)</option>
-                <option value="DIRECTOR">DIRECTOR (Giám Đốc Khối)</option>
-                <option value="MANAGEMENT">MANAGEMENT (Trưởng Phòng / Store Manager)</option>
-                <option value="SUPERVISORY">SUPERVISORY (Giám Sát / Trưởng Nhóm)</option>
-                <option value="PROFESSIONAL">PROFESSIONAL (Chuyên Viên)</option>
-                <option value="STANDARD">STANDARD (Nhân Viên Tuyến Đầu)</option>
+                <option value="EXECUTIVE">EXECUTIVE (Board of Management / BOM)</option>
+                <option value="DIRECTOR">DIRECTOR (Division Director)</option>
+                <option value="MANAGEMENT">MANAGEMENT (Department Head / Store Manager)</option>
+                <option value="SUPERVISORY">SUPERVISORY (Supervisor / Team Leader)</option>
+                <option value="PROFESSIONAL">PROFESSIONAL (Executive)</option>
+                <option value="STANDARD">STANDARD (Front-Line Staff)</option>
               </select>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Mô Tả Tiêu Chuẩn Năng Lực</label>
+              <label className="field-label">Competency Standard Description</label>
               <textarea
                 className="field-input"
                 rows={3}
-                placeholder="Mô tả trách nhiệm và yêu cầu cấp bậc..."
+                placeholder="Describe the responsibilities and level requirements..."
                 value={levelForm.descVi}
                 onChange={(e) => setLevelForm((p) => ({ ...p, descVi: e.target.value }))}
               />
@@ -1739,10 +1739,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <Button variant="ghost" type="button" onClick={() => setLevelModal({ isOpen: false, mode: 'ADD', data: null })}>
-                Hủy
+                Cancel
               </Button>
               <Button variant="primary" icon="ti-check" type="submit">
-                {levelModal.mode === 'ADD' ? 'Tạo Cấp Bậc' : 'Lưu Thay Đổi'}
+                {levelModal.mode === 'ADD' ? 'Create Job Level' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -1760,7 +1760,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         >
           <div
             className="card card-pad"
-            style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            style={{ width: '100%', maxWidth: 420, background: 'var(--paper-raised)', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: '#E11D48' }}>
@@ -1772,7 +1772,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <Button variant="ghost" type="button" onClick={() => setDeleteConfirm({ isOpen: false, type: '', id: null, title: '', message: '' })}>
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -1780,7 +1780,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 style={{ background: '#E11D48', borderColor: '#E11D48' }}
                 onClick={handleConfirmDelete}
               >
-                Xác nhận Xóa
+                Confirm Deletion
               </Button>
             </div>
           </div>
@@ -1802,8 +1802,8 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             isOpen: true,
             type: 'USER',
             id: u.userId,
-            title: `Xóa Nhân Sự ${u.fullName}`,
-            message: `Bạn có chắc chắn muốn xóa nhân sự "${u.fullName}" (${u.employeeCode || u.userId}) khỏi danh mục?`,
+            title: `Delete Employee ${u.fullName}`,
+            message: `Are you sure you want to remove the employee "${u.fullName}" (${u.employeeCode || u.userId}) from the directory?`,
           });
         }}
       />

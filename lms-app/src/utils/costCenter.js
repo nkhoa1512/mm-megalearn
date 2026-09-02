@@ -1,25 +1,25 @@
 // ===========================================================================
-// Cost Center (Trung Tâm Chi Phí) — logic thuần, không phụ thuộc React.
+// Cost Center — pure logic, with no React dependency.
 //
-// Mô hình thu/chi của MMVN L&D:
-//   • Mỗi Division sở hữu ĐÚNG MỘT Trung Tâm Chi Phí, định danh bằng mã HR 5
-//     số cố định (orgHierarchy.divisions[].costCenter). Nhân sự thuộc bất kỳ
-//     Department hay Sub-Department nào của Division đều quy về đúng mã đó, nên
-//     điều chuyển nội bộ trong Division không làm chi phí nhảy sang mã khác.
-//   • Ngân sách đào tạo năm cấp cho từng mã theo đầu người của khối
+// The MMVN L&D income/expense model:
+//   • Each Division owns EXACTLY ONE cost center, identified by a fixed 5-digit
+//     HR code (orgHierarchy.divisions[].costCenter). An employee in
+//     any Department or Sub-Department of a Division maps to that same code, so
+//     an internal transfer within a Division does not move the cost to a different code.
+//   • The annual training budget is granted per code based on the division's headcount
 //     (Operations / Supporting).
-//   • THU (INCOME)  = ngân sách được cấp đầu năm (+ hoàn phí khi hủy ghi danh).
-//   • CHI (EXPENSE) = mỗi lượt ghi danh khóa CÓ PHÍ ghi nợ vào cost center của
-//     chính học viên (theo divisionId). Học viên KHÔNG tự trả: toàn bộ học phí
-//     do công ty chi từ ngân sách đào tạo của mã đó. Khóa miễn phí vẫn ghi 1
-//     dòng 0 đồng để báo cáo đếm được lượt học nội bộ so với lượt học tốn tiền.
-//   • Mỗi bút toán lưu kèm Division / Department / Sub-Department và mã nhân
-//     viên của học viên, đủ để kiểm toán truy ngược từng đồng chi.
-//   • Số dư = THU - CHI; tỷ lệ sử dụng ngân sách = CHI / THU.
+//   • INCOME  = the budget granted at the start of the year (+ refunds when an enrollment is cancelled).
+//   • EXPENSE = every enrollment in a PAID course is debited to the cost center of
+//     the learner themselves (by divisionId). The learner NEVER pays: all tuition
+//     is paid by the company from that code's training budget. A free course still writes one
+//     a zero-value entry so reports can count internal enrollments against paid ones.
+//   • Every entry stores the Division / Department / Sub-Department and the employee
+//     code, which is enough for an audit to trace every unit of spend.
+//   • Balance = INCOME - EXPENSE; budget utilization = EXPENSE / INCOME.
 //
-// Giá khóa học suy ra từ hình thức tổ chức (modality) nếu khóa chưa được gán
-// giá thủ công — xem derivePricing(). Admin gán giá riêng thì `course.pricing`
-// được ưu tiên tuyệt đối (pricingOf()).
+// The course price is derived from the delivery modality when the course has not been given
+// a price manually — see derivePricing(). When the Admin sets a specific price, `course.pricing`
+// takes absolute priority (pricingOf()).
 // ===========================================================================
 
 import { hrExportRow, costCenterCodeOf } from '../data/hrProfile';
@@ -28,7 +28,7 @@ export const CURRENCY = 'VND';
 export const FISCAL_YEAR = 2026;
 
 // ---------------------------------------------------------------------------
-// 1. LOẠI CHI PHÍ
+// 1. COST TYPES
 // ---------------------------------------------------------------------------
 
 export const COST_TYPE = {
@@ -40,41 +40,41 @@ export const COST_TYPE = {
 
 export const COST_TYPE_META = {
   INTERNAL_FREE: {
-    labelVi: 'Nội Bộ — Miễn Phí',
+    labelVi: 'Internal — Free',
     labelEn: 'Internal — Free',
     tone: 'sage',
     icon: 'ti-gift',
-    noteVi: 'Nội dung do L&D MMVN tự sản xuất, không phát sinh chi phí trên mỗi lượt ghi danh.',
+    noteVi: 'Content produced in-house by MMVN L&D, with no cost per enrollment.',
   },
   EXTERNAL_LICENSE: {
-    labelVi: 'License Nền Tảng Ngoài',
+    labelVi: 'External Platform Licence',
     labelEn: 'External Platform License',
     tone: 'blue',
     icon: 'ti-external-link',
-    noteVi: 'Mua theo suất (seat) từ LinkedIn Learning / Coursera / Udemy Business.',
+    noteVi: 'Bought per seat from LinkedIn Learning / Coursera / Udemy Business.',
   },
   VENDOR_CLASSROOM: {
-    labelVi: 'Lớp Trực Tiếp — Chi Phí Tổ Chức',
+    labelVi: 'In-Person Class — Delivery Cost',
     labelEn: 'In-Person Classroom Cost',
     tone: 'amber',
     icon: 'ti-chalkboard',
-    noteVi: 'Chi phí giảng viên, phòng/xưởng thực hành, vật tư tiêu hao trên mỗi học viên.',
+    noteVi: 'Trainer, room/workshop and consumable costs per learner.',
   },
   CERTIFICATION_FEE: {
-    labelVi: 'Phí Thi & Cấp Chứng Chỉ',
+    labelVi: 'Examination & Certification Fee',
     labelEn: 'Certification Fee',
     tone: 'rust',
     icon: 'ti-certificate',
-    noteVi: 'Lệ phí thi và cấp chứng chỉ do tổ chức bên ngoài thu.',
+    noteVi: 'Examination and certification fees charged by an external body.',
   },
 };
 
 // ---------------------------------------------------------------------------
-// 2. BẢNG GIÁ CHUẨN (VNĐ / suất học viên)
+// 2. STANDARD PRICE LIST (VND / learner seat)
 // ---------------------------------------------------------------------------
 
-// Khớp với costPerSeat trong costTrackingData (mockData.js) để hai báo cáo
-// không mâu thuẫn số liệu.
+// Matches costPerSeat in costTrackingData (mockData.js) so the two reports
+// so the figures do not contradict each other.
 export const PLATFORM_SEAT_PRICE = [
   { match: 'linkedin', price: 2500000, platform: 'LinkedIn Learning Enterprise' },
   { match: 'udemy', price: 3600000, platform: 'Udemy Business' },
@@ -82,40 +82,40 @@ export const PLATFORM_SEAT_PRICE = [
 ];
 const DEFAULT_PLATFORM_SEAT_PRICE = 3000000;
 
-// Lớp trực tiếp: chi phí tổ chức trên mỗi học viên tính theo thời lượng.
+// In-person class: the delivery cost per learner is computed from the duration.
 export const CLASSROOM_COST_PER_HOUR = 250000;
 
-// Ngân sách đào tạo cấp cho mỗi cost center = đầu người × định mức năm. Định
-// mức được cân để tỷ lệ sử dụng toàn công ty rơi vào ~60%, khớp với con số
-// budgetUtilization 63.3% mà costTrackingData (mockData.js) đang công bố.
+// The training budget granted to each cost center = headcount × the annual rate. The rate
+// is calibrated so company-wide utilization lands around ~60%, matching the
+// 63.3% budgetUtilization that costTrackingData (mockData.js) publishes.
 export const ANNUAL_ALLOWANCE_PER_HEAD = {
   OPERATIONS: 2000000,
   SUPPORTING: 3500000,
 };
-// Sàn ngân sách cho các đơn vị ít nhân sự — vẫn phải đủ cho các khóa tuân thủ
-// bắt buộc dù chỉ có vài người.
+// A budget floor for small units — it must still cover the mandatory compliance
+// mandatory courses even with only a few people.
 export const MIN_ANNUAL_BUDGET = 12000000;
 
 // ---------------------------------------------------------------------------
-// 3. ĐỊNH GIÁ KHÓA HỌC
+// 3. COURSE PRICING
 // ---------------------------------------------------------------------------
 
-/** '3h' | '3.5h' | 3 -> 3 (số giờ). Trả 2 nếu không đọc được. */
+/** '3h' | '3.5h' | 3 -> 3 (hours). Returns 2 when it cannot be parsed. */
 export function hoursOf(estimatedHours) {
   if (typeof estimatedHours === 'number' && Number.isFinite(estimatedHours)) return estimatedHours;
   const parsed = parseFloat(String(estimatedHours ?? '').replace(',', '.'));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
 }
 
-/** Làm tròn tiền lên bội số 50.000đ cho gọn bảng giá. */
+/** Rounds money up to a multiple of 50,000 VND to keep the price list tidy. */
 export function roundPrice(amount) {
   return Math.round(amount / 50000) * 50000;
 }
 
 /**
- * Suy ra giá mặc định của khóa học từ hình thức tổ chức. Đây chỉ là giá gợi ý
- * ban đầu — Admin sửa lại trong tab "Bảng Giá Khóa Học" thì `course.pricing`
- * ghi đè hoàn toàn kết quả hàm này.
+ * Derives a course's default price from its delivery modality. This is only an initial
+ * suggested price — once the Admin edits it in the "Course Price List" tab, `course.pricing`
+ * completely overrides this function's result.
  */
 export function derivePricing(course) {
   if (!course) {
@@ -156,7 +156,7 @@ export function derivePricing(course) {
   };
 }
 
-/** Giá hiệu lực của khóa học: ưu tiên giá Admin gán, không có thì suy ra. */
+/** The effective course price: the Admin-set price wins, otherwise it is derived. */
 export function pricingOf(course) {
   const manual = course?.pricing;
   if (manual && typeof manual === 'object') {
@@ -174,28 +174,28 @@ export function pricingOf(course) {
   return derivePricing(course);
 }
 
-/** Khóa này có thu phí khi tham gia không? */
+/** Does this course charge a fee to attend? */
 export function isPaidCourse(course) {
   const p = pricingOf(course);
   return !p.isFree && p.price > 0;
 }
 
 // ---------------------------------------------------------------------------
-// 4. ĐỊNH DẠNG TIỀN TỆ
+// 4. CURRENCY FORMATTING
 // ---------------------------------------------------------------------------
 
-const vndFormatter = new Intl.NumberFormat('vi-VN');
+const vndFormatter = new Intl.NumberFormat('en-US');
 
 export function formatVnd(amount) {
   return `${vndFormatter.format(Math.round(Number(amount) || 0))} ₫`;
 }
 
-/** Rút gọn cho thẻ KPI: 4.500.000.000 -> "4,5 tỷ ₫"; 2.500.000 -> "2,5 tr ₫". */
+/** Shortened for KPI tiles: 4,500,000,000 -> "4.5B ₫"; 2,500,000 -> "2.5M ₫". */
 export function formatVndShort(amount) {
   const n = Number(amount) || 0;
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
-  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(abs >= 1e10 ? 0 : 1).replace('.', ',')} tỷ ₫`;
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(abs >= 1e10 ? 0 : 1)}B ₫`;
   if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(abs >= 1e8 ? 0 : 1).replace('.', ',')} tr ₫`;
   if (abs >= 1e3) return `${sign}${vndFormatter.format(abs)} ₫`;
   return `${sign}${abs} ₫`;
@@ -203,11 +203,11 @@ export function formatVndShort(amount) {
 
 export function priceLabel(course) {
   const p = pricingOf(course);
-  return p.isFree ? 'Miễn Phí' : formatVnd(p.price);
+  return p.isFree ? 'Free' : formatVnd(p.price);
 }
 
 // ---------------------------------------------------------------------------
-// 5. TRUNG TÂM CHI PHÍ
+// 5. COST CENTERS
 // ---------------------------------------------------------------------------
 
 export const UNASSIGNED_COST_CENTER = {
@@ -215,7 +215,7 @@ export const UNASSIGNED_COST_CENTER = {
   divisionId: null,
   divisionCode: null,
   code: 'UNASSIGNED',
-  name: 'Chưa Gán Trung Tâm Chi Phí',
+  name: 'No Cost Center Assigned',
   branch: 'SUPPORTING',
   location: null,
   headcount: 0,
@@ -223,9 +223,9 @@ export const UNASSIGNED_COST_CENTER = {
 };
 
 /**
- * Dựng danh sách cost center từ cơ cấu Division + nhân sự thực tế.
- * Mỗi Division ra đúng một cost center, `code` là mã HR 5 số của Division.
- * Ngân sách năm = đầu người × định mức khối, tối thiểu MIN_ANNUAL_BUDGET.
+ * Builds the cost center list from the Division structure + real employees.
+ * Each Division yields exactly one cost center, whose `code` is the Division's 5-digit HR code.
+ * Annual budget = headcount × the division rate, with a floor of MIN_ANNUAL_BUDGET.
  */
 export function buildCostCenters(divisions = [], users = []) {
   const headcountByDivision = users.reduce((acc, u) => {
@@ -238,14 +238,14 @@ export function buildCostCenters(divisions = [], users = []) {
     const headcount = headcountByDivision[d.id] || 0;
     const allowance = ANNUAL_ALLOWANCE_PER_HEAD[d.branch] ?? ANNUAL_ALLOWANCE_PER_HEAD.SUPPORTING;
     return {
-      // Mã 5 số chính là danh tính kế toán của trung tâm chi phí.
+      // The 5-digit code is the cost center's accounting identity.
       id: `CC-${d.costCenter || d.code}`,
       divisionId: d.id,
       divisionCode: d.code,
       code: d.costCenter || d.code,
       name: d.name,
       branch: d.branch,
-      branchName: d.branch === 'OPERATIONS' ? 'Khối Vận Hành Siêu Thị' : 'Khối Chức Năng Hỗ Trợ',
+      branchName: d.branch === 'OPERATIONS' ? 'Store Operations Division' : 'Supporting Functions Division',
       location: d.location || null,
       headcount,
       budgetAnnual: Math.max(MIN_ANNUAL_BUDGET, headcount * allowance),
@@ -261,8 +261,8 @@ export function buildCostCenters(divisions = [], users = []) {
 }
 
 /**
- * Cost center chịu chi phí cho 1 học viên = cost center của Division họ thuộc,
- * bất kể họ nằm ở Department hay Sub-Department nào bên trong Division đó.
+ * The cost center bearing a learner's cost = the cost center of their Division,
+ * regardless of which Department or Sub-Department they sit in within it.
  */
 export function costCenterForUser(user, costCenters = []) {
   if (!user) return null;
@@ -276,7 +276,7 @@ export function costCenterForUser(user, costCenters = []) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. SỔ CÁI GIAO DỊCH
+// 6. TRANSACTION LEDGER
 // ---------------------------------------------------------------------------
 
 export const TXN_TYPE = { INCOME: 'INCOME', EXPENSE: 'EXPENSE' };
@@ -288,16 +288,16 @@ export const TXN_SOURCE = {
 };
 
 export const TXN_SOURCE_META = {
-  BUDGET_ALLOCATION: { labelVi: 'Cấp Ngân Sách Đào Tạo', tone: 'sage', icon: 'ti-wallet' },
-  ENROLLMENT: { labelVi: 'Ghi Danh Khóa Học', tone: 'blue', icon: 'ti-user-plus' },
-  REFUND: { labelVi: 'Hoàn Phí Hủy Ghi Danh', tone: 'amber', icon: 'ti-receipt-refund' },
-  MANUAL: { labelVi: 'Điều Chỉnh Thủ Công', tone: 'slate', icon: 'ti-pencil' },
+  BUDGET_ALLOCATION: { labelVi: 'Training Budget Grant', tone: 'sage', icon: 'ti-wallet' },
+  ENROLLMENT: { labelVi: 'Course Enrollment', tone: 'blue', icon: 'ti-user-plus' },
+  REFUND: { labelVi: 'Enrollment Cancellation Refund', tone: 'amber', icon: 'ti-receipt-refund' },
+  MANUAL: { labelVi: 'Manual Adjustment', tone: 'slate', icon: 'ti-pencil' },
 };
 
 /**
- * Tạo 1 bút toán chi cho lượt ghi danh. Khóa miễn phí vẫn sinh bút toán với
- * amount = 0 và isFree = true, để báo cáo tách được "lượt học nội bộ 0 đồng"
- * khỏi "lượt học tốn ngân sách" mà không phải dò ngược danh mục khóa học.
+ * Creates one expense entry for an enrollment. A free course still produces an entry with
+ * amount = 0 and isFree = true, so reports can separate "zero-cost internal enrollments"
+ * from "budget-consuming enrollments" without looking back at the course catalog.
  */
 export function buildEnrollmentTransaction({ course, user, costCenters = [], date, enrolledVia = 'SELF_ENROLL', id }) {
   if (!course || !user) return null;
@@ -315,8 +315,8 @@ export function buildEnrollmentTransaction({ course, user, costCenters = [], dat
     costCenterCode: cc?.code || UNASSIGNED_COST_CENTER.code,
     costCenterName: cc?.name || UNASSIGNED_COST_CENTER.name,
     branch: cc?.branch || 'SUPPORTING',
-    // Chiều tổ chức của học viên tại thời điểm ghi danh — giữ trong bút toán để
-    // báo cáo sau này không phải join ngược danh bạ nhân sự (vốn có thể đã đổi).
+    // The learner's org dimensions at enrollment time — kept on the entry so
+    // so later reports need not join back to the employee directory (which may have changed).
     divisionId: user.divisionId || cc?.divisionId || null,
     divisionName: user.divisionName || cc?.name || null,
     departmentName: user.departmentName || null,
@@ -335,12 +335,12 @@ export function buildEnrollmentTransaction({ course, user, costCenters = [], dat
     isFree: pricing.isFree,
     enrolledVia,
     note: pricing.isFree
-      ? 'Khóa nội bộ miễn phí — ghi nhận lượt học, không trừ ngân sách.'
-      : `Ghi danh khóa có phí (${COST_TYPE_META[pricing.costType]?.labelVi || pricing.costType}).`,
+      ? 'A free internal course — the enrollment is recorded without drawing budget.'
+      : `Enrollment in a paid course (${COST_TYPE_META[pricing.costType]?.labelVi || pricing.costType}).`,
   };
 }
 
-/** Bút toán thu: cấp ngân sách đào tạo năm cho 1 cost center. */
+/** Income entry: granting the annual training budget to one cost center. */
 export function buildBudgetTransaction(costCenter, fiscalYear = FISCAL_YEAR) {
   return {
     id: `TXN-BUD-${fiscalYear}-${costCenter.id}`,
@@ -368,12 +368,12 @@ export function buildBudgetTransaction(costCenter, fiscalYear = FISCAL_YEAR) {
     amount: costCenter.budgetAnnual,
     currency: CURRENCY,
     isFree: false,
-    note: `Ngân sách đào tạo năm ${fiscalYear} cấp cho ${costCenter.headcount} nhân sự.`,
+    note: `The FY${fiscalYear} training budget granted for ${costCenter.headcount} employees.`,
   };
 }
 
-// Trải đều ngày ghi danh lịch sử ra 8 tháng đầu năm tài chính để biểu đồ xu
-// hướng có dữ liệu thật thay vì dồn hết vào một mốc.
+// Spread historical enrollment dates across the first 8 months of the fiscal year so the trend
+// chart has real data instead of piling everything onto one date.
 function seededHistoricalDate(seed, fiscalYear = FISCAL_YEAR) {
   const month = (seed % 8) + 1;
   const day = ((seed * 7) % 27) + 1;
@@ -381,9 +381,9 @@ function seededHistoricalDate(seed, fiscalYear = FISCAL_YEAR) {
 }
 
 /**
- * Sổ cái mở đầu, suy ra từ dữ liệu tĩnh HRIS (ma trận ghi danh + ngân sách).
- * KHÔNG lưu xuống localStorage — chỉ giao dịch phát sinh trong phiên mới lưu,
- * đúng mô hình overlay của `enrollments` trong CourseStore.
+ * The opening ledger, derived from static HRIS data (the enrollment matrix + budget).
+ * It is NOT persisted to localStorage — only transactions created in the session are saved,
+ * following the same overlay model as `enrollments` in CourseStore.
  */
 export function seedOpeningLedger({ costCenters = [], courses = [], users = [], enrollmentMatrix = {}, fiscalYear = FISCAL_YEAR }) {
   const ledger = costCenters.filter((c) => c.budgetAnnual > 0).map((c) => buildBudgetTransaction(c, fiscalYear));
@@ -410,7 +410,7 @@ export function seedOpeningLedger({ costCenters = [], courses = [], users = [], 
 }
 
 // ---------------------------------------------------------------------------
-// 7. TỔNG HỢP BÁO CÁO
+// 7. REPORT AGGREGATION
 // ---------------------------------------------------------------------------
 
 function percent(part, whole) {
@@ -419,8 +419,8 @@ function percent(part, whole) {
 }
 
 /**
- * Gộp sổ cái thành các lát cắt báo cáo: tổng thu/chi, theo cost center, theo
- * khóa học, theo tháng và theo loại chi phí.
+ * Aggregates the ledger into reporting slices: total income/expense, by cost center, by
+ * course, by month and by cost type.
  */
 export function summarizeLedger(ledger = [], { costCenters = [], courses = [] } = {}) {
   const totals = {
@@ -447,9 +447,9 @@ export function summarizeLedger(ledger = [], { costCenters = [], courses = [] } 
   const byCostType = new Map();
   const learners = new Set();
 
-  // Bút toán trỏ tới một cost center không có trong danh sách (nhân sự chưa gán
-  // Division, hoặc Division bị xóa sau khi đã ghi sổ) vẫn phải xuất hiện trong
-  // báo cáo — nếu bỏ qua thì tổng bóc theo cost center sẽ không khớp tổng chi.
+  // An entry pointing at a cost center missing from the list (an employee with no
+  // Division, or a Division deleted after entries were written) must still appear in the
+  // report — skipping it would make the per-cost-center breakdown disagree with total spend.
   function bucketFor(t) {
     if (!t.costCenterId) return null;
     let cc = ccMap.get(t.costCenterId);
@@ -547,7 +547,7 @@ export function summarizeLedger(ledger = [], { costCenters = [], courses = [] } 
     }))
     .sort((a, b) => b.spent - a.spent);
 
-  // Khóa học chưa ai ghi danh vẫn nên có mặt trong bảng giá, seats = 0.
+  // A course nobody has enrolled in should still appear in the price list, with seats = 0.
   const priced = new Map(courseMap);
   courses.forEach((c) => {
     if (priced.has(c.id)) return;
@@ -579,10 +579,10 @@ export function summarizeLedger(ledger = [], { costCenters = [], courses = [] } 
 }
 
 /**
- * Giới hạn sổ cái theo quyền xem: Manager chỉ thấy cost center của mình.
- * Lọc theo divisionId trước rồi mới tới mã 5 số — `divisionCode` trên hồ sơ
- * nhân sự không phải lúc nào cũng trùng `code` của Division, nên không dùng để
- * dựng id cost center.
+ * Limits the ledger by view permission: a Manager only sees their own cost center.
+ * Filter by divisionId first, then by the 5-digit code — `divisionCode` on an employee
+ * record does not always match the Division's `code`, so it must not be used to
+ * build the cost center id.
  */
 export function scopeLedgerForUser(ledger = [], user, { seeAll = true } = {}) {
   if (seeAll || !user) return ledger;
@@ -595,14 +595,14 @@ export function scopeLedgerForUser(ledger = [], user, { seeAll = true } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// 8. CHI PHÍ THEO TỪNG HỌC VIÊN (phục vụ kiểm toán & file HR)
+// 8. COST PER LEARNER (for audit & the HR export file)
 // ---------------------------------------------------------------------------
 
 /**
- * Gộp sổ cái về mức từng nhân sự: công ty đã chi bao nhiêu cho việc học của
- * người này, thuộc mã cost center nào. Nhân sự chưa học buổi nào vẫn xuất hiện
- * với 0 đồng — file kiểm toán cần đủ đầu người của cost center, không chỉ những
- * người có phát sinh.
+ * Aggregates the ledger down to individual employees: how much the company spent on this
+ * person's learning and under which cost center code. An employee who has never studied still appears
+ * with zero — an audit file needs every head in the cost center, not only those
+ * with spending.
  */
 export function summarizeLearnerCosts(ledger = [], users = []) {
   const rows = new Map();
@@ -613,8 +613,8 @@ export function summarizeLearnerCosts(ledger = [], users = []) {
       userId: u.userId,
       personnelNumber: u.personnelNumber || null,
       fullName: u.fullName || u.userId,
-      // Nhân sự mới thêm qua User Admin chưa chắc đã có costCenterCode ghi sẵn —
-      // suy ra từ Division của họ để bảng không hiện UNASSIGNED một cách giả tạo.
+      // An employee newly added through User Admin may not have a costCenterCode set —
+      // derived from their Division so the table does not artificially show UNASSIGNED.
       costCenterCode: u.costCenterCode || costCenterCodeOf(u) || null,
       divisionId: u.divisionId || null,
       divisionName: u.divisionName || null,
@@ -633,8 +633,8 @@ export function summarizeLearnerCosts(ledger = [], users = []) {
     if (t.source !== TXN_SOURCE.ENROLLMENT || !t.userId) return;
     let row = rows.get(t.userId);
     if (!row) {
-      // Bút toán của người đã rời danh bạ vẫn phải nằm trong báo cáo, nếu không
-      // tổng cộng theo học viên sẽ nhỏ hơn tổng chi của cost center.
+      // Entries for people who have left the directory must stay in the report, otherwise
+      // the per-learner totals would be smaller than the cost center's total spend.
       row = {
         user: null,
         userId: t.userId,
@@ -668,9 +668,9 @@ export function summarizeLearnerCosts(ledger = [], users = []) {
 }
 
 /**
- * File xuất cho Kế toán / Kiểm toán: 15 cột hồ sơ nhân sự chuẩn của HR, nối
- * thêm phần chi phí đào tạo mà CÔNG TY đã chi cho chính nhân sự đó. Giữ nguyên
- * thứ tự và tên cột HR để file ghép thẳng vào bảng lương / bảng phân bổ chi phí.
+ * The export for Accounting / Audit: the 15 standard HR employee columns, with the
+ * training cost THE COMPANY spent on that employee appended. The HR column order and
+ * names are preserved so the file can be joined straight into payroll / cost allocation sheets.
  */
 export function buildEmployeeCostExportRows(learnerRows = [], { fiscalYear = FISCAL_YEAR } = {}) {
   return learnerRows.map((row) => ({

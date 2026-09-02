@@ -17,33 +17,33 @@ import {
 import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
 
-// Tính năng Group By: gom "Khóa Học Của Tôi" thành các Section/Accordion theo
-// 5 tiêu chí — Phòng Ban & Khối (nguồn giao khóa), Cấp Bậc & Lộ Trình, Trạng
-// Thái Học Tập, Hình Thức Đào Tạo, Chuyên Ngành.
+// Group By feature: collects "My Courses" into sections/accordions by
+// 5 criteria — Department & Division (the assigning source), Job Level & Roadmap, Learning
+// Status, Delivery Format and Specialization.
 const GROUP_BY_OPTIONS = [
-  { id: 'NONE', label: 'Không Gộp Nhóm', icon: 'ti-list' },
-  { id: 'ORG_UNIT', label: 'Phòng Ban & Khối', icon: 'ti-building' },
-  { id: 'LEVEL', label: 'Cấp Bậc & Lộ Trình', icon: 'ti-stairs-up' },
-  { id: 'STATUS', label: 'Trạng Thái Học Tập', icon: 'ti-progress-check' },
-  { id: 'MODALITY', label: 'Hình Thức Đào Tạo', icon: 'ti-device-desktop' },
-  { id: 'DOMAIN', label: 'Chuyên Ngành', icon: 'ti-category' },
+  { id: 'NONE', label: 'No Grouping', icon: 'ti-list' },
+  { id: 'ORG_UNIT', label: 'Department & Division', icon: 'ti-building' },
+  { id: 'LEVEL', label: 'Job Level & Roadmap', icon: 'ti-stairs-up' },
+  { id: 'STATUS', label: 'Learning Status', icon: 'ti-progress-check' },
+  { id: 'MODALITY', label: 'Delivery Format', icon: 'ti-device-desktop' },
+  { id: 'DOMAIN', label: 'Specialization', icon: 'ti-category' },
 ];
 
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
 import { deriveCertificates } from '../../data/mockData';
 
-// Giữ lại tên export cũ để các màn hình khác tiếp tục import được.
+// The old export names are kept so other screens keep importing successfully.
 export { JobLevelBadge };
 
-// courseFormatBadge / courseGroupOf / buildCourseGroups giờ dùng chung từ
-// src/utils/courseCatalog.js (trước đây lặp lại y hệt ở AdminCourses.jsx).
+// courseFormatBadge / courseGroupOf / buildCourseGroups are now shared from
+// src/utils/courseCatalog.js (previously duplicated verbatim in AdminCourses.jsx).
 
 const statusMap = {
-  IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
-  NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu' },
-  COMPLETED: { tone: 'sage', label: 'Đã Hoàn Thành' },
-  FAILED: { tone: 'rust', label: 'Cần Thi Lại' },
-  OVERDUE: { tone: 'rust', label: 'Quá Hạn' },
+  IN_PROGRESS: { tone: 'amber', label: 'In Progress' },
+  NOT_STARTED: { tone: 'slate', label: 'Not Started' },
+  COMPLETED: { tone: 'sage', label: 'Completed' },
+  FAILED: { tone: 'rust', label: 'Retake Required' },
+  OVERDUE: { tone: 'rust', label: 'Overdue' },
 };
 
 
@@ -105,7 +105,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     });
   }
 
-  // Modal gửi đơn xin học vượt cấp
+  // Level skip request modal
   const [requestModal, setRequestModal] = useState({ open: false, course: null, access: null });
   const [justification, setJustification] = useState('');
   const [toast, setToast] = useState(null);
@@ -121,7 +121,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     setRequestModal({ open: false, course: null, access: null });
     setToast(
       result.ok
-        ? `Đã gửi đơn xin học vượt cấp khóa "${course.title}" tới Quản lý trực tiếp. Vui lòng chờ phê duyệt.`
+        ? `Your level skip request for "${course.title}" has been sent to your line manager. Please await approval.`
         : result.reason
     );
     setTimeout(() => setToast(null), 6000);
@@ -145,7 +145,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     return map;
   }, [enrolledCourses, userCertificates]);
 
-  // Bảng tra cứu trạng thái truy cập theo cấp bậc cho danh sách đang hiển thị.
+  // A lookup table of level access status for the currently displayed list.
   const accessById = {};
   activeCourseList.forEach((c) => { accessById[c.id] = accessFor(c, user); });
 
@@ -196,19 +196,19 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const recertCount = enrolledCourses.filter((c) => recertByCourseId[c.id]?.needsRecertification).length;
 
 
-  // Thống kê toàn thư viện theo quy tắc cấp bậc
+  // Whole-library statistics under the level rules
   const catalogAccess = allCourses.map((c) => accessFor(c, user));
   const requestableCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.REQUESTABLE).length;
   const pendingCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.PENDING_APPROVAL).length;
   const approvedCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.APPROVED).length;
   const hardLockedCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.LOCKED_LEVEL_GAP).length;
 
-  // Tiến độ chương trình cấp bậc hiện tại (điều kiện thực tế để leo lên cấp kế tiếp)
+  // Progress on the current level program (the real condition for climbing to the next level)
   const myLevelCourses = enrolledCourses.filter((c) => normalizeLevel(c.targetLevel) === userLevel);
   const myLevelDone = myLevelCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length;
   const myLevelPct = myLevelCourses.length ? Math.round((myLevelDone / myLevelCourses.length) * 100) : 0;
 
-  /** Nút thao tác của một khóa học, quyết định hoàn toàn bởi `access.state`. */
+  /** A course's action button, decided entirely by `access.state`. */
   function renderAction(c, access, size = 'sm') {
     const enr = c.enrollment;
     const isInPerson = c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB';
@@ -220,13 +220,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         return (
           <Button size={size} variant="outline" icon="ti-ban" disabled
             title={access.reason}>
-            ⛔ Chặn Nhảy Cóc
+            ⛔ Grade Skipping Blocked
           </Button>
         );
       case ACCESS_STATE.PENDING_APPROVAL:
         return (
           <Button size={size} variant="outline" icon="ti-clock" disabled title={access.reason}>
-            ⏳ Chờ Duyệt
+            ⏳ Pending Approval
           </Button>
         );
       case ACCESS_STATE.REJECTED:
@@ -234,7 +234,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         return (
           <Button size={size} variant="primary" icon="ti-lock"
             onClick={() => openRequestModal(c, access)}>
-            🔒 Xin Duyệt Vượt Cấp
+            🔒 Request Level Skip Approval
           </Button>
         );
       default:
@@ -259,7 +259,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     if (isInPerson) {
       return (
         <Button size={size} variant="primary" icon="ti-calendar-event" onClick={() => navigate('/learner/classrooms')}>
-          Xem Lịch QR
+          View The QR Schedule
         </Button>
       );
     }
@@ -271,7 +271,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           icon={isCompleted ? 'ti-rotate' : isFailed ? 'ti-reload' : 'ti-player-play'}
           onClick={() => navigate(`${basePath}/${c.id}`)}
         >
-          {isCompleted ? 'Ôn Tập' : isFailed ? 'Thi Lại' : enr.progressPercent > 0 ? 'Tiếp Tục' : 'Bắt Đầu'}
+          {isCompleted ? 'Revise' : isFailed ? 'Retake' : enr.progressPercent > 0 ? 'Continue' : 'Start'}
         </Button>
       );
     }
@@ -282,7 +282,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         icon={access.state === ACCESS_STATE.APPROVED ? 'ti-player-play' : 'ti-plus'}
         onClick={() => handleStart(c, access)}
       >
-        {access.state === ACCESS_STATE.APPROVED ? 'Vào Học Ngay' : 'Đăng Ký Học'}
+        {access.state === ACCESS_STATE.APPROVED ? 'Start Learning' : 'Enroll'}
       </Button>
     );
   }
@@ -293,77 +293,77 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       {/* PAGE HEADER */}
       <div className="page-header" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <h1>Chương Trình Đào Tạo &amp; Khóa Học Của Tôi</h1>
-          <Badge tone="rail">{enrolledCourses.length} Khóa Học Đang Theo Dõi</Badge>
+          <h1>My Training Programs &amp; Courses</h1>
+          <Badge tone="rail">{enrolledCourses.length} Courses In Progress</Badge>
         </div>
         <p style={{ margin: 0 }}>
-          Học viên: <strong>{user.fullName}</strong> &middot; {user.position} &middot; Cấp bậc hiện tại:{' '}
+          Learner: <strong>{user.fullName}</strong> &middot; {user.position} &middot; Current job level:{' '}
           <strong>{levelShortLabel(userLevel)}</strong> — {userLevelDef.titleVi}
         </p>
       </div>
 
       {toast && (
-        <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--sage)', background: '#F0FDF4', fontSize: 13, color: '#166534', fontWeight: 600 }}>
+        <div className="card card-pad" style={{ marginBottom: 16, borderLeft: '4px solid var(--sage)', background: 'var(--sage-soft)', fontSize: 13, color: 'var(--sage-soft-text)', fontWeight: 600 }}>
           <i className="ti ti-circle-check" style={{ marginRight: 6 }} />
           {toast}
         </div>
       )}
 
-      {/* BẢNG ĐIỀU KHIỂN LỘ TRÌNH CẤP BẬC TUẦN TỰ */}
+      {/* SEQUENTIAL LEVEL ROADMAP DASHBOARD */}
       <div className="card card-pad" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 14 }}>
             <i className="ti ti-stairs-up" style={{ marginRight: 6, color: 'var(--blue)' }} />
-            Lộ Trình Học Vượt Cấp Tuần Tự (Sequential Level Gate)
+            Sequential Level Gate
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <JobLevelBadge level={userLevel} />
             <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
-            {oneLevelUp ? <JobLevelBadge level={oneLevelUp} /> : <Badge tone="sage">Đã ở cấp cao nhất</Badge>}
+            {oneLevelUp ? <JobLevelBadge level={oneLevelUp} /> : <Badge tone="sage">Already at the highest level</Badge>}
           </div>
         </div>
 
         <div className="grid grid-4" style={{ gap: 12 }}>
           <div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
-              Tiến độ chương trình Level {userLevel} của tôi
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
+              My Level {userLevel} program progress
             </div>
             <ProgressBar value={myLevelPct} tone={myLevelPct === 100 ? 'sage' : 'blue'} size="sm" />
-            <div style={{ fontSize: 11.5, fontWeight: 700, marginTop: 4 }}>
-              {myLevelDone}/{myLevelCourses.length} khóa &middot; {myLevelPct}%
+            <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+              {myLevelDone}/{myLevelCourses.length} course &middot; {myLevelPct}%
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Được phép xin học vượt (Level {oneLevelUp || '—'})</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Level skip request allowed (Level {oneLevelUp || '—'})</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--blue)' }}>{requestableCount}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Chờ duyệt / Đã được duyệt</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Pending / Approved</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--amber)' }}>{pendingCount} / {approvedCount}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Ẩn khỏi danh mục (nhảy cóc ≥ 2 cấp)</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Hidden from the catalog (2+ grades away)</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--rust)' }}>{hardLockedCount}</div>
           </div>
         </div>
 
         <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.5, background: 'var(--paper-sunken)', padding: '8px 12px', borderRadius: 6 }}>
-          Khóa <strong>Level {userLevel}</strong> trở xuống: học ngay. Khóa <strong>Level {oneLevelUp || '—'}</strong> (vượt đúng 1 cấp):
-          phải gửi đơn và được Quản lý phê duyệt từng khóa. Khóa từ <strong>2 cấp trở lên</strong>: ẩn hoàn toàn khỏi danh mục —
-          bắt buộc hoàn thành toàn bộ chương trình Level {oneLevelUp || '—'} trước mới xuất hiện.
+          Locked <strong>Level {userLevel}</strong> and below: start now. A course <strong>Level {oneLevelUp || '—'}</strong> (exactly one grade above):
+          you must submit a request and have your manager approve each course. Courses from <strong>2 or more grades</strong>: hidden entirely from the catalog —
+          you must complete the whole Level {oneLevelUp || '—'} program before they appear.
         </div>
       </div>
 
-      {/* GIÁO TRÌNH BẮT BUỘC ĐƯỢC GÁN CHO BẠN (MY ASSIGNED CURRICULA) */}
+      {/* MANDATORY CURRICULA ASSIGNED TO YOU (MY ASSIGNED CURRICULA) */}
       {assignedCurricula.length > 0 && (
         <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--paper-raised) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid var(--rail-soft, #c7d2fe)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ fontWeight: 800, fontSize: 14.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
               <i className="ti ti-books" style={{ color: 'var(--rail)', fontSize: 18 }} />
-              <span>📚 Giáo Trình Bắt Buộc Của Bạn ({assignedCurricula.length})</span>
+              <span>📚 Your Mandatory Curricula ({assignedCurricula.length})</span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Các lộ trình học tập E-Learning được phân bổ theo đơn vị hoặc cấp bậc của bạn
+              The E-Learning roadmaps allocated to your unit or your job level
             </div>
           </div>
           <div className="grid grid-2" style={{ gap: 12 }}>
@@ -373,38 +373,38 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{cur.title}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
                       <Badge tone={prog.status === 'COMPLETED' ? 'sage' : prog.status === 'IN_PROGRESS' ? 'amber' : 'rail'} size="sm">
-                        {prog.status === 'COMPLETED' ? 'Đã Hoàn Thành' : prog.status === 'IN_PROGRESS' ? 'Đang Học' : 'Chưa Bắt Đầu'}
+                        {prog.status === 'COMPLETED' ? 'Completed' : prog.status === 'IN_PROGRESS' ? 'In Progress' : 'Not Started'}
                       </Badge>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.4 }}>
                       {cur.description}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Badge tone="slate" size="sm">{cur.category || 'Giáo trình'}</Badge>
+                      <Badge tone="slate" size="sm">{cur.category || 'Curriculum'}</Badge>
                       <span>&middot;</span>
-                      <span>{prog.totalCourses} khóa học E-Learning</span>
+                      <span>{prog.totalCourses} courses E-Learning</span>
                       {cur.assignedVia?.dueDate && (
                         <>
                           <span>&middot;</span>
                           <span style={{ color: 'var(--rust)', fontWeight: 600 }}>
-                            <i className="ti ti-clock" /> Hạn chót: {cur.assignedVia.dueDate}
+                            <i className="ti ti-clock" /> Deadline: {cur.assignedVia.dueDate}
                           </span>
                         </>
                       )}
                     </div>
                     <div style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                        <span>Tiến độ giáo trình:</span>
-                        <strong>{prog.completedCourses}/{prog.totalCourses} khóa ({prog.progressPercent}%)</strong>
+                        <span>Curriculum progress:</span>
+                        <strong>{prog.completedCourses}/{prog.totalCourses} course ({prog.progressPercent}%)</strong>
                       </div>
                       <ProgressBar value={prog.progressPercent} tone={prog.status === 'COMPLETED' ? 'sage' : 'rail'} size="sm" />
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button size="sm" variant="outline" icon="ti-sitemap" onClick={() => setViewingCurriculum(cur)}>
-                      Xem Lộ Trình Giáo Trình
+                      View The Curriculum Roadmap
                     </Button>
                   </div>
                 </div>
@@ -415,19 +415,19 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       )}
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
-      <div className="card card-pad" style={{ marginBottom: 20, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ marginBottom: 20, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* STATUS QUICK FILTER PILLS */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {[
-            { id: 'ALL', label: 'Tất Cả Khóa Đã Gán', count: enrolledCourses.length },
-            ...(recertCount > 0 ? [{ id: 'RECERTIFICATION', label: '🔴 Cần Tái Cấp Chứng Chỉ', count: recertCount, highlight: true }] : []),
-            { id: 'IN_PROGRESS', label: 'Đang Học', count: inProgressCount },
-            { id: 'COMPLETED', label: 'Đã Hoàn Thành', count: completedCount },
-            { id: 'OVERDUE', label: 'Quá Hạn', count: overdueCount },
-            { id: 'MANDATORY', label: 'Bắt Buộc Tuân Thủ', count: mandatoryCount },
-            { id: 'CURRICULUM', label: '📚 Theo Giáo Trình', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
-            { id: 'IN_PERSON', label: '🏢 Đào Tạo Trực Tiếp (In-Person)', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
-            { id: 'VIRTUAL_CLASS', label: '💻 Lớp Trực Tuyến (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
+            { id: 'ALL', label: 'All Assigned Courses', count: enrolledCourses.length },
+            ...(recertCount > 0 ? [{ id: 'RECERTIFICATION', label: '🔴 Recertification Required', count: recertCount, highlight: true }] : []),
+            { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount },
+            { id: 'COMPLETED', label: 'Completed', count: completedCount },
+            { id: 'OVERDUE', label: 'Overdue', count: overdueCount },
+            { id: 'MANDATORY', label: 'Compliance Mandatory', count: mandatoryCount },
+            { id: 'CURRICULUM', label: '📚 By Curriculum', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
+            { id: 'IN_PERSON', label: '🏢 In-Person Training', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
+            { id: 'VIRTUAL_CLASS', label: '💻 Online Class (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -447,7 +447,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
               <span style={{
                 background: statusFilter === tab.id ? 'rgba(255,255,255,0.3)' : tab.highlight ? 'var(--rust)' : 'var(--paper-sunken)',
                 color: statusFilter === tab.id || tab.highlight ? '#fff' : 'var(--ink-soft)',
-                padding: '1px 6px', borderRadius: 10, fontSize: 10.5, fontWeight: 700,
+                padding: '1px 6px', borderRadius: 10, fontSize: 11, fontWeight: 700,
               }}>
                 {tab.count}
               </span>
@@ -464,7 +464,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
               type="text"
               className="field-input"
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder={language === 'en' ? 'Search course code, title, domain...' : 'Tìm mã khóa, tiêu đề, chuyên ngành...'}
+              placeholder={language === 'en' ? 'Search course code, title, domain...' : 'Search by course code, title, specialization...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -483,14 +483,14 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={groupBy}
                 onChange={(e) => { setGroupBy(e.target.value); setCollapsedGroups(new Set()); }}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: groupBy !== 'NONE' ? 700 : 500,
                   color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
@@ -511,9 +511,9 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeFiltersCount}
                 </span>
               )}
@@ -527,20 +527,20 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 onClick={() => setViewMode('TABLE')}
                 className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Bảng (List View)"
+                title="List View"
               >
                 <i className="ti ti-list" />
-                <span>Bảng</span>
+                <span>Table</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('GRID')}
                 className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ height: 30, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-                title="Dạng Lưới (Grid View)"
+                title="Grid View"
               >
                 <i className="ti ti-layout-grid" />
-                <span>Lưới</span>
+                <span>Grid</span>
               </button>
             </div>
           </div>
@@ -552,25 +552,25 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
               {/* Filter 1: Category */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Lĩnh Vực (Category)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Category
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: categoryFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: categoryFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: categoryFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: categoryFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: categoryFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: categoryFilter !== 'ALL' ? 700 : 500,
                   }}
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả Danh Mục ({categoryOptions.length})</option>
+                  <option value="ALL">All Category ({categoryOptions.length})</option>
                   {categoryOptions.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
@@ -579,25 +579,25 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
               {/* Filter 2: Org Unit / Source */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Phòng Ban Giao Khóa (Org Unit / Source)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Assigning Org Unit / Source
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: orgUnitFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: orgUnitFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: orgUnitFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: orgUnitFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: orgUnitFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: orgUnitFilter !== 'ALL' ? 700 : 500,
                   }}
                   value={orgUnitFilter}
                   onChange={(e) => setOrgUnitFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả Phòng Ban Giao ({orgUnitOptions.length})</option>
+                  <option value="ALL">All Department Giao ({orgUnitOptions.length})</option>
                   {orgUnitOptions.map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
                   ))}
@@ -606,31 +606,31 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
               {/* Filter 3: Format */}
               <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Định Dạng Đào Tạo (Format)
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Delivery Format
                 </label>
                 <select
                   className="field-select"
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
-                    background: formatFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: formatFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: formatFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
-                    color: formatFilter !== 'ALL' ? '#005BAA' : 'var(--ink)',
+                    color: formatFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: formatFilter !== 'ALL' ? 700 : 500,
                   }}
                   value={formatFilter}
                   onChange={(e) => setFormatFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả Định dạng</option>
+                  <option value="ALL">All formats</option>
                   <option value="SCORM">SCORM Package</option>
                   <option value="Video">Interactive Video</option>
                   <option value="PPT">Interactive PPT</option>
-                  <option value="CLASSROOM_LAB">Thực Hành Xưởng (ILT)</option>
+                  <option value="CLASSROOM_LAB">Workshop Practice (ILT)</option>
                   <option value="EXTERNAL_PLATFORM">LinkedIn / Coursera</option>
-                  <option value="VIRTUAL_CLASS">💻 Lớp Trực Tuyến (Webinar/Live Class)</option>
+                  <option value="VIRTUAL_CLASS">💻 Online Class (Webinar/Live Class)</option>
                 </select>
               </div>
             </div>
@@ -641,46 +641,46 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         {(search || activeFiltersCount > 0 || statusFilter !== 'ALL' || groupBy !== 'NONE') && (
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
 
               {search && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Từ khóa: <strong>"{search}"</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Search term: <strong>"{search}"</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                 </span>
               )}
 
               {statusFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Trạng thái: <strong>{statusFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Status: <strong>{statusFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setStatusFilter('ALL')} />
                 </span>
               )}
 
               {categoryFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Lĩnh vực: <strong>{categoryFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Area: <strong>{categoryFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setCategoryFilter('ALL')} />
                 </span>
               )}
 
               {orgUnitFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Phòng ban: <strong>{orgUnitOptionsMap.get(orgUnitFilter) || orgUnitFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Department: <strong>{orgUnitOptionsMap.get(orgUnitFilter) || orgUnitFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setOrgUnitFilter('ALL')} />
                 </span>
               )}
 
               {formatFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Định dạng: <strong>{formatFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Format: <strong>{formatFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setFormatFilter('ALL')} />
                 </span>
               )}
 
               {groupBy !== 'NONE' && (
-                <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Gộp nhóm: <strong>{GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
+                <span className="badge" style={{ background: 'var(--paper-sunken)', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Group by: <strong>{GROUP_BY_OPTIONS.find(o => o.id === groupBy)?.label}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('NONE')} />
                 </span>
               )}
@@ -690,38 +690,38 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 onClick={resetAllFilters}
                 style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
               >
-                Xóa tất cả bộ lọc
+                Clear all filters
               </button>
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Tìm thấy <strong>{filtered.length}</strong> / {enrolledCourses.length} khóa học
+              Found <strong>{filtered.length}</strong> / {enrolledCourses.length} courses
             </div>
           </div>
         )}
       </div>
 
       {(() => {
-        /** Bảng cho 1 tập khóa học (dùng lại cho cả chế độ gộp nhóm lẫn không gộp). */
+        /** A table for one set of courses (reused for both grouped and ungrouped modes). */
         function renderTable(items) {
           return (
             <div className="card" style={{ overflowX: 'auto', marginBottom: 20 }}>
               <table className="table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>{language === 'en' ? 'Course Program' : 'Khóa Học'}</th>
-                    <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Truy Cập'}</th>
-                    <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Định Dạng'}</th>
-                    <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Tiến Độ'}</th>
-                    <th style={{ width: 104 }}>{language === 'en' ? 'Status' : 'Trạng Thái'}</th>
-                    <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao Tác'}</th>
+                    <th>{language === 'en' ? 'Course Program' : 'Course'}</th>
+                    <th style={{ width: 118 }}>{language === 'en' ? 'Access' : 'Access'}</th>
+                    <th style={{ width: 150 }}>{language === 'en' ? 'Format' : 'Format'}</th>
+                    <th style={{ width: 112 }}>{language === 'en' ? 'Progress' : 'Progress'}</th>
+                    <th style={{ width: 104 }}>{language === 'en' ? 'Status' : 'Status'}</th>
+                    <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
-                        Không tìm thấy khóa học nào phù hợp với bộ lọc.
+                        No course matches the filters.
                       </td>
                     </tr>
                   ) : (
@@ -745,8 +745,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                             style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--line)' }}
                           />
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{c.title}</div>
-                            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{c.title}</div>
+                            <div style={{ fontSize: 12, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
                               <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span>
                               <span>&middot;</span>
                               <span>{c.category || c.domain}</span>
@@ -754,7 +754,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                               <span>{c.estimatedHours || '3h'}</span>
                               {(c.isCurriculum || c.curriculumTitle) && (
                                 <Badge tone="ai" size="sm">
-                                  <i className="ti ti-books" /> {c.curriculumTitle ? `Giáo trình: ${c.curriculumTitle}` : 'Theo Giáo Trình'}
+                                  <i className="ti ti-books" /> {c.curriculumTitle ? `Curriculum: ${c.curriculumTitle}` : 'By Curriculum'}
                                 </Badge>
                               )}
                             </div>
@@ -776,7 +776,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{c.format || 'E-learning Online'}</div>
                         {(isInPerson || c.onlineClassType === 'VIRTUAL_CLASS') && c.trainerName && (
-                          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>GV: {c.trainerName}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Trainer: {c.trainerName}</div>
                         )}
                       </td>
 
@@ -786,10 +786,10 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                             <div style={{ flex: 1 }}>
                               <ProgressBar value={enr.progressPercent || 0} tone={isCompleted ? 'sage' : isFailed ? 'rust' : 'amber'} size="sm" />
                             </div>
-                            <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 32 }}>{enr.progressPercent || 0}%</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 32 }}>{enr.progressPercent || 0}%</span>
                           </div>
                         ) : (
-                          <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Chưa đăng ký</span>
+                          <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Not registered</span>
                         )}
                       </td>
 
@@ -808,7 +808,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                               {stConfig.label}
                             </Badge>
                           ) : (
-                            <Badge tone="slate">Chưa Ghi Danh</Badge>
+                            <Badge tone="slate">Not Enrolled</Badge>
                           );
                         })()}
                       </td>
@@ -824,7 +824,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           );
         }
 
-        /** Lưới thẻ cho 1 tập khóa học (dùng lại cho cả chế độ gộp nhóm lẫn không gộp). */
+        /** A card grid for one set of courses (reused for both grouped and ungrouped modes). */
         function renderGrid(items) {
           return (
             <div className="grid grid-3" style={{ gap: 16, marginBottom: 20 }}>
@@ -857,7 +857,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                   <div style={{ position: 'absolute', top: 8, left: 8 }}>
                     <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
                   </div>
-                  <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
                     {c.code}
                   </div>
                 </div>
@@ -868,13 +868,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     {(c.isCurriculum || c.curriculumTitle) && (
                       <div style={{ marginBottom: 6 }}>
                         <Badge tone="ai" size="sm">
-                          <i className="ti ti-books" /> {c.curriculumTitle ? `Giáo trình: ${c.curriculumTitle}` : 'Theo Giáo Trình'}
+                          <i className="ti ti-books" /> {c.curriculumTitle ? `Curriculum: ${c.curriculumTitle}` : 'By Curriculum'}
                         </Badge>
                       </div>
                     )}
                     <div style={{ marginBottom: 8 }}><LevelAccessBadge access={access} /></div>
                     <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, marginBottom: 12 }}>
-                      {access.isLevelLocked ? access.reason : (c.description || 'Chương trình đào tạo chuyên môn theo tiêu chuẩn MM Mega Market.')}
+                      {access.isLevelLocked ? access.reason : (c.description || 'A professional training program built to MM Mega Market standards.')}
                     </p>
                   </div>
 
@@ -882,7 +882,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     {enr && (
                       <div style={{ marginBottom: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                          <span>Tiến độ:</span>
+                          <span>Progress:</span>
                           <strong>{enr.progressPercent || 0}%</strong>
                         </div>
                         <ProgressBar value={enr.progressPercent || 0} tone={isCompleted ? 'sage' : 'amber'} size="sm" />
@@ -898,7 +898,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                             </Badge>
                           );
                         }
-                        return <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>;
+                        return <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>;
                       })()}
                       {renderAction(c, access)}
                     </div>
@@ -936,13 +936,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <i className={`ti ${g.icon}`} />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{g.label}</div>
-                    <Badge tone="slate">{g.items.length} khóa</Badge>
+                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{g.label}</div>
+                    <Badge tone="slate">{g.items.length} course</Badge>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 130 }}>
                       <div style={{ width: 80 }}>
                         <ProgressBar value={g.percent} tone={g.percent === 100 ? 'sage' : 'amber'} size="sm" />
                       </div>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{g.percent}%</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>{g.percent}%</span>
                     </div>
                   </button>
                   {!isCollapsed && (
@@ -957,12 +957,12 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         );
       })()}
 
-      {/* MODAL: GỬI ĐƠN XIN HỌC VƯỢT CẤP */}
+      {/* MODAL: SUBMIT A LEVEL SKIP REQUEST */}
       <Modal
         isOpen={requestModal.open}
         onClose={() => setRequestModal({ open: false, course: null, access: null })}
-        title="Đơn Xin Phê Duyệt Học Vượt Cấp"
-        subtitle="Đơn sẽ được gửi tới Quản lý trực tiếp của bạn để phê duyệt cho riêng khóa học này."
+        title="Level Skip Approval Request"
+        subtitle="The request goes to your line manager for approval, covering this course only."
         size="md"
       >
         {requestModal.course && (
@@ -970,31 +970,31 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             <div style={{ background: 'var(--paper-sunken)', padding: '14px 16px', borderRadius: 8, marginBottom: 16 }}>
               <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{requestModal.course.title}</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Cấp bậc của bạn:</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Your job level:</span>
                 <JobLevelBadge level={requestModal.access?.userLevel} />
                 <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
-                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Cấp bậc khóa học:</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Course job level:</span>
                 <JobLevelBadge level={requestModal.access?.courseLevel} />
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink)' }}>
-                Đây là khóa vượt <strong>đúng 1 cấp liền kề</strong> — hợp lệ để xin phê duyệt. Người duyệt:{' '}
-                <strong>Quản lý trực tiếp ({user.managerId || 'Line Manager'})</strong>.
+                This course is above your level <strong>exactly one grade above</strong> — eligible to request approval. Approved by:{' '}
+                <strong>Your line manager ({user.managerId || 'Line Manager'})</strong>.
               </div>
             </div>
 
-            <label className="field-label">Lý do xin học vượt cấp (gửi cho Quản lý)</label>
+            <label className="field-label">Reason for the level skip request (sent to your manager)</label>
             <textarea
               className="field-input"
               rows={4}
               style={{ resize: 'vertical', marginBottom: 16 }}
-              placeholder="Ví dụ: Em đã hoàn thành các khóa bắt buộc của Level hiện tại và muốn chuẩn bị năng lực cho vị trí Chuyên viên vận hành..."
+              placeholder="Example: I have completed the mandatory courses for my current level and want to build capability for the Operations Specialist role..."
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
             />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" onClick={() => setRequestModal({ open: false, course: null, access: null })}>Hủy</Button>
-              <Button variant="primary" icon="ti-send" onClick={submitRequest}>Gửi Đơn Cho Quản Lý</Button>
+              <Button variant="ghost" onClick={() => setRequestModal({ open: false, course: null, access: null })}>Cancel</Button>
+              <Button variant="primary" icon="ti-send" onClick={submitRequest}>Send The Request To My Manager</Button>
             </div>
           </div>
         )}

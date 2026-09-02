@@ -16,7 +16,8 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 20px;
+  padding: 10px var(--frame-pad-inline);
+  box-sizing: border-box;
 }
 .app-header-brand {
   display: flex;
@@ -37,9 +38,9 @@
   color: var(--ink);
   white-space: nowrap;
 }
-/* Nav giờ là 1 dropdown cột dọc bật/tắt bằng nút hamburger (thay vì hàng tab
-   ngang luôn hiện, dễ bị vỡ dòng khi có nhiều mục) — DOM luôn render, chỉ ẩn
-   bằng CSS (display/visibility) để nội dung vẫn đọc được bởi SSR/kiểm thử. */
+/* The nav is now a vertical dropdown toggled by a hamburger button (instead of a row of
+   tabs that is always visible and wraps badly with many items) — the DOM always renders; it is only hidden
+   via CSS (display/visibility) so the content stays readable to SSR/tests. */
 .app-nav-drawer {
   position: absolute;
   top: 44px;
@@ -69,7 +70,7 @@
 }
 .app-nav-drawer-group-label {
   padding: 4px 10px 6px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -174,7 +175,7 @@
   padding: 0 8px;
   height: 28px;
   border-radius: 5px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
@@ -235,7 +236,7 @@
   color: #6EE7B7;
 }
 .app-ai-sparkle-icon {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--rail);
   display: inline-flex;
 }
@@ -285,7 +286,7 @@
   animation: fadeIn 0.12s ease;
 }
 .app-role-popover-title {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -339,7 +340,7 @@
   min-width: 0;
 }
 .app-role-option-name {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -381,7 +382,7 @@
 }
 .app-streak-unit {
   font-weight: 600;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 /* Notification Button & Popover */
@@ -417,7 +418,7 @@
   color: #fff;
   border: 2px solid var(--paper-raised);
   border-radius: 10px;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -459,7 +460,7 @@
   background: transparent;
   padding: 4px 10px;
   border-radius: 5px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
@@ -542,7 +543,7 @@
   gap: 8px;
 }
 .app-notif-title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.3;
@@ -555,7 +556,7 @@
   flex-shrink: 0;
 }
 .app-notif-desc {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--ink-soft);
   line-height: 1.4;
   margin-top: 2px;
@@ -565,7 +566,7 @@
   align-items: center;
   gap: 6px;
   margin-top: 6px;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 .app-notif-tag {
   font-size: 10px;
@@ -609,7 +610,7 @@
 .app-notif-footer-btn {
   border: none;
   background: transparent;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--rail);
   cursor: pointer;
@@ -644,7 +645,7 @@
   background: var(--rail);
   color: #fff;
   font-weight: 800;
-  font-size: 11.5px;
+  font-size: 12px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -753,7 +754,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -765,7 +766,7 @@
   gap: 6px;
 }
 .app-persona-current-tag {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   background: var(--rail);
   color: #fff;
@@ -773,7 +774,7 @@
   border-radius: 4px;
 }
 .app-persona-role {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-soft);
 }
 .app-profile-footer {
@@ -792,7 +793,7 @@
   border: 1px solid var(--rust);
   background: transparent;
   color: var(--rust);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 120ms var(--ease);
@@ -803,8 +804,9 @@
 }
 
 .app-crumb-row {
-  padding: 6px 20px;
-  font-size: 11.5px;
+  padding: 6px var(--frame-pad-inline);
+  box-sizing: border-box;
+  font-size: var(--text-sm);
   color: var(--ink-faint);
   border-top: 1px solid var(--line);
   display: flex;
@@ -812,8 +814,8 @@
 }
 .app-title { font-weight: 600; color: var(--ink); }
 
-.page-title { font-size: 15px; font-weight: 600; font-family: var(--font-body); color: var(--ink); }
-.page-crumb { font-size: 11.5px; color: var(--ink-faint); }
+.page-title { font-size: var(--text-lg); font-weight: 600; font-family: var(--font-body); color: var(--ink); }
+.page-crumb { font-size: var(--text-sm); color: var(--ink-faint); }
 
 .avatar {
   width: 32px;
@@ -834,14 +836,16 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 8px 20px;
+  padding: 8px var(--frame-pad-inline);
   border-top: 1px solid var(--line);
   background: var(--paper-raised);
   font-size: 11px;
   color: var(--ink-faint);
   flex-shrink: 0;
   flex-wrap: wrap;
+  box-sizing: border-box;
 }
+.app-footer-bar > * { flex: 0 1 auto; }
 .app-footer-bar strong { color: var(--ink-soft); font-weight: 600; }
 .app-footer-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--sage); margin-right: 4px; }
 
@@ -850,24 +854,36 @@
   flex: 1;
   overflow-y: auto;
 }
+/* Every route renders inside the same frame: same max width, same gutters,
+   centred on wide displays. Without this, pages with their own inner
+   max-width read as if they were at a different zoom level to full-bleed ones. */
 .content {
-  padding: 28px 36px 60px;
-  max-width: 100%;
+  padding: var(--frame-pad-y) var(--frame-gutter) calc(var(--frame-pad-y) * 2);
+  max-width: var(--frame-max);
   width: 100%;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
-
+/* Uniform page header: identical title size and spacing on every page,
+   whether the page renders a plain header or a hero card. */
 .page-header {
   margin-bottom: 24px;
 }
-.page-header h1 {
-  font-size: 23px;
-  margin-bottom: 4px;
+.page-header h1,
+.content > .card .page-hero-title,
+.page-hero-title {
+  font-size: var(--text-h1);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0 0 4px;
 }
-.page-header p {
+.page-header p,
+.page-hero-sub {
   color: var(--ink-soft);
-  font-size: 13px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
   margin: 0;
 }
 
@@ -910,8 +926,8 @@
   transition: box-shadow var(--ease) 150ms, border-color var(--ease) 150ms;
 }
 .stat:hover { box-shadow: var(--shadow-card); border-color: var(--line-strong); }
-.stat-label { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 8px; font-weight: 500; }
-.stat-value { font-family: var(--font-display); font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.stat-label { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; font-weight: 500; }
+.stat-value { font-family: var(--font-display); font-weight: 700; font-size: var(--text-display); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ---------- Badge ---------- */
 .badge {
@@ -1016,7 +1032,7 @@
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   text-align: left;
@@ -1054,7 +1070,7 @@
 }
 
 .cal-main-title {
-  font-size: 20px;
+  font-size: var(--text-h1);
   font-weight: 800;
   color: var(--ink);
   margin: 0;
@@ -1092,7 +1108,7 @@
   padding: 6px 12px;
   border: none;
   background: transparent;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
   border-radius: var(--radius-xs);
@@ -1317,7 +1333,7 @@
 .cal-weekday-cell {
   padding: 10px 4px;
   text-align: center;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--ink-soft);
   text-transform: uppercase;
@@ -1383,7 +1399,7 @@
 }
 
 .cal-day-number {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -1397,7 +1413,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .cal-day-density-dot {
@@ -1472,7 +1488,7 @@
 }
 
 .cal-overflow-badge {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--ink-faint);
   padding: 1px 4px;
@@ -1547,7 +1563,7 @@
 }
 
 .cal-week-col-count {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-faint);
 }
 
@@ -1579,14 +1595,14 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .cal-week-event-time {
   font-weight: 700;
   color: var(--ink-soft);
-  font-size: 10.5px;
+  font-size: 11px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1599,7 +1615,7 @@
 }
 
 .cal-week-event-venue {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-faint);
   display: flex;
   align-items: center;
@@ -1689,13 +1705,13 @@
 
 .cal-agenda-date-text h4 {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--ink);
 }
 
 .cal-agenda-relative-tag {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--ink-soft);
   font-weight: 600;
 }
@@ -1774,7 +1790,7 @@
 }
 
 .cal-agenda-category {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
 }
@@ -1836,7 +1852,7 @@
 }
 
 .cal-panel-events-badge {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
   background: var(--paper-sunken);
@@ -1877,7 +1893,7 @@
 }
 
 .cal-panel-empty-desc {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--ink-soft);
   margin: 0 0 16px;
   line-height: 1.4;
@@ -1892,7 +1908,7 @@
 }
 
 .cal-upcoming-preview-label {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--ink-soft);
   text-transform: uppercase;
@@ -1948,7 +1964,7 @@
 }
 
 .cal-upcoming-mini-time {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-faint);
 }
 
@@ -1976,7 +1992,7 @@
 }
 
 .cal-detail-badge-pill {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
   display: inline-flex;
@@ -1985,7 +2001,7 @@
 }
 
 .cal-detail-card-title {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--ink);
   margin: 0;
@@ -2011,7 +2027,7 @@
   background: var(--paper-sunken);
   padding: 8px 10px;
   border-radius: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .cal-detail-meta-item {
@@ -2083,7 +2099,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .cal-popover-info {
@@ -2100,7 +2116,7 @@
 }
 
 .cal-popover-time {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-faint);
 }
 
@@ -2125,20 +2141,20 @@
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
-  /* Chữ dài phải tự xuống dòng thay vì đẩy bảng tràn ngang — nhưng CHỈ được
-     dùng overflow-wrap:break-word, không được dùng overflow-wrap:anywhere lẫn
-     word-break:break-word. Theo spec, word-break:break-word tương đương hệt
-     overflow-wrap:anywhere (cả cách ngắt chữ lẫn cách tính min-content-width),
-     dù tên nghe có vẻ an toàn hơn. Cả hai đều khiến table-layout:auto co cột
-     không đặt width cố định xuống còn vài ký tự khi đứng cạnh cột có width cố
-     định khác — tiêu đề khóa học vỡ chữ dọc trang thay vì xuống dòng bình
-     thường. overflow-wrap:break-word là giá trị DUY NHẤT chỉ ngắt từ khi thật
-     sự tràn dòng, không ảnh hưởng tới min-content-width. */
+  /* Long words must wrap instead of pushing the table sideways — but ONLY
+     overflow-wrap:break-word may be used; never overflow-wrap:anywhere or
+     word-break:break-word. Per spec, word-break:break-word behaves exactly like
+     overflow-wrap:anywhere (both in how it breaks and in how min-content-width is computed),
+     despite the safer-sounding name. Both make table-layout:auto shrink a column
+     with no fixed width down to a few characters when it sits next to a fixed-width
+     column — the course title then breaks vertically down the page instead of wrapping
+     normally. overflow-wrap:break-word is the ONLY value that breaks a word only when it truly
+     overflows the line, without affecting min-content-width. */
   word-break: normal;
   overflow-wrap: break-word;
 }
-/* Nhãn nút / badge trong bảng không được vỡ chữ theo từng ký tự khi cột hẹp —
-   để nút tự xuống hàng nguyên khối (xem .table td .btn-row), không xé nhỏ chữ. */
+/* Button / badge labels in a table must not break character by character in a narrow column —
+   let the button wrap as a whole block (see .table td .btn-row) rather than shredding the text. */
 .table .btn,
 .table .badge {
   overflow-wrap: normal;
@@ -2148,12 +2164,12 @@
 }
 .table th {
   text-align: left;
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
   font-weight: 700;
-  /* Padding ngang gọn lại: 7 cột x 20px tiết kiệm được ~140px bề ngang. */
+  /* Tighter horizontal padding: 7 columns x 20px saves about 140px of width. */
   padding: 12px 12px;
   background: var(--paper-sunken);
   border-bottom: 1px solid var(--line);
@@ -2221,8 +2237,8 @@
   font-size: 15px;
   flex-shrink: 0;
 }
-.activity-title { font-size: 13.5px; font-weight: 500; }
-.activity-meta { font-size: 11.5px; color: var(--ink-faint); }
+.activity-title { font-size: 14px; font-weight: 500; }
+.activity-meta { font-size: 12px; color: var(--ink-faint); }
 
 /* ---------- Form controls used inline (Admin config, builder) ---------- */
 .field-label {
@@ -2258,13 +2274,13 @@
   padding-right: 34px;
 }
 .field-select[multiple] { background-image: none; padding-right: 12px; }
-.field-hint { font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; }
+.field-hint { font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
 
 .empty-state {
   text-align: center;
   padding: 48px 20px;
   color: var(--ink-soft);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .empty-state .ti {
   font-size: 22px;
@@ -2291,21 +2307,21 @@
   align-items: center;
   gap: 12px;
 }
-.barchart-label { font-size: 12.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barchart-label { font-size: 13px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .barchart-track { height: 16px; background: var(--paper-sunken); border-radius: 4px; overflow: hidden; }
 .barchart-fill { height: 100%; border-radius: 4px; min-width: 4px; }
-.barchart-value { font-size: 12.5px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.barchart-value { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---------- Line chart ---------- */
 .linechart { width: 100%; height: auto; display: block; }
 .linechart-grid { stroke: var(--line); stroke-width: 1; }
-.linechart-axis-label { font-size: 9px; fill: var(--ink-faint); font-family: var(--font-body); }
+.linechart-axis-label { font-size: 10px; fill: var(--ink-faint); font-family: var(--font-body); }
 .linechart-value-label { font-size: 11px; font-weight: 600; fill: var(--ink); font-family: var(--font-body); }
 
 /* ---------- Donut chart ---------- */
 .donutchart { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .donutchart-total { font-size: 22px; font-weight: 700; fill: var(--ink); font-family: var(--font-display); }
-.donutchart-total-label { font-size: 9px; fill: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-body); }
+.donutchart-total-label { font-size: 10px; fill: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-body); }
 .donutchart-legend { display: flex; flex-direction: column; gap: 8px; }
 
 /* ---------- Status stacked bar ---------- */
@@ -2379,7 +2395,7 @@
 .badge-ai { background: var(--ai-soft); color: var(--ai-soft-text); border: 1px solid #DDD6FE; }
 .badge-gold { background: var(--amber-soft); color: var(--amber-soft-text); border: 1px solid #FDE68A; }
 .badge-blue { background: var(--blue-soft); color: var(--blue-soft-text); border: 1px solid #BFDBFE; }
-.badge-sm { padding: 2px 7px; font-size: 10.5px; }
+.badge-sm { padding: 2px 7px; font-size: 11px; }
 
 
 /* ---------- Stat Card Enhanced ---------- */
@@ -2393,14 +2409,14 @@
   font-size: 16px;
 }
 .stat-trend {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 2px;
 }
 .stat-sublabel {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--ink-faint);
   margin-top: 4px;
 }
@@ -2442,8 +2458,8 @@
   justify-content: space-between;
   background: var(--paper-raised);
 }
-.modal-title { font-size: 16.5px; font-weight: 700; color: var(--ink); }
-.modal-subtitle { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+.modal-subtitle { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
 .modal-close-btn {
   background: transparent;
   border: none;
@@ -2486,7 +2502,7 @@
   border: none;
   border-bottom: 2.5px solid transparent;
   padding: 10px 16px;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-soft);
   display: flex;
@@ -2647,8 +2663,8 @@
 }
 .cert-sign-col { text-align: left; }
 .cert-sign-line { width: 140px; height: 1px; background: var(--ink); margin-bottom: 6px; }
-.cert-sign-title { font-size: 11.5px; font-weight: 600; color: var(--ink); }
-.cert-sign-org { font-size: 10.5px; color: var(--ink-faint); }
+.cert-sign-title { font-size: 12px; font-weight: 600; color: var(--ink); }
+.cert-sign-org { font-size: 11px; color: var(--ink-faint); }
 .cert-seal-col { text-align: right; }
 .cert-seal {
   display: inline-flex;
@@ -2740,7 +2756,7 @@
   border: 1px solid #DDD6FE;
   padding: 6px 10px;
   border-radius: 16px;
-  font-size: 11.5px;
+  font-size: 12px;
   cursor: pointer;
   display: inline-block;
   margin: 3px;

@@ -63,7 +63,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '2',
       levelTitle: levelTitle('2'),
       branch: 'SUPPORTING',
-      branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+      branchName: 'Supporting Functions (Head Office)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
       divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
       departmentId: 'dept-hrd-lod', departmentCode: 'HR_LOD', departmentName: 'HR - Learning & Organizational Development',
@@ -87,17 +87,17 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '4',
       levelTitle: levelTitle('4'),
       branch: 'OPERATIONS',
-      branchName: 'Khối Vận hành (Operations / Stores)',
+      branchName: 'Operations (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
-      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phú)',
+      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phu)',
       departmentId: 'dept-1010-ff', departmentCode: 'FF_ST', departmentName: 'Fresh Food_ST',
       subDepartmentId: 'sub-ff-bakery-1010', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Bakery',
-      storeName: '1010_AP (MM An Phú)',
+      storeName: '1010_AP (MM An Phu)',
       status: 'ACTIVE',
       yearsOfService: 4.8,
       avatar: 'DT',
       badgeTone: 'teal',
-      description: 'Quản lý vận hành ngành hàng thực phẩm tươi sống MM An Phú',
+      description: 'Fresh food category operations manager, MM An Phu',
     };
   }
   if (i === 2) {
@@ -112,12 +112,12 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '4',
       levelTitle: levelTitle('4'),
       branch: 'OPERATIONS',
-      branchName: 'Khối Vận hành (Operations / Stores)',
+      branchName: 'Operations (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
-      divisionId: 'div-1013-tl', divisionCode: '1013_TL', divisionName: '1013_TL (MM Thăng Long)',
+      divisionId: 'div-1013-tl', divisionCode: '1013_TL', divisionName: '1013_TL (MM Thang Long)',
       departmentId: 'dept-1013-cs', departmentCode: 'CS_ST', departmentName: 'Customer Service_ST',
       subDepartmentId: 'sub-cs-fo-1013', subDepartmentCode: 'SUB-FO', subDepartmentName: 'Front Office',
-      storeName: '1013_TL (MM Thăng Long)',
+      storeName: '1013_TL (MM Thang Long)',
       status: 'ACTIVE',
       yearsOfService: 5.2,
       avatar: 'HN',
@@ -136,17 +136,17 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '7',
       levelTitle: levelTitle('7'),
       branch: 'OPERATIONS',
-      branchName: 'Khối Vận hành (Operations / Stores)',
+      branchName: 'Operations (Operations / Stores)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
-      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phú)',
+      divisionId: 'div-1010-ap', divisionCode: '1010_AP', divisionName: '1010_AP (MM An Phu)',
       departmentId: 'dept-1010-ff', departmentCode: 'FF_ST', departmentName: 'Fresh Food_ST',
       subDepartmentId: 'sub-ff-bakery-1010', subDepartmentCode: 'SUB-BAKERY', subDepartmentName: 'Bakery',
-      storeName: '1010_AP (MM An Phú)',
+      storeName: '1010_AP (MM An Phu)',
       status: 'ACTIVE',
       yearsOfService: 1.2,
       avatar: 'MT',
       badgeTone: 'blue',
-      description: 'Nhân viên chế biến bánh tươi quầy Bakery chi nhánh An Phú',
+      description: 'Bakery counter fresh baking associate at the An Phu branch',
     };
   }
   if (i === 4) {
@@ -161,7 +161,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '2',
       levelTitle: levelTitle('2'),
       branch: 'SUPPORTING',
-      branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+      branchName: 'Supporting Functions (Head Office)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
       divisionId: 'div-hrd', divisionCode: 'Human Resources', divisionName: 'Human Resources',
       departmentId: 'dept-hrd-tahrbp', departmentCode: 'HR_TA_HRBP', departmentName: 'HR - Talent Acquisition & HRBP',
@@ -184,7 +184,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
       level: '6',
       levelTitle: levelTitle('6'),
       branch: 'SUPPORTING',
-      branchName: 'Khối Chức năng Hỗ trợ (Head Office)',
+      branchName: 'Supporting Functions (Head Office)',
       businessUnitId: 'bu-mmvn', businessUnitCode: 'MMVN', businessUnitName: 'MM Mega Market Vietnam',
       divisionId: 'div-lpqa', divisionCode: 'LP-QA', divisionName: 'LP-QA',
       departmentId: 'dept-lpqa-lp', departmentCode: 'LP', departmentName: 'Loss Prevention',
@@ -232,7 +232,7 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
     level,
     levelTitle: levelTitle(level),
     branch: div.branch || 'SUPPORTING',
-    branchName: div.branch === 'OPERATIONS' ? 'Khối Vận hành (Operations / Stores)' : 'Khối Chức năng Hỗ trợ (Head Office)',
+    branchName: div.branch === 'OPERATIONS' ? 'Operations (Operations / Stores)' : 'Supporting Functions (Head Office)',
     businessUnitId: 'bu-mmvn',
     businessUnitCode: 'MMVN',
     businessUnitName: 'MM Mega Market Vietnam',
@@ -245,15 +245,15 @@ export const generated100Users = Array.from({ length: TOTAL_USER_COUNT }, (_, i)
     subDepartmentId: subDept.id,
     subDepartmentCode: subDept.code,
     subDepartmentName: subDept.name,
-    storeName: div.branch === 'OPERATIONS' ? div.name : 'Head Office (An Phú)',
+    storeName: div.branch === 'OPERATIONS' ? div.name : 'Head Office (An Phu)',
     status: 'ACTIVE',
     yearsOfService: +(1 + (i % 8) * 0.8).toFixed(1),
     avatar: `${fName[0]}${lName[0]}`,
     badgeTone: level === '2' ? 'purple' : level === '3' ? 'ai' : level === '4' ? 'teal' : level === '5' ? 'amber' : 'blue',
   };
 })
-  // Bổ sung hồ sơ HR (Personnel Number, Cost center, Entry Date, Gender,
-  // Date of birth, HO/Store, Location) theo quy tắc tất định — xem hrProfile.js.
+  // Fill in the HR profile (Personnel Number, Cost center, Entry Date, Gender,
+  // Date of birth, HO/Store, Location) by deterministic rules — see hrProfile.js.
   .map(withHrProfile);
 
 // ---------------------------------------------------------------------------
@@ -454,24 +454,24 @@ const COURSE_CATALOG_TEMPLATES = [
   // 19. OJT Capstone & Promotion Defense (4 courses) — Tier 3 gap-fill, Levels 4/3/2/1
   { domain: 'OJT Capstone & Promotion Defense', codePrefix: 'CAPSTONE', count: 4, cat: 'Leadership & Management', isMandatory: true, targetType: 'LEVEL', targetId: '1', passScore: 85, time: '4h', modality: 'CLASSROOM_LAB', format: 'Capstone Defense & Committee Review', titles: [
     'Line Manager Practical Coaching Capstone Defense',
-    'Master Trainer / Thánh Gióng Fast-Track Capstone Defense',
+    'Master Trainer / Thanh Giong Fast-Track Capstone Defense',
     'Store General Manager (SGM) Portfolio Capstone Defense',
     'Board Capstone Review & Executive Case Defense',
   ]},
 ];
 
 // ---------------------------------------------------------------------------
-// Gán cấp bậc mục tiêu cho khóa học trên thang ĐẢO NGƯỢC (7 thấp nhất -> 1 cao nhất).
+// Assign the target level of each course on the INVERTED scale (7 lowest -> 1 highest).
 //
-//   Level 7 - Nhập môn văn hóa, vệ sinh cơ bản, PCCC cơ bản, thao tác quầy.
-//   Level 6 - HACCP chuyên sâu, bảo quản tươi sống, vận hành lò nướng bánh mì.
-//   Level 5 - Giám sát ca, kiểm kê thất thoát, an toàn xe nâng.
-//   Level 4 - Quản lý nhân sự phòng ban, phân ca, kèm cặp 1-on-1.
-//   Level 3 - Quản trị chi phí ngành hàng, đàm phán nhà cung cấp.
-//   Level 2 - Quản trị P&L siêu thị, ngân sách, quy hoạch nhân tài kế nhiệm.
-//   Level 1 - Chiến lược bán lẻ tập đoàn, quản trị rủi ro & khủng hoảng toàn quốc.
+//   Level 7 - Culture induction, basic hygiene, basic fire safety, counter operations.
+//   Level 6 - Advanced HACCP, fresh food storage, bread oven operation.
+//   Level 5 - Shift supervision, shrinkage stocktaking, forklift safety.
+//   Level 4 - Department people management, shift planning, 1-on-1 coaching.
+//   Level 3 - Category cost management, supplier negotiation.
+//   Level 2 - Store P&L management, budgeting, succession talent planning.
+//   Level 1 - Group retail strategy, nationwide risk & crisis management.
 //
-// Mỗi ngưỡng là chỉ số bài đầu tiên thuộc cấp kế tiếp trong danh mục của domain đó.
+// Each threshold is the index of the first course belonging to the next level within that domain's catalog.
 // ---------------------------------------------------------------------------
 const COURSE_LEVEL_LADDER = {
   FSH:   [['7', 3], ['6', 8], ['5', Infinity]],
@@ -519,7 +519,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const isClassroom = tpl.modality === 'CLASSROOM_LAB';
     const deliveryType = isClassroom ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING';
     
-    // Phân bổ giảng viên đủ chuẩn đứng lớp: L&D, HSE, SGM, User Admin, HRBP, SysAdmin
+    // Assign trainers qualified to teach: L&D, HSE, SGM, User Admin, HRBP, SysAdmin
     const TEACHING_POOL = [
       { id: 'USR-9003', name: 'Nguyễn Văn Hùng', venueId: 'lab-ap-fresh', venue: 'Fresh Food & Bakery Lab - MM Mega Market An Phu (Flagship)' },
       { id: 'USR-9005', name: 'Vũ Đức Thành', venueId: 'lab-tl-fire', venue: 'HSE Fire & Emergency Drill Grounds - MM Mega Market Thang Long' },
@@ -536,7 +536,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
     const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
 
-    // Phân bổ từ 2 đến 3 Giảng viên Đồng giảng & Trợ giảng (Tổng ban giảng huấn 3 - 4 người)
+    // Assign 2 to 3 co-trainers & teaching assistants (total teaching panel of 3 - 4 people)
     const coTrainerCount = (idx % 2 === 0) ? 2 : 3;
     const coTrainers = isClassroom ? Array.from({ length: coTrainerCount }, (_, cIdx) => {
       const p = TEACHING_POOL[(idx + courseCounter + 1 + cIdx) % TEACHING_POOL.length];
@@ -546,7 +546,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
         name: p.name,
         fullName: p.name,
         role: 'trainer',
-        title: 'Giảng Viên / Trợ Giảng',
+        title: 'Trainer / Teaching Assistant',
       };
     }) : [];
     const coTrainerIds = isClassroom ? coTrainers.map((t) => t.id) : [];
@@ -558,17 +558,17 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
     // Resolve domain/topic-specific vibrant thumbnail image
     const lowerTitle = (title || '').toLowerCase();
     let courseThumb;
-    if (lowerTitle.includes('bakery') || lowerTitle.includes('bánh') || lowerTitle.includes('confectionery')) {
+    if (lowerTitle.includes('bakery') || lowerTitle.includes('bakery') || lowerTitle.includes('confectionery')) {
       courseThumb = 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80';
-    } else if (lowerTitle.includes('meat') || lowerTitle.includes('thịt') || lowerTitle.includes('poultry') || lowerTitle.includes('butcher')) {
+    } else if (lowerTitle.includes('meat') || lowerTitle.includes('meat') || lowerTitle.includes('poultry') || lowerTitle.includes('butcher')) {
       courseThumb = 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=600&q=80';
-    } else if (lowerTitle.includes('seafood') || lowerTitle.includes('thủy sản') || lowerTitle.includes('hải sản') || lowerTitle.includes('fish')) {
+    } else if (lowerTitle.includes('seafood') || lowerTitle.includes('seafood') || lowerTitle.includes('shellfish') || lowerTitle.includes('fish')) {
       courseThumb = 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?auto=format&fit=crop&w=600&q=80';
     } else if (lowerTitle.includes('produce') || lowerTitle.includes('rau') || lowerTitle.includes('fruit') || lowerTitle.includes('vegetable')) {
       courseThumb = 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80';
-    } else if (lowerTitle.includes('cold') || lowerTitle.includes('lạnh') || lowerTitle.includes('chilled') || lowerTitle.includes('temperature')) {
+    } else if (lowerTitle.includes('cold') || lowerTitle.includes('cold') || lowerTitle.includes('chilled') || lowerTitle.includes('temperature')) {
       courseThumb = 'https://images.unsplash.com/photo-1584483766114-2cea6facdf57?auto=format&fit=crop&w=600&q=80';
-    } else if (lowerTitle.includes('pos') || lowerTitle.includes('cashier') || lowerTitle.includes('checkout') || lowerTitle.includes('thu ngân')) {
+    } else if (lowerTitle.includes('pos') || lowerTitle.includes('cashier') || lowerTitle.includes('checkout') || lowerTitle.includes('cashier')) {
       courseThumb = 'https://images.unsplash.com/photo-1556742049-0a67e5572263?auto=format&fit=crop&w=600&q=80';
     } else if (lowerTitle.includes('security') || lowerTitle.includes('phishing') || lowerTitle.includes('cyber') || lowerTitle.includes('privacy')) {
       courseThumb = idx % 2 === 0
@@ -578,7 +578,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       courseThumb = idx % 2 === 0
         ? 'https://images.unsplash.com/photo-1586528116493-a029325540fa?auto=format&fit=crop&w=600&q=80'
         : 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80';
-    } else if (lowerTitle.includes('leadership') || lowerTitle.includes('coach') || lowerTitle.includes('manage') || lowerTitle.includes('lãnh đạo')) {
+    } else if (lowerTitle.includes('leadership') || lowerTitle.includes('coach') || lowerTitle.includes('manage') || lowerTitle.includes('leadership')) {
       courseThumb = idx % 2 === 0
         ? 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80'
         : 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80';
@@ -622,18 +622,18 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       description: `Comprehensive MMVN standard training module for ${title}. Aligned with retail excellence and regulatory compliance.`,
       prerequisites: idx > 0 && idx % 3 === 0 ? [`CRS-${tpl.codePrefix}-${String(courseCounter - 1).padStart(3, '0')}`] : [],
       syllabus: isClassroom ? [
-        { step: `Phần 1: Chuẩn bị & Phổ biến Quy định (${title}) (30 phút)`, detail: 'Kiểm tra điều kiện thực hành, tiêu chuẩn an toàn Gold HACCP/SOP và phổ biến mục tiêu buổi học.' },
-        { step: `Phần 2: Thao tác Vận hành & Hướng dẫn Thực tế tại Xưởng (90 phút)`, detail: 'Giảng viên thị phạm thao tác, học viên thực hành trực tiếp trên thiết bị/công cụ thực tế.' },
-        { step: `Phần 3: Đánh giá Kết quả & Điểm danh Live QR (60 phút)`, detail: 'Kiểm tra sản phẩm thực hành, tổng kết bài học, giải đáp thắc mắc và quét QR điểm danh.' },
+        { step: `Part 1: Preparation & Regulation Briefing (${title}) (30 minutes)`, detail: 'Check the practice setup and Gold HACCP/SOP safety standards, then brief the session objectives.' },
+        { step: `Part 2: Operating Technique & Hands-On Guidance In The Workshop (90 minutes)`, detail: 'The trainer demonstrates the technique and learners practise directly on the real equipment/tools.' },
+        { step: `Part 3: Result Assessment & Live QR Attendance (60 minutes)`, detail: 'Inspect the practice output, wrap up the lesson, answer questions and scan the attendance QR code.' },
       ] : [
-        { step: 'Phần 1: Kiến thức Nền tảng & Khung Tiêu chuẩn MMVN', detail: 'Tìm hiểu tổng quan quy định, nguyên tắc cốt lõi và các chỉ số tuân thủ nghiệp vụ.' },
-        { step: 'Phần 2: Quy trình Thao tác Chuẩn (SOP) & Xử lý Tình huống', detail: 'Hướng dẫn từng bước thực thi nghiệp vụ và các lưu ý phòng ngừa rủi ro sai sót.' },
-        { step: 'Phần 3: Bài Thi Đánh Giá Năng Lực Cuối Khóa', detail: 'Thực hiện bài kiểm tra trắc nghiệm để hoàn tất khóa học và nhận chứng chỉ/XP.' },
+        { step: 'Part 1: Foundation Knowledge & The MMVN Standards Framework', detail: 'Cover the overall regulations, core principles and operational compliance metrics.' },
+        { step: 'Part 2: Standard Operating Procedure (SOP) & Scenario Handling', detail: 'Step-by-step execution guidance plus the checks that prevent costly mistakes.' },
+        { step: 'Part 3: End-Of-Course Competency Exam', detail: 'Take the multiple-choice test to complete the course and earn your certificate/XP.' },
       ],
       materials: [
-        { id: `mat-doc-${courseId}`, name: `SOP-MMVN-${tpl.codePrefix}: Hướng Dẫn Vận Hành & Tiêu Chuẩn Nghiệp Vụ (PDF)`, type: 'PDF', size: '2.8 MB', url: '#' },
-        { id: `mat-ppt-${courseId}`, name: `Slide Bài Giảng Đào Tạo & Tình Huống: ${title} (PPT)`, type: 'PPT', size: '7.5 MB', url: '#' },
-        { id: `mat-chk-${courseId}`, name: `Biểu Mẫu Checklist Đánh Giá Thực Hành (PDF)`, type: 'PDF', size: '1.2 MB', url: '#' },
+        { id: `mat-doc-${courseId}`, name: `SOP-MMVN-${tpl.codePrefix}: Operating Guide & Business Standards (PDF)`, type: 'PDF', size: '2.8 MB', url: '#' },
+        { id: `mat-ppt-${courseId}`, name: `Training Slides & Scenarios: ${title} (PPT)`, type: 'PPT', size: '7.5 MB', url: '#' },
+        { id: `mat-chk-${courseId}`, name: `Practical Assessment Checklist Form (PDF)`, type: 'PDF', size: '1.2 MB', url: '#' },
       ],
       configuration: {
         assessmentEnabled: true,
@@ -714,11 +714,11 @@ export const generated100Courses = generatedCourseList;
 // ---------------------------------------------------------------------------
 
 /**
- * Kiểm soát truy cập khóa học theo thang cấp bậc đảo ngược.
+ * Course access control on the inverted level scale.
  *
- * Toàn bộ logic cấp bậc nằm trong `checkCourseAccessRule` (./levelSystem.js);
- * hàm này chỉ bọc lại và giữ thêm các trường tương thích ngược (`isLocked`,
- * `requiredLevel`) cho những màn hình cũ.
+ * All level logic lives in `checkCourseAccessRule` (./levelSystem.js);
+ * this function only wraps it and keeps the backward-compatible fields
+ * (`isLocked`, `requiredLevel`) for the older screens.
  */
 export function getCourseAccessControl(course, user, ctx = {}) {
   const access = checkCourseAccessRule(course, user, ctx);
@@ -736,9 +736,9 @@ export function getCourseAccessControl(course, user, ctx = {}) {
 export const generated100EnrollmentMatrix = {};
 export const generated100EnrollmentList = [];
 
-// Danh sách ghi danh thủ công cho Minh Tran (USR-1042 - Level 7, tuyến đầu quầy bánh).
-// Tất cả đều là khóa Level 7: anh phải hoàn tất chương trình cấp mình trước khi
-// gửi đơn xin học vượt lên Level 6 (xem luồng Sequential Level Gate).
+// Manual enrollment list for Minh Tran (USR-1042 - Level 7, bakery counter front line).
+// These are all Level 7 courses: you must finish your own level's program before
+// submit a request to study up to Level 6 (see the Sequential Level Gate flow).
 const MINH_TRAN_ENROLLMENTS = {
   'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
   'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30' },
@@ -754,7 +754,7 @@ const MINH_TRAN_ENROLLMENTS = {
   'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
 };
 
-// Ba khóa tuân thủ bắt buộc toàn công ty (Level 7) - ai cũng được gán.
+// Three company-wide mandatory compliance courses (Level 7) - assigned to everyone.
 export const UNIVERSAL_COMPLIANCE_COURSE_IDS = ['CRS-ISA-011', 'CRS-HSE-019', 'CRS-STOPS-037'];
 
 generated100Users.forEach((user, uIdx) => {
@@ -784,7 +784,7 @@ generated100Users.forEach((user, uIdx) => {
     generatedCourseList.forEach((c, cIdx) => {
       let isTargeted = false;
 
-      // Không bao giờ tự ghi danh khóa vượt cấp: học viên phải xin phê duyệt.
+      // Never self-enroll in an above-level course: the learner must request approval.
       if (levelGap(user.level, c.targetLevel) > 0) return;
 
       // Universal compliance for all employees

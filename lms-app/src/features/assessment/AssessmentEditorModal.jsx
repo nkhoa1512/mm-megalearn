@@ -60,7 +60,7 @@ export default function AssessmentEditorModal({
         ? assessment.contentFormats
         : (assessment.contentFormat ? [assessment.contentFormat] : [CONTENT_FORMATS.INTERACTIVE_BANK]);
 
-      // Trích xuất danh sách câu hỏi tự tạo nếu có
+      // Extract the list of authored questions if any
       const existingQuestions = assessment.questions || (assessment.questionIds
         ? (questionBanks || []).filter((q) => assessment.questionIds.includes(q.id))
         : []);
@@ -159,7 +159,7 @@ export default function AssessmentEditorModal({
         {
           assignmentType: 'ALL',
           targetId: 'ALL',
-          targetName: 'Toàn Bộ Nhân Viên (Public / Bắt Buộc)',
+          targetName: 'All Employees (Public / Mandatory)',
           dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
           isMandatory: true,
         },
@@ -167,15 +167,15 @@ export default function AssessmentEditorModal({
     };
   });
 
-  // State search khóa học ở Bước 1
+  // Step 1 course search state
   const [courseSearch, setCourseSearch] = useState('');
 
-  // State Question Builder (Soạn câu hỏi trực tiếp trên nền tảng)
-  const [editingQuestionIndex, setEditingQuestionIndex] = useState(null); // null = đóng form soạn, -1 = tạo mới, >=0 = sửa câu cụ thể
+  // Question Builder state (authoring questions directly in the platform)
+  const [editingQuestionIndex, setEditingQuestionIndex] = useState(null); // null = close the authoring form, -1 = create new, >=0 = edit a specific question
   const [questionDraft, setQuestionDraft] = useState(null);
   const [selectedGroupTab, setSelectedGroupTab] = useState('BASIC'); // 'BASIC' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL'
 
-  // State Bước 4: Cascading Drill-Down Assignment
+  // Step 4 state: cascading drill-down assignment
   const [assignScope, setAssignScope] = useState('DIVISION'); // 'DIVISION' | 'DEPARTMENT' | 'SUBDEPARTMENT' | 'LEVEL' | 'STORE' | 'USER' | 'GROUP' | 'ALL'
   const [buFilter, setBuFilter] = useState('ALL');
   const [divisionFilter, setDivisionFilter] = useState('ALL');
@@ -277,7 +277,7 @@ export default function AssessmentEditorModal({
     }));
   }
 
-  // Khóa học khả dụng theo các Category được chọn
+  // Courses available for the selected categories
   const filteredAvailableCourses = useMemo(() => {
     const selCats = formData.categories || (formData.category ? [formData.category] : []);
     return (courses || []).filter((c) => {
@@ -343,12 +343,12 @@ export default function AssessmentEditorModal({
         uploadedFileName: file.name,
         uploadedPoolSize: randomPool,
       });
-      alert(`Đã tải lên ngân hàng "${file.name}" thành công! Nhận diện ${randomPool} câu hỏi trong file.`);
+      alert(`Question bank "${file.name}" uploaded successfully! Detected ${randomPool} questions in the file.`);
     }
   }
 
   // ==========================================
-  // QUESTION BUILDER LOGIC (TẠO CÂU HỎI TRỰC TIẾP)
+  // QUESTION BUILDER LOGIC (AUTHOR QUESTIONS DIRECTLY)
   // ==========================================
   function startCreateQuestion(type = QUESTION_TYPES.SINGLE_CHOICE) {
     let initialOptions = [];
@@ -365,48 +365,48 @@ export default function AssessmentEditorModal({
       ];
     } else if (type === QUESTION_TYPES.TRUE_FALSE) {
       initialOptions = [
-        { id: 'opt-true', text: 'Đúng (True)', isCorrect: true },
+        { id: 'opt-true', text: 'True', isCorrect: true },
         { id: 'opt-false', text: 'Sai (False)', isCorrect: false },
       ];
     } else if (type === QUESTION_TYPES.YES_NO) {
       initialOptions = [
-        { id: 'opt-yes', text: 'Có / Đồng ý (Yes)', isCorrect: true },
-        { id: 'opt-no', text: 'Không / Từ chối (No)', isCorrect: false },
+        { id: 'opt-yes', text: 'Yes / Agree', isCorrect: true },
+        { id: 'opt-no', text: 'No / Decline', isCorrect: false },
       ];
     } else if (type === QUESTION_TYPES.MATCHING) {
       initialPairs = [
-        { id: 'p1', left: 'Khái niệm A', right: 'Định nghĩa tương ứng A' },
-        { id: 'p2', left: 'Khái niệm B', right: 'Định nghĩa tương ứng B' },
-        { id: 'p3', left: 'Khái niệm C', right: 'Định nghĩa tương ứng C' },
+        { id: 'p1', left: 'Concept A', right: 'Matching definition A' },
+        { id: 'p2', left: 'Concept B', right: 'Matching definition B' },
+        { id: 'p3', left: 'Concept C', right: 'Matching definition C' },
       ];
     } else if (type === QUESTION_TYPES.ORDERING) {
       initialSequence = [
-        { id: 'seq-1', text: 'Bước 1: Kiểm tra tiếp nhận & hồ sơ chứng từ', correctOrder: 1 },
-        { id: 'seq-2', text: 'Bước 2: Đo nhiệt độ và kiểm tra cảm quan thực tế', correctOrder: 2 },
-        { id: 'seq-3', text: 'Bước 3: Dán tem niêm phong và luân chuyển vào kho', correctOrder: 3 },
+        { id: 'seq-1', text: 'Step 1: Receiving inspection & document check', correctOrder: 1 },
+        { id: 'seq-2', text: 'Step 2: Measure the temperature and run the sensory check', correctOrder: 2 },
+        { id: 'seq-3', text: 'Step 3: Apply the seal label and move into storage', correctOrder: 3 },
       ];
     } else if (type === QUESTION_TYPES.HOTSPOT) {
       initialHotspots = [
-        { id: 'hs-1', label: 'Điểm vi phạm chính trên sơ đồ', isCorrect: true, x: 50, y: 50, radius: 12 },
+        { id: 'hs-1', label: 'The main violation point on the diagram', isCorrect: true, x: 50, y: 50, radius: 12 },
       ];
       initialOptions = [
-        { id: 'hs-opt-1', text: 'Vùng khu vực sơ chế bị nhiễm chéo', isCorrect: true },
-        { id: 'hs-opt-2', text: 'Vùng rửa tay sát khuẩn', isCorrect: false },
+        { id: 'hs-opt-1', text: 'The preparation area is cross-contaminated', isCorrect: true },
+        { id: 'hs-opt-2', text: 'Sanitizing hand-wash area', isCorrect: false },
       ];
     } else if (type === QUESTION_TYPES.RATING_SCALE) {
       initialOptions = [
-        { id: 'r1', text: '1 - Rất không hài lòng', score: 1 },
-        { id: 'r2', text: '2 - Không hài lòng', score: 2 },
-        { id: 'r3', text: '3 - Bình thường', score: 3 },
-        { id: 'r4', text: '4 - Hài lòng', score: 4 },
-        { id: 'r5', text: '5 - Rất hài lòng', score: 5 },
+        { id: 'r1', text: '1 - Very dissatisfied', score: 1 },
+        { id: 'r2', text: '2 - Dissatisfied', score: 2 },
+        { id: 'r3', text: '3 - Neutral', score: 3 },
+        { id: 'r4', text: '4 - Satisfied', score: 4 },
+        { id: 'r5', text: '5 - Very satisfied', score: 5 },
       ];
     } else {
       // SCENARIO, CASE STUDY, IMAGE, VIDEO, SIMULATION, ESSAY
       initialOptions = [
-        { id: `opt-1-${Date.now()}`, text: 'Phương án xử lý tối ưu A', isCorrect: true },
-        { id: `opt-2-${Date.now()}`, text: 'Phương án B', isCorrect: false },
-        { id: `opt-3-${Date.now()}`, text: 'Phương án C', isCorrect: false },
+        { id: `opt-1-${Date.now()}`, text: 'Best response option A', isCorrect: true },
+        { id: `opt-2-${Date.now()}`, text: 'Option B', isCorrect: false },
+        { id: `opt-3-${Date.now()}`, text: 'Option C', isCorrect: false },
       ];
     }
 
@@ -417,14 +417,14 @@ export default function AssessmentEditorModal({
       difficulty: 'MEDIUM',
       score: 10,
       topic: formData.categories[0] || 'Food Safety & Hygiene',
-      competency: 'Chuyên Môn Cốt Lõi',
+      competency: 'Core Expertise',
       explanation: '',
       options: initialOptions,
       pairs: initialPairs,
       sequenceItems: initialSequence,
       hotspots: initialHotspots,
       correctKeywords: [''],
-      placeholderTemplate: 'Nhập câu trả lời hoặc từ khóa chuẩn...',
+      placeholderTemplate: 'Enter the answer or the expected keyword...',
       scenarioContext: '',
       imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop',
       videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -441,11 +441,11 @@ export default function AssessmentEditorModal({
 
   function handleSaveQuestionDraft() {
     if (!questionDraft.question.trim()) {
-      alert('Vui lòng nhập nội dung câu hỏi!');
+      alert('Please enter the question text!');
       return;
     }
 
-    // Format lại options / pairs phù hợp trước khi lưu
+    // Reformat options / pairs appropriately before saving
     const standardized = {
       ...questionDraft,
       score: Number(questionDraft.score) || 10,
@@ -481,7 +481,7 @@ export default function AssessmentEditorModal({
   }
 
   function handleDeleteQuestion(idx) {
-    if (window.confirm('Bạn có chắc chắn muốn xóa câu hỏi này khỏi đề thi?')) {
+    if (window.confirm('Are you sure you want to remove this question from the exam?')) {
       setFormData((prev) => {
         const next = [...(prev.questions || [])];
         next.splice(idx, 1);
@@ -501,7 +501,7 @@ export default function AssessmentEditorModal({
     const dup = {
       ...JSON.parse(JSON.stringify(q)),
       id: `QB-CUSTOM-${Date.now()}`,
-      question: `${q.question} (Bản sao)`,
+      question: `${q.question} (Copy)`,
     };
     setFormData((prev) => {
       const next = [...(prev.questions || []), dup];
@@ -515,7 +515,7 @@ export default function AssessmentEditorModal({
   }
 
   // ==========================================
-  // CASCADING DRILL-DOWN ASSIGNMENT LOGIC (BƯỚC 4)
+  // CASCADING DRILL-DOWN ASSIGNMENT LOGIC (STEP 4)
   // ==========================================
   const availableDepts = useMemo(() => {
     if (divisionFilter === 'ALL') return departments;
@@ -573,7 +573,7 @@ export default function AssessmentEditorModal({
       const newAsg = {
         assignmentType: 'ALL',
         targetId: 'ALL',
-        targetName: 'Toàn Bộ Nhân Viên (Public / Bắt Buộc)',
+        targetName: 'All Employees (Public / Mandatory)',
         dueDate: targetDueDate,
         isMandatory: targetMandatory,
       };
@@ -586,7 +586,7 @@ export default function AssessmentEditorModal({
     }
 
     if (selectedTargetIds.length === 0) {
-      alert('Vui lòng tick chọn ít nhất một đối tượng trong danh sách!');
+      alert('Please tick at least one audience in the list!');
       return;
     }
 
@@ -630,7 +630,7 @@ export default function AssessmentEditorModal({
   function handleSubmit(e) {
     if (e) e.preventDefault();
     if (!formData.title.trim()) {
-      alert('Vui lòng nhập Tiêu đề bài Assessment!');
+      alert('Please enter an assessment title!');
       setActiveTab('GENERAL');
       return;
     }
@@ -639,7 +639,7 @@ export default function AssessmentEditorModal({
       ? formData.contentFormats
       : (formData.contentFormat ? [formData.contentFormat] : [CONTENT_FORMATS.INTERACTIVE_BANK]);
 
-    // Tạo danh sách mô tả câu hỏi
+    // Build the question description list
     const qTypes = [];
     const matrix = formData.questionMatrix || {};
     const selectedTypes = formData.types || [ASSESSMENT_TYPES.QUIZ];
@@ -647,32 +647,32 @@ export default function AssessmentEditorModal({
     if (selectedTypes.includes(ASSESSMENT_TYPES.QUIZ)) {
       if (formData.quizSourceMode === 'DIRECT_BUILDER') {
         const count = (formData.questions || []).length;
-        qTypes.push(`${count} câu hỏi soạn trực tiếp trên hệ thống`);
+        qTypes.push(`${count} questions authored directly in the system`);
       } else {
         const items = [];
-        if (matrix.singleChoice > 0) items.push(`${matrix.singleChoice} Trắc nghiệm đơn`);
-        if (matrix.multipleChoice > 0) items.push(`${matrix.multipleChoice} Nhiều đáp án`);
-        if (matrix.trueFalse > 0) items.push(`${matrix.trueFalse} Đúng/Sai`);
-        if (matrix.yesNo > 0) items.push(`${matrix.yesNo} Có/Không`);
-        if (matrix.matching > 0) items.push(`${matrix.matching} Ghép đôi`);
-        if (matrix.ordering > 0) items.push(`${matrix.ordering} Thứ tự`);
-        if (matrix.fillInBlank > 0) items.push(`${matrix.fillInBlank} Điền chỗ trống`);
-        if (matrix.shortAnswer > 0) items.push(`${matrix.shortAnswer} Trả lời ngắn`);
-        if (matrix.scenarioBased > 0) items.push(`${matrix.scenarioBased} Tình huống`);
+        if (matrix.singleChoice > 0) items.push(`${matrix.singleChoice} Single choice`);
+        if (matrix.multipleChoice > 0) items.push(`${matrix.multipleChoice} Multiple choice`);
+        if (matrix.trueFalse > 0) items.push(`${matrix.trueFalse} True/False`);
+        if (matrix.yesNo > 0) items.push(`${matrix.yesNo} Yes/No`);
+        if (matrix.matching > 0) items.push(`${matrix.matching} Matching`);
+        if (matrix.ordering > 0) items.push(`${matrix.ordering} Ordering`);
+        if (matrix.fillInBlank > 0) items.push(`${matrix.fillInBlank} Fill in the blank`);
+        if (matrix.shortAnswer > 0) items.push(`${matrix.shortAnswer} Short answer`);
+        if (matrix.scenarioBased > 0) items.push(`${matrix.scenarioBased} Scenario`);
         if (matrix.caseStudy > 0) items.push(`${matrix.caseStudy} Case Study`);
         if (matrix.hotspot > 0) items.push(`${matrix.hotspot} Hotspot`);
-        if (matrix.imageBase > 0) items.push(`${matrix.imageBase} Hình ảnh`);
+        if (matrix.imageBase > 0) items.push(`${matrix.imageBase} Image`);
         if (matrix.videoBased > 0) items.push(`${matrix.videoBased} Video`);
-        if (matrix.simulation > 0) items.push(`${matrix.simulation} Mô phỏng`);
-        if (matrix.essay > 0) items.push(`${matrix.essay} Tự luận`);
-        qTypes.push(items.length > 0 ? items.join(', ') : `${formData.questionsPerAttempt || 4} câu ngẫu nhiên từ ngân hàng`);
+        if (matrix.simulation > 0) items.push(`${matrix.simulation} Simulation`);
+        if (matrix.essay > 0) items.push(`${matrix.essay} Essay`);
+        qTypes.push(items.length > 0 ? items.join(', ') : `${formData.questionsPerAttempt || 4} random questions from the bank`);
       }
     }
     if (selectedTypes.includes(ASSESSMENT_TYPES.ASSIGNMENT)) {
-      qTypes.push('File đề bài tự luận (PDF / Docx)');
+      qTypes.push('Essay prompt file (PDF / Docx)');
     }
     if (selectedTypes.includes(ASSESSMENT_TYPES.SURVEY)) {
-      qTypes.push('Biểu mẫu khảo sát Google Form / CSAT');
+      qTypes.push('Google Form / CSAT survey form');
     }
 
     onSave({
@@ -695,24 +695,24 @@ export default function AssessmentEditorModal({
 
   // Scope buttons for Step 4
   const SCOPE_BUTTONS = [
-    { id: 'DIVISION', label: '1. Khối (Division)', icon: 'ti-building-skyscraper' },
-    { id: 'DEPARTMENT', label: '2. Phòng Ban (Dept)', icon: 'ti-building' },
-    { id: 'SUBDEPARTMENT', label: '3. Sub-Dept (Bộ Phận)', icon: 'ti-git-branch' },
-    { id: 'LEVEL', label: '4. Cấp Bậc (Level)', icon: 'ti-stairs-up' },
-    { id: 'STORE', label: '5. Chi Nhánh / Siêu Thị', icon: 'ti-map-pin' },
-    { id: 'USER', label: '6. Từng Nhân Sự (User)', icon: 'ti-user' },
-    { id: 'GROUP', label: '👥 Nhóm Tùy Chỉnh', icon: 'ti-users-group' },
-    { id: 'ALL', label: '🌐 Toàn Doanh Nghiệp', icon: 'ti-world' },
+    { id: 'DIVISION', label: '1. Division', icon: 'ti-building-skyscraper' },
+    { id: 'DEPARTMENT', label: '2. Department (Dept)', icon: 'ti-building' },
+    { id: 'SUBDEPARTMENT', label: '3. Sub-Dept', icon: 'ti-git-branch' },
+    { id: 'LEVEL', label: '4. Job Level', icon: 'ti-stairs-up' },
+    { id: 'STORE', label: '5. Branch / Store', icon: 'ti-map-pin' },
+    { id: 'USER', label: '6. Individual User', icon: 'ti-user' },
+    { id: 'GROUP', label: '👥 Custom Group', icon: 'ti-users-group' },
+    { id: 'ALL', label: '🌐 Enterprise-Wide', icon: 'ti-world' },
   ];
 
   return (
     <Modal
       title={
         isEditing
-          ? `Chỉnh Sửa Assessment: ${formData.title || formData.code}`
+          ? `Edit Assessment: ${formData.title || formData.code}`
           : formData.isCourseExclusive
-            ? `Tạo Assessment Mới Cho Khóa Học: ${formData.courseTitle || 'Khóa Học Mới'}`
-            : 'Tạo Assessment Mới (Quiz / Assignment / Survey)'
+            ? `Create New Assessment For Course: ${formData.courseTitle || 'New Course'}`
+            : 'Create New Assessment (Quiz / Assignment / Survey)'
       }
       isOpen={isOpen}
       onClose={onClose}
@@ -752,7 +752,7 @@ export default function AssessmentEditorModal({
               fontSize: 10,
               fontWeight: 800,
             }}>1</span>
-            <span>Cấu Hình Chung</span>
+            <span>General Settings</span>
           </button>
 
           <button
@@ -786,7 +786,7 @@ export default function AssessmentEditorModal({
               fontSize: 10,
               fontWeight: 800,
             }}>2</span>
-            <span>Định Dạng &amp; Đề Thi</span>
+            <span>Format &amp; Exam Paper</span>
           </button>
 
           <button
@@ -820,7 +820,7 @@ export default function AssessmentEditorModal({
               fontSize: 10,
               fontWeight: 800,
             }}>3</span>
-            <span>Chống Gian Lận</span>
+            <span>Anti-Cheating</span>
           </button>
 
           {isStandalone && (
@@ -855,24 +855,24 @@ export default function AssessmentEditorModal({
                 fontSize: 10,
                 fontWeight: 800,
               }}>4</span>
-              <span>Phân Bổ ({formData.assignments?.length || 0})</span>
+              <span>Allocation ({formData.assignments?.length || 0})</span>
             </button>
           )}
         </div>
 
         {/* ======================================================== */}
-        {/* BƯỚC 1: CẤU HÌNH CHUNG                                    */}
+        {/* STEP 1: GENERAL SETTINGS                                    */}
         {/* ======================================================== */}
         {activeTab === 'GENERAL' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Title & Code */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: 12 }}>
               <div className="field-group">
-                <label className="field-label">Tiêu Đề Bài Assessment <span style={{ color: 'var(--rust)' }}>*</span></label>
+                <label className="field-label">Assessment Title <span style={{ color: 'var(--rust)' }}>*</span></label>
                 <input
                   type="text"
                   className="field-input"
-                  placeholder="Ví dụ: Đánh Giá Năng Lực Chuẩn Vệ Sinh An Toàn Thực Phẩm HACCP 2026"
+                  placeholder="Example: HACCP 2026 Food Hygiene & Safety Competency Assessment"
                   value={formData.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   required
@@ -880,14 +880,14 @@ export default function AssessmentEditorModal({
               </div>
               <div className="field-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <label className="field-label" style={{ margin: 0 }}>Mã Định Danh (Code)</label>
+                  <label className="field-label" style={{ margin: 0 }}>Code</label>
                   <button
                     type="button"
                     onClick={regenerateCode}
                     style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
-                    title="Tự động sinh mã mới từ chữ cái đầu của tiêu đề"
+                    title="Auto-generates a new code from the title's initials"
                   >
-                    <i className="ti ti-refresh" /> Tự sinh mã
+                    <i className="ti ti-refresh" /> Auto-generate code
                   </button>
                 </div>
                 <input
@@ -900,61 +900,61 @@ export default function AssessmentEditorModal({
             </div>
 
             <div className="field-group">
-              <label className="field-label">Mô Tả &amp; Mục Đích Khảo Sát / Đánh Giá</label>
+              <label className="field-label">Survey / Assessment Description &amp; Purpose</label>
               <textarea
                 className="field-input"
                 rows={2}
-                placeholder="Tóm tắt yêu cầu, đối tượng hướng tới và chuẩn đầu ra năng lực..."
+                placeholder="Summarize the objective, the target audience and the competency outcomes..."
                 value={formData.description}
                 onChange={(e) => patchForm({ description: e.target.value })}
               />
             </div>
 
-            {/* Loại hình Assessment (Multi-select) */}
+            {/* Assessment type (multi-select) */}
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
-              <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 8, color: 'var(--ink)' }}>
-                Loại Hình Assessment (Có thể chọn nhiều loại kết hợp — Định dạng ở Bước 2 sẽ dựa theo lựa chọn này):
+              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--ink)' }}>
+                Assessment Type (you may combine several — the format in Step 2 follows this choice):
               </div>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={selectedTypes.includes(ASSESSMENT_TYPES.QUIZ)}
                     onChange={() => toggleType(ASSESSMENT_TYPES.QUIZ)}
                   />
-                  <span>📝 Trắc Nghiệm / Quiz</span>
+                  <span>📝 Quiz</span>
                 </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={selectedTypes.includes(ASSESSMENT_TYPES.ASSIGNMENT)}
                     onChange={() => toggleType(ASSESSMENT_TYPES.ASSIGNMENT)}
                   />
-                  <span>📂 Bài Tập / Assignment Tự Luận</span>
+                  <span>📂 Essay Assignment</span>
                 </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={selectedTypes.includes(ASSESSMENT_TYPES.SURVEY)}
                     onChange={() => toggleType(ASSESSMENT_TYPES.SURVEY)}
                   />
-                  <span>📊 Khảo Sát / Survey / CSAT</span>
+                  <span>📊 Survey / CSAT</span>
                 </label>
               </div>
             </div>
 
-            {/* Hình Thức Tổ Chức & Trạng Thái */}
+            {/* Delivery Format & Status */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="field-group">
-                <label className="field-label">Hình Thức Tổ Chức</label>
+                <label className="field-label">Delivery Format</label>
                 {formData.isCourseExclusive ? (
                   <div style={{ background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, fontSize: 12 }}>
                     <i className="ti ti-link" style={{ color: 'var(--rail)', marginRight: 5 }} />
-                    <strong>Gắn Liền Khóa Học:</strong> [{formData.courseId}] {formData.courseTitle}
+                    <strong>Linked Course:</strong> [{formData.courseId}] {formData.courseTitle}
                     <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
-                      (Assessment được tạo từ khóa học này và gắn liền cố định)
+                      (This assessment was created from this course and is permanently linked)
                     </div>
                   </div>
                 ) : (
@@ -970,21 +970,21 @@ export default function AssessmentEditorModal({
                       });
                     }}
                   >
-                    <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Độc Lập (Standalone Assessment)</option>
-                    <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Gắn Khóa Học (Course-linked)</option>
+                    <option value={DELIVERY_FORMATS.STANDALONE}>🎯 Standalone Assessment</option>
+                    <option value={DELIVERY_FORMATS.COURSE_LINKED}>🔗 Course-linked</option>
                   </select>
                 )}
               </div>
 
               <div className="field-group">
-                <label className="field-label">Trạng Thái Phát Hành</label>
+                <label className="field-label">Publication Status</label>
                 <select
                   className="field-input"
                   value={formData.status}
                   onChange={(e) => patchForm({ status: e.target.value })}
                 >
-                  <option value="PUBLISHED">🟢 Published (Phát hành)</option>
-                  <option value="DRAFT">📝 Draft (Nháp)</option>
+                  <option value="PUBLISHED">🟢 Published</option>
+                  <option value="DRAFT">📝 Draft</option>
                 </select>
               </div>
             </div>
@@ -992,24 +992,24 @@ export default function AssessmentEditorModal({
             {/* Categories */}
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--ink)' }}>
-                  Lĩnh Vực Chuyên Môn (Category) — Đã chọn {(formData.categories || []).length}:
+                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
+                  Specialist Area (Category) — Selected{(formData.categories || []).length}:
                 </span>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     type="button"
                     onClick={selectAllCategories}
-                    style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11.5, cursor: 'pointer', fontWeight: 600 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
                   >
-                    Chọn Tất Cả
+                    Select All
                   </button>
                   <span>&middot;</span>
                   <button
                     type="button"
                     onClick={clearAllCategories}
-                    style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', fontSize: 11.5, cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', fontSize: 12, cursor: 'pointer' }}
                   >
-                    Đặt lại
+                    Reset
                   </button>
                 </div>
               </div>
@@ -1043,17 +1043,17 @@ export default function AssessmentEditorModal({
               </div>
             </div>
 
-            {/* Khi Course-linked: Lọc khóa học */}
+            {/* When course-linked: filter the courses */}
             {formData.deliveryFormat === DELIVERY_FORMATS.COURSE_LINKED && !formData.isCourseExclusive && (
               <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                   <div>
-                    <span style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--rail)' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--rail)' }}>
                       <i className="ti ti-link" style={{ marginRight: 4 }} />
-                      Khóa Học E-Learning Liên Kết:
+                      Linked E-Learning Course:
                     </span>
-                    <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginLeft: 6 }}>
-                      (Đã chọn: {(formData.courseIds || []).length})
+                    <span style={{ fontSize: 12, color: 'var(--ink-soft)', marginLeft: 6 }}>
+                      (Selected: {(formData.courseIds || []).length})
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -1061,12 +1061,12 @@ export default function AssessmentEditorModal({
                       type="text"
                       className="field-input"
                       style={{ height: 26, fontSize: 11, width: 140 }}
-                      placeholder="Tìm khóa..."
+                      placeholder="Search courses..."
                       value={courseSearch}
                       onChange={(e) => setCourseSearch(e.target.value)}
                     />
-                    <Button type="button" size="sm" variant="ghost" onClick={selectAllFilteredCourses}>Chọn Hết</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={deselectAllCourses}>Bỏ Chọn</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={selectAllFilteredCourses}>Select All</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={deselectAllCourses}>Deselect</Button>
                   </div>
                 </div>
 
@@ -1095,8 +1095,8 @@ export default function AssessmentEditorModal({
                           onChange={() => {}}
                           style={{ cursor: 'pointer' }}
                         />
-                        <div style={{ flex: 1, minWidth: 0, fontSize: 11.5 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-faint)', marginRight: 4 }}>[{c.code}]</span>
+                        <div style={{ flex: 1, minWidth: 0, fontSize: 12 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)', marginRight: 4 }}>[{c.code}]</span>
                           <strong style={{ color: 'var(--ink)' }}>{c.title}</strong>
                         </div>
                       </div>
@@ -1109,7 +1109,7 @@ export default function AssessmentEditorModal({
             {/* Metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
               <div className="field-group">
-                <label className="field-label">Thời Gian (Phút)</label>
+                <label className="field-label">Duration (Minutes)</label>
                 <input
                   type="number"
                   min="1"
@@ -1121,7 +1121,7 @@ export default function AssessmentEditorModal({
               </div>
 
               <div className="field-group">
-                <label className="field-label">Điểm Đạt (%)</label>
+                <label className="field-label">Pass Score (%)</label>
                 <input
                   type="number"
                   min="0"
@@ -1134,7 +1134,7 @@ export default function AssessmentEditorModal({
               </div>
 
               <div className="field-group">
-                <label className="field-label">Số Lần Thi Tối Đa</label>
+                <label className="field-label">Maximum Attempts</label>
                 <input
                   type="number"
                   min="1"
@@ -1146,7 +1146,7 @@ export default function AssessmentEditorModal({
               </div>
 
               <div className="field-group">
-                <label className="field-label">Số Câu Bốc / Đề</label>
+                <label className="field-label">Questions Drawn / Paper</label>
                 <input
                   type="number"
                   min="1"
@@ -1161,26 +1161,26 @@ export default function AssessmentEditorModal({
         )}
 
         {/* ======================================================== */}
-        {/* BƯỚC 2: ĐỊNH DẠNG & ĐỀ THI (LỌC THEO BƯỚC 1)             */}
+        {/* STEP 2: FORMAT & EXAM PAPER (FILTERED BY STEP 1)             */}
         {/* ======================================================== */}
         {activeTab === 'CONTENT' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Header info banner */}
-            <div style={{ background: 'var(--paper-sunken)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12.5 }}>
+            <div style={{ background: 'var(--paper-sunken)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--line)', fontSize: 13 }}>
               <i className="ti ti-info-circle" style={{ color: 'var(--rail)', marginRight: 5 }} />
-              Cấu hình nội dung đề thi cho các loại hình đã chọn ở Bước 1: <strong>{selectedTypes.map((t) => t === 'QUIZ' ? 'Trắc Nghiệm' : t === 'ASSIGNMENT' ? 'Tự Luận' : 'Khảo Sát').join(' & ')}</strong>.
+              Configure the exam content for the types selected in Step 1: <strong>{selectedTypes.map((t) => t === 'QUIZ' ? 'Multiple Choice' : t === 'ASSIGNMENT' ? 'Essay' : 'Survey').join(' & ')}</strong>.
             </div>
 
-            {/* 1. SECTION: TRẮC NGHIỆM / QUIZ */}
+            {/* 1. SECTION: QUIZ */}
             {selectedTypes.includes(ASSESSMENT_TYPES.QUIZ) && (
               <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1.5px solid var(--rail)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--rail)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--rail)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <i className="ti ti-checklist" style={{ fontSize: 18 }} />
-                    <span>Nội Dung Trắc Nghiệm / Quiz:</span>
+                    <span>Quiz Content:</span>
                   </div>
 
-                  {/* Radio Switch: Import File vs Tạo Trực Tiếp */}
+                  {/* Radio switch: import a file vs author directly */}
                   <div style={{ display: 'flex', gap: 8, background: 'var(--paper-sunken)', padding: 4, borderRadius: 8, border: '1px solid var(--line)' }}>
                     <button
                       type="button"
@@ -1200,7 +1200,7 @@ export default function AssessmentEditorModal({
                       }}
                     >
                       <i className="ti ti-file-upload" />
-                      <span>Cách 1: Import File Ngân Hàng Đề</span>
+                      <span>Method 1: Import A Question Bank File</span>
                     </button>
 
                     <button
@@ -1221,26 +1221,26 @@ export default function AssessmentEditorModal({
                       }}
                     >
                       <i className="ti ti-edit" />
-                      <span>Cách 2: Tạo Câu Hỏi Trực Tiếp Trên Nền Tảng ({formData.questions?.length || 0})</span>
+                      <span>Method 2: Author Questions Directly In The Platform ({formData.questions?.length || 0})</span>
                     </button>
                   </div>
                 </div>
 
-                {/* OPTION 1: IMPORT FILE & CẤU HÌNH MA TRẬN 15 DẠNG CÂU HỎI */}
+                {/* OPTION 1: IMPORT A FILE & CONFIGURE THE 15-TYPE QUESTION MATRIX */}
                 {formData.quizSourceMode === 'IMPORT' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {/* Upload File Ngân Hàng */}
+                    {/* Upload Question Bank File */}
                     <div style={{ border: '2px dashed var(--line)', padding: '16px', borderRadius: 8, textAlign: 'center', background: 'var(--paper-sunken)' }}>
                       <i className="ti ti-file-spreadsheet" style={{ fontSize: 32, color: 'var(--sage)', display: 'block', marginBottom: 6 }} />
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
-                        Đang sử dụng: <strong style={{ color: 'var(--rail)' }}>{formData.uploadedFileName}</strong> ({formData.uploadedPoolSize} câu hỏi có sẵn)
+                        In use: <strong style={{ color: 'var(--rail)' }}>{formData.uploadedFileName}</strong> ({formData.uploadedPoolSize} questions available)
                       </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-                        Hỗ trợ file .xlsx, .csv, .docx, .json. Hệ thống sẽ tự động bốc ngẫu nhiên đề thi theo ma trận bên dưới.
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+                        Supports .xlsx, .csv, .docx and .json files. The system draws exam questions at random using the matrix below.
                       </div>
                       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 10 }}>
                         <label className="btn btn-sm btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                          <i className="ti ti-upload" /> Tải Lên File Ngân Hàng Mới
+                          <i className="ti ti-upload" /> Upload A New Question Bank File
                           <input type="file" accept=".xlsx,.csv,.docx,.json" onChange={handleFileUpload} style={{ display: 'none' }} />
                         </label>
                         <Button
@@ -1248,27 +1248,27 @@ export default function AssessmentEditorModal({
                           size="sm"
                           variant="outline"
                           icon="ti-download"
-                          onClick={() => alert('Đang tải file mẫu Template_Question_Bank_15_Types_MMVN.xlsx')}
+                          onClick={() => alert('Downloading the template Template_Question_Bank_15_Types_MMVN.xlsx')}
                         >
-                          Tải File Excel Mẫu (15 Dạng)
+                          Download The Excel Template (15 Types)
                         </Button>
                       </div>
                     </div>
 
-                    {/* Cấu Hình Ma Trận Bốc Đề Theo 3 Cấp Độ (Basic, Intermediate, Advanced) */}
+                    {/* Configure The Question Draw Matrix Across 3 Difficulty Tiers (Basic, Intermediate, Advanced) */}
                     <div className="card card-pad" style={{ background: 'var(--paper-sunken)', border: '1px solid var(--line)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
                             <i className="ti ti-adjustments-horizontal" style={{ marginRight: 5, color: 'var(--rail)' }} />
-                            Cấu Hình Ma Trận Rút Câu Hỏi Ngẫu Nhiên (Đầy đủ 15 dạng câu hỏi):
+                            Configure The Random Question Draw Matrix (all 15 question types):
                           </div>
-                          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                            Cấu hình số lượng từng dạng câu hỏi sẽ được rút ngẫu nhiên từ file ngân hàng khi học viên làm bài:
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                            Configure how many of each question type are drawn at random from the bank file when a learner takes the exam:
                           </div>
                         </div>
                         <Badge tone="sage" size="md">
-                          Tổng: {totalMatrixCount || formData.questionsPerAttempt} câu / đề thi
+                          Total: {totalMatrixCount || formData.questionsPerAttempt} questions / paper
                         </Badge>
                       </div>
 
@@ -1276,17 +1276,17 @@ export default function AssessmentEditorModal({
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <i className="ti ti-circle-check" />
-                          <span>1. Nhóm Cơ Bản (Basic):</span>
+                          <span>1. Basic Tier:</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🔘 Trắc Nghiệm Đơn</span>
+                              <span>🔘 Single Choice</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="50"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.singleChoice ?? 2}
                                 onChange={(e) => patchMatrix('singleChoice', e.target.value)}
@@ -1295,12 +1295,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>☑️ Nhiều Đáp Án</span>
+                              <span>☑️ Multiple Choice</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="50"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.multipleChoice ?? 1}
                                 onChange={(e) => patchMatrix('multipleChoice', e.target.value)}
@@ -1309,12 +1309,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>⚖️ Đúng / Sai</span>
+                              <span>⚖️ True / False</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="50"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.trueFalse ?? 1}
                                 onChange={(e) => patchMatrix('trueFalse', e.target.value)}
@@ -1323,12 +1323,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>👍 Có / Không</span>
+                              <span>👍 Yes / No</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="50"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.yesNo ?? 0}
                                 onChange={(e) => patchMatrix('yesNo', e.target.value)}
@@ -1342,17 +1342,17 @@ export default function AssessmentEditorModal({
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--amber, #d97706)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <i className="ti ti-adjustments-alt" />
-                          <span>2. Nhóm Trung Cấp (Intermediate):</span>
+                          <span>2. Intermediate Tier:</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🧩 Ghép Đôi</span>
+                              <span>🧩 Matching</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.matching ?? 0}
                                 onChange={(e) => patchMatrix('matching', e.target.value)}
@@ -1361,12 +1361,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🔢 Thứ Tự Quy Trình</span>
+                              <span>🔢 Process Order</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.ordering ?? 0}
                                 onChange={(e) => patchMatrix('ordering', e.target.value)}
@@ -1375,12 +1375,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>📝 Điền Chỗ Trống</span>
+                              <span>📝 Fill in the Blank</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.fillInBlank ?? 0}
                                 onChange={(e) => patchMatrix('fillInBlank', e.target.value)}
@@ -1389,12 +1389,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>💬 Trả Lời Ngắn</span>
+                              <span>💬 Short Answer</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.shortAnswer ?? 0}
                                 onChange={(e) => patchMatrix('shortAnswer', e.target.value)}
@@ -1408,17 +1408,17 @@ export default function AssessmentEditorModal({
                       <div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--rail)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <i className="ti ti-sparkles" />
-                          <span>3. Nhóm Nâng Cao (Advanced):</span>
+                          <span>3. Advanced Tier:</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>💼 Tình Huống</span>
+                              <span>💼 Scenario</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.scenarioBased ?? 0}
                                 onChange={(e) => patchMatrix('scenarioBased', e.target.value)}
@@ -1432,7 +1432,7 @@ export default function AssessmentEditorModal({
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.caseStudy ?? 0}
                                 onChange={(e) => patchMatrix('caseStudy', e.target.value)}
@@ -1441,12 +1441,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🎯 Hotspot Ảnh</span>
+                              <span>🎯 Image Hotspot</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.hotspot ?? 0}
                                 onChange={(e) => patchMatrix('hotspot', e.target.value)}
@@ -1455,12 +1455,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🖼️ Hình Ảnh</span>
+                              <span>🖼️ Image</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.imageBase ?? 0}
                                 onChange={(e) => patchMatrix('imageBase', e.target.value)}
@@ -1474,7 +1474,7 @@ export default function AssessmentEditorModal({
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.videoBased ?? 0}
                                 onChange={(e) => patchMatrix('videoBased', e.target.value)}
@@ -1483,12 +1483,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>🎮 Mô Phỏng</span>
+                              <span>🎮 Simulation</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.simulation ?? 0}
                                 onChange={(e) => patchMatrix('simulation', e.target.value)}
@@ -1497,12 +1497,12 @@ export default function AssessmentEditorModal({
                           </div>
                           <div style={{ background: 'var(--paper-raised)', padding: 8, borderRadius: 6, border: '1px solid var(--line)' }}>
                             <label className="field-label" style={{ fontSize: 11, margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>✍️ Tự Luận Chuyên Sâu</span>
+                              <span>✍️ In-Depth Essay</span>
                               <input
                                 type="number"
                                 min="0"
                                 max="20"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.essay ?? 0}
                                 onChange={(e) => patchMatrix('essay', e.target.value)}
@@ -1516,7 +1516,7 @@ export default function AssessmentEditorModal({
                                 type="number"
                                 min="0"
                                 max="30"
-                                style={{ width: 50, height: 26, fontSize: 11.5, padding: '2px 4px' }}
+                                style={{ width: 50, height: 26, fontSize: 12, padding: '2px 4px' }}
                                 className="field-input"
                                 value={formData.questionMatrix?.ratingScale ?? 0}
                                 onChange={(e) => patchMatrix('ratingScale', e.target.value)}
@@ -1529,7 +1529,7 @@ export default function AssessmentEditorModal({
                   </div>
                 )}
 
-                {/* OPTION 2: QUESTION BUILDER (TẠO CÂU HỎI TRỰC TIẾP TRÊN NỀN TẢNG) */}
+                {/* OPTION 2: QUESTION BUILDER (AUTHOR QUESTIONS DIRECTLY IN THE PLATFORM) */}
                 {formData.quizSourceMode === 'DIRECT_BUILDER' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {/* Add Question Button & Group Tabs */}
@@ -1542,22 +1542,22 @@ export default function AssessmentEditorModal({
                           icon="ti-plus"
                           onClick={() => startCreateQuestion(QUESTION_TYPES.SINGLE_CHOICE)}
                         >
-                          Tạo Câu Hỏi Mới
+                          Create New Question
                         </Button>
                       </div>
 
                       <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                        Đã tạo <strong>{(formData.questions || []).length} câu hỏi</strong> cho bài assessment này
+                        Created <strong>{(formData.questions || []).length} questions</strong> for this assessment
                       </div>
                     </div>
 
-                    {/* FORM SOẠN THẢO CÂU HỎI (KHI ĐANG TẠO HOẶC SỬA) */}
+                    {/* QUESTION AUTHORING FORM (WHEN CREATING OR EDITING) */}
                     {editingQuestionIndex !== null && questionDraft && (
                       <div className="card card-pad" style={{ background: 'var(--paper-sunken)', border: '2px solid var(--rail)', borderRadius: 8 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, borderBottom: '1px solid var(--line)', paddingBottom: 8 }}>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--rail)' }}>
                             <i className="ti ti-edit" style={{ marginRight: 4 }} />
-                            {editingQuestionIndex === -1 ? 'Tạo Câu Hỏi Trực Tiếp Mới' : `Chỉnh Sửa Câu Hỏi #${editingQuestionIndex + 1}`}
+                            {editingQuestionIndex === -1 ? 'Author A New Question' : `Edit Question #${editingQuestionIndex + 1}`}
                           </div>
                           <button
                             type="button"
@@ -1568,47 +1568,47 @@ export default function AssessmentEditorModal({
                           </button>
                         </div>
 
-                        {/* Chọn Dạng Câu Hỏi trong 15 Dạng */}
+                        {/* Choose one of the 15 question types */}
                         <div style={{ marginBottom: 12 }}>
-                          <label className="field-label" style={{ fontSize: 11.5 }}>
-                            Chọn Dạng Câu Hỏi (15 Dạng Hỗ Trợ):
+                          <label className="field-label" style={{ fontSize: 12 }}>
+                            Choose The Question Type (15 supported):
                           </label>
                           <select
                             className="field-input"
                             value={questionDraft.questionType}
                             onChange={(e) => startCreateQuestion(e.target.value)}
                           >
-                            <optgroup label="🟢 Nhóm Cơ Bản (Basic)">
-                              <option value={QUESTION_TYPES.SINGLE_CHOICE}>🔘 Trắc Nghiệm Đơn (Single Choice)</option>
-                              <option value={QUESTION_TYPES.MULTIPLE_CHOICE}>☑️ Nhiều Đáp Án (Multiple Choice)</option>
-                              <option value={QUESTION_TYPES.TRUE_FALSE}>⚖️ Đúng / Sai (True / False)</option>
-                              <option value={QUESTION_TYPES.YES_NO}>👍 Có / Không (Yes / No)</option>
+                            <optgroup label="🟢 Basic Tier">
+                              <option value={QUESTION_TYPES.SINGLE_CHOICE}>🔘 Single Choice</option>
+                              <option value={QUESTION_TYPES.MULTIPLE_CHOICE}>☑️ Multiple Choice</option>
+                              <option value={QUESTION_TYPES.TRUE_FALSE}>⚖️ True / False</option>
+                              <option value={QUESTION_TYPES.YES_NO}>👍 Yes / No</option>
                             </optgroup>
-                            <optgroup label="🟡 Nhóm Trung Cấp (Intermediate)">
-                              <option value={QUESTION_TYPES.MATCHING}>🧩 Ghép Đôi (Matching)</option>
-                              <option value={QUESTION_TYPES.ORDERING}>🔢 Sắp Xếp Thứ Tự (Ordering / Sequence)</option>
-                              <option value={QUESTION_TYPES.FILL_IN_BLANK}>📝 Điền Vào Chỗ Trống (Fill in the Blank)</option>
-                              <option value={QUESTION_TYPES.SHORT_ANSWER}>💬 Câu Trả Lời Ngắn (Short Answer)</option>
+                            <optgroup label="🟡 Intermediate Tier">
+                              <option value={QUESTION_TYPES.MATCHING}>🧩 Matching</option>
+                              <option value={QUESTION_TYPES.ORDERING}>🔢 Ordering / Sequence</option>
+                              <option value={QUESTION_TYPES.FILL_IN_BLANK}>📝 Fill in the Blank</option>
+                              <option value={QUESTION_TYPES.SHORT_ANSWER}>💬 Short Answer</option>
                             </optgroup>
-                            <optgroup label="🟣 Nhóm Nâng Cao (Advanced)">
-                              <option value={QUESTION_TYPES.SCENARIO_BASED}>💼 Tình Huống Thực Tế (Scenario-based)</option>
-                              <option value={QUESTION_TYPES.CASE_STUDY}>📖 Nghiên Cứu Tình Huống (Case Study)</option>
-                              <option value={QUESTION_TYPES.HOTSPOT}>🎯 Chọn Điểm Nóng (Hotspot Ảnh)</option>
-                              <option value={QUESTION_TYPES.IMAGE_BASED}>🖼️ Câu Hỏi Dựa Trên Hình Ảnh</option>
-                              <option value={QUESTION_TYPES.VIDEO_BASED}>🎬 Câu Hỏi Dựa Trên Video</option>
-                              <option value={QUESTION_TYPES.SIMULATION}>🎮 Mô Phỏng Tình Huống (Simulation)</option>
-                              <option value={QUESTION_TYPES.ESSAY}>✍️ Tự Luận Chuyên Sâu (Essay)</option>
+                            <optgroup label="🟣 Advanced Tier">
+                              <option value={QUESTION_TYPES.SCENARIO_BASED}>💼 Real-World Scenario (Scenario-based)</option>
+                              <option value={QUESTION_TYPES.CASE_STUDY}>📖 Case Study</option>
+                              <option value={QUESTION_TYPES.HOTSPOT}>🎯 Image Hotspot</option>
+                              <option value={QUESTION_TYPES.IMAGE_BASED}>🖼️ Image-Based Question</option>
+                              <option value={QUESTION_TYPES.VIDEO_BASED}>🎬 Video-Based Question</option>
+                              <option value={QUESTION_TYPES.SIMULATION}>🎮 Situational Simulation</option>
+                              <option value={QUESTION_TYPES.ESSAY}>✍️ In-Depth Essay</option>
                             </optgroup>
-                            <optgroup label="📊 Khảo Sát &amp; Đánh Giá">
-                              <option value={QUESTION_TYPES.RATING_SCALE}>⭐ Thang Điểm Đánh Giá (CSAT / Likert)</option>
+                            <optgroup label="📊 Survey &amp; Assessment">
+                              <option value={QUESTION_TYPES.RATING_SCALE}>⭐ Rating Scale (CSAT / Likert)</option>
                             </optgroup>
                           </select>
                         </div>
 
-                        {/* Điểm số & Độ khó & Năng lực */}
+                        {/* Score & Difficulty & Competency */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: 10, marginBottom: 12 }}>
                           <div>
-                            <label className="field-label" style={{ fontSize: 11 }}>Điểm Số</label>
+                            <label className="field-label" style={{ fontSize: 11 }}>Score</label>
                             <input
                               type="number"
                               min="1"
@@ -1619,51 +1619,51 @@ export default function AssessmentEditorModal({
                             />
                           </div>
                           <div>
-                            <label className="field-label" style={{ fontSize: 11 }}>Độ Khó</label>
+                            <label className="field-label" style={{ fontSize: 11 }}>Difficulty</label>
                             <select
                               className="field-input"
                               value={questionDraft.difficulty}
                               onChange={(e) => setQuestionDraft((d) => ({ ...d, difficulty: e.target.value }))}
                             >
-                              <option value="EASY">Dễ (Easy)</option>
-                              <option value="MEDIUM">Trung Bình (Medium)</option>
-                              <option value="HARD">Khó (Hard)</option>
-                              <option value="EXPERT">Chuyên Gia (Expert)</option>
+                              <option value="EASY">Easy</option>
+                              <option value="MEDIUM">Medium</option>
+                              <option value="HARD">Hard</option>
+                              <option value="EXPERT">Expert</option>
                             </select>
                           </div>
                           <div>
-                            <label className="field-label" style={{ fontSize: 11 }}>Năng Lực Đánh Giá (Competency)</label>
+                            <label className="field-label" style={{ fontSize: 11 }}>Competency Assessed</label>
                             <input
                               type="text"
                               className="field-input"
-                              placeholder="Ví dụ: HACCP & Cold-Chain"
+                              placeholder="Example: HACCP & Cold-Chain"
                               value={questionDraft.competency}
                               onChange={(e) => setQuestionDraft((d) => ({ ...d, competency: e.target.value }))}
                             />
                           </div>
                         </div>
 
-                        {/* Trường hợp đặc biệt: Bối cảnh tình huống cho SCENARIO / CASE STUDY / SIMULATION */}
+                        {/* Special case: scenario context for SCENARIO / CASE STUDY / SIMULATION */}
                         {(questionDraft.questionType === QUESTION_TYPES.SCENARIO_BASED || questionDraft.questionType === QUESTION_TYPES.CASE_STUDY || questionDraft.questionType === QUESTION_TYPES.SIMULATION) && (
                           <div style={{ marginBottom: 10 }}>
                             <label className="field-label" style={{ fontSize: 11, color: 'var(--rail)', fontWeight: 700 }}>
-                              📖 Bối Cảnh Tình Huống / Dữ Liệu Tình Huống Thực Tế:
+                              📖 Scenario Context / Real-World Case Data:
                             </label>
                             <textarea
                               className="field-input"
                               rows={3}
-                              placeholder="Mô tả chi tiết tình huống, số liệu bán hàng, sự cố phát sinh tại cửa hàng..."
+                              placeholder="Describe the scenario in detail, sales figures, the incident at the store..."
                               value={questionDraft.scenarioContext || ''}
                               onChange={(e) => setQuestionDraft((d) => ({ ...d, scenarioContext: e.target.value }))}
                             />
                           </div>
                         )}
 
-                        {/* Trường hợp đặc biệt: URL Ảnh cho IMAGE_BASED / HOTSPOT */}
+                        {/* Special case: image URL for IMAGE_BASED / HOTSPOT */}
                         {(questionDraft.questionType === QUESTION_TYPES.IMAGE_BASED || questionDraft.questionType === QUESTION_TYPES.HOTSPOT) && (
                           <div style={{ marginBottom: 10 }}>
                             <label className="field-label" style={{ fontSize: 11, color: 'var(--rail)', fontWeight: 700 }}>
-                              🖼️ Đường Dẫn Hình Ảnh Minh Họa (URL):
+                              🖼️ Illustration Image URL:
                             </label>
                             <input
                               type="url"
@@ -1674,17 +1674,17 @@ export default function AssessmentEditorModal({
                             />
                             {questionDraft.imageUrl && (
                               <div style={{ marginTop: 6, maxHeight: 120, overflow: 'hidden', borderRadius: 6, border: '1px solid var(--line)' }}>
-                                <img src={questionDraft.imageUrl} alt="Minh họa" style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
+                                <img src={questionDraft.imageUrl} alt="Illustration" style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
                               </div>
                             )}
                           </div>
                         )}
 
-                        {/* Trường hợp đặc biệt: URL Video cho VIDEO_BASED */}
+                        {/* Special case: video URL for VIDEO_BASED */}
                         {questionDraft.questionType === QUESTION_TYPES.VIDEO_BASED && (
                           <div style={{ marginBottom: 10 }}>
                             <label className="field-label" style={{ fontSize: 11, color: 'var(--rail)', fontWeight: 700 }}>
-                              🎬 Đường Dẫn Video (URL / MP4 / Youtube):
+                              🎬 Video URL (URL / MP4 / YouTube):
                             </label>
                             <input
                               type="url"
@@ -1696,22 +1696,22 @@ export default function AssessmentEditorModal({
                           </div>
                         )}
 
-                        {/* Nội dung câu hỏi chính */}
+                        {/* Main question text */}
                         <div style={{ marginBottom: 12 }}>
-                          <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700 }}>
-                            Nội Dung Câu Hỏi <span style={{ color: 'var(--rust)' }}>*</span>
+                          <label className="field-label" style={{ fontSize: 12, fontWeight: 700 }}>
+                            Question Text <span style={{ color: 'var(--rust)' }}>*</span>
                           </label>
                           <textarea
                             className="field-input"
                             rows={2}
-                            placeholder="Nhập nội dung câu hỏi hoặc yêu cầu cần giải quyết..."
+                            placeholder="Enter the question text or the task to be solved..."
                             value={questionDraft.question}
                             onChange={(e) => setQuestionDraft((d) => ({ ...d, question: e.target.value }))}
                             required
                           />
                         </div>
 
-                        {/* Dynamic Options Editor theo từng dạng câu hỏi */}
+                        {/* Dynamic options editor per question type */}
                         {(questionDraft.questionType === QUESTION_TYPES.SINGLE_CHOICE ||
                           questionDraft.questionType === QUESTION_TYPES.MULTIPLE_CHOICE ||
                           questionDraft.questionType === QUESTION_TYPES.TRUE_FALSE ||
@@ -1725,7 +1725,7 @@ export default function AssessmentEditorModal({
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                               <label className="field-label" style={{ fontSize: 11, margin: 0 }}>
-                                Các Lựa Chọn &amp; Đáp Án Đúng (Đánh dấu vào ô để chọn đáp án đúng):
+                                Options &amp; Correct Answers (tick the box to mark the correct answer):
                               </label>
                               {questionDraft.questionType !== QUESTION_TYPES.TRUE_FALSE && questionDraft.questionType !== QUESTION_TYPES.YES_NO && (
                                 <button
@@ -1738,7 +1738,7 @@ export default function AssessmentEditorModal({
                                   }}
                                   style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
                                 >
-                                  + Thêm Lựa Chọn
+                                  + Add Option
                                 </button>
                               )}
                             </div>
@@ -1762,13 +1762,13 @@ export default function AssessmentEditorModal({
                                       });
                                     }}
                                     style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
-                                    title="Đánh dấu đây là đáp án đúng"
+                                    title="Mark this as the correct answer"
                                   />
                                   <input
                                     type="text"
                                     className="field-input"
                                     style={{ fontSize: 12, height: 32 }}
-                                    placeholder={`Đáp án ${String.fromCharCode(65 + optIdx)}...`}
+                                    placeholder={`Option ${String.fromCharCode(65 + optIdx)}...`}
                                     value={opt.text}
                                     onChange={(e) => {
                                       const val = e.target.value;
@@ -1788,7 +1788,7 @@ export default function AssessmentEditorModal({
                                         }));
                                       }}
                                       style={{ background: 'none', border: 'none', color: 'var(--rust)', cursor: 'pointer', padding: 4 }}
-                                      title="Xóa lựa chọn này"
+                                      title="Remove this option"
                                     >
                                       <i className="ti ti-trash" />
                                     </button>
@@ -1804,7 +1804,7 @@ export default function AssessmentEditorModal({
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                               <label className="field-label" style={{ fontSize: 11, margin: 0 }}>
-                                Danh Sách Cặp Ghép Nối (Cột Trái ➔ Cột Phải):
+                                Matching Pairs (left column ➔ right column):
                               </label>
                               <button
                                 type="button"
@@ -1816,7 +1816,7 @@ export default function AssessmentEditorModal({
                                 }}
                                 style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
                               >
-                                + Thêm Cặp Ghép Nối
+                                + Add Matching Pair
                               </button>
                             </div>
 
@@ -1826,8 +1826,8 @@ export default function AssessmentEditorModal({
                                   <input
                                     type="text"
                                     className="field-input"
-                                    style={{ fontSize: 11.5, height: 30 }}
-                                    placeholder={`Vế trái ${pIdx + 1}...`}
+                                    style={{ fontSize: 12, height: 30 }}
+                                    placeholder={`Left side ${pIdx + 1}...`}
                                     value={p.left}
                                     onChange={(e) => {
                                       const val = e.target.value;
@@ -1841,8 +1841,8 @@ export default function AssessmentEditorModal({
                                   <input
                                     type="text"
                                     className="field-input"
-                                    style={{ fontSize: 11.5, height: 30 }}
-                                    placeholder={`Vế phải ${pIdx + 1} (khớp đúng)...`}
+                                    style={{ fontSize: 12, height: 30 }}
+                                    placeholder={`Right side ${pIdx + 1} (the match)...`}
                                     value={p.right}
                                     onChange={(e) => {
                                       const val = e.target.value;
@@ -1877,7 +1877,7 @@ export default function AssessmentEditorModal({
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                               <label className="field-label" style={{ fontSize: 11, margin: 0 }}>
-                                Thứ Tự Chuẩn Các Bước (Nhập theo đúng thứ tự 1 ➔ 2 ➔ 3):
+                                Correct Step Order (enter them in the order 1 ➔ 2 ➔ 3):
                               </label>
                               <button
                                 type="button"
@@ -1892,19 +1892,19 @@ export default function AssessmentEditorModal({
                                 }}
                                 style={{ background: 'none', border: 'none', color: 'var(--rail)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
                               >
-                                + Thêm Bước
+                                + Add Step
                               </button>
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {(questionDraft.sequenceItems || []).map((s, sIdx) => (
                                 <div key={s.id || sIdx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <Badge tone="slate" size="sm">Bước {sIdx + 1}</Badge>
+                                  <Badge tone="slate" size="sm">Step {sIdx + 1}</Badge>
                                   <input
                                     type="text"
                                     className="field-input"
-                                    style={{ fontSize: 11.5, height: 30 }}
-                                    placeholder={`Mô tả bước ${sIdx + 1}...`}
+                                    style={{ fontSize: 12, height: 30 }}
+                                    placeholder={`Describe step ${sIdx + 1}...`}
                                     value={s.text}
                                     onChange={(e) => {
                                       const val = e.target.value;
@@ -1938,32 +1938,32 @@ export default function AssessmentEditorModal({
                         {(questionDraft.questionType === QUESTION_TYPES.FILL_IN_BLANK || questionDraft.questionType === QUESTION_TYPES.SHORT_ANSWER) && (
                           <div style={{ marginBottom: 12 }}>
                             <label className="field-label" style={{ fontSize: 11 }}>
-                              Từ Khóa Đáp Án Đúng (Phân tách bằng dấu phẩy nếu có nhiều cách viết đúng):
+                              Correct Answer Keywords (separate with commas if several spellings are accepted):
                             </label>
                             <input
                               type="text"
                               className="field-input"
                               style={{ fontSize: 12 }}
-                              placeholder="Ví dụ: FIFO, First In First Out, Nhập trước xuất trước"
+                              placeholder="Example: FIFO, First In First Out, first in first out"
                               value={(questionDraft.correctKeywords || []).join(', ')}
                               onChange={(e) => {
                                 const arr = e.target.value.split(',').map((x) => x.trim()).filter(Boolean);
                                 setQuestionDraft((d) => ({ ...d, correctKeywords: arr }));
                               }}
                             />
-                            <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-                              Hệ thống sẽ đối chiếu câu trả lời của học viên không phân biệt hoa thường và bỏ qua khoảng trắng thừa.
+                            <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
+                              The system compares learner answers case-insensitively and ignores extra whitespace.
                             </div>
                           </div>
                         )}
 
-                        {/* Giải thích đáp án */}
+                        {/* Answer explanation */}
                         <div style={{ marginBottom: 12 }}>
-                          <label className="field-label" style={{ fontSize: 11 }}>Giải Thích Đáp Án (Feedback sau khi nộp)</label>
+                          <label className="field-label" style={{ fontSize: 11 }}>Answer Explanation (feedback shown after submission)</label>
                           <textarea
                             className="field-input"
                             rows={2}
-                            placeholder="Giải thích cơ sở khoa học hoặc quy chuẩn MMVN cho đáp án đúng..."
+                            placeholder="Explain the scientific basis or the MMVN standard behind the correct answer..."
                             value={questionDraft.explanation}
                             onChange={(e) => setQuestionDraft((d) => ({ ...d, explanation: e.target.value }))}
                           />
@@ -1977,7 +1977,7 @@ export default function AssessmentEditorModal({
                             variant="ghost"
                             onClick={() => { setEditingQuestionIndex(null); setQuestionDraft(null); }}
                           >
-                            Hủy
+                            Cancel
                           </Button>
                           <Button
                             type="button"
@@ -1986,13 +1986,13 @@ export default function AssessmentEditorModal({
                             icon="ti-check"
                             onClick={handleSaveQuestionDraft}
                           >
-                            {editingQuestionIndex === -1 ? 'Lưu & Thêm Vào Đề' : 'Cập Nhật Câu Hỏi'}
+                            {editingQuestionIndex === -1 ? 'Save & Add To Paper' : 'Update Question'}
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* DANH SÁCH CÂU HỎI ĐÃ TẠO */}
+                    {/* AUTHORED QUESTION LIST */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {(formData.questions || []).map((q, idx) => {
                         const meta = QUESTION_TYPE_METADATA[q.questionType] || {};
@@ -2014,12 +2014,12 @@ export default function AssessmentEditorModal({
                           >
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-                                <Badge tone="slate" size="sm">Câu {idx + 1}</Badge>
+                                <Badge tone="slate" size="sm">Question {idx + 1}</Badge>
                                 <Badge tone={group.tone} size="sm">
                                   <i className={meta.icon || 'ti-help'} style={{ marginRight: 3 }} />
                                   {meta.label || q.questionType}
                                 </Badge>
-                                <Badge tone="blue" size="sm">{q.score || 10} điểm</Badge>
+                                <Badge tone="blue" size="sm">{q.score || 10} points</Badge>
                                 <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>({q.competency || 'General'})</span>
                               </div>
 
@@ -2027,16 +2027,16 @@ export default function AssessmentEditorModal({
                                 {q.question}
                               </div>
 
-                              {/* Tóm tắt đáp án */}
-                              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                              {/* Answer summary */}
+                              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                                 {q.questionType === QUESTION_TYPES.MATCHING ? (
-                                  <span>{q.options?.length || q.pairs?.length || 0} cặp ghép nối</span>
+                                  <span>{q.options?.length || q.pairs?.length || 0} matching pairs</span>
                                 ) : q.questionType === QUESTION_TYPES.ORDERING ? (
-                                  <span>{q.options?.length || q.sequenceItems?.length || 0} bước thứ tự quy trình</span>
+                                  <span>{q.options?.length || q.sequenceItems?.length || 0} ordered process steps</span>
                                 ) : q.questionType === QUESTION_TYPES.FILL_IN_BLANK || q.questionType === QUESTION_TYPES.SHORT_ANSWER ? (
-                                  <span>Từ khóa đúng: <em>{(q.correctKeywords || []).join(', ') || 'Chưa set'}</em></span>
+                                  <span>Expected keywords: <em>{(q.correctKeywords || []).join(', ') || 'Not set'}</em></span>
                                 ) : (
-                                  <span>{q.options?.length || 0} lựa chọn (Đáp án đúng: <strong>{(q.options || []).filter((o) => o.isCorrect).map((o) => o.text).join(' &middot; ') || 'Chưa chọn'}</strong>)</span>
+                                  <span>{q.options?.length || 0} options (correct answer: <strong>{(q.options || []).filter((o) => o.isCorrect).map((o) => o.text).join(' &middot; ') || 'Not selected'}</strong>)</span>
                                 )}
                               </div>
                             </div>
@@ -2046,7 +2046,7 @@ export default function AssessmentEditorModal({
                                 type="button"
                                 className="btn btn-sm"
                                 onClick={() => startEditQuestion(idx)}
-                                title="Chỉnh sửa câu hỏi"
+                                title="Edit question"
                                 style={{ padding: '4px 8px' }}
                               >
                                 <i className="ti ti-pencil" />
@@ -2055,7 +2055,7 @@ export default function AssessmentEditorModal({
                                 type="button"
                                 className="btn btn-sm"
                                 onClick={() => handleDuplicateQuestion(idx)}
-                                title="Nhân bản câu hỏi"
+                                title="Duplicate question"
                                 style={{ padding: '4px 8px' }}
                               >
                                 <i className="ti ti-copy" />
@@ -2064,7 +2064,7 @@ export default function AssessmentEditorModal({
                                 type="button"
                                 className="btn btn-sm btn-danger"
                                 onClick={() => handleDeleteQuestion(idx)}
-                                title="Xóa câu hỏi"
+                                title="Delete question"
                                 style={{ padding: '4px 8px' }}
                               >
                                 <i className="ti ti-trash" />
@@ -2077,8 +2077,8 @@ export default function AssessmentEditorModal({
                       {(formData.questions || []).length === 0 && (
                         <div style={{ textAlign: 'center', padding: 24, background: 'var(--paper-sunken)', borderRadius: 8, color: 'var(--ink-soft)' }}>
                           <i className="ti ti-notes" style={{ fontSize: 32, display: 'block', marginBottom: 6, color: 'var(--ink-faint)' }} />
-                          <div>Chưa có câu hỏi nào được tạo trực tiếp cho bài thi này.</div>
-                          <div style={{ fontSize: 11.5, marginTop: 4 }}>Bấm nút <strong>"Tạo Câu Hỏi Mới"</strong> ở trên để bắt đầu soạn câu hỏi theo 15 dạng hỗ trợ.</div>
+                          <div>No questions have been authored directly for this exam yet.</div>
+                          <div style={{ fontSize: 12, marginTop: 4 }}>Press the button <strong>"Create New Question"</strong> above to start authoring questions across the 15 supported types.</div>
                         </div>
                       )}
                     </div>
@@ -2087,17 +2087,17 @@ export default function AssessmentEditorModal({
               </div>
             )}
 
-            {/* 2. SECTION: BÀI TẬP TỰ LUẬN (ASSIGNMENT) */}
+            {/* 2. SECTION: ESSAY ASSIGNMENT */}
             {selectedTypes.includes(ASSESSMENT_TYPES.ASSIGNMENT) && (
               <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--amber, #d97706)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--amber, #d97706)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-file-text" style={{ fontSize: 18 }} />
-                  <span>Đề Bài Tự Luận &amp; Case Study Nộp Bài:</span>
+                  <span>Essay Prompt &amp; Case Study Submission:</span>
                 </div>
 
                 <div style={{ border: '2px dashed var(--line)', padding: '16px', borderRadius: 8, textAlign: 'center', background: 'var(--paper-sunken)', marginBottom: 10 }}>
                   <i className="ti ti-upload" style={{ fontSize: 28, color: 'var(--rail)', display: 'block', marginBottom: 4 }} />
-                  <div style={{ fontSize: 12.5, fontWeight: 600 }}>Tải lên file đề bài tự luận (PDF / DOCX)</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Upload the essay prompt file (PDF / DOCX)</div>
                   <input
                     type="file"
                     style={{ marginTop: 8 }}
@@ -2109,7 +2109,7 @@ export default function AssessmentEditorModal({
                   />
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Hoặc Dán URL File Đề Bài</label>
+                  <label className="field-label">Or Paste The Prompt File URL</label>
                   <input
                     type="url"
                     className="field-input"
@@ -2121,15 +2121,15 @@ export default function AssessmentEditorModal({
               </div>
             )}
 
-            {/* 3. SECTION: KHẢO SÁT / SURVEY */}
+            {/* 3. SECTION: SURVEY */}
             {selectedTypes.includes(ASSESSMENT_TYPES.SURVEY) && (
               <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--rail)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--rail)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-forms" style={{ fontSize: 18 }} />
-                  <span>Liên Kết Biểu Mẫu Khảo Sát (Google Form / MS Forms / CSAT):</span>
+                  <span>Link A Survey Form (Google Form / MS Forms / CSAT):</span>
                 </div>
                 <div className="field-group">
-                  <label className="field-label">Đường Dẫn Biểu Mẫu Trực Tuyến</label>
+                  <label className="field-label">Online Form URL</label>
                   <input
                     type="url"
                     className="field-input"
@@ -2144,17 +2144,17 @@ export default function AssessmentEditorModal({
         )}
 
         {/* ======================================================== */}
-        {/* BƯỚC 3: CHỐNG GIAN LẬN (ANTI-CHEAT)                     */}
+        {/* STEP 3: ANTI-CHEATING                     */}
         {/* ======================================================== */}
         {activeTab === 'ANTI_CHEAT' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', fontSize: 13 }}>
               <div style={{ fontWeight: 700, color: 'var(--rail)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <i className="ti ti-shield-check" style={{ fontSize: 18 }} />
-                Chính Sách Giám Sát &amp; Phòng Chống Gian Lận (Enterprise Proctoring)
+                Proctoring &amp; Anti-Cheating Policy (Enterprise Proctoring)
               </div>
               <p style={{ margin: 0, color: 'var(--ink-soft)' }}>
-                Kích hoạt các cơ chế kiểm soát phiên thi, phát hiện chuyển tab màn hình, watermark tên học viên và khóa clipboard sao chép.
+                Enables exam session controls: tab-switch detection, a learner-name watermark and clipboard copy locking.
               </p>
             </div>
 
@@ -2167,8 +2167,8 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ enforceFullscreen: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Bắt Buộc Toàn Màn Hình (Fullscreen Mode)</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Tự động khóa chế độ toàn màn hình khi bắt đầu làm bài.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Force Fullscreen Mode</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Automatically locks fullscreen mode when the exam starts.</div>
                 </div>
               </label>
 
@@ -2180,8 +2180,8 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ detectTabSwitch: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Giám Sát &amp; Cảnh Báo Chuyển Tab</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Cảnh báo khi người dùng rời màn hình thi hoặc mở tab khác.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Tab-Switch Monitoring &amp; Alerts</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Warns when the user leaves the exam screen or opens another tab.</div>
                 </div>
               </label>
 
@@ -2193,8 +2193,8 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ randomizeQuestions: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Xáo Trộn Thứ Tự Câu Hỏi</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Mỗi học viên nhận một thứ tự câu hỏi ngẫu nhiên.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Shuffle Question Order</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Every learner gets a random question order.</div>
                 </div>
               </label>
 
@@ -2206,8 +2206,8 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ randomizeOptions: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Xáo Trộn Đáp Án (A, B, C, D)</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Đổi ngẫu nhiên vị trí các lựa chọn trong câu trắc nghiệm.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Shuffle Answers (A, B, C, D)</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Randomizes the position of the options in a multiple-choice question.</div>
                 </div>
               </label>
 
@@ -2219,8 +2219,8 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ showWatermark: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Watermark Tên Nhân Viên &amp; Thời Gian</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>In mờ họ tên + Mã NV trên màn hình nhằm chống chụp ảnh lộ đề.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Employee Name &amp; Timestamp Watermark</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Watermarks the full name + employee ID on screen to deter screenshots of the paper.</div>
                 </div>
               </label>
 
@@ -2232,14 +2232,14 @@ export default function AssessmentEditorModal({
                   onChange={(e) => patchAntiCheat({ preventCopyPaste: e.target.checked })}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>Chặn Copy / Paste Nội Dung</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Khóa thao tác bôi đen sao chép câu hỏi và dán vào AI/Search.</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>Block Copy / Paste</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Blocks selecting and copying a question to paste into AI/Search.</div>
                 </div>
               </label>
             </div>
 
             <div className="field-group" style={{ maxWidth: 300 }}>
-              <label className="field-label">Số Lần Chuyển Tab Tối Đa Cho Phép</label>
+              <label className="field-label">Maximum Tab Switches Allowed</label>
               <input
                 type="number"
                 min="0"
@@ -2248,13 +2248,13 @@ export default function AssessmentEditorModal({
                 value={formData.antiCheatSettings.maxTabSwitches}
                 onChange={(e) => patchAntiCheat({ maxTabSwitches: Number(e.target.value) })}
               />
-              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Vượt quá số lần này hệ thống sẽ tự động thu bài.</span>
+              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Beyond this count the system submits the paper automatically.</span>
             </div>
           </div>
         )}
 
         {/* ======================================================== */}
-        {/* BƯỚC 4: PHÂN BỔ ĐỐI TƯỢNG (CASCADING DRILL-DOWN FORMAT)    */}
+        {/* STEP 4: ALLOCATE THE AUDIENCE (CASCADING DRILL-DOWN FORMAT)    */}
         {/* ======================================================== */}
         {activeTab === 'ASSIGNMENTS' && isStandalone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -2262,13 +2262,13 @@ export default function AssessmentEditorModal({
               {/* Header */}
               <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--rail)' }}>
                 <i className="ti ti-sitemap" />
-                <span>Phân Bổ Phân Tầng Theo Cơ Cấu Tổ Chức (Cascading Drill-Down)</span>
+                <span>Cascading Drill-Down Allocation By Org Structure</span>
               </div>
 
               {/* Scope Buttons */}
               <div style={{ marginBottom: 12 }}>
-                <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
-                  Chọn Cấp Độ Phân Bổ Mục Tiêu (Dừng ở cấp nào &rarr; Gán đối tượng ở cấp đó):
+                <label className="field-label" style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
+                  Choose The Target Allocation Level (whichever level you stop at &rarr; assign the audience there):
                 </label>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {SCOPE_BUTTONS.map((btn) => {
@@ -2281,10 +2281,10 @@ export default function AssessmentEditorModal({
                         style={{
                           padding: '6px 12px',
                           borderRadius: 6,
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: active ? 700 : 500,
                           border: active ? '1.5px solid var(--rail, #007A38)' : '1px solid var(--line)',
-                          background: active ? 'var(--rail-soft, #ECFDF5)' : '#fff',
+                          background: active ? 'var(--rail-soft, #ECFDF5)' : 'var(--paper-raised)',
                           color: active ? 'var(--rail, #007A38)' : 'var(--ink)',
                           cursor: 'pointer',
                           display: 'flex',
@@ -2300,12 +2300,12 @@ export default function AssessmentEditorModal({
                 </div>
               </div>
 
-              {/* Khi chọn Toàn Doanh Nghiệp (Public) */}
+              {/* When Enterprise-Wide (Public) is chosen */}
               {assignScope === 'ALL' ? (
                 <div style={{ background: 'var(--paper-raised)', padding: 14, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--line)' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>🌐 Toàn Doanh Nghiệp (Public / Bắt Buộc)</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Gán bài assessment công khai cho toàn bộ nhân sự trong hệ thống MM Mega Market.</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>🌐 Enterprise-Wide (Public / Mandatory)</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Assign this assessment publicly to every employee in the MM Mega Market system.</div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <input
@@ -2316,26 +2316,26 @@ export default function AssessmentEditorModal({
                       onChange={(e) => setTargetDueDate(e.target.value)}
                     />
                     <Button type="button" variant="primary" icon="ti-plus" onClick={handleAddCascadingAssignment}>
-                      Thêm Gán Toàn Doanh Nghiệp
+                      Add An Enterprise-Wide Assignment
                     </Button>
                   </div>
                 </div>
               ) : (
-                /* Khi chọn phân tầng (Division, Dept, SubDept, Level, Store, User, Group) */
+                /* When drilling down (Division, Dept, SubDept, Level, Store, User, Group) */
                 <div>
                   {/* Case A: DEPARTMENT Scope Filter (Only Division Filter needed) */}
                   {assignScope === 'DEPARTMENT' && (
-                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
-                        <span>Bộ Lọc Khối Trực Thuộc (Filter by Division):</span>
-                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Chọn Khối để thu hẹp danh sách phòng ban cần gán)</span>
+                        <span>Filter by Division:</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Choose a Division to narrow the departments to assign)</span>
                       </div>
                       <div style={{ maxWidth: 450 }}>
-                        <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Lọc theo Khối (Division)</label>
+                        <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Filter by Division</label>
                         <select
                           className="field-select"
-                          style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                          style={{ fontSize: 12, height: 32, width: '100%' }}
                           value={divisionFilter}
                           onChange={(e) => {
                             setDivisionFilter(e.target.value);
@@ -2344,7 +2344,7 @@ export default function AssessmentEditorModal({
                             setSelectedTargetIds([]);
                           }}
                         >
-                          <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                          <option value="ALL">-- All Division ({divisions.length}) --</option>
                           {divisions.map((d) => (
                             <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
                           ))}
@@ -2355,18 +2355,18 @@ export default function AssessmentEditorModal({
 
                   {/* Case B: SUBDEPARTMENT Scope Filters (Division & Dept Filters) */}
                   {assignScope === 'SUBDEPARTMENT' && (
-                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
-                        <span>Bộ Lọc Phân Tầng Cấp Trên (Cascading Filters):</span>
-                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Chọn Khối / Phòng Ban để lọc nhanh Sub-Dept)</span>
+                        <span>Parent-Level Cascading Filters:</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>(Choose a Division / Department to filter Sub-Depts quickly)</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Khối (Division)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Division</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={divisionFilter}
                             onChange={(e) => {
                               setDivisionFilter(e.target.value);
@@ -2375,7 +2375,7 @@ export default function AssessmentEditorModal({
                               setSelectedTargetIds([]);
                             }}
                           >
-                            <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                            <option value="ALL">-- All Division ({divisions.length}) --</option>
                             {divisions.map((d) => (
                               <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
                             ))}
@@ -2383,10 +2383,10 @@ export default function AssessmentEditorModal({
                         </div>
 
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Phòng Ban (Department)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Department</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={deptFilter}
                             onChange={(e) => {
                               const nextDept = e.target.value;
@@ -2399,7 +2399,7 @@ export default function AssessmentEditorModal({
                               setSelectedTargetIds([]);
                             }}
                           >
-                            <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                            <option value="ALL">-- All Department ({availableDepts.length}) --</option>
                             {availableDepts.map((d) => (
                               <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
                             ))}
@@ -2411,21 +2411,21 @@ export default function AssessmentEditorModal({
 
                   {/* Case C: USER Scope Filters (Full Cascading 5-Filter Matrix) */}
                   {assignScope === 'USER' && (
-                    <div style={{ padding: '10px 12px', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <i className="ti ti-filter" style={{ color: 'var(--blue, #3b82f6)' }} />
-                        <span>Bộ Lọc Nhân Sự Phân Tầng Liên Hoàn (Cascading User Filters):</span>
+                        <span>Cascading User Filters:</span>
                         <span style={{ fontSize: 11, color: 'var(--ink-faint)', fontWeight: 400 }}>
-                          (Chọn cấp trên sẽ tự động giới hạn danh sách cấp dưới)
+                          (Choosing a higher level automatically narrows the list below)
                         </span>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 8 }}>
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Khối (Division)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏢 1. Division</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={divisionFilter}
                             onChange={(e) => {
                               setDivisionFilter(e.target.value);
@@ -2434,7 +2434,7 @@ export default function AssessmentEditorModal({
                               setSelectedTargetIds([]);
                             }}
                           >
-                            <option value="ALL">-- Tất Cả Khối ({divisions.length}) --</option>
+                            <option value="ALL">-- All Division ({divisions.length}) --</option>
                             {divisions.map((d) => (
                               <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
                             ))}
@@ -2442,10 +2442,10 @@ export default function AssessmentEditorModal({
                         </div>
 
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Phòng Ban (Department)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🏛️ 2. Department</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={deptFilter}
                             onChange={(e) => {
                               const nextDept = e.target.value;
@@ -2458,7 +2458,7 @@ export default function AssessmentEditorModal({
                               setSelectedTargetIds([]);
                             }}
                           >
-                            <option value="ALL">-- Tất Cả Phòng Ban ({availableDepts.length}) --</option>
+                            <option value="ALL">-- All Department ({availableDepts.length}) --</option>
                             {availableDepts.map((d) => (
                               <option key={d.id} value={d.id}>[{d.code}] {d.name}</option>
                             ))}
@@ -2466,10 +2466,10 @@ export default function AssessmentEditorModal({
                         </div>
 
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🌿 3. Sub-Dept (Bộ Phận)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🌿 3. Sub-Dept</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={subDeptFilter}
                             onChange={(e) => {
                               const nextSub = e.target.value;
@@ -2485,7 +2485,7 @@ export default function AssessmentEditorModal({
                               setSelectedTargetIds([]);
                             }}
                           >
-                            <option value="ALL">-- Tất Cả Sub-Dept ({availableSubDepts.length}) --</option>
+                            <option value="ALL">-- All Sub-Dept ({availableSubDepts.length}) --</option>
                             {availableSubDepts.map((s) => (
                               <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
                             ))}
@@ -2495,14 +2495,14 @@ export default function AssessmentEditorModal({
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🎯 4. Cấp Bậc (Job Level)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>🎯 4. Job Level</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={levelFilter}
                             onChange={(e) => { setLevelFilter(e.target.value); setSelectedTargetIds([]); }}
                           >
-                            <option value="ALL">-- Tất Cả Cấp Bậc (Level 1 - 7) --</option>
+                            <option value="ALL">-- All Levels (Level 1 - 7) --</option>
                             {jobLevels.map((l) => (
                               <option key={l.level} value={String(l.level)}>Level {l.level} — {l.title}</option>
                             ))}
@@ -2510,14 +2510,14 @@ export default function AssessmentEditorModal({
                         </div>
 
                         <div>
-                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>📍 5. Chi Nhánh / Siêu Thị (Location)</label>
+                          <label className="field-label" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>📍 5. Branch / Store (Location)</label>
                           <select
                             className="field-select"
-                            style={{ fontSize: 11.5, height: 32, width: '100%' }}
+                            style={{ fontSize: 12, height: 32, width: '100%' }}
                             value={storeFilter}
                             onChange={(e) => { setStoreFilter(e.target.value); setSelectedTargetIds([]); }}
                           >
-                            <option value="ALL">-- Tất Cả Chi Nhánh ({retailStores.length}) --</option>
+                            <option value="ALL">-- All Branches ({retailStores.length}) --</option>
                             {retailStores.map((s) => (
                               <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
                             ))}
@@ -2530,20 +2530,20 @@ export default function AssessmentEditorModal({
                   {/* Target Items Checklist */}
                   <div style={{ padding: '8px 12px', background: 'var(--paper-sunken)', borderRadius: 6, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
-                      💡 Đang đứng &amp; hiển thị danh sách để gán ở cấp: <strong>{assignmentTypeLabel(assignScope)}</strong>
-                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 6 }}>({cascadingOptions.length} mục khả dụng)</span>
+                      💡 Currently at &amp; listing the audience to assign at level: <strong>{assignmentTypeLabel(assignScope)}</strong>
+                      <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 6 }}>({cascadingOptions.length} items available)</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <input
                         type="text"
                         className="field-input"
                         style={{ height: 26, fontSize: 11, width: 160 }}
-                        placeholder={`Tìm trong ${cascadingOptions.length} mục...`}
+                        placeholder={`Search across ${cascadingOptions.length} items...`}
                         value={targetSearchQuery}
                         onChange={(e) => setTargetSearchQuery(e.target.value)}
                       />
-                      <Button type="button" size="sm" variant="ghost" onClick={selectAllCascadingTargets}>Chọn Tất Cả ({cascadingOptions.length})</Button>
-                      <Button type="button" size="sm" variant="ghost" onClick={deselectAllCascadingTargets}>Bỏ Chọn</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={selectAllCascadingTargets}>Select All ({cascadingOptions.length})</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={deselectAllCascadingTargets}>Deselect</Button>
                     </div>
                   </div>
 
@@ -2572,16 +2572,16 @@ export default function AssessmentEditorModal({
                             onChange={() => {}}
                             style={{ cursor: 'pointer' }}
                           />
-                          <div style={{ flex: 1, minWidth: 0, fontSize: 11.5 }}>
+                          <div style={{ flex: 1, minWidth: 0, fontSize: 12 }}>
                             <strong style={{ color: isChecked ? 'var(--blue, #2563eb)' : 'var(--ink)' }}>{opt.label}</strong>
-                            {opt.subtitle && <span style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginLeft: 6 }}>({opt.subtitle})</span>}
+                            {opt.subtitle && <span style={{ fontSize: 11, color: 'var(--ink-faint)', marginLeft: 6 }}>({opt.subtitle})</span>}
                           </div>
                         </div>
                       );
                     })}
                     {cascadingOptions.length === 0 && (
                       <div style={{ padding: 16, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 12 }}>
-                        Không có đối tượng nào phù hợp bộ lọc phân tầng hoặc từ khóa tìm kiếm.
+                        No audience matches the drill-down filters or the search term.
                       </div>
                     )}
                   </div>
@@ -2589,11 +2589,11 @@ export default function AssessmentEditorModal({
                   {/* Due Date & Mandatory Controls */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: 10, alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
                     <div>
-                      <label className="field-label" style={{ fontSize: 11, margin: 0 }}>Hạn Chót Hoàn Thành (Due Date)</label>
+                      <label className="field-label" style={{ fontSize: 11, margin: 0 }}>Completion Due Date</label>
                       <input
                         type="date"
                         className="field-input"
-                        style={{ height: 30, fontSize: 11.5 }}
+                        style={{ height: 30, fontSize: 12 }}
                         value={targetDueDate}
                         onChange={(e) => setTargetDueDate(e.target.value)}
                       />
@@ -2606,7 +2606,7 @@ export default function AssessmentEditorModal({
                           checked={targetMandatory}
                           onChange={(e) => setTargetMandatory(e.target.checked)}
                         />
-                        <span>Bắt buộc hoàn thành</span>
+                        <span>Completion mandatory</span>
                       </label>
                     </div>
 
@@ -2618,7 +2618,7 @@ export default function AssessmentEditorModal({
                         disabled={selectedTargetIds.length === 0}
                         onClick={handleAddCascadingAssignment}
                       >
-                        Thêm Gán ({selectedTargetIds.length} đã chọn)
+                        Add Assignment ({selectedTargetIds.length} selected)
                       </Button>
                     </div>
                   </div>
@@ -2626,15 +2626,15 @@ export default function AssessmentEditorModal({
               )}
             </div>
 
-            {/* Danh Sách Đã Gán */}
+            {/* Assigned List */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>
-                  Danh Sách Đối Tượng Đã Phân Bổ ({formData.assignments?.length || 0}):
+                  Allocated Audience List ({formData.assignments?.length || 0}):
                 </div>
                 {(formData.assignments || []).length > 1 && (
-                  <Button type="button" size="sm" variant="ghost" onClick={handleRemoveAllAssignments} style={{ color: 'var(--rust)', fontSize: 11.5 }}>
-                    <i className="ti ti-trash" /> Xóa Tất Cả Gán
+                  <Button type="button" size="sm" variant="ghost" onClick={handleRemoveAllAssignments} style={{ color: 'var(--rust)', fontSize: 12 }}>
+                    <i className="ti ti-trash" /> Clear All Assignments
                   </Button>
                 )}
               </div>
@@ -2649,7 +2649,7 @@ export default function AssessmentEditorModal({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--ink)' }}>{asg.targetName}</span>
                       <span style={{ fontSize: 11, color: 'var(--ink-soft)', marginLeft: 8 }}>
-                        (Loại: <Badge tone="slate" size="sm">{assignmentTypeLabel(asg.assignmentType) || asg.assignmentType}</Badge> &middot; Hạn: {asg.dueDate} {asg.isMandatory ? '· Bắt buộc' : ''})
+                        (Type: <Badge tone="slate" size="sm">{assignmentTypeLabel(asg.assignmentType) || asg.assignmentType}</Badge> &middot; Due: {asg.dueDate} {asg.isMandatory ? '· Mandatory' : ''})
                       </span>
                     </div>
                     <Button
@@ -2659,13 +2659,13 @@ export default function AssessmentEditorModal({
                       icon="ti-trash"
                       onClick={() => handleRemoveAssignment(idx)}
                     >
-                      Gỡ
+                      Remove
                     </Button>
                   </div>
                 ))}
                 {(formData.assignments || []).length === 0 && (
                   <div style={{ padding: 14, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 12, background: 'var(--paper-sunken)', borderRadius: 6 }}>
-                    Chưa có đối tượng nào được gán cho bài assessment này.
+                    No audience has been assigned to this assessment yet.
                   </div>
                 )}
               </div>
@@ -2681,22 +2681,22 @@ export default function AssessmentEditorModal({
           <div>
             {activeTab === 'GENERAL' && (
               <Button type="button" variant="ghost" onClick={onClose}>
-                Hủy Bỏ
+                Cancel
               </Button>
             )}
             {activeTab === 'CONTENT' && (
               <Button type="button" variant="ghost" icon="ti-arrow-left" onClick={() => setActiveTab('GENERAL')}>
-                Quay Lại Cấu Hình Chung
+                Back To General Settings
               </Button>
             )}
             {activeTab === 'ANTI_CHEAT' && (
               <Button type="button" variant="ghost" icon="ti-arrow-left" onClick={() => setActiveTab('CONTENT')}>
-                Quay Lại Định Dạng &amp; Đề Thi
+                Back To Format &amp; Exam Paper
               </Button>
             )}
             {activeTab === 'ASSIGNMENTS' && (
               <Button type="button" variant="ghost" icon="ti-arrow-left" onClick={() => setActiveTab('ANTI_CHEAT')}>
-                Quay Lại Chống Gian Lận
+                Back To Anti-Cheating
               </Button>
             )}
           </div>
@@ -2705,28 +2705,28 @@ export default function AssessmentEditorModal({
           <div style={{ display: 'flex', gap: 8 }}>
             {activeTab === 'GENERAL' && (
               <Button type="button" variant="primary" icon="ti-arrow-right" onClick={() => setActiveTab('CONTENT')}>
-                Tiếp Tục: Định Dạng &amp; Đề Thi
+                Continue: Format &amp; Exam Paper
               </Button>
             )}
             {activeTab === 'CONTENT' && (
               <Button type="button" variant="primary" icon="ti-arrow-right" onClick={() => setActiveTab('ANTI_CHEAT')}>
-                Tiếp Tục: Chống Gian Lận
+                Continue: Anti-Cheating
               </Button>
             )}
             {activeTab === 'ANTI_CHEAT' && (
               isStandalone ? (
                 <Button type="button" variant="primary" icon="ti-arrow-right" onClick={() => setActiveTab('ASSIGNMENTS')}>
-                  Tiếp Tục: Phân Bổ Đối Tượng
+                  Continue: Allocate The Audience
                 </Button>
               ) : (
                 <Button type="button" variant="primary" icon="ti-check" onClick={handleSubmit}>
-                  Hoàn Tất &amp; Lưu Assessment
+                  Finish &amp; Save Assessment
                 </Button>
               )
             )}
             {activeTab === 'ASSIGNMENTS' && (
               <Button type="button" variant="primary" icon="ti-check" onClick={handleSubmit}>
-                Hoàn Tất &amp; Lưu Assessment
+                Finish &amp; Save Assessment
               </Button>
             )}
           </div>

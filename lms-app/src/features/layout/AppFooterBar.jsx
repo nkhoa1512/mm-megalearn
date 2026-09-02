@@ -13,16 +13,16 @@ export default function AppFooterBar({ role }) {
   const streakDays = gamification?.userStats?.streakDays ?? 0;
   const roleLabel = language === 'en' ? (def.labelEn || def.labelVi) : def.labelVi;
   const branchLabel = currentUser?.branch === 'OPERATIONS'
-    ? (language === 'en' ? 'Store Operations' : 'Vận Hành Siêu Thị')
-    : (language === 'en' ? 'Support Center / HO' : 'Văn Phòng Hỗ Trợ');
+    ? (language === 'en' ? 'Store Operations' : 'Store Operations')
+    : (language === 'en' ? 'Support Center / HO' : 'Support Office');
 
   return (
     <div className="app-footer-bar">
       <span><span className="app-footer-dot" /> BigC LMS Online Network</span>
-      <span>{language === 'en' ? 'Branch: ' : 'Khối: '}<strong>{branchLabel}</strong></span>
-      <span>{language === 'en' ? 'Role: ' : 'Vai trò: '}<strong>{roleLabel}</strong></span>
-      <span>{language === 'en' ? 'Progress: ' : 'Tiến độ: '}<strong>{completionPercent}%</strong></span>
-      <span><i className="ti ti-flame" aria-hidden="true" style={{ color: 'var(--rust)' }} /> {language === 'en' ? 'Streak: ' : 'Chuỗi học: '}<strong>{streakDays} {language === 'en' ? 'days' : 'ngày'}</strong></span>
+      <span>{language === 'en' ? 'Branch: ' : 'Division: '}<strong>{branchLabel}</strong></span>
+      <span>{language === 'en' ? 'Role: ' : 'Role: '}<strong>{roleLabel}</strong></span>
+      <span>{language === 'en' ? 'Progress: ' : 'Progress: '}<strong>{completionPercent}%</strong></span>
+      <span><i className="ti ti-flame" aria-hidden="true" style={{ color: 'var(--rust)' }} /> {language === 'en' ? 'Streak: ' : 'Streak: '}<strong>{streakDays} {language === 'en' ? 'days' : 'days'}</strong></span>
     </div>
   );
 }

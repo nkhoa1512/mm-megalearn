@@ -1,12 +1,12 @@
 // ===========================================================================
-// MM MegaLearn - Lộ Trình Học Tập 4 Phân Hệ (4-Tab Universal Learning Roadmap)
-//   Tab 1 CURRENT     - Khung định biên chuẩn của Level hiện tại (100% bắt buộc)
-//   Tab 2 SUCCESSION  - Khung định biên của Level kế cận (Level hiện tại - 1),
-//                       chỉ mở khóa khi Tab 1 đã hoàn thành 100%. Không có dữ
-//                       liệu riêng: SUCCESSION của Level N chính là CURRENT
-//                       của Level N-1, tra cứu động qua successionMilestonesFor.
-//   Tab 3 SELF_PROPOSED - Các track chuyên đề tự chọn (không bắt buộc theo Level).
-//   Tab 4 RECOMMENDED - Gợi ý theo cấp bậc/khối, tính động, không lưu trữ.
+// MM MegaLearn - 4-Tab Universal Learning Roadmap
+//   Tab 1 CURRENT     - The standard requirement framework of the current Level (100% mandatory)
+//   Tab 2 SUCCESSION  - The requirement framework of the next Level (current Level - 1),
+//                       unlocked only when Tab 1 is 100% complete. There is no separate
+//                       dataset: SUCCESSION for Level N is exactly the CURRENT roadmap
+//                       of Level N-1, resolved dynamically via successionMilestonesFor.
+//   Tab 3 SELF_PROPOSED - Optional specialist tracks (not tied to a Level requirement).
+//   Tab 4 RECOMMENDED - Suggestions by level/division, computed dynamically, never persisted.
 // ===========================================================================
 
 import { LEVEL_ORDER, nextLevelUp, isCourseVisibleInCatalog } from './levelSystem';
@@ -15,10 +15,10 @@ import { getRoadmapForScope, migrateLevelBranchMatrix } from './roadmapScopeMatr
 
 export const ROADMAP_BRANCHES = { OPERATIONS: 'OPERATIONS', SUPPORTING: 'SUPPORTING' };
 
-// Khóa học không có trường branch riêng (chỉ có domain) — bảng này quyết định
-// khóa thuộc Khối nào trên lộ trình. KHÔNG dùng course.targetId/division vì dữ
-// liệu đó không nhất quán cho mục đích này (vd. khóa An Toàn Thực Phẩm target
-// div-omd nhưng lại là nội dung dành cho nhân viên vận hành tuyến đầu).
+// Courses have no branch field of their own (only a domain) — this table decides
+// which Division a course belongs to on the roadmap. Do NOT use course.targetId/division because that
+// data is inconsistent for this purpose (e.g. a Food Safety course targets
+// div-omd yet its content is meant for front-line operations staff).
 const DOMAIN_BRANCH_MAP = {
   'Food Safety & Hygiene': ['OPERATIONS'],
   'Cold Chain': ['OPERATIONS'],
@@ -45,17 +45,17 @@ export function branchesForCourse(course) {
   return DOMAIN_BRANCH_MAP[course.domain] || ['OPERATIONS', 'SUPPORTING'];
 }
 
-// Mọi user (persona lẫn 100 nhân sự generate) đã có sẵn field branch —
-// xem generated100Data.js. Không cần suy luận lại từ divisionCode.
+// Every user (personas and the 100 generated employees alike) already has a branch field —
+// see generated100Data.js. There is no need to re-derive it from divisionCode.
 export function branchForUser(user) {
   return user?.branch === 'OPERATIONS' ? ROADMAP_BRANCHES.OPERATIONS : ROADMAP_BRANCHES.SUPPORTING;
 }
 
 // ---------------------------------------------------------------------------
-// Tab 1 / Tab 2: CURRENT_ROADMAPS — 1 danh sách chặng (đã sắp thứ tự) cho mỗi
-// Level x Khối, gồm toàn bộ khóa MANDATORY (định biên bắt buộc), khóa
-// CLASSROOM_LAB (sát hạch/capstone, tối đa 2 khóa) được nối vào CUỐI danh sách
-// làm chặng "gác cổng" trước khi đủ điều kiện thăng cấp.
+// Tab 1 / Tab 2: CURRENT_ROADMAPS — one ordered stage list for each
+// Level x Division, covering every MANDATORY course (required framework), the
+// CLASSROOM_LAB (certification/capstone, max 2 courses) is appended to the END of the list
+// acts as the "gatekeeper" stage before promotion eligibility.
 // ---------------------------------------------------------------------------
 function emptyBranchSet() {
   return { OPERATIONS: { courseIds: [] }, SUPPORTING: { courseIds: [] } };
@@ -93,14 +93,14 @@ export function buildCurrentRoadmaps(courses) {
 
 export const CURRENT_ROADMAPS = buildCurrentRoadmaps(generated100Courses);
 
-// Cấu hình lộ trình được PERSIST giờ là ma trận Scope Key đa tầng (BU ->
-// Division -> Department -> Sub-Department x Level), khởi tạo từ đúng nội
-// dung Level x Branch cũ để không mất dữ liệu khi nâng cấp.
+// The persisted roadmap configuration is now a multi-tier Scope Key matrix (BU ->
+// Division -> Department -> Sub-Department x Level), seeded from the same
+// old Level x Branch content so no data is lost on upgrade.
 export const SCOPE_ROADMAP_MATRIX = migrateLevelBranchMatrix(CURRENT_ROADMAPS);
 
 /**
- * Lộ trình kế cận của `user` ở `level` = lộ trình (đã tra cứu kế thừa theo
- * Scope Key) của Level liền trên (N-1), cùng đúng nhánh tổ chức của user đó.
+ * The succession roadmap for `user` at `level` = the roadmap (resolved through Scope Key
+ * inheritance) of the level directly above (N-1), within that user's own org branch.
  */
 export function successionMilestonesFor(user, roadmapsConfig, level, userEnrollments = {}) {
   const nextLevel = nextLevelUp(level);
@@ -110,13 +110,13 @@ export function successionMilestonesFor(user, roadmapsConfig, level, userEnrollm
 }
 
 // ---------------------------------------------------------------------------
-// Tab 3: SELF_PROPOSED_TRACKS — track chuyên đề tự chọn, không gắn với 1 Level
-// cụ thể (gộp từ khóa OPTIONAL theo domain). Hiển thị cho user sẽ được lọc lại
-// theo isCourseVisibleInCatalog để không phá vỡ quy tắc chặn cấp bậc tuần tự.
+// Tab 3: SELF_PROPOSED_TRACKS — optional specialist tracks, not tied to a single Level
+// specifically (grouped from OPTIONAL courses by domain). What the user sees is filtered again
+// by isCourseVisibleInCatalog so the sequential level gate is never broken.
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// Tab 3: SELF_PROPOSED_TRACKS — Lộ trình tự đề xuất cá nhân hóa theo Phòng Ban,
-// Vị trí công tác và Cấp bậc của nhân sự.
+// Tab 3: SELF_PROPOSED_TRACKS — Personalized self-proposed roadmaps by Department,
+// The employee's job position and level.
 // ---------------------------------------------------------------------------
 export function generateSelfProposedTracksForUser(user, courses, userEnrollments = {}) {
   const level = user?.level;
@@ -147,15 +147,15 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
 
   const tracks = [];
 
-  // Track 1: Chuyên Môn Trọng Tâm Phòng Ban (Department Mastery)
+  // Track 1: Department Mastery
   if (isIT) {
     const itCourses = courses.filter((c) => (c.domain === 'Information Security' || c.domain === 'E-Commerce' || c.title.toLowerCase().includes('it') || c.title.toLowerCase().includes('security')) && isVisible(c));
     tracks.push({
       id: 'track-it-security',
-      titleVi: 'Kiến Trúc An Ninh Thông Tin & Hạ Tầng Số',
+      titleVi: 'Information Security Architecture & Digital Infrastructure',
       titleEn: 'Cybersecurity & Digital Infrastructure Mastery',
       icon: 'ti-shield-lock',
-      description: 'Chuyên đề an ninh mạng, bảo mật dữ liệu khách hàng và tuân thủ hạ tầng số cho nhân sự CNTT.',
+      description: 'Cybersecurity, customer data protection and digital infrastructure compliance for IT staff.',
       courseIds: itCourses.slice(0, 4).map((c) => c.id),
       courses: itCourses.slice(0, 4),
     });
@@ -163,10 +163,10 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
     const foodCourses = courses.filter((c) => (c.domain === 'Food Safety & Hygiene' || c.domain === 'Cold Chain' || c.domain === 'Store Operations') && isVisible(c));
     tracks.push({
       id: 'track-fresh-mastery',
-      titleVi: 'Chuyên Gia Chuẩn Hóa Quầy Hàng & HACCP Toàn Diện',
+      titleVi: 'Counter Standardization & End-To-End HACCP Expert',
       titleEn: 'Store Operations & HACCP Excellence',
       icon: 'ti-meat',
-      description: 'Nâng cao nghiệp vụ kiểm soát nhiệt độ chuỗi lạnh, tiêu chuẩn HACCP và giảm thiểu hao hụt tại quầy.',
+      description: 'Advances cold chain temperature control, HACCP standards and shrinkage reduction at the counter.',
       courseIds: foodCourses.slice(0, 4).map((c) => c.id),
       courses: foodCourses.slice(0, 4),
     });
@@ -174,10 +174,10 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
     const merchCourses = courses.filter((c) => (c.domain === 'Merchandising' || c.domain === 'Supply Chain') && isVisible(c));
     tracks.push({
       id: 'track-merch-mastery',
-      titleVi: 'Đàm Phán Thương Mại & Tối Ưu Biên Lợi Nhuận',
+      titleVi: 'Commercial Negotiation & Margin Optimization',
       titleEn: 'Commercial Negotiation & Margin Strategy',
       icon: 'ti-shopping-cart',
-      description: 'Kỹ năng đàm phán hợp đồng nhà cung cấp, phân tích biên lợi nhuận và quản trị danh mục hàng hóa.',
+      description: 'Supplier contract negotiation, margin analysis and merchandise category management skills.',
       courseIds: merchCourses.slice(0, 4).map((c) => c.id),
       courses: merchCourses.slice(0, 4),
     });
@@ -185,10 +185,10 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
     const scmCourses = courses.filter((c) => (c.domain === 'Supply Chain' || c.domain === 'Cold Chain') && isVisible(c));
     tracks.push({
       id: 'track-scm-logistics',
-      titleVi: 'Vận Hành Kho Vận & Chuỗi Cung Ứng Tốc Độ Cao',
+      titleVi: 'High-Speed Warehousing & Supply Chain Operations',
       titleEn: 'Fast-Flow Warehouse & SCM Logistics',
       icon: 'ti-truck',
-      description: 'Tối ưu luồng phân phối cross-docking, an toàn xe nâng và quản trị logistics kho trung tâm.',
+      description: 'Optimizes cross-docking distribution flow, forklift safety and central warehouse logistics.',
       courseIds: scmCourses.slice(0, 4).map((c) => c.id),
       courses: scmCourses.slice(0, 4),
     });
@@ -196,10 +196,10 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
     const hrCourses = courses.filter((c) => (c.domain === 'Leadership' || c.domain === 'Culture & Onboarding' || c.domain.includes('Trainer')) && isVisible(c));
     tracks.push({
       id: 'track-talent-trainer',
-      titleVi: 'Giảng Viên Nội Bộ Chuẩn Quốc Tế & Coaching 70/20/10',
+      titleVi: 'Internationally Certified Internal Trainer & 70/20/10 Coaching',
       titleEn: 'Master Trainer & Talent Coaching Standards',
       icon: 'ti-presentation',
-      description: 'Phương pháp sư phạm hiện đại, kỹ năng huấn luyện tại chỗ và phát triển lộ trình kế cận.',
+      description: 'Modern teaching methods, on-the-job coaching skills and succession roadmap development.',
       courseIds: hrCourses.slice(0, 4).map((c) => c.id),
       courses: hrCourses.slice(0, 4),
     });
@@ -207,52 +207,52 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
     const generalOps = courses.filter((c) => (c.domain === 'Store Operations' || c.domain === 'Customer Service') && isVisible(c));
     tracks.push({
       id: 'track-general-ops',
-      titleVi: 'Vận Hành Chuẩn Hóa & Dịch Vụ Khách Hàng Xuất Sắc',
+      titleVi: 'Standardized Operations & Customer Service Excellence',
       titleEn: 'Operations Excellence & Customer Experience',
       icon: 'ti-building-store',
-      description: 'Kỹ năng phục vụ khách hàng chuyên nghiệp, xử lý tình huống và tối ưu vận hành.',
+      description: 'Professional customer service skills, scenario handling and operational optimization.',
       courseIds: generalOps.slice(0, 4).map((c) => c.id),
       courses: generalOps.slice(0, 4),
     });
   }
 
-  // Track 2: Lãnh Đạo & Phát Triển Kỹ Năng Quản Lý (Leadership Track)
+  // Track 2: Leadership & Management Skills Development (Leadership Track)
   const leadCourses = courses.filter((c) => (c.domain === 'Leadership' || c.domain.includes('Leadership')) && isVisible(c));
   if (leadCourses.length > 0) {
     tracks.push({
       id: 'track-leadership-growth',
-      titleVi: 'Lãnh Đạo & Quản Trị Đội Ngũ Bán Lẻ Hiện Đại',
+      titleVi: 'Leadership & Modern Retail Team Management',
       titleEn: 'Modern Retail Leadership & Team Management',
       icon: 'ti-crown',
-      description: 'Phát triển năng lực giao việc, giải quyết xung đột, huấn luyện nhân viên và thiết lập mục tiêu KPI.',
+      description: 'Builds delegation, conflict resolution, staff coaching and KPI goal-setting capability.',
       courseIds: leadCourses.slice(0, 3).map((c) => c.id),
       courses: leadCourses.slice(0, 3),
     });
   }
 
-  // Track 3: Bán Lẻ Số & Chuyển Đổi Công Nghệ (Digital Retail & E-Commerce)
+  // Track 3: Digital Retail & E-Commerce
   const digitalCourses = courses.filter((c) => (c.domain === 'E-Commerce' || c.title.toLowerCase().includes('digital') || c.title.toLowerCase().includes('online') || c.domain === 'Information Security') && isVisible(c));
   if (digitalCourses.length > 0) {
     tracks.push({
       id: 'track-digital-retail',
-      titleVi: 'Bán Lẻ Số & Trải Nghiệm Khách Hàng Đa Kênh (Omnichannel)',
+      titleVi: 'Digital Retail & Omnichannel Customer Experience',
       titleEn: 'Digital Retail & Omnichannel Customer Experience',
       icon: 'ti-device-laptop',
-      description: 'Xử lý đơn hàng trực tuyến, thanh toán điện tử và trải nghiệm khách hàng đa nền tảng.',
+      description: 'Online order fulfilment, digital payments and cross-platform customer experience.',
       courseIds: digitalCourses.slice(0, 3).map((c) => c.id),
       courses: digitalCourses.slice(0, 3),
     });
   }
 
-  // Track 4: Văn Hóa Doanh Nghiệp, An Toàn & ESG
+  // Track 4: Corporate Culture, Safety & ESG
   const esgCourses = courses.filter((c) => (c.domain === 'Culture & Onboarding' || c.domain === 'Health & Safety' || c.domain === 'Compliance & Ethics') && isVisible(c));
   if (esgCourses.length > 0) {
     tracks.push({
       id: 'track-esg-culture',
-      titleVi: 'Văn Hóa Doanh Nghiệp, An Toàn Lao Động & ESG',
+      titleVi: 'Corporate Culture, Occupational Safety & ESG',
       titleEn: 'Corporate Culture, Health Safety & ESG',
       icon: 'ti-leaf',
-      description: 'Quy tắc ứng xử văn minh, phòng chống cháy nổ PCCC và phát triển chuỗi bán lẻ bền vững.',
+      description: 'Professional conduct standards, fire prevention and sustainable retail chain development.',
       courseIds: esgCourses.slice(0, 3).map((c) => c.id),
       courses: esgCourses.slice(0, 3),
     });
@@ -271,13 +271,13 @@ export function generateSelfProposedTracksForUser(user, courses, userEnrollments
 export const SELF_PROPOSED_TRACKS = [];
 
 // ---------------------------------------------------------------------------
-// Tab 4: RECOMMENDED — Gợi ý khóa học thông minh dựa trên Phòng ban, Vị trí & Cấp bậc
+// Tab 4: RECOMMENDED — Smart course suggestions based on Department, Position & Level
 // ---------------------------------------------------------------------------
 export function recommendCoursesFor(user, courses, userEnrollments = {}, excludeIds = []) {
   const level = user?.level;
   const divCode = (user?.divisionCode || '').toUpperCase();
   const deptCode = (user?.departmentCode || '').toUpperCase();
-  const deptName = user?.departmentName || user?.departmentCode || user?.divisionName || 'Bộ phận';
+  const deptName = user?.departmentName || user?.departmentCode || user?.divisionName || 'Sub-Department';
   const pos = (user?.position || '').toLowerCase();
   const branch = branchForUser(user);
   const nextLevel = nextLevelUp(level);
@@ -295,49 +295,49 @@ export function recommendCoursesFor(user, courses, userEnrollments = {}, exclude
     .filter((c) => isCourseVisibleInCatalog(level, c.targetLevel))
     .map((c) => {
       let score = 0;
-      let reasonTag = `Phù hợp Level ${c.targetLevel}`;
+      let reasonTag = `Suits Level ${c.targetLevel}`;
 
-      // 1. Phù hợp Cấp bậc
+      // 1. Matches the job level
       if (c.targetLevel === level) {
         score += 35;
-        reasonTag = `Đúng chuẩn định biên Level ${level}`;
+        reasonTag = `Meets the Level ${level} requirement framework`;
       } else if (c.targetLevel === nextLevel) {
         score += 30;
-        reasonTag = `Phát triển kế cận Level ${nextLevel}`;
+        reasonTag = `Succession development for Level ${nextLevel}`;
       } else {
         score += 15;
       }
 
-      // 2. Phù hợp Ngành nghề & Phòng ban
+      // 2. Matches the job family & department
       if (isIT) {
         if (c.domain === 'Information Security' || c.domain === 'E-Commerce' || c.title.toLowerCase().includes('security') || c.title.toLowerCase().includes('it')) {
           score += 60;
-          reasonTag = `Khuyên dùng cho ${deptName}`;
+          reasonTag = `Recommended for ${deptName}`;
         }
       } else if (isStoreFresh) {
         if (c.domain === 'Food Safety & Hygiene' || c.domain === 'Cold Chain' || c.domain === 'Store Operations') {
           score += 60;
-          reasonTag = `Nghiệp vụ quầy hàng ${deptName}`;
+          reasonTag = `${deptName} counter operations`;
         }
       } else if (isMerch) {
         if (c.domain === 'Merchandising' || c.domain === 'Supply Chain' || c.domain === 'E-Commerce') {
           score += 60;
-          reasonTag = `Chiến lược ngành hàng ${deptName}`;
+          reasonTag = `${deptName} category strategy`;
         }
       } else if (isSCM) {
         if (c.domain === 'Supply Chain' || c.domain === 'Cold Chain') {
           score += 60;
-          reasonTag = `Vận hành Logistics & Kho`;
+          reasonTag = `Logistics & Warehouse Operations`;
         }
       } else if (isHRorLOD) {
         if (c.domain === 'Leadership' || c.domain === 'Culture & Onboarding' || (c.domain || '').includes('Trainer')) {
           score += 60;
-          reasonTag = `Đào tạo & Phát triển nhân tài`;
+          reasonTag = `Training & Talent Development`;
         }
       } else {
         if (c.domain === 'Store Operations' || c.domain === 'Customer Service' || c.domain === 'Leadership') {
           score += 40;
-          reasonTag = `Kỹ năng dịch vụ khách hàng`;
+          reasonTag = `Customer service skills`;
         }
       }
 
@@ -358,9 +358,9 @@ export function recommendCoursesFor(user, courses, userEnrollments = {}, exclude
 }
 
 /**
- * Tính trạng thái cả 4 tab cho 1 user. `roadmapsConfig` là CURRENT_ROADMAPS
- * (có thể đã bị Admin chỉnh sửa), `enrollments` là { [userId]: { [courseId]:
- * { status, ... } } } đúng shape đang dùng trong CourseStore.
+ * Computes the state of all 4 tabs for one user. `roadmapsConfig` is CURRENT_ROADMAPS
+ * (which the Admin may have edited), `enrollments` is { [userId]: { [courseId]:
+ * { status, ... } } }, the exact shape used in CourseStore.
  */
 export function computeUserRoadmapTabs(user, roadmapsConfig, enrollments, courses) {
   const level = user?.level;

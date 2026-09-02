@@ -1,10 +1,10 @@
 // ===========================================================================
-// MM MegaLearn - Thang Cấp Bậc 7 Level (ĐẢO NGƯỢC)
-// Level 7 = THẤP NHẤT (Nhân viên tuyến đầu mới vào)
-// Level 1 = CAO NHẤT (Ban điều hành / BOM)
+// MM MegaLearn - 7-Level Job Grade Scale (INVERTED)
+// Level 7 = LOWEST (new front-line staff)
+// Level 1 = HIGHEST (Board of Management / BOM)
 //
-// Mọi so sánh cấp bậc trong hệ thống phải đi qua helper trong file này để tránh
-// lặp lại lỗi "số lớn hơn = cấp cao hơn" của thang cũ.
+// Every level comparison in the system must go through the helpers in this file to avoid
+// repeating the old scale's "bigger number = higher grade" mistake.
 // ===========================================================================
 
 export const ENTRY_LEVEL = '7';
@@ -15,11 +15,11 @@ export const LEVEL_DEFINITIONS = [
     level: '1',
     code: 'L1_DIRECTOR',
     emoji: '👑',
-    shortVi: 'Giám đốc / Lãnh đạo cấp cao',
-    titleVi: 'Giám đốc / Lãnh đạo cấp cao',
+    shortVi: 'Director / Senior Leadership',
+    titleVi: 'Director / Senior Leadership',
     titleEn: 'Director',
     band: 'EXECUTIVE',
-    note: 'Giám đốc / Lãnh đạo cấp cao (Director) — Cấp cao nhất trong doanh nghiệp',
+    note: 'Director / Senior Leadership — the highest level in the company',
     colors: { bg: '#FEE2E2', text: '#991B1B', border: '#FCA5A5' },
     tone: 'red',
   },
@@ -27,11 +27,11 @@ export const LEVEL_DEFINITIONS = [
     level: '2',
     code: 'L2_HEAD',
     emoji: '👑',
-    shortVi: 'Phó Giám đốc / Trưởng Phòng/Khối',
-    titleVi: 'Phó Giám đốc / Trưởng Phòng/Khối',
+    shortVi: 'Associate Director / Head of Department or Division',
+    titleVi: 'Associate Director / Head of Department or Division',
     titleEn: 'Associate Director / Head of Department',
     band: 'EXECUTIVE',
-    note: 'Phó Giám đốc / Trưởng Phòng / Trưởng Khối (Associate Director / Head of Department)',
+    note: 'Associate Director / Head of Department',
     colors: { bg: '#FEF3C7', text: '#92400E', border: '#FCD34D' },
     tone: 'amber',
   },
@@ -39,11 +39,11 @@ export const LEVEL_DEFINITIONS = [
     level: '3',
     code: 'L3_SENIOR_MANAGER',
     emoji: '🟠',
-    shortVi: 'Quản lý cấp cao',
-    titleVi: 'Quản lý cấp cao',
+    shortVi: 'Senior Manager',
+    titleVi: 'Senior Manager',
     titleEn: 'Senior Manager',
     band: 'SENIOR_MANAGEMENT',
-    note: 'Quản lý cấp cao (Senior Manager)',
+    note: 'Senior Manager',
     colors: { bg: '#FFEDD5', text: '#9A3412', border: '#FDBA74' },
     tone: 'orange',
   },
@@ -51,11 +51,11 @@ export const LEVEL_DEFINITIONS = [
     level: '4',
     code: 'L4_MANAGER',
     emoji: '🔵',
-    shortVi: 'Quản lý',
-    titleVi: 'Quản lý',
+    shortVi: 'Manager',
+    titleVi: 'Manager',
     titleEn: 'Manager',
     band: 'MANAGEMENT',
-    note: 'Quản lý (Manager)',
+    note: 'Manager',
     colors: { bg: '#DBEAFE', text: '#1E40AF', border: '#93C5FD' },
     tone: 'blue',
   },
@@ -63,11 +63,11 @@ export const LEVEL_DEFINITIONS = [
     level: '5',
     code: 'L5_SUPERVISOR',
     emoji: '🟢',
-    shortVi: 'Giám sát / Chuyên viên cao cấp',
-    titleVi: 'Giám sát / Chuyên viên cao cấp',
+    shortVi: 'Supervisor / Senior Executive',
+    titleVi: 'Supervisor / Senior Executive',
     titleEn: 'Supervisor / Senior Executive',
     band: 'SUPERVISORY',
-    note: 'Giám sát / Chuyên viên cao cấp (Supervisor / Senior Executive)',
+    note: 'Supervisor / Senior Executive',
     colors: { bg: '#D1FAE5', text: '#065F46', border: '#6EE7B7' },
     tone: 'teal',
   },
@@ -75,11 +75,11 @@ export const LEVEL_DEFINITIONS = [
     level: '6',
     code: 'L6_EXECUTIVE',
     emoji: '🟢',
-    shortVi: 'Chuyên viên / Nhân viên nghiệp vụ',
-    titleVi: 'Chuyên viên / Nhân viên nghiệp vụ',
+    shortVi: 'Executive / Operations Specialist',
+    titleVi: 'Executive / Operations Specialist',
     titleEn: 'Executive',
     band: 'PROFESSIONAL',
-    note: 'Chuyên viên / Nhân viên nghiệp vụ (Executive)',
+    note: 'Executive / Operations Specialist',
     colors: { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' },
     tone: 'green',
   },
@@ -87,11 +87,11 @@ export const LEVEL_DEFINITIONS = [
     level: '7',
     code: 'L7_STAFF',
     emoji: '⚪',
-    shortVi: 'Nhân viên',
-    titleVi: 'Nhân viên',
+    shortVi: 'Staff',
+    titleVi: 'Staff',
     titleEn: 'Staff',
     band: 'ENTRY',
-    note: 'Nhân viên (Staff) — Cấp thấp nhất',
+    note: 'Staff — the lowest level',
     colors: { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
     tone: 'slate',
   },
@@ -99,10 +99,10 @@ export const LEVEL_DEFINITIONS = [
 
 export const LEVEL_ORDER = LEVEL_DEFINITIONS.map((l) => l.level);
 
-// Các mã cấp bậc ngoài thang 1-7 trong dữ liệu HRIS cũ đều quy về cấp thấp nhất.
+// Any level code outside the 1-7 scale in legacy HRIS data falls back to the lowest level.
 const LEGACY_LEVEL_ALIAS = { CL: '7', IN: '7', '0': '7' };
 
-/** Chuẩn hóa bất kỳ giá trị level nào về chuỗi '1'..'7'. */
+/** Normalizes any level value to the string '1'..'7'. */
 export function normalizeLevel(level) {
   if (level === null || level === undefined) return ENTRY_LEVEL;
   const raw = String(level).trim().toUpperCase().replace(/^LVL-?/, '');
@@ -130,29 +130,29 @@ export function levelShortLabel(level) {
   return `${def.emoji} Level ${def.level}: ${def.shortVi}`;
 }
 
-/** Số càng nhỏ càng cao. Trả về số nguyên 1..7 để so sánh. */
+/** Smaller means higher. Returns an integer 1..7 for comparison. */
 export function levelValue(level) {
   return Number(normalizeLevel(level));
 }
 
 /**
- * Khoảng cách cấp bậc = số bậc mà khóa học nằm CAO HƠN học viên.
- *   <= 0 : khóa cùng cấp hoặc thấp hơn (mở tự do)
- *   === 1: vượt đúng 1 cấp liền kề (phải xin phê duyệt)
- *   >= 2 : nhảy cóc (chặn cứng)
- * Vì thang đảo ngược nên Level 7 (thấp nhất) trừ Level 6 = 1 bậc vượt.
+ * Level gap = how many grades the course sits ABOVE the learner.
+ *   <= 0 : same level or lower (freely open)
+ *   === 1: exactly one grade above (approval required)
+ *   >= 2 : skipping grades (hard block)
+ * Because the scale is inverted, Level 7 (lowest) minus Level 6 = 1 grade above.
  */
 export function levelGap(userLevel, courseLevel) {
   return levelValue(userLevel) - levelValue(courseLevel);
 }
 
-/** Cấp liền kề phía trên (Level 7 -> Level 6). Trả về null nếu đã ở đỉnh. */
+/** The grade directly above (Level 7 -> Level 6). Returns null at the top of the scale. */
 export function nextLevelUp(level) {
   const value = levelValue(level);
   return value <= 1 ? null : String(value - 1);
 }
 
-/** Các cấp phải lần lượt đi qua để từ `fromLevel` leo tới `toLevel`. */
+/** The grades that must be passed in order to climb from `fromLevel` to `toLevel`. */
 export function levelRoadmap(fromLevel, toLevel) {
   const from = levelValue(fromLevel);
   const to = levelValue(toLevel);
@@ -162,9 +162,9 @@ export function levelRoadmap(fromLevel, toLevel) {
 }
 
 /**
- * Khóa học có được PHÉP HIỂN THỊ trên danh mục (catalog) của học viên không?
- * - Khóa MANDATORY: Chỉ hiển thị nếu học viên thuộc đối tượng được phân bổ hoặc đã có ghi danh.
- * - Khóa OPTIONAL: Hiển thị cho toàn bộ học viên (kể cả khi lệch cấp bậc để học viên có thể xem đề cương).
+ * Is the course ALLOWED TO APPEAR in the learner's catalog?
+ * - MANDATORY courses: shown only if the learner is in the assigned audience or already enrolled.
+ * - OPTIONAL courses: shown to every learner (even when the level differs, so they can read the outline).
  */
 export function isCourseVisibleInCatalog(userLevel, courseLevel, course = null, isAssigned = false) {
   if (course) {
@@ -177,20 +177,20 @@ export function isCourseVisibleInCatalog(userLevel, courseLevel, course = null, 
 }
 
 // ---------------------------------------------------------------------------
-// Quy tắc chặn quyền & học vượt cấp tuần tự (Sequential Level Gate)
+// Access gating & sequential level skip rules (Sequential Level Gate)
 // ---------------------------------------------------------------------------
 
 export const ACCESS_STATE = {
-  OPEN: 'OPEN',                         // Cùng cấp hoặc thấp hơn -> học ngay
-  APPROVED: 'APPROVED',                 // Vượt 1 cấp & Manager đã duyệt / Admin phân bổ
-  PENDING_APPROVAL: 'PENDING_APPROVAL', // Đã gửi đơn, chờ Manager duyệt
-  REJECTED: 'REJECTED',                 // Manager đã từ chối đơn
-  REQUESTABLE: 'REQUESTABLE',           // Vượt đúng 1 cấp -> được phép xin
-  LOCKED_LEVEL_GAP: 'LOCKED_LEVEL_GAP', // Nhảy cóc >= 2 cấp -> cấm tuyệt đối
+  OPEN: 'OPEN',                         // Same grade or lower -> start immediately
+  APPROVED: 'APPROVED',                 // One grade above & manager approved / admin assigned
+  PENDING_APPROVAL: 'PENDING_APPROVAL', // Request submitted, awaiting manager approval
+  REJECTED: 'REJECTED',                 // The manager rejected the request
+  REQUESTABLE: 'REQUESTABLE',           // Exactly one grade above -> may request approval
+  LOCKED_LEVEL_GAP: 'LOCKED_LEVEL_GAP', // Skipping >= 2 grades -> strictly forbidden
 };
 
 /**
- * Trích xuất danh sách các cấp bậc mục tiêu của khóa học (chuẩn hóa về mảng chuỗi).
+ * Extracts a course's target levels (normalized to an array of strings).
  */
 export function getCourseTargetLevels(course) {
   if (!course) return [ENTRY_LEVEL];
@@ -207,9 +207,9 @@ export function getCourseTargetLevels(course) {
 }
 
 /**
- * Lấy danh sách các cấp bậc hợp lệ được phép học khóa học mà không bị chặn cấp bậc.
- * Theo thang đảo ngược: cấp số nhỏ hơn = quyền cao hơn.
- * Ví dụ: khóa học dành cho Level 2, 3 thì các cấp Level 1, 2, 3 đều đủ điều kiện học tự do.
+ * Returns the levels allowed to take the course without hitting the level gate.
+ * On the inverted scale a smaller number means higher authority.
+ * Example: for a course targeting Level 2 and 3, Levels 1, 2 and 3 may all enroll freely.
  */
 export function getCourseEligibleLevels(course) {
   const targetLevels = getCourseTargetLevels(course);
@@ -222,8 +222,8 @@ export function getCourseEligibleLevels(course) {
 }
 
 /**
- * Đánh giá tính tương thích cấp bậc của một người dùng (user) đối với một khóa học (course).
- * Trả về thông tin chi tiết: hợp lệ, vượt cấp, hay bị chặn cứng.
+ * Evaluates a user's level compatibility with a course.
+ * Returns the detail: eligible, one grade above, or hard blocked.
  */
 export function evaluateUserEligibilityForCourse(user, course) {
   if (!user || !course) {
@@ -232,7 +232,7 @@ export function evaluateUserEligibilityForCourse(user, course) {
       canAssign: true,
       matchType: 'EXACT_MATCH',
       badgeTone: 'sage',
-      label: '✅ Hợp lệ',
+      label: '✅ Eligible',
       gap: 0,
       userLevel: ENTRY_LEVEL,
       targetLevels: [ENTRY_LEVEL],
@@ -245,14 +245,14 @@ export function evaluateUserEligibilityForCourse(user, course) {
   const lowestTargetLevel = String(lowestTargetLevelNum);
   const uLevelNum = Number(userLevel);
 
-  // 1. Khớp chính xác một trong các cấp bậc mục tiêu của khóa
+  // 1. Exactly matches one of the course's target levels
   if (targetLevels.includes(userLevel)) {
     return {
       isEligible: true,
       canAssign: true,
       matchType: 'EXACT_MATCH',
       badgeTone: 'sage',
-      label: `✅ Đúng cấp bậc (Level ${userLevel})`,
+      label: `✅ Correct level (Level ${userLevel})`,
       gap: 0,
       userLevel,
       targetLevels,
@@ -260,14 +260,14 @@ export function evaluateUserEligibilityForCourse(user, course) {
     };
   }
 
-  // 2. Người dùng có cấp bậc cao hơn cấp mục tiêu của khóa (ví dụ: Level 1 học khóa Level 3)
+  // 2. The user's level is higher than the course target (e.g. a Level 1 user taking a Level 3 course)
   if (uLevelNum < lowestTargetLevelNum) {
     return {
       isEligible: true,
       canAssign: true,
       matchType: 'HIGHER_LEVEL',
       badgeTone: 'blue',
-      label: `👑 Cấp cao hơn (Level ${userLevel})`,
+      label: `👑 Higher level (Level ${userLevel})`,
       gap: uLevelNum - lowestTargetLevelNum,
       userLevel,
       targetLevels,
@@ -275,40 +275,40 @@ export function evaluateUserEligibilityForCourse(user, course) {
     };
   }
 
-  // 3. Người dùng thấp hơn đúng 1 cấp liền kề (ví dụ: Level 4 muốn học khóa Level 3)
+  // 3. The user is exactly one grade below (e.g. a Level 4 user wants a Level 3 course)
   const gap = uLevelNum - lowestTargetLevelNum;
   if (gap === 1) {
     return {
       isEligible: false,
-      canAssign: true, // Cho phép gán nhưng có cảnh báo vượt cấp
+      canAssign: true, // Assignment allowed but flagged with a level warning
       matchType: 'GAP_ONE_STEP',
       badgeTone: 'amber',
-      label: `⚠️ Vượt 1 cấp (Lvl ${userLevel} → Lvl ${lowestTargetLevel})`,
+      label: `⚠️ One grade above (Lvl ${userLevel} → Lvl ${lowestTargetLevel})`,
       gap: 1,
       userLevel,
       targetLevels,
       lowestTargetLevel,
-      warning: `Học viên Level ${userLevel} thấp hơn 1 cấp so với định biên khóa học (Level ${lowestTargetLevel}).`,
+      warning: `This Level ${userLevel} learner is one grade below the course requirement (Level ${lowestTargetLevel}).`,
     };
   }
 
-  // 4. Người dùng thấp hơn từ 2 cấp trở lên (nhảy cóc - cấm gán thông thường)
+  // 4. The user is two or more grades below (grade skipping - normal assignment is forbidden)
   return {
     isEligible: false,
-    canAssign: false, // Bị chặn không cho gán tự do
+    canAssign: false, // Blocked from free assignment
     matchType: 'BLOCKED_LEVEL_GAP',
     badgeTone: 'crimson',
-    label: `🚫 Không đủ cấp (Lvl ${userLevel} chênh ${gap} cấp)`,
+    label: `🚫 Level too low (Lvl ${userLevel}, ${gap} grades away)`,
     gap,
     userLevel,
     targetLevels,
     lowestTargetLevel,
-    error: `Học viên Level ${userLevel} chênh ${gap} cấp so với Level ${lowestTargetLevel}. Bị chặn theo quy tắc cấp bậc tuần tự.`,
+    error: `This Level ${userLevel} learner is ${gap} grades away from Level ${lowestTargetLevel} and is blocked by the sequential level rule.`,
   };
 }
 
 /**
- * Đánh giá tính tương thích cấp bậc của toàn bộ thành viên trong một Nhóm Tùy Chỉnh (Custom Group).
+ * Evaluates the level compatibility of every member of a Custom Group.
  */
 export function evaluateGroupEligibilityForCourse(group, course, allUsers = []) {
   if (!group || !course) {
@@ -320,7 +320,7 @@ export function evaluateGroupEligibilityForCourse(group, course, allUsers = []) 
       blockedMembers: [],
       eligibleCount: 0,
       ineligibleCount: 0,
-      summaryLabel: '0 thành viên',
+      summaryLabel: '0 members',
     };
   }
 
@@ -371,12 +371,12 @@ export function evaluateGroupEligibilityForCourse(group, course, allUsers = []) 
     blockedMembers,
     eligibleCount: eligibleMembers.length,
     ineligibleCount: ineligibleMembers.length,
-    summaryLabel: `${eligibleMembers.length}/${members.length} hợp lệ (${ineligibleMembers.length} lệch cấp)`,
+    summaryLabel: `${eligibleMembers.length}/${members.length} eligible (${ineligibleMembers.length} level mismatch)`,
   };
 }
 
 /**
- * Lọc danh sách người dùng chỉ giữ lại các nhân sự đủ điều kiện cấp bậc cho khóa học.
+ * Filters a user list down to the people who meet the course level requirement.
  */
 export function filterUsersByCourseEligibility(usersList = [], course, allowGap1 = false) {
   if (!course || !Array.isArray(usersList)) return usersList;
@@ -389,10 +389,10 @@ export function filterUsersByCourseEligibility(usersList = [], course, allowGap1
 }
 
 /**
- * Quy tắc truy cập khóa học theo cấp bậc.
+ * Course access rules by job level.
  *
- * @param {object} course Khóa học (đọc `targetLevels` hoặc `targetLevel`).
- * @param {object} user   Học viên (đọc `level`).
+ * @param {object} course The course (reads `targetLevels` or `targetLevel`).
+ * @param {object} user   The learner (reads `level`).
  * @param {object} ctx    { approvedCourseIds, pendingCourseIds, rejectedCourseIds, isDirectlyAssigned }
  */
 export function checkCourseAccessRule(course, user, ctx = {}) {
@@ -414,7 +414,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
     };
   }
 
-  // Nếu khóa học được User Admin / HRBP phân bổ trực tiếp bắt buộc
+  // When the course is assigned as mandatory directly by the User Admin / HRBP
   if (isDirectlyAssigned) {
     return {
       state: ACCESS_STATE.APPROVED,
@@ -424,7 +424,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
       gap: 0,
       userLevel: normalizeLevel(user.level),
       courseLevel: normalizeLevel(course.targetLevel),
-      reason: 'Khóa học được User Admin phân bổ học tập bắt buộc cho bạn.',
+      reason: 'The User Admin assigned this course to you as mandatory learning.',
     };
   }
 
@@ -434,7 +434,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
   const gap = evalRes.gap;
   const base = { gap, userLevel, courseLevel, targetLevels: evalRes.targetLevels };
 
-  // Trường hợp 1: cùng cấp hoặc cấp cao hơn -> mở tự do
+  // Case 1: same grade or higher -> freely open
   if (evalRes.isEligible) {
     return {
       ...base,
@@ -446,7 +446,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
     };
   }
 
-  // Trường hợp 2: vượt đúng 1 cấp liền kề (Level 7 muốn học Level 6)
+  // Case 2: exactly one grade above (a Level 7 user wants a Level 6 course)
   if (evalRes.matchType === 'GAP_ONE_STEP') {
     if (approvedCourseIds.includes(course.id)) {
       return {
@@ -455,7 +455,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
         canAccess: true,
         isLevelLocked: false,
         requiresApproval: false,
-        reason: `Đã được Quản lý phê duyệt học vượt lên Level ${courseLevel}.`,
+        reason: `Your manager approved the level skip up to Level ${courseLevel}.`,
       };
     }
     if (pendingCourseIds.includes(course.id)) {
@@ -465,7 +465,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
         canAccess: false,
         isLevelLocked: true,
         requiresApproval: false,
-        reason: `Đơn xin học vượt lên Level ${courseLevel} đang chờ Quản lý phê duyệt.`,
+        reason: `The request to study up to Level ${courseLevel} is awaiting manager approval.`,
       };
     }
     if (rejectedCourseIds.includes(course.id)) {
@@ -475,7 +475,7 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
         canAccess: false,
         isLevelLocked: true,
         requiresApproval: true,
-        reason: 'Quản lý đã từ chối đơn học vượt khóa này. Bạn có thể gửi lại kèm lý do thuyết phục hơn.',
+        reason: 'Your manager rejected this level skip request. You can resubmit it with a stronger justification.',
       };
     }
     return {
@@ -484,11 +484,11 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
       canAccess: false,
       isLevelLocked: true,
       requiresApproval: true,
-      reason: `Khóa học Level ${courseLevel} cao hơn cấp bậc hiện tại (Level ${userLevel}). Bạn cần gửi yêu cầu để Manager phê duyệt học vượt cấp.`,
+      reason: `This Level ${courseLevel} course is above your current level (Level ${userLevel}). You need to submit a request for your Manager to approve the level skip.`,
     };
   }
 
-  // Trường hợp 3: nhảy cóc từ 2 cấp trở lên -> chặn cứng
+  // Case 3: skipping two or more grades -> hard block
   const mustFinishLevel = nextLevelUp(userLevel);
   return {
     ...base,
@@ -497,6 +497,6 @@ export function checkCourseAccessRule(course, user, ctx = {}) {
     isLevelLocked: true,
     requiresApproval: false,
     blockedRoadmap: levelRoadmap(userLevel, courseLevel),
-    reason: `Bạn không thể nhảy cóc lên Level ${courseLevel}. Bạn bắt buộc phải hoàn thành toàn bộ chương trình đào tạo Level ${mustFinishLevel} trước.`,
+    reason: `You cannot skip ahead to Level ${courseLevel}. You must first complete the entire Level ${mustFinishLevel} training program.`,
   };
 }

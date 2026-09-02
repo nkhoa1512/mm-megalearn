@@ -19,7 +19,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'FSH',
     icon: 'ti-shield-check',
     color: '#10b981',
-    description: 'Tiêu chuẩn vệ sinh an toàn thực phẩm, kiểm định HACCP, quy trình sơ chế và bảo quản thực phẩm sạch tại hệ thống MM Mega Market.',
+    description: 'Food hygiene and safety standards, HACCP audits, and the preparation and storage procedures for clean food across MM Mega Market.',
     coverImage: 'https://images.unsplash.com/photo-1577106263724-2c8e03bfe9cf?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -28,7 +28,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'HSE',
     icon: 'ti-first-aid-kit',
     color: '#ef4444',
-    description: 'An toàn lao động, trang bị bảo hộ, sơ cấp cứu và phương án phòng cháy chữa cháy (PCCC) cho siêu thị và kho vận.',
+    description: 'Occupational safety, protective equipment, first aid and the fire prevention plan for stores and warehouses.',
     coverImage: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -37,7 +37,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'COLD',
     icon: 'ti-snowflake',
     color: '#06b6d4',
-    description: 'Quản trị chuỗi cung ứng lạnh, giám sát nhiệt độ kho mát & kho âm sâu, tiêu chuẩn bảo quản thực phẩm tươi sống.',
+    description: 'Cold chain management, chiller and deep-freeze temperature monitoring, and fresh food storage standards.',
     coverImage: 'https://images.unsplash.com/photo-1584483766114-2cea6facdf57?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -46,7 +46,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'OPS',
     icon: 'ti-building-store',
     color: '#3b82f6',
-    description: 'Vận hành siêu thị, quầy thu ngân POS, trưng bày hàng hóa chuẩn bán lẻ và quy trình kiểm soát thất thoát sàn bán hàng.',
+    description: 'Store operations, POS checkout, retail-standard merchandising and the sales floor shrinkage control process.',
     coverImage: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -55,7 +55,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'SCM',
     icon: 'ti-truck-delivery',
     color: '#f59e0b',
-    description: 'Kho vận trung tâm (DC), vận hành xe nâng, luân chuyển hàng hóa liên trung tâm và quản trị đội xe giao hàng Last-Mile.',
+    description: 'Distribution center warehousing, forklift operation, inter-center stock transfer and last-mile delivery fleet management.',
     coverImage: 'https://images.unsplash.com/photo-1586528116493-a029325540fa?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -64,7 +64,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'LPQA',
     icon: 'ti-scan-eye',
     color: '#64748b',
-    description: 'Kiểm soát chất lượng đầu vào, chống thất thoát hàng hóa, an ninh camera và kiểm toán tuân thủ quy chuẩn MMVN.',
+    description: 'Inbound quality control, shrinkage prevention, camera security and MMVN compliance auditing.',
     coverImage: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -73,7 +73,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'LEAD',
     icon: 'ti-users',
     color: '#8b5cf6',
-    description: 'Nâng cao năng lực quản lý, kỹ năng lãnh đạo đội ngũ, giao việc, huấn luyện (coaching) và hoạch định hiệu suất OKRs.',
+    description: 'Building management capability, team leadership, delegation, coaching and OKR performance planning.',
     coverImage: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -81,8 +81,8 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     name: 'Corporate Governance',
     code: 'GOV',
     icon: 'ti-gavel',
-    color: '#475569',
-    description: 'Quản trị doanh nghiệp, quy chế điều hành, chuẩn mực phát triển bền vững (ESG) và báo cáo minh bạch cho hội đồng.',
+    color: 'var(--ink-soft)',
+    description: 'Corporate governance, operating regulations, sustainable development (ESG) standards and transparent board reporting.',
     coverImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -91,7 +91,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'COMP',
     icon: 'ti-scale',
     color: '#d97706',
-    description: 'Quy tắc ứng xử đạo đức kinh doanh, phòng chống tham nhũng, xung đột lợi ích và tuân thủ pháp luật lao động.',
+    description: 'The business ethics code of conduct, anti-corruption, conflicts of interest and labour law compliance.',
     coverImage: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -100,7 +100,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'SEC',
     icon: 'ti-lock-square-rounded',
     color: '#dc2626',
-    description: 'Bảo mật thông tin hệ thống, phòng chống lừa đảo Phishing, bảo vệ dữ liệu cá nhân khách hàng PDPD và mã hóa dữ liệu.',
+    description: 'System information security, phishing prevention, customer personal data protection (PDPD) and data encryption.',
     coverImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -109,7 +109,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'CS',
     icon: 'ti-headset',
     color: '#ec4899',
-    description: 'Nghệ thuật giao tiếp, giải quyết khiếu nại khách hàng, chuẩn mực phục vụ khách hàng B2B/B2C và văn hóa dịch vụ xuất sắc.',
+    description: 'The art of communication, resolving customer complaints, B2B/B2C service standards and a culture of service excellence.',
     coverImage: 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -118,7 +118,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'MERCH',
     icon: 'ti-shopping-bag',
     color: '#f97316',
-    description: 'Chiến lược phát triển ngành hàng, định giá cạnh tranh, đàm phán nhà cung cấp và nghệ thuật kích cầu doanh số.',
+    description: 'Category development strategy, competitive pricing, supplier negotiation and the art of driving sales.',
     coverImage: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -127,7 +127,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'DIGI',
     icon: 'ti-device-laptop',
     color: '#6366f1',
-    description: 'Thương mại điện tử bán lẻ đa kênh (Omnichannel), ứng dụng số hóa quy trình vận hành và quản trị dữ liệu lớn.',
+    description: 'Omnichannel retail e-commerce, digitalizing operational processes and big data management.',
     coverImage: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -136,7 +136,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'FIN',
     icon: 'ti-calculator',
     color: '#059669',
-    description: 'Quản trị tài chính siêu thị, kiểm soát báo cáo P&L, đối soát thu chi, hóa đơn điện tử và kiểm toán nội bộ.',
+    description: 'Store financial management, P&L report control, income/expense reconciliation, e-invoicing and internal audit.',
     coverImage: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -145,7 +145,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'ORIENT',
     icon: 'ti-compass',
     color: '#0284c7',
-    description: 'Định hướng hội nhập nhân viên mới (Onboarding), văn hóa MM Mega Market, cơ cấu tổ chức và chế độ phúc lợi.',
+    description: 'New employee onboarding, MM Mega Market culture, the org structure and the benefits package.',
     coverImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -154,7 +154,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     code: 'FRESH',
     icon: 'ti-leaf',
     color: '#16a34a',
-    description: 'Kỹ thuật pha lọc thịt, chế biến thủy hải sản, sơ chế rau củ quả hữu cơ và làm bánh tươi chuẩn xuất sắc.',
+    description: 'Meat butchery technique, seafood processing, organic produce preparation and excellent fresh baking.',
     coverImage: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80',
   },
 ];
@@ -162,30 +162,30 @@ export const DEFAULT_CATEGORY_OBJECTS = [
 export const DEFAULT_COMPANY_CATEGORIES = DEFAULT_CATEGORY_OBJECTS.map((c) => c.name);
 
 export const CATEGORY_ICON_PRESETS = [
-  { id: 'ti-shield-check', label: 'An Toàn / Shield' },
-  { id: 'ti-building-store', label: 'Siêu Thị / Store' },
-  { id: 'ti-leaf', label: 'Thực Phẩm / Fresh' },
-  { id: 'ti-truck-delivery', label: 'Kho Vận / Logistics' },
-  { id: 'ti-snowflake', label: 'Chuỗi Lạnh / Cold' },
-  { id: 'ti-first-aid-kit', label: 'Y Tế & PCCC' },
-  { id: 'ti-users', label: 'Lãnh Đạo / Team' },
-  { id: 'ti-headset', label: 'Khách Hàng / CS' },
-  { id: 'ti-shopping-bag', label: 'Bán Lẻ / Sales' },
-  { id: 'ti-device-laptop', label: 'Công Nghệ / IT' },
-  { id: 'ti-calculator', label: 'Tài Chính / Fin' },
-  { id: 'ti-gavel', label: 'Pháp Chế / Law' },
-  { id: 'ti-scale', label: 'Đạo Đức / Ethics' },
-  { id: 'ti-lock-square-rounded', label: 'Bảo Mật / Sec' },
-  { id: 'ti-compass', label: 'Hội Nhập / Orientation' },
-  { id: 'ti-scan-eye', label: 'Chất Lượng / QA' },
-  { id: 'ti-certificate', label: 'Chứng Chỉ' },
-  { id: 'ti-chart-bar', label: 'Phân Tích / Data' },
-  { id: 'ti-bulb', label: 'Sáng Tạo / Idea' },
-  { id: 'ti-books', label: 'Đào Tạo / Học Tập' },
-  { id: 'ti-briefcase', label: 'Nghiệp Vụ' },
-  { id: 'ti-award', label: 'Thành Tựu' },
-  { id: 'ti-heart-handshake', label: 'Hợp Tác' },
-  { id: 'ti-world', label: 'Toàn Cầu' },
+  { id: 'ti-shield-check', label: 'Safety / Shield' },
+  { id: 'ti-building-store', label: 'Store' },
+  { id: 'ti-leaf', label: 'Food / Fresh' },
+  { id: 'ti-truck-delivery', label: 'Warehousing / Logistics' },
+  { id: 'ti-snowflake', label: 'Cold Chain / Cold' },
+  { id: 'ti-first-aid-kit', label: 'Health & Fire Safety' },
+  { id: 'ti-users', label: 'Leadership / Team' },
+  { id: 'ti-headset', label: 'Customer / CS' },
+  { id: 'ti-shopping-bag', label: 'Retail / Sales' },
+  { id: 'ti-device-laptop', label: 'Technology / IT' },
+  { id: 'ti-calculator', label: 'Finance / Fin' },
+  { id: 'ti-gavel', label: 'Legal / Law' },
+  { id: 'ti-scale', label: 'Ethics' },
+  { id: 'ti-lock-square-rounded', label: 'Security / Sec' },
+  { id: 'ti-compass', label: 'Onboarding / Orientation' },
+  { id: 'ti-scan-eye', label: 'Quality / QA' },
+  { id: 'ti-certificate', label: 'Certificates' },
+  { id: 'ti-chart-bar', label: 'Analytics / Data' },
+  { id: 'ti-bulb', label: 'Innovation / Idea' },
+  { id: 'ti-books', label: 'Training / Learning' },
+  { id: 'ti-briefcase', label: 'Operations' },
+  { id: 'ti-award', label: 'Achievement' },
+  { id: 'ti-heart-handshake', label: 'Collaboration' },
+  { id: 'ti-world', label: 'Global' },
 ];
 
 export const CATEGORY_COLOR_PRESETS = [
@@ -244,7 +244,7 @@ export function getCategoryMetadata(categoryName, customList = []) {
     code: generateCategoryCode(nameToMatch),
     icon: 'ti-folder',
     color: '#3b82f6',
-    description: `Danh mục đào tạo ${nameToMatch}`,
+    description: `${nameToMatch} training catalog`,
     coverImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
   };
 }
@@ -330,10 +330,10 @@ export function computeLifecycleStatus(course, today = new Date()) {
 }
 
 export const LIFECYCLE_STATUS_META = {
-  DRAFT: { label: 'Nháp', labelEn: 'Draft', tone: 'slate', icon: 'ti-file-pencil' },
-  UPCOMING: { label: 'Chưa Mở', labelEn: 'Upcoming', tone: 'blue', icon: 'ti-clock' },
-  OPEN: { label: 'Đang Mở', labelEn: 'Open', tone: 'sage', icon: 'ti-circle-check' },
-  CLOSED: { label: 'Đã Đóng', labelEn: 'Closed', tone: 'rust', icon: 'ti-lock' },
+  DRAFT: { label: 'Draft', labelEn: 'Draft', tone: 'slate', icon: 'ti-file-pencil' },
+  UPCOMING: { label: 'Upcoming', labelEn: 'Upcoming', tone: 'blue', icon: 'ti-clock' },
+  OPEN: { label: 'Open', labelEn: 'Open', tone: 'sage', icon: 'ti-circle-check' },
+  CLOSED: { label: 'Closed', labelEn: 'Closed', tone: 'rust', icon: 'ti-lock' },
 };
 
 // Learner catalog visibility: a CLOSED course is hidden from anyone who never
@@ -343,26 +343,26 @@ export function isCourseVisibleWhenClosed(course) {
 }
 
 // ---------------------------------------------------------------------------
-// Trạng thái vòng đời "cá nhân hóa" — dùng cho catalog của Learner, Manager,
-// HRBP và Trainer/L&D (mọi role KHÔNG PHẢI User Admin/SysAdmin). Khác với
-// LIFECYCLE_STATUS_META (Nháp/Chưa Mở/Đang Mở/Đã Đóng — góc nhìn quản trị của
-// người tạo khóa), 4 role này quan tâm tới quan hệ CÁ NHÂN của họ với khóa học
-// hơn là vòng đời quản trị thuần túy, nên khi đã ghi danh thì trạng thái ghi
-// danh thật (Đã Hoàn Thành / Đã Quá Hạn / đang tham gia) được ưu tiên hiển thị
-// thay vì chỉ nói chung chung "Đang Mở". Chỉ khi CHƯA từng ghi danh mới quay
-// lại dùng đúng trạng thái vòng đời của khóa (Đang Mở / Đã Qua Thời Gian Tham
-// Gia — tương đương "Đã Đóng" bên Admin nhưng đổi tên cho đúng góc nhìn học
-// viên/quản lý).
+// The "personalized" lifecycle status — used in the catalog for Learner, Manager,
+// HRBP and Trainer/L&D (every role that is NOT User Admin/SysAdmin). Unlike
+// LIFECYCLE_STATUS_META (Draft/Upcoming/Open/Closed — the administration view of
+// the course author), these 4 roles care about their PERSONAL relationship with the course
+// rather than the pure administrative lifecycle, so once enrolled, the
+// real enrollment (Completed / Overdue / in progress) takes display priority
+// instead of the vague "Open". Only when they have NEVER enrolled does it fall
+// falls back to the course's true lifecycle status (Open / Enrollment Window
+// Closed — the same as the Admin's "Closed" but renamed for the learner's
+// perspective (learner/manager).
 export const PERSONAL_LIFECYCLE_STATUS_META = {
-  OPEN: { label: 'Đang Mở', labelEn: 'Open', tone: 'sage', icon: 'ti-circle-check' },
-  CLOSED: { label: 'Đã Qua Thời Gian Tham Gia', labelEn: 'Enrollment Window Closed', tone: 'rust', icon: 'ti-lock' },
-  JOINED: { label: 'Đang Tham Gia', labelEn: 'Currently Enrolled', tone: 'blue', icon: 'ti-user-check' },
-  OVERDUE: { label: 'Đã Quá Hạn', labelEn: 'Overdue', tone: 'amber', icon: 'ti-alert-triangle' },
-  COMPLETED: { label: 'Đã Hoàn Thành', labelEn: 'Completed', tone: 'rail', icon: 'ti-certificate' },
+  OPEN: { label: 'Open', labelEn: 'Open', tone: 'sage', icon: 'ti-circle-check' },
+  CLOSED: { label: 'Enrollment Window Closed', labelEn: 'Enrollment Window Closed', tone: 'rust', icon: 'ti-lock' },
+  JOINED: { label: 'In Progress', labelEn: 'Currently Enrolled', tone: 'blue', icon: 'ti-user-check' },
+  OVERDUE: { label: 'Overdue', labelEn: 'Overdue', tone: 'amber', icon: 'ti-alert-triangle' },
+  COMPLETED: { label: 'Completed', labelEn: 'Completed', tone: 'rail', icon: 'ti-certificate' },
 };
 
-// `course.enrollment` phải được gộp sẵn vào course (ghi danh thật của người
-// đang xem, không phải field tĩnh trên course template) trước khi gọi hàm này.
+// `course.enrollment` must already be merged onto the course (the real enrollment of the person
+// being viewed, not a static field on the course template) before calling this function.
 export function personalLifecycleStatusOf(course) {
   const enrollment = course.enrollment;
   if (enrollment) {
@@ -381,8 +381,8 @@ export function personalLifecycleStatusOf(course) {
 // ---------------------------------------------------------------------------
 export function courseFormatBadge(c) {
   const isInPerson = c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB';
-  if (isInPerson) return { icon: '🏢', label: 'Trực Tiếp (ILT)', tone: 'blue' };
-  if (c.onlineClassType === 'VIRTUAL_CLASS') return { icon: '💻', label: 'Lớp Trực Tuyến Live', tone: 'amber' };
+  if (isInPerson) return { icon: '🏢', label: 'In-Person (ILT)', tone: 'blue' };
+  if (c.onlineClassType === 'VIRTUAL_CLASS') return { icon: '💻', label: 'Live Online Class', tone: 'amber' };
   return { icon: '🌐', label: 'E-Learning', tone: 'sage' };
 }
 
@@ -403,12 +403,12 @@ export function catalogSectionOf(c) {
 // the learner catalog, plus CATEGORY/LIFECYCLE_STATUS for the new Library tab).
 // ---------------------------------------------------------------------------
 export const STATUS_GROUP_META = {
-  COMPLETED: { label: 'Đã Hoàn Thành', icon: 'ti-circle-check' },
-  IN_PROGRESS: { label: 'Đang Học', icon: 'ti-player-play' },
-  NOT_STARTED: { label: 'Chưa Bắt Đầu', icon: 'ti-circle-dashed' },
-  OVERDUE: { label: 'Quá Hạn', icon: 'ti-alert-triangle' },
-  FAILED: { label: 'Cần Thi Lại', icon: 'ti-reload' },
-  NOT_ENROLLED: { label: 'Chưa Ghi Danh', icon: 'ti-bookmark-off' },
+  COMPLETED: { label: 'Completed', icon: 'ti-circle-check' },
+  IN_PROGRESS: { label: 'In Progress', icon: 'ti-player-play' },
+  NOT_STARTED: { label: 'Not Started', icon: 'ti-circle-dashed' },
+  OVERDUE: { label: 'Overdue', icon: 'ti-alert-triangle' },
+  FAILED: { label: 'Retake Required', icon: 'ti-reload' },
+  NOT_ENROLLED: { label: 'Not Enrolled', icon: 'ti-bookmark-off' },
 };
 
 export function courseOrgUnitGroups(c) {
@@ -417,49 +417,49 @@ export function courseOrgUnitGroups(c) {
     : (c.assignment ? [c.assignment] : []);
 
   if (asgList.length === 0) {
-    return [{ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' }];
+    return [{ key: 'ELECTIVE', label: 'Optional / Supplementary (Elective)', icon: 'ti-sparkles' }];
   }
 
   const groups = [];
   asgList.forEach((a) => {
     const targetId = a.targetId || a.targetDivisionId || a.targetDepartmentId || a.targetBusinessUnitId || a.targetStoreId || a.targetAreaId || a.targetClusterId;
     if (a.assignmentType === 'BUSINESS_UNIT' || a.assignmentType === 'ALL_ASSOCIATES') {
-      groups.push({ key: 'BU', label: 'Bắt Buộc Toàn Công Ty (MMVN)', icon: 'ti-building-skyscraper' });
+      groups.push({ key: 'BU', label: 'Company-Wide Mandatory (MMVN)', icon: 'ti-building-skyscraper' });
     } else if (a.assignmentType === 'DIVISION') {
       const div = divisions.find((d) => d.id === targetId || d.code === targetId);
-      const label = a.targetLabel || (div ? `Khối ${div.name}` : `Khối [${targetId}]`);
-      groups.push({ key: `DIV-${targetId}`, label: label.startsWith('Khối') ? label : `Khối ${label}`, icon: 'ti-building' });
+      const label = a.targetLabel || (div ? `Division ${div.name}` : `Division [${targetId}]`);
+      groups.push({ key: `DIV-${targetId}`, label: label.startsWith('Division') ? label : `Division ${label}`, icon: 'ti-building' });
     } else if (a.assignmentType === 'DEPARTMENT') {
       const dept = departments.find((d) => d.id === targetId || d.code === targetId);
-      const label = a.targetLabel || (dept ? `Phòng Ban: ${dept.name}` : `Phòng Ban: ${targetId}`);
-      groups.push({ key: `DEPT-${targetId}`, label: label.startsWith('Phòng') ? label : `Phòng Ban: ${label}`, icon: 'ti-building-community' });
+      const label = a.targetLabel || (dept ? `Department: ${dept.name}` : `Department: ${targetId}`);
+      groups.push({ key: `DEPT-${targetId}`, label: label.startsWith('Department') ? label : `Department: ${label}`, icon: 'ti-building-community' });
     } else if (a.assignmentType === 'SUBDEPARTMENT') {
       const sub = subDepartments.find((s) => s.id === targetId || s.code === targetId);
-      const label = a.targetLabel || (sub ? `Bộ Phận: ${sub.name}` : `Bộ Phận: ${targetId}`);
-      groups.push({ key: `SUBDEPT-${targetId}`, label: label.startsWith('Bộ') ? label : `Bộ Phận: ${label}`, icon: 'ti-git-branch' });
+      const label = a.targetLabel || (sub ? `Sub-Department: ${sub.name}` : `Sub-Department: ${targetId}`);
+      groups.push({ key: `SUBDEPT-${targetId}`, label: label.startsWith('Sub-Dept') ? label : `Sub-Department: ${label}`, icon: 'ti-git-branch' });
     } else if (a.assignmentType === 'STORE') {
       const st = retailStores.find((s) => s.id === targetId || s.code === targetId);
-      const label = a.targetLabel || (st ? `Chi Nhánh: ${st.name}` : `Chi Nhánh: ${targetId}`);
+      const label = a.targetLabel || (st ? `Branch: ${st.name}` : `Branch: ${targetId}`);
       groups.push({ key: `STORE-${targetId}`, label, icon: 'ti-map-pin' });
     } else if (a.assignmentType === 'LEVEL') {
-      groups.push({ key: `LVLREQ-${targetId || a.targetLevel}`, label: `Bắt Buộc Level ${targetId || a.targetLevel}`, icon: 'ti-stairs-up' });
+      groups.push({ key: `LVLREQ-${targetId || a.targetLevel}`, label: `Mandatory For Level ${targetId || a.targetLevel}`, icon: 'ti-stairs-up' });
     } else if (a.assignmentType === 'GROUP') {
-      groups.push({ key: `GRP-${targetId}`, label: `Nhóm: ${a.targetLabel || targetId}`, icon: 'ti-users-group' });
+      groups.push({ key: `GRP-${targetId}`, label: `Group: ${a.targetLabel || targetId}`, icon: 'ti-users-group' });
     } else if (a.assignmentType === 'USER') {
-      groups.push({ key: `USR-${targetId}`, label: `Gán Cá Nhân: ${a.targetLabel || targetId}`, icon: 'ti-user' });
+      groups.push({ key: `USR-${targetId}`, label: `Individual Assignment: ${a.targetLabel || targetId}`, icon: 'ti-user' });
     } else {
-      groups.push({ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' });
+      groups.push({ key: 'ELECTIVE', label: 'Optional / Supplementary (Elective)', icon: 'ti-sparkles' });
     }
   });
 
-  return groups.length ? groups : [{ key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' }];
+  return groups.length ? groups : [{ key: 'ELECTIVE', label: 'Optional / Supplementary (Elective)', icon: 'ti-sparkles' }];
 }
 
 export function courseGroupOf(c, groupBy, opts = {}) {
   switch (groupBy) {
     case 'ORG_UNIT': {
       const groups = courseOrgUnitGroups(c);
-      return groups[0] || { key: 'ELECTIVE', label: 'Tự Chọn / Bổ Trợ (Elective)', icon: 'ti-sparkles' };
+      return groups[0] || { key: 'ELECTIVE', label: 'Optional / Supplementary (Elective)', icon: 'ti-sparkles' };
     }
     case 'LEVEL':
       return { key: String(c.targetLevel), label: `Level ${c.targetLevel} — ${levelShortLabel(c.targetLevel)}`, icon: 'ti-stairs-up' };
@@ -473,9 +473,9 @@ export function courseGroupOf(c, groupBy, opts = {}) {
       return { key: b.label, label: b.label, icon: 'ti-device-desktop' };
     }
     case 'DOMAIN':
-      return { key: c.domain || c.category || 'Khác', label: c.domain || c.category || 'Khác', icon: 'ti-category' };
+      return { key: c.domain || c.category || 'Other', label: c.domain || c.category || 'Other', icon: 'ti-category' };
     case 'CATEGORY': {
-      const label = (c.categories && c.categories[0]) || c.category || 'Khác';
+      const label = (c.categories && c.categories[0]) || c.category || 'Other';
       return { key: label, label, icon: 'ti-tag' };
     }
     case 'LIFECYCLE_STATUS': {

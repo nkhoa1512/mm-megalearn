@@ -5,8 +5,8 @@ import { levelDefinition, ACCESS_STATE } from '../../data/levelSystem';
 import { todayDateString, addMonths, firstOfMonth, getMonthGridWeeks, formatMonthLabel } from '../../utils/calendarDate';
 
 /**
- * Huy hiệu cấp bậc trên thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất.
- * Màu đậm dần khi lên cấp cao (Level 1 đỏ đô, Level 7 xám nhạt).
+ * Job level badge on the INVERTED scale: Level 7 lowest -> Level 1 highest.
+ * The color deepens with seniority (Level 1 deep red, Level 7 light grey).
  */
 export function JobLevelBadge({ level, title, compact = false }) {
   const def = levelDefinition(level);
@@ -30,17 +30,17 @@ export function JobLevelBadge({ level, title, compact = false }) {
   );
 }
 
-/** Nhãn trạng thái mở khóa của một khóa học theo quy tắc học vượt cấp tuần tự. */
+/** Unlock status label for a course under the sequential level skip rule. */
 export function LevelAccessBadge({ access }) {
   if (!access) return null;
-  // Nhãn ngắn để bảng không bị đẩy tràn ngang; mô tả đầy đủ nằm ở tooltip.
+  // A short label so the table does not overflow horizontally; the full description sits in the tooltip.
   const map = {
-    [ACCESS_STATE.OPEN]: { tone: 'sage', icon: 'ti-lock-open', label: 'Đúng cấp', hint: 'Khóa ở cấp bậc của bạn hoặc thấp hơn — học ngay' },
-    [ACCESS_STATE.APPROVED]: { tone: 'sage', icon: 'ti-circle-check', label: 'Đã duyệt', hint: 'Quản lý đã phê duyệt học vượt cấp cho khóa này' },
-    [ACCESS_STATE.PENDING_APPROVAL]: { tone: 'amber', icon: 'ti-clock', label: 'Chờ duyệt', hint: 'Đơn xin học vượt cấp đang chờ Quản lý phê duyệt' },
-    [ACCESS_STATE.REJECTED]: { tone: 'rust', icon: 'ti-x', label: 'Bị từ chối', hint: 'Quản lý đã từ chối đơn — bạn có thể gửi lại' },
-    [ACCESS_STATE.REQUESTABLE]: { tone: 'blue', icon: 'ti-lock', label: 'Cần xin duyệt', hint: 'Vượt đúng 1 cấp — phải được Quản lý phê duyệt' },
-    [ACCESS_STATE.LOCKED_LEVEL_GAP]: { tone: 'rust', icon: 'ti-ban', label: 'Chặn nhảy cóc', hint: 'Cách từ 2 cấp trở lên — phải leo tuần tự từng bậc' },
+    [ACCESS_STATE.OPEN]: { tone: 'sage', icon: 'ti-lock-open', label: 'Correct level', hint: 'At or below your level — start right away' },
+    [ACCESS_STATE.APPROVED]: { tone: 'sage', icon: 'ti-circle-check', label: 'Approved', hint: 'Your manager approved the level skip for this course' },
+    [ACCESS_STATE.PENDING_APPROVAL]: { tone: 'amber', icon: 'ti-clock', label: 'Pending approval', hint: 'The level skip request is awaiting manager approval' },
+    [ACCESS_STATE.REJECTED]: { tone: 'rust', icon: 'ti-x', label: 'Rejected', hint: 'Your manager rejected the request — you may resubmit' },
+    [ACCESS_STATE.REQUESTABLE]: { tone: 'blue', icon: 'ti-lock', label: 'Approval required', hint: 'Exactly one grade above — requires manager approval' },
+    [ACCESS_STATE.LOCKED_LEVEL_GAP]: { tone: 'rust', icon: 'ti-ban', label: 'Grade skipping blocked', hint: 'Two or more grades away — you must climb one grade at a time' },
   };
   const cfg = map[access.state] || map[ACCESS_STATE.OPEN];
   return <span title={access.reason || cfg.hint}><Badge tone={cfg.tone} icon={cfg.icon}>{cfg.label}</Badge></span>;
@@ -129,10 +129,10 @@ export function Button({ children, variant = 'default', size, icon, onClick, blo
 }
 
 /**
- * Nút "..." gom các hành động phụ của 1 hàng bảng (Edit / Publish / Delete...)
- * vào 1 dropdown gọn thay vì bày hết ra thành dãy nút. Popover được portal ra
- * document.body (position: fixed, toạ độ tính từ nút bấm) để không bị cắt cụt
- * bởi các container cha có overflow (vd bảng cuộn ngang).
+ * The "..." button collects a table row's secondary actions (Edit / Publish / Delete...)
+ * into one compact dropdown instead of a row of buttons. The popover is portalled to
+ * document.body (position: fixed, coordinates measured from the button) so it is not clipped
+ * by parent containers with overflow (e.g. a horizontally scrolling table).
  */
 export function ActionsMenu({ items, label = 'More actions', icon = 'ti-dots-vertical' }) {
   const [open, setOpen] = useState(false);
@@ -213,12 +213,12 @@ export function ActionsMenu({ items, label = 'More actions', icon = 'ti-dots-ver
 }
 
 /**
- * Lịch dạng lưới tháng dùng cho Lịch Học Tập cá nhân (mọi role). Hover 1 ô
- * ngày có sự kiện hiện tooltip xem nhanh (chỉ đọc, không click được); bấm
- * vào ô ngày mới thực sự chọn ngày đó (điều khiển bởi component cha qua
- * onSelectDate) để hiện panel chi tiết đầy đủ. Tooltip portal ra
- * document.body giống ActionsMenu ở trên, để không bị cắt bởi container cha
- * có overflow.
+ * Month-grid calendar used by the personal Learning Calendar (every role). Hovering a
+ * day cell with events shows a quick-look tooltip (read-only, not clickable); clicking
+ * the day cell actually selects it (driven by the parent component through
+ * onSelectDate) to show the full detail panel. The tooltip is portalled to
+ * document.body like ActionsMenu above, so it is not clipped by a parent
+ * container with overflow.
  */
 export function MonthCalendarGrid({ viewMonth, selectedDate, eventsByDate, onSelectDate, onMonthChange, language = 'vi' }) {
   const [hoverCell, setHoverCell] = useState(null); // { date, top, left } | null
@@ -250,7 +250,7 @@ export function MonthCalendarGrid({ viewMonth, selectedDate, eventsByDate, onSel
           <i className="ti ti-chevron-right" aria-hidden="true" />
         </button>
         <Button size="sm" variant="outline" onClick={() => onMonthChange(firstOfMonth(today))}>
-          {language === 'en' ? 'Today' : 'Hôm nay'}
+          {language === 'en' ? 'Today' : 'Today'}
         </Button>
       </div>
 
@@ -416,8 +416,8 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Xác thực & Tải Chứng chỉ Điện tử MM Mega Market"
-      subtitle={`Mã chứng chỉ: ${certificate.id}`}
+      title="Verify & Download The MM Mega Market Digital Certificate"
+      subtitle={`Certificate ID: ${certificate.id}`}
       size="lg"
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -426,8 +426,8 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
             Official Digital Certificate &middot; Verified via MMVN Enterprise Security
           </span>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="outline" icon="ti-printer" onClick={() => window.print()}>In Chứng Chỉ</Button>
-            <Button variant="primary" icon="ti-download" onClick={onClose}>Tải PDF (Bản Gốc)</Button>
+            <Button variant="outline" icon="ti-printer" onClick={() => window.print()}>Print Certificate</Button>
+            <Button variant="primary" icon="ti-download" onClick={onClose}>Download PDF (Original)</Button>
           </div>
         </div>
       }
@@ -466,8 +466,8 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
                 MM
               </div>
               <div>
-                <div style={{ fontWeight: 900, fontSize: 17, color: '#005BAA', letterSpacing: '0.04em' }}>MM MEGA MARKET VIETNAM</div>
-                <div style={{ fontSize: 11.5, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                <div style={{ fontWeight: 900, fontSize: 18, color: 'var(--blue)', letterSpacing: '0.04em' }}>MM MEGA MARKET VIETNAM</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
                   Learning &amp; Organizational Development Academy
                 </div>
               </div>
@@ -481,7 +481,7 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
                 padding: '6px 14px',
                 background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
                 border: '1.5px solid #F59E0B',
-                color: '#B45309',
+                color: 'var(--amber-soft-text)',
                 borderRadius: 20,
                 fontWeight: 800,
                 fontSize: 12,
@@ -495,33 +495,33 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
 
           {/* MAIN CERTIFICATE BODY */}
           <div className="cert-body" style={{ textAlign: 'center', padding: '16px 0 24px' }}>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#0F172A', letterSpacing: '0.08em', marginBottom: 8 }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--ink)', letterSpacing: '0.08em', marginBottom: 8 }}>
               {tpl?.nameEn || 'CERTIFICATE OF COMPLETION'}
             </div>
-            <div style={{ fontSize: 13, color: '#005BAA', fontWeight: 800, textTransform: 'uppercase', marginBottom: 16 }}>
-              {tpl?.name || 'CHỨNG NHẬN HOÀN THÀNH CHƯƠNG TRÌNH ĐÀO TẠO'}
+            <div style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 16 }}>
+              {tpl?.name || 'CERTIFICATE OF TRAINING PROGRAM COMPLETION'}
             </div>
 
-            <div style={{ fontSize: 13.5, fontStyle: 'italic', color: '#64748B', marginBottom: 8 }}>
-              Chứng chỉ này được trân trọng trao tặng cho:
+            <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--ink-soft)', marginBottom: 8 }}>
+              This certificate is proudly awarded to:
             </div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#005BAA', margin: '4px 0 8px', letterSpacing: '0.02em' }}>
-              {certificate.recipientName || 'Học Viên MMVN'}
+            <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--blue)', margin: '4px 0 8px', letterSpacing: '0.02em' }}>
+              {certificate.recipientName || 'MMVN Learner'}
             </div>
-            <div style={{ fontSize: 13, color: '#475569', marginBottom: 18 }}>
-              Chức danh: <strong>{certificate.recipientPosition || 'Cán Bộ / Nhân Viên'}</strong> &middot; Đơn vị: <strong>{certificate.department || 'MM Mega Market Vietnam'}</strong>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 18 }}>
+              Job title: <strong>{certificate.recipientPosition || 'Employee'}</strong> &middot; Unit: <strong>{certificate.department || 'MM Mega Market Vietnam'}</strong>
             </div>
 
-            <div style={{ fontSize: 13, color: '#334155', maxWidth: 620, margin: '0 auto 12px', lineHeight: 1.6 }}>
-              Đã hoàn thành xuất sắc các yêu cầu chuyên môn và vượt qua kỳ sát hạch đánh giá năng lực của khóa đào tạo:
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', maxWidth: 620, margin: '0 auto 12px', lineHeight: 1.6 }}>
+              Has excellently fulfilled the professional requirements and passed the competency examination for the training course:
             </div>
 
             <div
               style={{
                 fontSize: 18,
                 fontWeight: 800,
-                color: '#0F172A',
-                background: '#F8FAFC',
+                color: 'var(--ink)',
+                background: 'var(--paper-sunken)',
                 border: '1px solid #E2E8F0',
                 padding: '10px 20px',
                 borderRadius: 8,
@@ -532,8 +532,8 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
               {certificate.courseName}
             </div>
 
-            <div style={{ fontSize: 12.5, color: '#64748B' }}>
-              Điểm sát hạch đạt chuẩn: <strong style={{ color: '#16A34A', fontSize: 14 }}>{certificate.score || 95}%</strong> &middot; Mã định danh khóa: <strong style={{ fontFamily: 'monospace' }}>{certificate.courseCode}</strong>
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+              Examination pass score: <strong style={{ color: '#16A34A', fontSize: 14 }}>{certificate.score || 95}%</strong> &middot; Course code: <strong style={{ fontFamily: 'monospace' }}>{certificate.courseCode}</strong>
             </div>
           </div>
 
@@ -552,20 +552,20 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
           >
             {/* SIGNATURE COLUMN */}
             <div className="cert-sign-col" style={{ textAlign: 'left' }}>
-              <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', fontStyle: 'italic', fontFamily: 'cursive', fontSize: 18, color: '#005BAA', paddingLeft: 4 }}>
+              <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', fontStyle: 'italic', fontFamily: 'cursive', fontSize: 18, color: 'var(--blue)', paddingLeft: 4 }}>
                 {tpl?.signerName ? `${tpl.signerName}` : 'Bruno Jousselin'}
               </div>
               <div style={{ width: 180, height: 1.5, background: '#005BAA', margin: '4px 0 6px' }} />
-              <div style={{ fontWeight: 800, fontSize: 13, color: '#0F172A' }}>{tpl?.signerName || 'Bruno Jousselin'}</div>
-              <div style={{ fontSize: 11.5, color: '#64748B' }}>{tpl?.signerTitle || 'Managing Director & Country CEO'}</div>
-              <div style={{ fontSize: 10.5, color: '#94A3B8', marginTop: 2 }}>{tpl?.issuerOrg || 'MM Mega Market Vietnam'}</div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--ink)' }}>{tpl?.signerName || 'Bruno Jousselin'}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{tpl?.signerTitle || 'Managing Director & Country CEO'}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>{tpl?.issuerOrg || 'MM Mega Market Vietnam'}</div>
             </div>
 
             {/* QR CODE VERIFICATION COLUMN */}
             <div className="cert-qr-col" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <QRCodeView value={certificate.id} size={64} />
-              <div style={{ fontSize: 10, color: '#64748B', marginTop: 4, fontFamily: 'monospace' }}>{certificate.id}</div>
-              <div style={{ fontSize: 9.5, color: '#94A3B8' }}>Quét QR để xác thực tính toàn vẹn</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 4, fontFamily: 'monospace' }}>{certificate.id}</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-faint)' }}>Scan the QR code to verify integrity</div>
             </div>
 
             {/* SEAL & EXPIRATION COLUMN */}
@@ -576,26 +576,26 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
                   alignItems: 'center',
                   gap: 6,
                   padding: '4px 10px',
-                  background: '#F0FDF4',
+                  background: 'var(--sage-soft)',
                   border: '1px solid #BBF7D0',
                   borderRadius: 6,
-                  color: '#166534',
+                  color: 'var(--sage-soft-text)',
                   fontWeight: 700,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   marginBottom: 6,
                 }}
               >
                 <i className="ti ti-award" />
                 <span>OFFICIAL MMVN SEAL</span>
               </div>
-              <div style={{ fontSize: 11.5, color: '#475569' }}>
-                Ngày cấp: <strong>{certificate.issueDate || certificate.completionDate}</strong>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Issued on: <strong>{certificate.issueDate || certificate.completionDate}</strong>
               </div>
-              <div style={{ fontSize: 11.5, marginTop: 3 }}>
+              <div style={{ fontSize: 12, marginTop: 3 }}>
                 {isLifetime ? (
-                  <span style={{ color: '#16A34A', fontWeight: 800 }}>Hiệu lực: Vĩnh viễn (Lifetime)</span>
+                  <span style={{ color: '#16A34A', fontWeight: 800 }}>Validity: Lifetime</span>
                 ) : (
-                  <span style={{ color: '#D97706', fontWeight: 700 }}>Hạn tái cấp: <strong>{certificate.validUntil}</strong></span>
+                  <span style={{ color: '#D97706', fontWeight: 700 }}>Recertification due: <strong>{certificate.validUntil}</strong></span>
                 )}
               </div>
             </div>
@@ -606,7 +606,7 @@ export function CertificateModal({ certificate, isOpen, onClose }) {
   );
 }
 
-// Picker "Mẫu Chứng Chỉ" dùng chung cho Course Builder & Curriculum Editor
+// The "Certificate Template" picker shared by Course Builder & Curriculum Editor
 export function CertificateTemplatePicker({ templateId, onChange, certificateTemplates = [], companyCategories = [], defaultCategory, onCreateTemplate }) {
   const [mode, setMode] = useState('existing');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -634,7 +634,7 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
     const newTemplate = {
       id: `CERTTPL-${Date.now()}`,
       name: importName.trim(),
-      description: `Mẫu chứng chỉ tùy chỉnh tạo trực tiếp cho lĩnh vực ${defaultCategory || 'General'}.`,
+      description: `A custom certificate template created directly for the ${defaultCategory || 'General'} area.`,
       category: defaultCategory || companyCategories[0] || 'General',
       signerName: importSigner.trim() || 'Thái Minh Dũng',
       signerTitle: importTitle.trim() || 'Head of Learning & Org Development',
@@ -661,39 +661,39 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
     if (!tpl) return;
     setPreviewCert({
       id: `CERT-MMVN-PREVIEW-${Date.now().toString().slice(-4)}`,
-      courseName: 'Khóa Đào Tạo Mẫu (Sample Course Title)',
+      courseName: 'Sample Course Title',
       courseCode: 'MMVN-SAMPLE-001',
       issueDate: new Date().toISOString().slice(0, 10),
       validUntil: tpl.validityDefaultMonths === 0 ? null : new Date(new Date().setFullYear(new Date().getFullYear() + (tpl.validityDefaultMonths / 12 || 1))).toISOString().slice(0, 10),
       isLifetime: tpl.validityDefaultMonths === 0,
       score: 95,
       recipientName: 'Nguyễn Văn Mẫu',
-      recipientPosition: 'Chuyên Viên Nghiệp Vụ',
-      department: 'MM Mega Market An Phú / OMD Fresh Food',
+      recipientPosition: 'Operations Executive',
+      department: 'MM Mega Market An Phu / OMD Fresh Food',
       template: tpl,
     });
   }
 
   return (
-    <div style={{ background: '#fff', borderRadius: 8, padding: 14, border: '1px solid var(--line)' }}>
+    <div style={{ background: 'var(--paper-raised)', borderRadius: 8, padding: 14, border: '1px solid var(--line)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
         <label className="field-label" style={{ fontSize: 12, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
           <i className="ti ti-certificate" style={{ color: 'var(--blue, #005BAA)', fontSize: 16 }} />
-          Mẫu Chứng Chỉ Tốt Nghiệp (Certificate Template)
+          Certificate Template
         </label>
         {selectedTemplate && (
           <Button size="sm" variant="ghost" icon="ti-eye" onClick={() => handlePreviewTemplate(selectedTemplate)}>
-            Xem Trước Mẫu Này
+            Preview This Template
           </Button>
         )}
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         <button type="button" className={`btn btn-sm ${mode === 'existing' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('existing')}>
-          Chọn Mẫu Có Sẵn ({certificateTemplates.length})
+          Choose An Existing Template ({certificateTemplates.length})
         </button>
         <button type="button" className={`btn btn-sm ${mode === 'import' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('import')}>
-          + Tạo Mẫu / Import File Mới
+          + Create Template / Import New File
         </button>
       </div>
 
@@ -705,7 +705,7 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
-            <option value="ALL">Tất Cả Lĩnh Vực</option>
+            <option value="ALL">All Areas</option>
             {companyCategories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -716,7 +716,7 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
             value={templateId || ''}
             onChange={(e) => onChange(e.target.value || null)}
           >
-            <option value="">— Không chọn mẫu riêng (dùng mẫu chuẩn theo Category) —</option>
+            <option value="">— No specific template (use the Category default) —</option>
             {filteredTemplates.map((t) => (
               <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
             ))}
@@ -726,21 +726,21 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--paper-sunken)', padding: 10, borderRadius: 6 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Tên Mẫu Mới *</label>
+              <label className="field-label" style={{ fontSize: 11 }}>New Template Name *</label>
               <input
                 className="field-input"
                 style={{ height: 32, fontSize: 12 }}
-                placeholder="VD: Chứng Chỉ An Toàn Kho Lạnh"
+                placeholder="E.g. Cold Storage Safety Certificate"
                 value={importName}
                 onChange={(e) => setImportName(e.target.value)}
               />
             </div>
             <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Người Ký Duyệt</label>
+              <label className="field-label" style={{ fontSize: 11 }}>Approving Signatory</label>
               <input
                 className="field-input"
                 style={{ height: 32, fontSize: 12 }}
-                placeholder="VD: Thái Minh Dũng"
+                placeholder="E.g. Thái Minh Dũng"
                 value={importSigner}
                 onChange={(e) => setImportSigner(e.target.value)}
               />
@@ -748,34 +748,34 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Chức Danh Người Ký</label>
+              <label className="field-label" style={{ fontSize: 11 }}>Signatory Job Title</label>
               <input
                 className="field-input"
                 style={{ height: 32, fontSize: 12 }}
-                placeholder="VD: Head of Learning & Org Development"
+                placeholder="e.g. Head of Learning & Org Development"
                 value={importTitle}
                 onChange={(e) => setImportTitle(e.target.value)}
               />
             </div>
             <div>
-              <label className="field-label" style={{ fontSize: 11 }}>File Mẫu Đính Kèm (PDF/DOCX)</label>
+              <label className="field-label" style={{ fontSize: 11 }}>Attached Template File (PDF/DOCX)</label>
               <input type="file" className="field-input" style={{ height: 32, fontSize: 12, paddingTop: 4 }} onChange={handleImportFile} />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
-            <Button size="sm" variant="ghost" onClick={() => setMode('existing')}>Hủy</Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode('existing')}>Cancel</Button>
             <Button size="sm" variant="primary" icon="ti-check" disabled={!importName.trim()} onClick={handleCreateAndAttach}>
-              Tạo &amp; Gắn Vào Khóa Này
+              Create &amp; Attach To This Course
             </Button>
           </div>
         </div>
       )}
 
       {selectedTemplate && (
-        <div style={{ marginTop: 10, padding: '6px 10px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ marginTop: 10, padding: '6px 10px', background: 'var(--blue-soft)', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <span style={{ color: '#1E40AF', fontWeight: 800 }}>{selectedTemplate.name}</span>
-            <span style={{ color: '#64748B', marginLeft: 6 }}>&middot; Người ký: <strong>{selectedTemplate.signerName || 'Ban Điều Hành'}</strong></span>
+            <span style={{ color: 'var(--blue-soft-text)', fontWeight: 800 }}>{selectedTemplate.name}</span>
+            <span style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>&middot; Signed by: <strong>{selectedTemplate.signerName || 'Board of Management'}</strong></span>
           </div>
           <Badge tone="blue" size="sm">{selectedTemplate.category}</Badge>
         </div>
@@ -792,9 +792,9 @@ export function CertificateTemplatePicker({ templateId, onChange, certificateTem
   );
 }
 
-// 5 định dạng bài giảng chuẩn hóa: SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
-// (Udemy/LinkedIn Learning/Coursera/YouTube/Khác) — ASSESSMENT là cổng thẩm
-// định năng lực riêng, tách biệt khỏi 5 định dạng nội dung bài giảng.
+// 5 standardized lesson formats: SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK
+// (Udemy/LinkedIn Learning/Coursera/YouTube/Other) — ASSESSMENT is a standalone
+// competency gateway, separate from the 5 lesson content formats.
 const LESSON_ICON = {
   SCORM: 'ti-package',
   VIDEO: 'ti-video',

@@ -18,11 +18,11 @@ import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/asse
 import { generateAssessmentCode } from '../../utils/assessmentCatalog';
 import { pricingOf, formatVnd, COST_TYPE, COST_TYPE_META } from '../../utils/costCenter';
 
-// 5 định dạng bài giảng chuẩn hóa (thay cho DOCUMENT/SCRIPT/IMAGE/TEXT cũ và
-// việc course.modality từng ghi đè loại bài giảng ở Lesson Player):
+// the 5 standardized lesson formats (replacing the old DOCUMENT/SCRIPT/IMAGE/TEXT and
+// that course.modality used to override the lesson type in the Lesson Player):
 // SCORM, VIDEO, PDF, PPT, EXTERNAL_LINK (Udemy/LinkedIn Learning/Coursera/
-// YouTube/Khác). ASSESSMENT là cổng thẩm định năng lực riêng, không tính vào
-// 5 định dạng truyền tải nội dung này.
+// YouTube/Other). ASSESSMENT is a standalone competency gateway and is not counted among
+// of these 5 content delivery formats.
 const LESSON_ICON = {
   SCORM: 'ti-package', VIDEO: 'ti-video', PDF: 'ti-file-text',
   PPT: 'ti-presentation', EXTERNAL_LINK: 'ti-external-link',
@@ -32,7 +32,7 @@ const EXTERNAL_LINK_PLATFORMS = [
   { value: 'LINKEDIN', label: 'LinkedIn Learning' },
   { value: 'COURSERA', label: 'Coursera' },
   { value: 'YOUTUBE', label: 'YouTube' },
-  { value: 'CUSTOM', label: 'Khác (Custom LMS Link)' },
+  { value: 'CUSTOM', label: 'Other (Custom LMS Link)' },
 ];
 
 
@@ -51,8 +51,8 @@ function withVersionDefaults(course) {
   return { ...course, version: course.version || 'v1.0', versionHistory: course.versionHistory || [] };
 }
 
-// Khóa được biên soạn trước khi có categories[] đa lựa chọn — suy ra từ
-// category đơn cũ để ô tick chọn Category luôn có sẵn dữ liệu ban đầu.
+// The course was authored before multi-select categories[] existed — derive it from
+// the old single category so the Category checkboxes always start with data.
 function withCategoryDefaults(course) {
   if (course.categories && course.categories.length) return course;
   return { ...course, categories: course.category ? [course.category] : [] };
@@ -70,9 +70,9 @@ function withLevelDefaults(course) {
   };
 }
 
-// deliveryType + onlineClassType đã quyết định đầy đủ hình thức đào tạo (3
-// nhánh: E-Learning tự học / Lớp trực tuyến Live / Đào tạo trực tiếp) — suy ra
-// modality/format từ đây thay vì để Admin chọn tay qua dropdown đã bỏ.
+// deliveryType + onlineClassType already fully determine the delivery format (3
+// types: self-paced E-Learning / live online class / in-person training) — deriving
+// modality/format from here instead of an Admin choosing it in the removed dropdown.
 function deriveModalityFormat(deliveryType, onlineClassType) {
   if (deliveryType === 'IN_PERSON_CLASSROOM') return { modality: 'CLASSROOM_LAB', format: 'Store Practical Lab / ILT' };
   if (onlineClassType === 'VIRTUAL_CLASS') return { modality: 'VIRTUAL_LIVE_CLASS', format: 'Live Online Class' };
@@ -175,11 +175,11 @@ function blankQuestion() {
   };
 }
 
-// Học phí tham gia — hiển thị ngay trong form tạo/sửa khóa học (không chỉ ở
-// tab "Bảng Giá" của Trung Tâm Chi Phí) để Admin chốt giá cùng lúc với các
-// thông tin khác của khóa. Giá trị ban đầu hiển thị = pricingOf(draft), tức
-// giá gợi ý suy ra theo hình thức tổ chức (modality); mọi chỉnh sửa ở đây ghi
-// thẳng vào draft.pricing và được lưu cùng khóa học khi bấm Save/Publish.
+// Tuition — shown directly in the course create/edit form (not only in the
+// "Price List" tab of the Cost Center) so the Admin can fix the price alongside the
+// other course details. The initial displayed value = pricingOf(draft), i.e.
+// the suggested price from the delivery modality; every edit here writes
+// straight into draft.pricing and saved with the course when Save/Publish is pressed.
 function CoursePricingSection({ draft, onChange }) {
   const current = pricingOf(draft);
 
@@ -187,7 +187,7 @@ function CoursePricingSection({ draft, onChange }) {
     <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <i className="ti ti-report-money" style={{ color: 'var(--amber)', fontSize: 18 }} />
-        <div style={{ fontWeight: 800, fontSize: 14 }}>Chi Phí Đào Tạo (Trung Tâm Chi Phí Chi Trả)</div>
+        <div style={{ fontWeight: 800, fontSize: 14 }}>Training Cost (Paid By The Cost Center)</div>
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginBottom: current.isFree ? 0 : 14 }}>
@@ -196,13 +196,13 @@ function CoursePricingSection({ draft, onChange }) {
           checked={current.isFree}
           onChange={(e) => onChange({ isFree: e.target.checked, price: e.target.checked ? 0 : current.price || 0 })}
         />
-        Khóa học miễn phí (không trừ ngân sách đào tạo khi học viên ghi danh)
+        Free course (no training budget is drawn when a learner enrolls)
       </label>
 
       {!current.isFree && (
         <div className="grid grid-3" style={{ gap: 14 }}>
           <div>
-            <label className="field-label">Chi phí công ty trả / học viên (VNĐ)</label>
+            <label className="field-label">Company cost per learner (VND)</label>
             <input
               className="field-input"
               inputMode="numeric"
@@ -212,10 +212,10 @@ function CoursePricingSection({ draft, onChange }) {
                 onChange({ isFree: false, price: digits });
               }}
             />
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>{formatVnd(current.price)}</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>{formatVnd(current.price)}</div>
           </div>
           <div>
-            <label className="field-label">Loại chi phí</label>
+            <label className="field-label">Cost type</label>
             <select
               className="field-select"
               value={current.costType}
@@ -229,21 +229,21 @@ function CoursePricingSection({ draft, onChange }) {
             </select>
           </div>
           <div>
-            <label className="field-label">Nhà cung cấp / Đơn vị tổ chức</label>
+            <label className="field-label">Vendor / Organizer</label>
             <input
               className="field-input"
               value={current.vendor || ''}
-              placeholder="VD: Coursera for Business"
+              placeholder="e.g. Coursera for Business"
               onChange={(e) => onChange({ vendor: e.target.value })}
             />
           </div>
         </div>
       )}
 
-      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: current.isFree ? 8 : 14 }}>
+      <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: current.isFree ? 8 : 14 }}>
         <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-        Mỗi lượt học viên ghi danh khóa này, công ty sẽ chi đúng số tiền trên — ghi nợ vào mã Trung Tâm Chi Phí (5 số)
-        của Division họ, học viên không thanh toán.
+        For every learner who enrolls in this course, the company pays exactly this amount — debited to the 5-digit Cost Center code
+        of their Division; the learner pays nothing.
       </div>
     </div>
   );
@@ -286,10 +286,10 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
       <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
         <span>
           <i className="ti ti-tag" style={{ marginRight: 6, color: 'var(--rail)' }} />
-          Danh Mục Khóa Học (Course Categories) <span style={{ color: 'var(--rust)' }}>*</span>
+          Course Categories <span style={{ color: 'var(--rust)' }}>*</span>
         </span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
-          {selected.length > 0 ? `Đã chọn: ${selected.length}` : 'Chưa chọn'}
+        <span style={{ fontSize: 12, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
+          {selected.length > 0 ? `Selected: ${selected.length}` : 'Not selected'}
         </span>
       </label>
 
@@ -299,7 +299,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
         style={{
           minHeight: 42,
           padding: '6px 10px',
-          background: '#fff',
+          background: 'var(--paper-raised)',
           border: hasError
             ? '2px solid var(--rust, #dc2626)'
             : isOpen
@@ -322,7 +322,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1, minWidth: 0 }}>
           {selected.length === 0 ? (
             <span style={{ color: hasError ? 'var(--rust, #dc2626)' : 'var(--ink-faint)', fontSize: 13 }}>
-              Chọn danh mục khóa học... (Bắt buộc)
+              Choose the course categories... (required)
             </span>
           ) : (
             selected.map((cat) => (
@@ -337,7 +337,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
                   background: 'var(--rail-soft, #f0fdf4)',
                   color: 'var(--rail-soft-text, #166534)',
                   border: '1px solid #bbf7d0',
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                 }}
               >
@@ -355,7 +355,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
       </div>
 
       {hasError && errorMessage && (
-        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 11.5, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
           <i className="ti ti-alert-circle" />
           <span>{errorMessage}</span>
         </div>
@@ -370,7 +370,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
           left: 0,
           right: 0,
           marginTop: 6,
-          background: '#fff',
+          background: 'var(--paper-raised)',
           border: '1px solid var(--line-strong, #cbd5e1)',
           borderRadius: 8,
           boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
@@ -380,7 +380,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
       >
         {/* Quick Action Buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Thao tác nhanh:</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Quick actions:</span>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -388,7 +388,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
               onClick={() => onChange([...options])}
             >
-              Chọn tất cả ({options.length})
+              Select all ({options.length})
             </button>
             <button
               type="button"
@@ -396,7 +396,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
               onClick={() => onChange([options[0]])}
             >
-              Mặc định
+              Default
             </button>
             <button
               type="button"
@@ -404,7 +404,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
               onClick={() => onChange([])}
             >
-              Xóa chọn
+              Clear selection
             </button>
           </div>
         </div>
@@ -416,7 +416,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
             type="text"
             className="field-input"
             style={{ paddingLeft: 26, height: 30, fontSize: 12 }}
-            placeholder="Tìm kiếm danh mục..."
+            placeholder="Search categories..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClick={(e) => e.stopPropagation()}
@@ -439,7 +439,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
                   borderRadius: 6,
                   cursor: 'pointer',
                   background: isChecked ? 'var(--rail-soft, #f0fdf4)' : 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   color: isChecked ? 'var(--rail-soft-text, #166534)' : 'var(--ink)',
                   fontWeight: isChecked ? 600 : 400,
                 }}
@@ -456,7 +456,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
           })}
           {filteredOptions.length === 0 && (
             <div style={{ padding: '12px 8px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
-              Không tìm thấy danh mục phù hợp.
+              No matching category found.
             </div>
           )}
         </div>
@@ -504,10 +504,10 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
       <label className="field-label" style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
         <span>
           <i className="ti ti-chart-arrows" style={{ marginRight: 6, color: 'var(--rail)' }} />
-          Cấp Bậc Áp Dụng (Target Job Level) <span style={{ color: 'var(--rust)' }}>*</span>
+          Target Job Level <span style={{ color: 'var(--rust)' }}>*</span>
         </span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
-          {selected.length > 0 ? `Đã chọn: ${selected.length} Level` : 'Chưa chọn'}
+        <span style={{ fontSize: 12, fontWeight: 600, color: selected.length > 0 ? 'var(--rail)' : 'var(--ink-faint)' }}>
+          {selected.length > 0 ? `Selected: ${selected.length} levels` : 'Not selected'}
         </span>
       </label>
 
@@ -517,7 +517,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
         style={{
           minHeight: 42,
           padding: '6px 10px',
-          background: '#fff',
+          background: 'var(--paper-raised)',
           border: hasError
             ? '2px solid var(--rust, #dc2626)'
             : isOpen
@@ -540,7 +540,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1, minWidth: 0 }}>
           {selected.length === 0 ? (
             <span style={{ color: hasError ? 'var(--rust, #dc2626)' : 'var(--ink-faint)', fontSize: 13 }}>
-              Chọn cấp bậc áp dụng... (Bắt buộc)
+              Choose the target job levels... (required)
             </span>
           ) : (
             selected.map((lvl) => (
@@ -555,7 +555,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
                   background: 'var(--blue-soft, #eff6ff)',
                   color: 'var(--blue, #1e40af)',
                   border: '1px solid #bfdbfe',
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 700,
                 }}
               >
@@ -573,7 +573,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
       </div>
 
       {hasError && errorMessage && (
-        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 11.5, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ color: 'var(--rust, #dc2626)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
           <i className="ti ti-alert-circle" />
           <span>{errorMessage}</span>
         </div>
@@ -588,7 +588,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
           left: 0,
           right: 0,
           marginTop: 6,
-          background: '#fff',
+          background: 'var(--paper-raised)',
           border: '1px solid var(--line-strong, #cbd5e1)',
           borderRadius: 8,
           boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
@@ -598,7 +598,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
       >
         {/* Quick Action Presets */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Chọn nhanh:</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Quick select:</span>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -606,7 +606,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
               onClick={() => onChange([...allLevels])}
             >
-              Chọn Tất Cả (Lv 1 - 7)
+              Select All (Lv 1 - 7)
             </button>
             <button
               type="button"
@@ -614,7 +614,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
               onClick={() => onChange(['1', '2', '3', '4'])}
             >
-              Quản Lý (Lv 1 - 4)
+              Management (Lv 1 - 4)
             </button>
             <button
               type="button"
@@ -622,7 +622,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
               onClick={() => onChange(['5', '6', '7'])}
             >
-              Tuyến Đầu (Lv 5 - 7)
+              Front Line (Lv 5 - 7)
             </button>
             <button
               type="button"
@@ -630,7 +630,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
               onClick={() => onChange([])}
             >
-              Xóa chọn
+              Clear selection
             </button>
           </div>
         </div>
@@ -642,7 +642,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
             type="text"
             className="field-input"
             style={{ paddingLeft: 26, height: 30, fontSize: 12 }}
-            placeholder="Tìm kiếm Level (VD: 1, 2, Level 5)..."
+            placeholder="Search levels (e.g. 1, 2, Level 5)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClick={(e) => e.stopPropagation()}
@@ -666,7 +666,7 @@ function LevelMultiSelectDropdown({ id, selected = [], onChange, hasError, error
                   cursor: 'pointer',
                   background: isChecked ? 'var(--blue-soft, #eff6ff)' : 'var(--paper-sunken)',
                   border: isChecked ? '1px solid var(--blue, #3b82f6)' : '1px solid var(--line)',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   color: isChecked ? 'var(--blue, #1e40af)' : 'var(--ink)',
                   fontWeight: isChecked ? 700 : 500,
                 }}
@@ -721,30 +721,30 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
         <div>
           <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
             <i className="ti ti-link" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Khóa Học Tiên Quyết (Prerequisite Courses) &middot; <span style={{ color: 'var(--rail)' }}>Đã chọn: {selectedIds.length} khóa</span>
+            Prerequisite Courses &middot; <span style={{ color: 'var(--rail)' }}>Selected: {selectedIds.length} course</span>
           </label>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 2 }}>
-            Học viên bắt buộc phải hoàn thành các khóa này trước khi bắt đầu khóa học hiện tại.
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
+            Learners must complete these courses before starting the current one.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             type="button"
             className="btn btn-sm btn-outline"
-            style={{ fontSize: 11.5, display: 'flex', alignItems: 'center', gap: 5 }}
+            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
             onClick={() => setIsExpanded((v) => !v)}
           >
             <i className={`ti ${isExpanded ? 'ti-chevron-up' : 'ti-plus'}`} />
-            {isExpanded ? 'Thu gọn danh sách' : 'Chọn thêm khóa tiên quyết'}
+            {isExpanded ? 'Collapse the list' : 'Add another prerequisite course'}
           </button>
           {selectedIds.length > 0 && (
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              style={{ fontSize: 11.5, color: 'var(--rust)' }}
+              style={{ fontSize: 12, color: 'var(--rust)' }}
               onClick={onClear}
             >
-              Bỏ chọn tất cả
+              Deselect all
             </button>
           )}
         </div>
@@ -762,7 +762,7 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
                 gap: 6,
                 padding: '4px 10px',
                 borderRadius: 6,
-                background: '#fff',
+                background: 'var(--paper-raised)',
                 border: '1px solid var(--rail, #15803d)',
                 color: 'var(--ink)',
                 fontSize: 12,
@@ -776,20 +776,20 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
                 className="ti ti-x"
                 style={{ fontSize: 11, cursor: 'pointer', color: 'var(--rust)', marginLeft: 2 }}
                 onClick={() => onToggle(c.id)}
-                title="Xóa khóa tiên quyết"
+                title="Remove prerequisite"
               />
             </span>
           ))}
         </div>
       ) : !isExpanded && (
         <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>
-          Chưa có khóa học tiên quyết (học viên có thể tham gia trực tiếp).
+          No prerequisite course (learners may join directly).
         </div>
       )}
 
       {/* Filterable & Searchable Course Picker Dropdown/Panel */}
       {isExpanded && (
-        <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginTop: 8 }}>
+        <div style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: '1 1 200px' }}>
               <i className="ti ti-search" style={{ position: 'absolute', left: 9, top: 8, color: 'var(--ink-faint)', fontSize: 12 }} />
@@ -797,7 +797,7 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
                 type="text"
                 className="field-input"
                 style={{ paddingLeft: 28, height: 32, fontSize: 12 }}
-                placeholder="Tìm mã hoặc tên khóa học..."
+                placeholder="Search by course code or name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -808,7 +808,7 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="ALL">Tất cả danh mục ({categories.length})</option>
+              <option value="ALL">All categories ({categories.length})</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -841,7 +841,7 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
                     style={{ cursor: 'pointer' }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: isSelected ? 700 : 500, color: 'var(--ink)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: isSelected ? 700 : 500, color: 'var(--ink)' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)' }}>{c.code}</span>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
                     </div>
@@ -853,7 +853,7 @@ function PrerequisiteCoursesPicker({ courses = [], currentCourseId, selectedIds 
             })}
             {filteredCourses.length === 0 && (
               <div style={{ padding: '16px', textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)' }}>
-                Không tìm thấy khóa học nào phù hợp với bộ lọc.
+                No course matches the filters.
               </div>
             )}
           </div>
@@ -883,41 +883,41 @@ export default function AdminCourseBuilder() {
   const isNew = !courseId || courseId === 'new';
   const existing = isNew ? null : courses.find((c) => c.id === courseId);
 
-  // Ma trận phân quyền tạo khóa học: User Admin/SysAdmin toàn quyền cả 2 hình
-  // thức; Trainer/L&D chỉ tạo được Trực tiếp (và tự động là giảng viên đứng
-  // lớp — không chọn người khác); HRBP/Manager/Learner không có quyền này.
+  // Course creation permission matrix: User Admin/SysAdmin have full authority over both
+  // formats; Trainer/L&D can only create In-Person courses (and are automatically the
+  // teaching trainer — they cannot pick anyone else); HRBP/Manager/Learner have no such right.
   const authRole = normalizeRole(authUser?.role);
   const canAuthorOnline = hasCapability(authRole, 'canAuthorOnlineCourses');
   const canAuthorOffline = hasCapability(authRole, 'canAuthorOfflineCourses');
   const isTrainerOnly = canAuthorOffline && !canAuthorOnline;
-  // User Admin & SysAdmin đều được tạo/chỉ định Giảng viên cho Lớp Học Trực
-  // Tuyến Zoom/Teams (Virtual Class) — Trainer/L&D & HRBP thì không.
+  // Both User Admin & SysAdmin may create and assign trainers to a live online class
+  // over Zoom/Teams (Virtual Class) — Trainer/L&D & HRBP cannot.
   const canCreateVirtualClass = hasCapability(authRole, 'canCreateVirtualClass');
-  // Danh sách Giảng viên đủ chuẩn: L&D, HRBP, User Admin, SysAdmin (mọi role
-  // có canBeAssignedToClass) — thay cho trainersDirectory cũ chỉ 4 hồ sơ tĩnh.
+  // The list of qualified trainers: L&D, HRBP, User Admin, SysAdmin (every role
+  // has canBeAssignedToClass) — replacing the old trainersDirectory of only 4 static profiles.
   const eligibleTrainers = teachingEligibleUsers();
 
   const qScope = searchParams.get('scope');
   const qDeliveryType = searchParams.get('deliveryType');
   const qOnlineClassType = searchParams.get('onlineClassType');
 
-  // Khóa mới có bị giới hạn theo phân hệ mở từ Catalog không?
-  // - Bấm từ tab Online Class -> isOnlineScoped = true (chỉ tạo Tự học / Lớp Live, không thể tạo Trực tiếp)
-  // - Bấm từ tab Classroom hoặc role Trainer -> isClassroomScoped = true (chỉ tạo Trực tiếp, không thể tạo Online)
-  // - Bấm từ tab All Class hoặc chỉnh sửa khóa đã tạo -> isOnlineScoped = false, isClassroomScoped = false (toàn quyền chọn cả 3)
+  // Is the new course scoped to the section the catalog was opened from?
+  // - Opened from the Online Class tab -> isOnlineScoped = true (self-paced / live class only, no in-person)
+  // - Opened from the Classroom tab or by a Trainer role -> isClassroomScoped = true (in-person only, no online courses)
+  // - Opened from the All Class tab or by editing an existing course -> isOnlineScoped = false, isClassroomScoped = false (all 3 available)
   const isOnlineScoped = isNew && (qScope === 'online' || (qDeliveryType === 'ONLINE_ELEARNING' && qScope !== 'all' && qScope !== 'classroom'));
   const isClassroomScoped = isTrainerOnly || (isNew && (qScope === 'classroom' || (qDeliveryType === 'IN_PERSON_CLASSROOM' && qScope !== 'all' && qScope !== 'online')));
 
-  // Khóa mới do Trainer/L&D tạo phải bắt đầu ở dạng Trực tiếp với chính họ là
-  // giảng viên — createBlankCourse() mặc định Online nên phải ghi đè ở đây.
+  // A new course created by a Trainer/L&D must start as In-Person with themselves as
+  // the trainer — createBlankCourse() defaults to Online, so it must be overridden here.
   function withRoleDefaults(course) {
     if (!isNew) return course;
-    // Gắn đúng người tạo thật (không phải adminUser mặc định của
-    // createBlankCourse()) để trang danh mục biết khóa này thuộc quyền quản
-    // lý của ai: Trainer/L&D chỉ sửa/xóa được khóa do chính họ tạo.
+    // Attach the real creator (not the default adminUser of
+    // createBlankCourse()) so the catalog page knows who owns this course:
+    // Trainer/L&D may only edit/delete courses they created themselves.
     const base = { ...course, createdBy: authUser?.userId };
-    // Bấm "Create New Course" từ 1 trong 3 tab Learning Objects/Online Class/
-    // Classroom trên Catalog thì tự chọn sẵn đúng hình thức đào tạo tương ứng.
+    // Clicking "Create New Course" from one of the 3 tabs Learning Objects/Online Class/
+    // Classroom in the catalog preselects the matching delivery format.
     if (!isTrainerOnly && qDeliveryType) {
       return {
         ...base,
@@ -950,7 +950,7 @@ export default function AdminCourseBuilder() {
         raw.instructor = matchTr.fullName;
       }
 
-      // Hydrate coTrainers if missing or empty (Chỉ áp dụng cho Admin, Trainer chỉ đứng lớp độc lập)
+      // Hydrate coTrainers if missing or empty (Admin only; a Trainer always teaches alone)
       let currentCoTrainers = raw.coTrainers && Array.isArray(raw.coTrainers) && raw.coTrainers.length > 0 ? raw.coTrainers : [];
       if (isTrainerOnly) {
         currentCoTrainers = [];
@@ -1002,17 +1002,17 @@ export default function AdminCourseBuilder() {
 
   function handleOpenCreateAssessment(forceNew = false) {
     const isActuallyExisting = !forceNew && Boolean(courseAssessment);
-    const defaultTitle = draft.title ? `Bài Đánh Giá Cuối Khóa: ${draft.title}` : 'Bài Đánh Giá Năng Lực Cuối Khóa';
+    const defaultTitle = draft.title ? `End-Of-Course Assessment: ${draft.title}` : 'End-Of-Course Competency Assessment';
     const newAsm = {
       isNew: !isActuallyExisting,
       id: isActuallyExisting ? courseAssessment.id : `ASM-CRS-${draft.id || Date.now()}`,
       code: isActuallyExisting ? courseAssessment.code : generateAssessmentCode(defaultTitle),
       title: isActuallyExisting ? courseAssessment.title : defaultTitle,
-      description: isActuallyExisting ? courseAssessment.description : `Bài kiểm tra đánh giá kiến thức tổng hợp sau khi hoàn thành toàn bộ bài học trong khóa ${draft.title || ''}.`,
+      description: isActuallyExisting ? courseAssessment.description : `A comprehensive knowledge test taken after finishing every lesson in the course ${draft.title || ''}.`,
       deliveryFormat: 'COURSE_LINKED',
       courseId: draft.id,
       courseIds: [draft.id],
-      courseTitle: draft.title || 'Khóa Học Mới',
+      courseTitle: draft.title || 'New Course',
       isCourseExclusive: true,
       categories: draft.categories && draft.categories.length > 0 ? draft.categories : (draft.category ? [draft.category] : ['Food Safety & Hygiene']),
       category: (draft.categories && draft.categories[0]) || draft.category || 'Food Safety & Hygiene',
@@ -1075,7 +1075,7 @@ export default function AdminCourseBuilder() {
   }
 
   function handleRemoveCourseAssessment() {
-    if (window.confirm('Bạn có chắc chắn muốn gỡ bài Assessment này khỏi khóa học?')) {
+    if (window.confirm('Are you sure you want to detach this assessment from the course?')) {
       setDraft((prev) => ({
         ...prev,
         courseAssessment: null,
@@ -1095,8 +1095,8 @@ export default function AdminCourseBuilder() {
   function addSyllabusStep() {
     const newStepNum = (draft.syllabus?.length || 0) + 1;
     const newStep = {
-      step: `Phần ${newStepNum}: Nội Dung Thực Hành & Nghiệp Vụ Mới (45 phút)`,
-      detail: 'Mô tả chi tiết nội dung đào tạo, quy trình thao tác và chỉ tiêu cần đạt được.',
+      step: `Part ${newStepNum}: New Practical & Operational Content (45 minutes)`,
+      detail: 'Describe the training content, the procedures and the targets to be met in detail.',
     };
     setDraft((prev) => ({
       ...prev,
@@ -1179,7 +1179,7 @@ export default function AdminCourseBuilder() {
     return (
       <div className="empty-state">
         <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
-        <p>Bạn không có quyền tạo hoặc chỉnh sửa khóa học.</p>
+        <p>You do not have permission to create or edit courses.</p>
         <Link to="/admin/courses">Back to courses</Link>
       </div>
     );
@@ -1195,13 +1195,13 @@ export default function AdminCourseBuilder() {
     );
   }
 
-  // Trainer/L&D chỉ được đụng vào khóa Trực tiếp — nếu mở nhầm 1 khóa Online
-  // đã có sẵn (do gõ thẳng URL) thì chặn luôn, không chỉ chặn lúc tạo mới.
+  // Trainer/L&D may only touch In-Person courses — if they open an Online course
+  // by typing the URL directly, they are blocked too — not only blocked at creation.
   if (isTrainerOnly && draft.deliveryType === 'ONLINE_ELEARNING') {
     return (
       <div className="empty-state">
         <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
-        <p>Giảng viên / L&amp;D chỉ được tạo và chỉnh sửa khóa học Trực tiếp (ILT), không có quyền với khóa Trực tuyến.</p>
+        <p>Trainer / L&amp;D may only create and edit In-Person (ILT) courses, not online courses.</p>
         <Link to="/admin/courses">Back to courses</Link>
       </div>
     );
@@ -1219,9 +1219,9 @@ export default function AdminCourseBuilder() {
   function patchVirtualMeeting(fields) {
     setDraft((d) => ({ ...d, virtualMeeting: { ...(d.virtualMeeting || {}), ...fields } }));
   }
-  // Học phí ghi thẳng vào draft.pricing (Trung Tâm Chi Phí đọc field này ưu
-  // tiên hơn giá suy ra tự động theo modality) — nên giá được chốt ngay lúc
-  // tạo khóa thay vì để mặc định rồi phải vào tab Bảng Giá sửa sau.
+  // Tuition is written straight into draft.pricing (the Cost Center reads this field in
+  // preference over the price derived from the modality) — so the price is fixed at
+  // course creation instead of leaving the default and fixing it later in the Price List tab.
   function patchPricing(fields) {
     setDraft((d) => ({ ...d, pricing: { ...pricingOf(d), ...d.pricing, ...fields } }));
   }
@@ -1351,12 +1351,12 @@ export default function AdminCourseBuilder() {
   const [publishNoteOpen, setPublishNoteOpen] = useState(false);
   const [publishNote, setPublishNote] = useState('');
 
-  // Đa phiên bản: đóng băng nội dung hiện tại thành snapshot bất biến rồi
-  // tăng currentVersion lên 1 bậc (v1.0 -> v2.0 -> ...). Học viên đã ghi danh
-  // dưới phiên bản cũ (hoàn thành hay đang học dở) không bị ảnh hưởng bởi các
-  // chỉnh sửa Admin thực hiện sau lệnh Publish này (xem CourseStore.publishNewCourseVersion).
-  // Cập nhật state cục bộ optimistic (không đọc lại `courses` từ store vì
-  // setCourses là bất đồng bộ, đọc ngay sau khi gọi sẽ ra dữ liệu cũ).
+  // Versioning: freeze the current content into an immutable snapshot then
+  // bumps currentVersion by one step (v1.0 -> v2.0 -> ...). A learner enrolled
+  // on an older version (completed or in progress) is unaffected by
+  // edits the Admin makes after this Publish (see CourseStore.publishNewCourseVersion).
+  // Optimistic local state update (do not re-read `courses` from the store because
+  // setCourses is asynchronous, so reading immediately after the call returns stale data).
   function handlePublishNewVersion() {
     const oldVersion = draft.currentVersion || draft.version || 'v1.0';
     const newVersion = nextMajorVersion(oldVersion);
@@ -1369,29 +1369,29 @@ export default function AdminCourseBuilder() {
       currentVersion: newVersion,
       version: newVersion,
       versions: { ...d.versions, [oldVersion]: { version: oldVersion, publishedAt: d.publishedAt, archivedAt: new Date().toISOString().slice(0, 10), updatedBy: authUser?.fullName, changeLog: note, modules: d.modules, configuration: d.configuration, modality: d.modality, format: d.format } },
-      versionHistory: [{ version: newVersion, updatedBy: authUser?.fullName || 'L&D Admin', updatedAt: new Date().toISOString().slice(0, 10), note: note || `Phát hành phiên bản ${newVersion}.` }, ...(d.versionHistory || [])],
+      versionHistory: [{ version: newVersion, updatedBy: authUser?.fullName || 'L&D Admin', updatedAt: new Date().toISOString().slice(0, 10), note: note || `Published version ${newVersion}.` }, ...(d.versionHistory || [])],
     }));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
 
-  // nextStatus: 'DRAFT' (nút Lưu Nháp) hoặc 'PUBLISHED' (nút Tạo Khóa Học /
-  // Lưu Thay Đổi) — thay cho dropdown Status thủ công đã bỏ.
+  // nextStatus: 'DRAFT' (the Save Draft button) or 'PUBLISHED' (the Create Course /
+  // Save Changes) — replacing the removed manual Status dropdown.
   function handleSave(nextStatus) {
     if (!draft.title.trim()) {
-      setError('Vui lòng nhập tên khóa học (Course Title is required).');
+      setError('Please enter a course title (Course Title is required).');
       document.getElementById('builder-title-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const cats = draft.categories && draft.categories.length ? draft.categories : (draft.category ? [draft.category] : []);
     if (cats.length === 0) {
-      setError('Vui lòng chọn ít nhất một Danh mục khóa học (Course Category is required).');
+      setError('Please choose at least one course category (Course Category is required).');
       document.getElementById('builder-category-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const lvls = (draft.targetLevels && draft.targetLevels.length ? draft.targetLevels : (draft.targetLevel ? [draft.targetLevel] : [])).map(String);
     if (lvls.length === 0) {
-      setError('Vui lòng chọn ít nhất một Cấp bậc áp dụng (Target Job Level is required).');
+      setError('Please choose at least one target job level (Target Job Level is required).');
       document.getElementById('builder-level-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -1401,10 +1401,10 @@ export default function AdminCourseBuilder() {
     }
     if (nextStatus === 'PUBLISHED' && draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS') {
       const vm = draft.virtualMeeting || {};
-      if (!vm.meetingUrl?.trim()) { setError('Virtual Class cần đường dẫn phòng họp (Meeting URL).'); return; }
-      if (!vm.scheduleDate) { setError('Virtual Class cần Ngày tổ chức buổi học.'); return; }
-      if (!vm.scheduleTime?.trim()) { setError('Virtual Class cần Khung giờ buổi học.'); return; }
-      if (!vm.instructorId) { setError('Virtual Class cần chọn Giảng viên/Người chủ trì.'); return; }
+      if (!vm.meetingUrl?.trim()) { setError('A Virtual Class needs a meeting URL.'); return; }
+      if (!vm.scheduleDate) { setError('A Virtual Class needs a session date.'); return; }
+      if (!vm.scheduleTime?.trim()) { setError('A Virtual Class needs a session time window.'); return; }
+      if (!vm.instructorId) { setError('A Virtual Class needs a trainer/host.'); return; }
     }
     setError('');
     const { modality, format } = deriveModalityFormat(draft.deliveryType, draft.onlineClassType);
@@ -1422,10 +1422,10 @@ export default function AdminCourseBuilder() {
     if (isNew) {
       addCourse(toSave);
     } else {
-      // Sửa nội dung thông thường (typo, cập nhật nhỏ...) ghi thẳng vào phiên
-      // bản đang sống — KHÔNG tăng currentVersion (chỉ nút "Phát Hành Phiên
-      // Bản Mới" mới tăng). Vẫn log 1 dòng vào versionHistory để có audit trail,
-      // nhưng giữ nguyên số phiên bản hiện tại.
+      // Routine content edits (typos, minor updates...) write straight into the live
+      // version — WITHOUT bumping currentVersion (only the "Publish
+      // New Version" bumps it). A line is still logged to versionHistory for the audit trail,
+      // but keeps the current version number.
       const entry = {
         version: draft.currentVersion || draft.version,
         updatedBy: authUser?.fullName || 'L&D Admin',
@@ -1436,15 +1436,15 @@ export default function AdminCourseBuilder() {
       updateCourse(draft.id, withVersion);
     }
 
-    // Đồng bộ Assessment của khóa học vào store assessments khi khóa học có bật bài kiểm tra
+    // Sync the course's assessment into the store assessments when the course has testing enabled
     if (draft.config?.assessmentEnabled) {
       const existingAsm = (assessments || []).find((a) => a.courseId === draft.id || (a.courseIds && a.courseIds.includes(draft.id)));
       const baseAsm = draft.courseAssessment || existingAsm;
       const courseAsm = {
         id: baseAsm?.id || `ASM-CRS-${draft.id}`,
         code: baseAsm?.code || `ASM-${draft.code || draft.id}`,
-        title: baseAsm?.title || `Bài Đánh Giá Cuối Khóa: ${draft.title}`,
-        description: baseAsm?.description || `Bài kiểm tra đánh giá kiến thức sau khi hoàn thành khóa học ${draft.title}.`,
+        title: baseAsm?.title || `End-Of-Course Assessment: ${draft.title}`,
+        description: baseAsm?.description || `A knowledge assessment taken after completing the course ${draft.title}.`,
         type: baseAsm?.type || 'QUIZ',
         types: baseAsm?.types || ['QUIZ'],
         contentFormats: baseAsm?.contentFormats || ['INTERACTIVE_BANK'],
@@ -1452,7 +1452,7 @@ export default function AdminCourseBuilder() {
         uploadedFileName: baseAsm?.uploadedFileName || 'Ngan_Hang_150_Cau_Hoi_Chuan.xlsx',
         uploadedPoolSize: baseAsm?.uploadedPoolSize || 150,
         questionMatrix: baseAsm?.questionMatrix || { singleChoice: 2, multipleChoice: 1, trueFalse: 1, essay: 0, ratingScale: 0, matching: 0 },
-        questionTypesList: baseAsm?.questionTypesList || ['2 Trắc nghiệm đơn', '1 Nhiều đáp án', '1 Đúng/Sai'],
+        questionTypesList: baseAsm?.questionTypesList || ['2 Single choice', '1 Multiple choice', '1 True/False'],
         deliveryFormat: 'COURSE_LINKED',
         courseId: draft.id,
         courseIds: [draft.id],
@@ -1493,8 +1493,8 @@ export default function AdminCourseBuilder() {
       }
     }
 
-    // Lưu xong quay về danh sách khóa học (Create lẫn Save Changes) — Admin
-    // muốn sửa tiếp thì bấm Edit lại từ danh sách, không giữ lại trên form.
+    // After saving it returns to the course list (both Create and Save Changes) — if the Admin
+    // wants to keep editing they click Edit again from the list; the form is not retained.
     navigate('/admin/courses');
   }
 
@@ -1503,9 +1503,9 @@ export default function AdminCourseBuilder() {
       <div className="page-crumb" style={{ marginBottom: 6 }}>
         <Link to="/admin/courses" style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>Courses</Link> / {
           !isNew ? draft.title :
-          isOnlineScoped ? 'Tạo Khóa Học Trực Tuyến (Online Course)' :
-          isClassroomScoped ? 'Tạo Khóa Đào Tạo Trực Tiếp (In-Person Workshop)' :
-          'Tạo Khóa Học Mới (All Modes)'
+          isOnlineScoped ? 'Create An Online Course' :
+          isClassroomScoped ? 'Create An In-Person Workshop' :
+          'Create New Course (All Modes)'
         }
       </div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: 12 }}>
@@ -1518,11 +1518,11 @@ export default function AdminCourseBuilder() {
         {saved && <Badge tone="sage" icon="ti-check">Saved</Badge>}
       </div>
 
-      {/* VERSION MANAGEMENT BAR — chỉ hiện với khóa đã tồn tại. Publish New
-          Version đóng băng nội dung hiện tại thành snapshot bất biến (bảo
-          toàn kết quả/tiến độ của học viên đã ghi danh phiên bản cũ) rồi tăng
-          currentVersion lên 1 bậc; không giới hạn số lần (v1.0 -> v2.0 ->
-          v3.0 -> ...). Sửa nhỏ qua "Save changes" không tăng phiên bản. */}
+      {/* VERSION MANAGEMENT BAR — shown only for an existing course. Publish New
+          Version freezes the current content into an immutable snapshot (preserving
+          the results/progress of learners enrolled in the old version) and bumps
+          currentVersion by one step; there is no cap (v1.0 -> v2.0 ->
+          v3.0 -> ...). Minor edits via "Save changes" do not bump the version. */}
       {!isNew && (
         <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--sage)', background: 'var(--sage-soft)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -1530,48 +1530,48 @@ export default function AdminCourseBuilder() {
               <i className="ti ti-git-branch" style={{ color: 'var(--sage-soft-text)', fontSize: 18 }} />
               <div>
                 <div style={{ fontWeight: 800, fontSize: 13 }}>
-                  Phiên bản đang sống: <Badge tone="sage">{draft.currentVersion || draft.version}</Badge>
+                  Live version: <Badge tone="sage">{draft.currentVersion || draft.version}</Badge>
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                  Học viên đã hoàn thành/đang học dở các phiên bản cũ vẫn được giữ nguyên kết quả &amp; nội dung — xem lịch sử bên dưới.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                  Learners who completed or are part-way through older versions keep their results &amp; content — see the history below.
                 </div>
               </div>
             </div>
             <Button variant="outline" icon="ti-versions" onClick={() => setPublishNoteOpen(true)}>
-              Phát Hành Phiên Bản Mới ({nextMajorVersion(draft.currentVersion || draft.version)})
+              Publish New Version ({nextMajorVersion(draft.currentVersion || draft.version)})
             </Button>
           </div>
 
           {publishNoteOpen && (
-            <div style={{ marginTop: 12, background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
-              <label className="field-label">Ghi chú thay đổi (Change Log) cho {nextMajorVersion(draft.currentVersion || draft.version)}</label>
+            <div style={{ marginTop: 12, background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+              <label className="field-label">Change log note for{nextMajorVersion(draft.currentVersion || draft.version)}</label>
               <textarea
                 className="field-input"
                 rows={2}
                 style={{ resize: 'vertical', marginBottom: 10 }}
-                placeholder="VD: Cập nhật video mới, chuẩn hóa gói SCORM và slide PPT 2026."
+                placeholder="E.g. Added the new video, standardized the SCORM package and the 2026 PPT slides."
                 value={publishNote}
                 onChange={(e) => setPublishNote(e.target.value)}
               />
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10 }}>
                 <i className="ti ti-alert-triangle" style={{ marginRight: 4, color: 'var(--amber)' }} />
-                Hành động này đóng băng vĩnh viễn phiên bản <strong>{draft.currentVersion || draft.version}</strong> hiện tại (bảo toàn 100% cho học viên đã ghi danh), rồi mở phiên bản <strong>{nextMajorVersion(draft.currentVersion || draft.version)}</strong> — mọi chỉnh sửa Module/Bài học sau đây (kể cả đang có trên form) sẽ thuộc về phiên bản mới.
+                This action permanently freezes the version <strong>{draft.currentVersion || draft.version}</strong> version (preserving 100% of it for enrolled learners), then opens the new <strong>{nextMajorVersion(draft.currentVersion || draft.version)}</strong> — every Module/Lesson edit below (including anything currently on the form) will belong to the new version.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <Button variant="ghost" onClick={() => { setPublishNoteOpen(false); setPublishNote(''); }}>Hủy</Button>
-                <Button variant="primary" icon="ti-rocket" onClick={handlePublishNewVersion}>Xác Nhận Phát Hành</Button>
+                <Button variant="ghost" onClick={() => { setPublishNoteOpen(false); setPublishNote(''); }}>Cancel</Button>
+                <Button variant="primary" icon="ti-rocket" onClick={handlePublishNewVersion}>Confirm Publication</Button>
               </div>
             </div>
           )}
 
           {Object.keys(draft.versions || {}).length > 0 && (
             <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>Các phiên bản đã đóng băng (chỉ đọc):</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>Frozen versions (read-only):</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {Object.values(draft.versions).sort((a, b) => (a.version < b.version ? 1 : -1)).map((v) => (
-                  <div key={v.version} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, background: '#fff', borderRadius: 6, padding: '6px 10px' }}>
-                    <span><strong>{v.version}</strong> &mdash; {v.changeLog || 'Không có ghi chú.'}</span>
-                    <span style={{ color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{v.updatedBy} &middot; đóng băng {v.archivedAt}</span>
+                  <div key={v.version} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, background: 'var(--paper-raised)', borderRadius: 6, padding: '6px 10px' }}>
+                    <span><strong>{v.version}</strong> &mdash; {v.changeLog || 'No notes.'}</span>
+                    <span style={{ color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{v.updatedBy} &middot; frozen {v.archivedAt}</span>
                   </div>
                 ))}
               </div>
@@ -1585,14 +1585,14 @@ export default function AdminCourseBuilder() {
         /* CASE 1: ONLINE CLASS SCOPED CREATION -> ONLY SHOW 2 ONLINE TYPES (E-LEARNING / VIRTUAL CLASS) */
         <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+            <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
               <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
-              1. Phân Loại Khóa Trực Tuyến (Online Class Type)
+              1. Online Class Type
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Badge tone="sage" icon="ti-lock">Chỉ Áp Dụng: Khóa Trực Tuyến</Badge>
+              <Badge tone="sage" icon="ti-lock">Applies to: online courses only</Badge>
               <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
-                {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '🌐 Tự Học (E-Learning)' : '📹 Lớp Live Zoom/Teams'}
+                {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '🌐 Self-Paced (E-Learning)' : '📹 Live Zoom/Teams Class'}
               </Badge>
             </div>
           </div>
@@ -1604,7 +1604,7 @@ export default function AdminCourseBuilder() {
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
                 border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
-                background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : 'var(--paper-raised)',
                 cursor: 'pointer', textAlign: 'left',
                 transition: 'all 0.15s ease',
               }}
@@ -1613,11 +1613,11 @@ export default function AdminCourseBuilder() {
                 <i className="ti ti-player-play" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
-                  E-Learning (Tự Học Theo Tiến Độ)
+                <div style={{ fontWeight: 700, fontSize: 14, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                  E-Learning (Self-Paced)
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                  Học viên tự học theo Module/Bài học (SCORM, Video, Slide PPT, PDF) kèm bài thi trắc nghiệm.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  Learners study module by module (SCORM, video, PPT slides, PDF) with a closing quiz.
                 </div>
               </div>
             </button>
@@ -1629,7 +1629,7 @@ export default function AdminCourseBuilder() {
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
                   border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
-                  background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
+                  background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : 'var(--paper-raised)',
                   cursor: 'pointer', textAlign: 'left',
                   transition: 'all 0.15s ease',
                 }}
@@ -1638,11 +1638,11 @@ export default function AdminCourseBuilder() {
                   <i className="ti ti-video" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
-                    Lớp Học Trực Tuyến Live (Virtual Classroom)
+                  <div style={{ fontWeight: 700, fontSize: 14, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
+                    Live Virtual Classroom
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                    Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    A live Zoom / Teams / Meet class hosted by a trainer on a fixed schedule &amp; with attendance.
                   </div>
                 </div>
               </button>
@@ -1658,17 +1658,17 @@ export default function AdminCourseBuilder() {
                 <i className="ti ti-chalkboard" />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 14.5, color: '#1e40af' }}>
-                  Khóa Đào Tạo Trực Tiếp &amp; Xưởng Thực Hành (In-Person Workshop)
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#1e40af' }}>
+                  In-Person Workshop Training
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
                   {isTrainerOnly
-                    ? `Giảng viên phụ trách: ${authUser.fullName} (Chính bạn · Quản trị lớp học và quét mã QR Điểm danh trực tiếp)`
-                    : 'Đào tạo tập trung tại cơ sở/xưởng có Giảng viên (Trainer) & Quản trị điểm danh Live QR.'}
+                    ? `Hosting trainer: ${authUser.fullName} (yourself · you run the class and scan the attendance QR code in person)`
+                    : 'Onsite training in a facility/workshop with a trainer & Live QR attendance management.'}
                 </div>
               </div>
             </div>
-            <Badge tone="blue" icon="ti-lock">Chỉ Áp Dụng: Lớp Trực Tiếp (In-Person)</Badge>
+            <Badge tone="blue" icon="ti-lock">Applies to: In-Person classes only</Badge>
           </div>
         </div>
       ) : (
@@ -1676,12 +1676,12 @@ export default function AdminCourseBuilder() {
         <>
           <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+              <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
                 <i className="ti ti-layers-intersect" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                1. Hình Thức Đào Tạo (Delivery Mode)
+                1. Delivery Mode
               </div>
               <Badge tone={draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'blue' : 'sage'}>
-                {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 ĐÀO TẠO TRỰC TIẾP (ILT)' : '🌐 TRỰC TUYẾN (E-LEARNING)'}
+                {draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '🏢 IN-PERSON TRAINING (ILT)' : '🌐 ONLINE (E-LEARNING)'}
               </Badge>
             </div>
 
@@ -1696,7 +1696,7 @@ export default function AdminCourseBuilder() {
                   padding: '14px 16px',
                   borderRadius: 8,
                   border: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
-                  background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                  background: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft, #f0fdf4)' : 'var(--paper-raised)',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease',
@@ -1706,11 +1706,11 @@ export default function AdminCourseBuilder() {
                   <i className="ti ti-device-laptop" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
-                    Khóa Học Trực Tuyến (Online E-learning)
+                  <div style={{ fontWeight: 700, fontSize: 14, color: (!draft.deliveryType || draft.deliveryType === 'ONLINE_ELEARNING') ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                    Online E-learning Course
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                    Học viên tự học qua Video, SCORM, Slide PPT, PDF &amp; Thi trắc nghiệm hoặc Lớp Zoom/Teams.
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    Learners study on their own via video, SCORM, PPT slides, PDF &amp; a quiz, or in a Zoom/Teams class.
                   </div>
                 </div>
               </button>
@@ -1736,7 +1736,7 @@ export default function AdminCourseBuilder() {
                   padding: '14px 16px',
                   borderRadius: 8,
                   border: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '2px solid var(--blue, #2563eb)' : '1px solid var(--line)',
-                  background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft, #eff6ff)' : '#fff',
+                  background: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? 'var(--blue-soft, #eff6ff)' : 'var(--paper-raised)',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease',
@@ -1746,11 +1746,11 @@ export default function AdminCourseBuilder() {
                   <i className="ti ti-chalkboard" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#1e40af' : 'var(--ink)', marginBottom: 2 }}>
-                    Khóa Đào Tạo Trực Tiếp (In-Person Workshop)
+                  <div style={{ fontWeight: 700, fontSize: 14, color: draft.deliveryType === 'IN_PERSON_CLASSROOM' ? '#1e40af' : 'var(--ink)', marginBottom: 2 }}>
+                    In-Person Workshop
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                    Học tập trung tại xưởng/phòng thực hành có Giảng viên (Trainer) &amp; Điểm danh Live QR.
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                    Classroom learning in a workshop/lab with a trainer &amp; Live QR attendance.
                   </div>
                 </div>
               </button>
@@ -1761,12 +1761,12 @@ export default function AdminCourseBuilder() {
           {draft.deliveryType === 'ONLINE_ELEARNING' && canCreateVirtualClass && (
             <div className="card card-pad" style={{ marginBottom: 16, background: 'var(--paper-sunken)', border: '1.5px solid var(--line)', borderRadius: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div className="section-label" style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' }}>
+                <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
                   <i className="ti ti-broadcast" style={{ marginRight: 6, color: 'var(--rail)' }} />
-                  2. Phân Loại Khóa Trực Tuyến (Class Type)
+                  2. Online Class Type
                 </div>
                 <Badge tone={(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'sage' : 'amber'}>
-                  {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'Tự Học (Self-Paced)' : 'Lớp Live Zoom/Teams'}
+                  {(draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'Self-Paced' : 'Live Zoom/Teams Class'}
                 </Badge>
               </div>
 
@@ -1777,7 +1777,7 @@ export default function AdminCourseBuilder() {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
                     border: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? '2px solid var(--rail, #15803d)' : '1px solid var(--line)',
-                    background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : '#fff',
+                    background: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft, #f0fdf4)' : 'var(--paper-raised)',
                     cursor: 'pointer', textAlign: 'left',
                     transition: 'all 0.15s ease',
                   }}
@@ -1786,11 +1786,11 @@ export default function AdminCourseBuilder() {
                     <i className="ti ti-player-play" />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
-                      E-Learning (Tự Học Theo Tiến Độ)
+                    <div style={{ fontWeight: 700, fontSize: 14, color: (draft.onlineClassType || 'E_LEARNING') === 'E_LEARNING' ? 'var(--rail-soft-text, #166534)' : 'var(--ink)', marginBottom: 2 }}>
+                      E-Learning (Self-Paced)
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                      Học viên tự học theo Module/Bài học (SCORM, Video, Slide PPT, PDF) kèm bài thi trắc nghiệm.
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                      Learners study module by module (SCORM, video, PPT slides, PDF) with a closing quiz.
                     </div>
                   </div>
                 </button>
@@ -1801,7 +1801,7 @@ export default function AdminCourseBuilder() {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8,
                     border: draft.onlineClassType === 'VIRTUAL_CLASS' ? '2px solid var(--amber, #d97706)' : '1px solid var(--line)',
-                    background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : '#fff',
+                    background: draft.onlineClassType === 'VIRTUAL_CLASS' ? 'var(--amber-soft, #fffbeb)' : 'var(--paper-raised)',
                     cursor: 'pointer', textAlign: 'left',
                     transition: 'all 0.15s ease',
                   }}
@@ -1810,11 +1810,11 @@ export default function AdminCourseBuilder() {
                     <i className="ti ti-video" />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
-                      Lớp Học Trực Tuyến Live (Virtual Classroom)
+                    <div style={{ fontWeight: 700, fontSize: 14, color: draft.onlineClassType === 'VIRTUAL_CLASS' ? '#92400e' : 'var(--ink)', marginBottom: 2 }}>
+                      Live Virtual Classroom
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
-                      Lớp live qua Zoom / Teams / Meet có Giảng viên chủ trì theo lịch cố định &amp; điểm danh.
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                      A live Zoom / Teams / Meet class hosted by a trainer on a fixed schedule &amp; with attendance.
                     </div>
                   </div>
                 </button>
@@ -1850,7 +1850,7 @@ export default function AdminCourseBuilder() {
             style={{ color: 'var(--rust, #b91c1c)', padding: '2px 8px' }}
             onClick={() => setError('')}
           >
-            Đóng
+            Close
           </button>
         </div>
       )}
@@ -1860,25 +1860,25 @@ export default function AdminCourseBuilder() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
           <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
             <i className="ti ti-info-circle" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Thông Tin Cơ Bản / Basic Information
+            Basic Information
           </div>
-          <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>Phiên bản hiện hành: <strong>{draft.version || 'v1.0'}</strong></span>
+          <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Current version: <strong>{draft.version || 'v1.0'}</strong></span>
         </div>
 
         {/* Row 1: Course Title & Code */}
         <div className="grid grid-3" style={{ gap: 14, marginBottom: 14 }}>
           <div id="builder-title-field" style={{ gridColumn: 'span 2' }}>
             <label className="field-label" style={{ fontWeight: 700 }}>
-              Tên khóa học (Course Title) <span style={{ color: 'var(--rust)' }}>*</span>
+              Course Title <span style={{ color: 'var(--rust)' }}>*</span>
             </label>
             <input
               className="field-input"
               style={{
                 fontWeight: 600,
-                fontSize: 13.5,
+                fontSize: 14,
                 border: error && !draft.title.trim() ? '2px solid var(--rust, #dc2626)' : undefined,
               }}
-              placeholder="VD: Quy Trình Kiểm Soát An Toàn Vệ Sinh Thực Phẩm (HACCP)"
+              placeholder="E.g. Food Hygiene & Safety Control Procedure (HACCP)"
               value={draft.title}
               onChange={(e) => {
                 const title = e.target.value;
@@ -1889,14 +1889,14 @@ export default function AdminCourseBuilder() {
                   }
                   return next;
                 });
-                if (title.trim() && error && error.includes('tên khóa học')) {
+                if (title.trim() && error && error.includes('course title')) {
                   setError('');
                 }
               }}
             />
           </div>
           <div>
-            <label className="field-label" style={{ fontWeight: 700 }}>Mã khóa học (Course Code)</label>
+            <label className="field-label" style={{ fontWeight: 700 }}>Course Code</label>
             <div style={{ display: 'flex', gap: 6 }}>
               <input
                 className="field-input"
@@ -1908,7 +1908,7 @@ export default function AdminCourseBuilder() {
                 type="button"
                 className="icon-btn"
                 aria-label="Refresh course code"
-                title="Sinh mã ngẫu nhiên mới"
+                title="Generate a new random code"
                 onClick={() => patch({ code: generateCourseCode(draft.title, courses.map((c) => c.code)) })}
               >
                 <i className="ti ti-refresh" aria-hidden="true" />
@@ -1920,7 +1920,7 @@ export default function AdminCourseBuilder() {
         {/* Row 2: Dates, Duration & Course Type - PERFECTLY ALIGNED 4 COLUMNS */}
         <div className="grid grid-4" style={{ gap: 14, marginBottom: 16 }}>
           <div>
-            <label className="field-label">Ngày bắt đầu (Start Date)</label>
+            <label className="field-label">Start Date</label>
             <input
               type="date"
               className="field-input"
@@ -1929,7 +1929,7 @@ export default function AdminCourseBuilder() {
             />
           </div>
           <div>
-            <label className="field-label">Ngày kết thúc (End Date)</label>
+            <label className="field-label">End Date</label>
             <input
               type="date"
               className="field-input"
@@ -1938,30 +1938,30 @@ export default function AdminCourseBuilder() {
             />
           </div>
           <div>
-            <label className="field-label">Thời lượng ước tính</label>
+            <label className="field-label">Estimated duration</label>
             <input
               type="text"
               className="field-input"
-              placeholder="VD: 3h hoặc 2.5 hours"
+              placeholder="E.g. 3h or 2.5 hours"
               value={draft.estimatedHours || draft.estimatedDuration || ''}
               onChange={(e) => patch({ estimatedHours: e.target.value, estimatedDuration: e.target.value })}
             />
           </div>
           <div>
-            <label className="field-label">Loại khóa (Course Type)</label>
+            <label className="field-label">Course Type</label>
             <select
               className="field-select"
               value={draft.courseType}
               onChange={(e) => setCourseType(e.target.value)}
             >
-              <option value="OPTIONAL">Optional (Tự chọn)</option>
-              <option value="MANDATORY">Mandatory (Bắt buộc)</option>
+              <option value="OPTIONAL">Optional</option>
+              <option value="MANDATORY">Mandatory</option>
             </select>
           </div>
         </div>
 
-        {/* Row 2.5: Học Phí Tham Gia — chốt giá ngay lúc tạo khóa, ghi thẳng vào
-            draft.pricing để Trung Tâm Chi Phí tính đúng khi học viên ghi danh. */}
+        {/* Row 2.5: Tuition — the price is fixed at course creation and written straight into
+            draft.pricing so the Cost Center calculates correctly when a learner enrolls. */}
         <CoursePricingSection draft={draft} onChange={patchPricing} />
 
         {/* Row 3: 2-Column Grid for Category & Target Job Level (Multi-Select Dropdowns) */}
@@ -1970,11 +1970,11 @@ export default function AdminCourseBuilder() {
             id="builder-category-field"
             selected={draft.categories || (draft.category ? [draft.category] : [])}
             options={companyCategories}
-            hasError={Boolean(error && (error.includes('Danh mục') || error.includes('Category')))}
-            errorMessage={error && (error.includes('Danh mục') || error.includes('Category')) ? error : ''}
+            hasError={Boolean(error && (error.includes('Category') || error.includes('Category')))}
+            errorMessage={error && (error.includes('Category') || error.includes('Category')) ? error : ''}
             onChange={(nextCats) => {
               patch({ categories: nextCats, category: nextCats[0] || '' });
-              if (nextCats.length > 0 && error && (error.includes('Danh mục') || error.includes('Category'))) {
+              if (nextCats.length > 0 && error && (error.includes('Category') || error.includes('Category'))) {
                 setError('');
               }
             }}
@@ -1983,8 +1983,8 @@ export default function AdminCourseBuilder() {
           <LevelMultiSelectDropdown
             id="builder-level-field"
             selected={(draft.targetLevels || (draft.targetLevel ? [draft.targetLevel] : [])).map(String)}
-            hasError={Boolean(error && (error.includes('Cấp bậc') || error.includes('Level')))}
-            errorMessage={error && (error.includes('Cấp bậc') || error.includes('Level')) ? error : ''}
+            hasError={Boolean(error && (error.includes('Job level') || error.includes('Level')))}
+            errorMessage={error && (error.includes('Job level') || error.includes('Level')) ? error : ''}
             onChange={(nextLvls) => {
               const sorted = [...nextLvls].sort((a, b) => Number(a) - Number(b));
               patch({
@@ -1993,7 +1993,7 @@ export default function AdminCourseBuilder() {
                 targetLevelTitle: sorted.length === 7 ? 'Level 1 - 7' : sorted.map((l) => `Level ${l}`).join(', '),
                 assignment: draft.assignment ? { ...draft.assignment, targetLevel: sorted[0] || '' } : draft.assignment,
               });
-              if (sorted.length > 0 && error && (error.includes('Cấp bậc') || error.includes('Level'))) {
+              if (sorted.length > 0 && error && (error.includes('Job level') || error.includes('Level'))) {
                 setError('');
               }
             }}
@@ -2002,14 +2002,14 @@ export default function AdminCourseBuilder() {
 
         {/* Row 5: Description */}
         <div style={{ marginBottom: 16 }}>
-          <label className="field-label" style={{ fontWeight: 700 }}>Mô tả khóa học (Course Description)</label>
+          <label className="field-label" style={{ fontWeight: 700 }}>Course Description</label>
           <textarea
             className="field-input"
             value={draft.description}
             onChange={(e) => patch({ description: e.target.value })}
             rows={3}
             style={{ resize: 'vertical' }}
-            placeholder="Mô tả mục tiêu khóa học, kiến thức cốt lõi và kết quả đầu ra của học viên sau khi hoàn thành..."
+            placeholder="Describe the course objective, the core knowledge and what the learner can do on completion..."
           />
         </div>
 
@@ -2029,7 +2029,7 @@ export default function AdminCourseBuilder() {
         {/* Version Audit Trail & Review Log */}
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
               <i className="ti ti-history" style={{ marginRight: 6, color: 'var(--rail)' }} />
               Content Versioning &amp; Quality Audit Trail
             </span>
@@ -2061,18 +2061,18 @@ export default function AdminCourseBuilder() {
       {/* VIRTUAL CLASSROOM LOGISTICS CARD */}
       {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS' && (
         <fieldset disabled={!canCreateVirtualClass} style={{ border: 'none', padding: 0, margin: 0 }}>
-        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--amber)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--amber-soft) 100%)' }}>
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--amber)', background: 'linear-gradient(180deg, var(--paper-raised) 0%, var(--amber-soft) 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div className="section-label" style={{ margin: 0, color: 'var(--amber-soft-text)' }}>
               <i className="ti ti-device-tv" style={{ marginRight: 6 }} />
               Virtual Classroom Logistics &amp; Host Setup
             </div>
-            <Badge tone="amber" icon="ti-checklist">Điểm danh qua Cổng Giảng Dạy</Badge>
+            <Badge tone="amber" icon="ti-checklist">Attendance through the Teaching Portal</Badge>
           </div>
 
           <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Nền tảng (Platform)</label>
+              <label className="field-label">Platform</label>
               <select
                 className="field-select"
                 value={draft.virtualMeeting?.platform || 'TEAMS'}
@@ -2082,11 +2082,11 @@ export default function AdminCourseBuilder() {
                 <option value="ZOOM">Zoom</option>
                 <option value="MEET">Google Meet</option>
                 <option value="WEBEX">Cisco Webex</option>
-                <option value="CUSTOM">Khác (Custom)</option>
+                <option value="CUSTOM">Other (Custom)</option>
               </select>
             </div>
             <div>
-              <label className="field-label">Đường dẫn phòng họp (Meeting URL) *</label>
+              <label className="field-label">Meeting URL *</label>
               <input
                 className="field-input"
                 placeholder="https://teams.microsoft.com/l/meetup-join/..."
@@ -2098,7 +2098,7 @@ export default function AdminCourseBuilder() {
 
           <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Giảng viên / Người chủ trì (Host Instructor) *</label>
+              <label className="field-label">Host Instructor *</label>
               <select
                 className="field-select"
                 value={draft.virtualMeeting?.instructorId || ''}
@@ -2107,18 +2107,18 @@ export default function AdminCourseBuilder() {
                   patchVirtualMeeting({ instructorId: tr?.userId || '', instructorName: tr?.fullName || '', instructorTitle: tr?.position || '' });
                 }}
               >
-                <option value="">— Chọn Giảng viên —</option>
+                <option value="">— Choose A Trainer —</option>
                 {eligibleTrainers.map((t) => (
                   <option key={t.userId} value={t.userId}>
                     {t.fullName} — {roleDefinition(t.role).labelVi}
-                    {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                    {t.userId === authUser?.userId ? ' (yourself)' : ''}
                   </option>
                 ))}
               </select>
-              <div className="field-hint">Giảng viên được chọn sẽ thấy lớp này trong "Lớp Học Phụ Trách" tại Cổng Giảng Dạy, kèm nút Chủ Trì Lớp Học (Host Meeting).</div>
+              <div className="field-hint">The selected trainer sees this class under "My Classes" in the Teaching Portal, with a Host Meeting button.</div>
             </div>
             <div>
-              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <label className="field-label">Max Capacity</label>
               <input
                 type="number"
                 className="field-input"
@@ -2130,7 +2130,7 @@ export default function AdminCourseBuilder() {
 
           <div className="grid grid-3" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Ngày tổ chức (Schedule Date) *</label>
+              <label className="field-label">Schedule Date *</label>
               <input
                 type="date"
                 className="field-input"
@@ -2139,23 +2139,23 @@ export default function AdminCourseBuilder() {
               />
             </div>
             <div>
-              <label className="field-label">Khung giờ (Time Window) *</label>
+              <label className="field-label">Time Window *</label>
               <input
                 className="field-input"
-                placeholder="14:00 - 16:00 (2.0 giờ)"
+                placeholder="14:00 - 16:00 (2.0 hours)"
                 value={draft.virtualMeeting?.scheduleTime || ''}
                 onChange={(e) => patchVirtualMeeting({ scheduleTime: e.target.value })}
               />
             </div>
             <div>
-              <label className="field-label">Trạng thái buổi học</label>
+              <label className="field-label">Session status</label>
               <select
                 className="field-select"
                 value={draft.virtualMeeting?.status || 'UPCOMING'}
                 onChange={(e) => patchVirtualMeeting({ status: e.target.value })}
               >
-                <option value="UPCOMING">Sắp diễn ra</option>
-                <option value="COMPLETED">Đã kết thúc</option>
+                <option value="UPCOMING">Upcoming</option>
+                <option value="COMPLETED">Closed</option>
               </select>
             </div>
           </div>
@@ -2172,7 +2172,7 @@ export default function AdminCourseBuilder() {
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label className="field-label">Hướng dẫn chuẩn bị (Prep Instructions)</label>
+            <label className="field-label">Prep Instructions</label>
             <textarea
               className="field-input"
               rows={2}
@@ -2183,7 +2183,7 @@ export default function AdminCourseBuilder() {
           </div>
 
           <div>
-            <label className="field-label">Tài liệu đính kèm (Materials)</label>
+            <label className="field-label">Materials</label>
             <VirtualMaterialsEditor
               materials={draft.virtualMeeting?.materials || []}
               onAdd={addVirtualMaterial}
@@ -2196,7 +2196,7 @@ export default function AdminCourseBuilder() {
 
       {/* DEDICATED IN-PERSON CLASSROOM LOGISTICS CARD */}
       {draft.deliveryType === 'IN_PERSON_CLASSROOM' && (
-        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--blue)', background: 'linear-gradient(180deg, #FFFFFF 0%, var(--blue-soft) 100%)' }}>
+        <div className="card card-pad" style={{ marginBottom: 16, borderColor: 'var(--blue)', background: 'linear-gradient(180deg, var(--paper-raised) 0%, var(--blue-soft) 100%)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div className="section-label" style={{ margin: 0, color: 'var(--blue)' }}>
               <i className="ti ti-school" style={{ marginRight: 6 }} />
@@ -2207,11 +2207,11 @@ export default function AdminCourseBuilder() {
 
           <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">⭐ Giảng viên Chính (Lead Trainer / Faculty) *</label>
+              <label className="field-label">⭐ Lead Trainer / Faculty *</label>
               {isTrainerOnly ? (
                 <div className="field-input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)' }}>
                   <i className="ti ti-user-check" style={{ color: 'var(--blue)' }} />
-                  {authUser.fullName} — {roleDefinition(authRole).labelVi} (chính bạn)
+                  {authUser.fullName} — {roleDefinition(authRole).labelVi} (yourself)
                 </div>
               ) : (
                 <select
@@ -2222,24 +2222,24 @@ export default function AdminCourseBuilder() {
                     setDraft((prev) => ({
                       ...prev,
                       trainerId: tr?.userId || e.target.value,
-                      trainerName: tr?.fullName || tr?.name || 'Giảng Viên / L&D',
-                      instructor: tr?.fullName || tr?.name || 'Giảng Viên / L&D',
+                      trainerName: tr?.fullName || tr?.name || 'Trainer / L&D',
+                      instructor: tr?.fullName || tr?.name || 'Trainer / L&D',
                     }));
                   }}
                 >
                   {eligibleTrainers.map((t) => (
                     <option key={t.userId} value={t.userId}>
                       {t.fullName} — {roleDefinition(t.role).labelVi}
-                      {t.userId === authUser?.userId ? ' (chính bạn)' : ''}
+                      {t.userId === authUser?.userId ? ' (yourself)' : ''}
                     </option>
                   ))}
                 </select>
               )}
-              <div className="field-hint">Giảng viên chính chịu trách nhiệm giáo trình và điều phối buổi đào tạo.</div>
+              <div className="field-hint">The lead trainer owns the syllabus and coordinates the session.</div>
             </div>
 
             <div>
-              <label className="field-label">Địa điểm / Phòng Thực hành (Venue &amp; Practical Lab)</label>
+              <label className="field-label">Venue &amp; Practical Lab</label>
               <select
                 className="field-select"
                 value={draft.venueId || 'lab-ap-fresh'}
@@ -2250,25 +2250,25 @@ export default function AdminCourseBuilder() {
               >
                 {meetingRoomsAndLabs.map((rm) => (
                   <option key={rm.id} value={rm.id}>
-                    {rm.name} (Sức chứa: {rm.capacity} chỗ &middot; {rm.location})
+                    {rm.name} (Capacity: {rm.capacity} seats &middot; {rm.location})
                   </option>
                 ))}
               </select>
-              <div className="field-hint">Phòng học / Xưởng thực hành tổ chức buổi đào tạo thực tế.</div>
+              <div className="field-hint">The classroom / practice workshop hosting the hands-on session.</div>
             </div>
           </div>
 
-          {/* CO-TRAINERS / FACULTY PANEL SECTION - Chỉ User Admin & SysAdmin mới có quyền phân công Giảng viên đồng giảng */}
+          {/* CO-TRAINERS / FACULTY PANEL SECTION - Only User Admin & SysAdmin may assign co-trainers */}
           {!isTrainerOnly && (
-            <div style={{ marginBottom: 16, padding: '12px 14px', background: '#F8FAFC', border: '1px solid var(--line)', borderRadius: 8 }}>
+            <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <label className="field-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <i className="ti ti-users" style={{ color: 'var(--blue)' }} />
-                    🤝 Giảng Viên Đồng Giảng &amp; Trợ Giảng (Co-Trainers / Assistants)
+                    🤝 Co-Trainers &amp; Teaching Assistants
                   </label>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                    Cho phép thêm 1 hoặc nhiều giảng viên cùng đứng lớp, mở QR điểm danh và quản lý học viên.
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                    Lets one or more trainers co-teach the class, open the attendance QR code and manage learners.
                   </div>
                 </div>
 
@@ -2302,7 +2302,7 @@ export default function AdminCourseBuilder() {
                       }));
                     }}
                   >
-                    <option value="">+ Thêm Giảng Viên Đồng Giảng...</option>
+                    <option value="">+ Add A Co-Trainer...</option>
                     {eligibleTrainers
                       .filter((t) => t.userId !== draft.trainerId && !(draft.coTrainers || []).some((c) => c.userId === t.userId || c.id === t.userId))
                       .map((t) => (
@@ -2318,7 +2318,7 @@ export default function AdminCourseBuilder() {
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {(!draft.coTrainers || draft.coTrainers.length === 0) ? (
                   <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>
-                    Chưa có giảng viên đồng giảng. Lớp học do 1 Giảng viên chính phụ trách.
+                    No co-trainers yet. The class is led by a single lead trainer.
                   </div>
                 ) : (
                   draft.coTrainers.map((ct) => (
@@ -2327,7 +2327,7 @@ export default function AdminCourseBuilder() {
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        background: '#fff',
+                        background: 'var(--paper-raised)',
                         border: '1px solid var(--blue)',
                         borderRadius: 20,
                         padding: '3px 10px',
@@ -2349,7 +2349,7 @@ export default function AdminCourseBuilder() {
                             coTrainerNames: nextList.map((x) => x.fullName),
                           }));
                         }}
-                        title="Xóa giảng viên này khỏi lớp"
+                        title="Remove this trainer from the class"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: '0 2px', display: 'flex', alignItems: 'center' }}
                       >
                         <i className="ti ti-x" style={{ fontSize: 12 }} />
@@ -2363,7 +2363,7 @@ export default function AdminCourseBuilder() {
 
           <div className="grid grid-3" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Ngày tổ chức (Training Date)</label>
+              <label className="field-label">Training Date</label>
               <input
                 type="date"
                 className="field-input"
@@ -2372,20 +2372,20 @@ export default function AdminCourseBuilder() {
               />
             </div>
             <div>
-              <label className="field-label">Khung giờ (Time Window)</label>
+              <label className="field-label">Time Window</label>
               <select
                 className="field-select"
                 value={draft.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
                 onChange={(e) => patch({ scheduleTime: e.target.value })}
               >
-                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (Sáng - 3.0 tiếng)</option>
-                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (Chiều - 3.0 tiếng)</option>
-                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (Sáng - 3.0 tiếng)</option>
-                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (Chiều - 3.0 tiếng)</option>
+                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (morning - 3.0 hours)</option>
+                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (afternoon - 3.0 hours)</option>
+                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (morning - 3.0 hours)</option>
+                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (afternoon - 3.0 hours)</option>
               </select>
             </div>
             <div>
-              <label className="field-label">Sức chứa tối đa (Max Capacity)</label>
+              <label className="field-label">Max Capacity</label>
               <input
                 type="number"
                 className="field-input"
@@ -2397,14 +2397,14 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {/* SECTION: PHÂN BỔ ĐỐI TƯỢNG (CASCADING DRILL-DOWN ASSIGNER) */}
+      {/* SECTION: AUDIENCE ALLOCATION (CASCADING DRILL-DOWN ASSIGNER) */}
       {(draft.courseType === 'MANDATORY' || draft.courseType === 'OPTIONAL') && (
         <div
           className="card card-pad"
           style={{
             marginBottom: 16,
             border: draft.courseType === 'MANDATORY' ? '1.5px solid #F59E0B' : '1.5px solid var(--blue, #3B82F6)',
-            background: draft.courseType === 'MANDATORY' ? '#FFFDF5' : '#F8FAFC',
+            background: draft.courseType === 'MANDATORY' ? '#FFFDF5' : 'var(--paper-sunken)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap', gap: 8 }}>
@@ -2413,41 +2413,41 @@ export default function AdminCourseBuilder() {
                 className="section-label"
                 style={{
                   margin: 0,
-                  fontSize: 13.5,
+                  fontSize: 14,
                   fontWeight: 800,
-                  color: draft.courseType === 'MANDATORY' ? '#B45309' : '#1D4ED8',
+                  color: draft.courseType === 'MANDATORY' ? 'var(--amber-soft-text)' : '#1D4ED8',
                 }}
               >
                 <i className="ti ti-sitemap" style={{ marginRight: 6 }} />
                 {draft.courseType === 'MANDATORY'
-                  ? 'Phân Bổ Đối Tượng Học Viên Bắt Buộc (Target Audience Assignment)'
-                  : 'Phân Bổ Bắt Buộc Có Thời Hạn (Tùy Chọn Phân Phối Đối Tượng)'}
+                  ? 'Mandatory Target Audience Assignment'
+                  : 'Time-Limited Mandatory Allocation (Optional Audience Distribution)'}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
                 {draft.courseType === 'MANDATORY' ? (
                   <>
-                    💡 <strong>Tùy chọn lúc tạo/sửa khóa:</strong> Admin có thể chọn gán đối tượng ngay bây giờ (Khối, Phòng ban, Sub-Dept, Level, Chi nhánh, Từng User, Nhóm) <em>hoặc để trống để gán sau</em>. Khóa mandatory chưa gán đối tượng sẽ tạm ẩn khỏi học viên cho đến khi được phân bổ.
+                    💡 <strong>Optional when creating/editing a course:</strong> The Admin may assign the audience right now (Division, Department, Sub-Dept, Level, Branch, Individual User, Group) <em>or leave empty to assign later</em>. A mandatory course with no audience assigned stays hidden from learners until it is allocated.
                   </>
                 ) : (
                   <>
-                    💡 <strong>Khóa học tự chọn (Optional):</strong> Khóa học luôn hiển thị công khai trên danh mục cho mọi học viên. Nếu Admin gán thêm Khối / Phòng ban / Cá nhân tại đây, khóa học sẽ trở thành <strong>bắt buộc kèm hạn hoàn thành</strong> riêng cho các đối tượng được gán.
+                    💡 <strong>Optional course:</strong> The course is always publicly visible in the catalog to every learner. If the Admin also assigns a Division / Department / individual here, the course becomes <strong>mandatory with a completion deadline</strong> only to the assigned audience.
                   </>
                 )}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <Badge tone={(draft.assignments && draft.assignments.length) || draft.assignment ? (draft.courseType === 'MANDATORY' ? 'amber' : 'blue') : 'slate'}>
-                {((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))} Đối Tượng Đã Gán
+                {((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))} Assigned Audiences
               </Badge>
             </div>
           </div>
 
           {/* Table of Assigned Targets */}
           {((draft.assignments && draft.assignments.length > 0) || draft.assignment) && (
-            <div style={{ marginBottom: 14, background: '#fff', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ marginBottom: 14, background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)' }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
-                  Danh Sách Đối Tượng Được Gán ({((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))})
+                  Assigned Audience List ({((draft.assignments && draft.assignments.length) || (draft.assignment ? 1 : 0))})
                 </span>
                 <button
                   type="button"
@@ -2455,18 +2455,18 @@ export default function AdminCourseBuilder() {
                   style={{ fontSize: 11, color: '#DC2626', padding: '2px 6px' }}
                   onClick={handleClearAllAssignments}
                 >
-                  Xóa tất cả
+                  Clear all
                 </button>
               </div>
               <div style={{ maxHeight: 180, overflowY: 'auto' }}>
                 <table className="table" style={{ margin: 0, fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th>Cấp Độ Phân Bổ</th>
-                      <th>Đối Tượng Mục Tiêu</th>
-                      <th>Hạn Hoàn Thành</th>
-                      <th>Ghi Chú</th>
-                      <th style={{ width: 60, textAlign: 'center' }}>Thao Tác</th>
+                      <th>Allocation Level</th>
+                      <th>Target Audience</th>
+                      <th>Completion Deadline</th>
+                      <th>Notes</th>
+                      <th style={{ width: 60, textAlign: 'center' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2486,7 +2486,7 @@ export default function AdminCourseBuilder() {
                             className="btn btn-sm btn-ghost"
                             style={{ color: '#DC2626', padding: '2px 6px' }}
                             onClick={() => handleRemoveAssignment(idx)}
-                            title="Xóa phân bổ này"
+                            title="Remove this allocation"
                           >
                             <i className="ti ti-trash" />
                           </button>
@@ -2502,7 +2502,7 @@ export default function AdminCourseBuilder() {
           {/* Integrated Cascading MultiTargetAssigner Component */}
           <MultiTargetAssigner
             course={draft}
-            saveButtonLabel="+ Thêm Đối Tượng Phân Bổ"
+            saveButtonLabel="+ Add An Allocation Target"
             onSave={({ assignmentType, targets, dueDate, justification, groupPolicy, assignedLevelEligibility }) => {
               const toAdd = targets.map((t) => ({
                 id: `asg-draft-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -2522,41 +2522,41 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {/* SECTION: GIÁO TRÌNH & TÀI LIỆU GIẢNG DẠY (CHỈ ÁP DỤNG CHO KHÓA TRỰC TIẾP HOẶC LỚP TRỰC TUYẾN LIVE) */}
+      {/* SECTION: SYLLABUS & TEACHING MATERIALS (IN-PERSON OR LIVE ONLINE CLASSES ONLY) */}
       {(draft.deliveryType === 'IN_PERSON_CLASSROOM' || (draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType === 'VIRTUAL_CLASS')) && (
         <div className="card card-pad" style={{ marginBottom: 16, border: '1.5px solid var(--blue, #2563eb)', background: 'var(--paper-raised)', borderRadius: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
             <div>
               <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
                 <i className="ti ti-notebook" style={{ marginRight: 6, color: 'var(--blue)' }} />
-                Giáo Trình &amp; Tài Liệu Giảng Dạy (Session Syllabus &amp; Pre-Class Materials)
+                Syllabus &amp; Teaching Materials (Session Syllabus &amp; Pre-Class Materials)
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-                Khung chương trình bài giảng từng phần và file tài liệu (SOP PDF, Slide PPT) để học viên tải về xem trước khi bắt đầu khóa học trực tiếp / trực tuyến.
+                The section-by-section syllabus and the material files (SOP PDF, PPT slides) learners can download before the in-person / online session starts.
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Badge tone="blue" icon="ti-list-check">{(draft.syllabus || []).length} Phần Học</Badge>
-              <Badge tone="sage" icon="ti-paperclip">{(draft.materials || []).length} File Tài Liệu</Badge>
+              <Badge tone="blue" icon="ti-list-check">{(draft.syllabus || []).length} Modules</Badge>
+              <Badge tone="sage" icon="ti-paperclip">{(draft.materials || []).length} Material Files</Badge>
             </div>
           </div>
 
           <div className="grid grid-2" style={{ gap: 20, alignItems: 'start' }}>
-            {/* COLUMN 1: KHUNG CHƯƠNG TRÌNH (SYLLABUS / SESSION AGENDA) */}
+            {/* COLUMN 1: SYLLABUS / SESSION AGENDA */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <label className="field-label" style={{ fontWeight: 700, margin: 0, color: 'var(--blue)' }}>
-                  <i className="ti ti-list-numbers" style={{ marginRight: 4 }} /> Khung Chương Trình Buổi Học (Syllabus Agenda)
+                  <i className="ti ti-list-numbers" style={{ marginRight: 4 }} /> Session Syllabus Agenda
                 </label>
                 <Button size="sm" variant="outline" icon="ti-plus" onClick={addSyllabusStep}>
-                  Thêm Phần Học
+                  Add Module
                 </Button>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
                 {(draft.syllabus || []).length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)', color: 'var(--ink-soft)', fontSize: 12.5 }}>
-                    Chưa có khung chương trình. Bấm "+ Thêm Phần Học" để thiết lập nội dung từng bước.
+                  <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)', color: 'var(--ink-soft)', fontSize: 13 }}>
+                    No syllabus yet. Click "+ Add Module" to build the content step by step.
                   </div>
                 ) : (
                   draft.syllabus.map((step, sIdx) => (
@@ -2568,10 +2568,10 @@ export default function AdminCourseBuilder() {
                           </span>
                           <input
                             className="field-input"
-                            style={{ height: 30, fontSize: 12.5, fontWeight: 700 }}
+                            style={{ height: 30, fontSize: 13, fontWeight: 700 }}
                             value={step.step}
                             onChange={(e) => updateSyllabusStep(sIdx, 'step', e.target.value)}
-                            placeholder="Tên phần học (VD: Phần 1: Giới thiệu...)"
+                            placeholder="Module name (e.g. Part 1: Introduction...)"
                           />
                         </div>
                         <button
@@ -2579,7 +2579,7 @@ export default function AdminCourseBuilder() {
                           className="icon-btn"
                           style={{ color: 'var(--rust)' }}
                           onClick={() => removeSyllabusStep(sIdx)}
-                          title="Xóa phần này"
+                          title="Remove this module"
                         >
                           <i className="ti ti-trash" />
                         </button>
@@ -2590,7 +2590,7 @@ export default function AdminCourseBuilder() {
                         style={{ fontSize: 12, resize: 'vertical' }}
                         value={step.detail}
                         onChange={(e) => updateSyllabusStep(sIdx, 'detail', e.target.value)}
-                        placeholder="Mô tả chi tiết nội dung đào tạo và yêu cầu thực hành..."
+                        placeholder="Describe the training content and the practical requirements in detail..."
                       />
                     </div>
                   ))
@@ -2598,15 +2598,15 @@ export default function AdminCourseBuilder() {
               </div>
             </div>
 
-            {/* COLUMN 2: TÀI LIỆU ĐÍNH KÈM & SLIDE (COURSE MATERIALS & UPLOADS) */}
+            {/* COLUMN 2: ATTACHED MATERIALS & SLIDES (COURSE MATERIALS & UPLOADS) */}
             <div>
               <label className="field-label" style={{ fontWeight: 700, marginBottom: 10, color: 'var(--bigc-green, #007A38)' }}>
-                <i className="ti ti-upload" style={{ marginRight: 4 }} /> File Giáo Trình, Slide &amp; Tài Liệu Đính Kèm
+                <i className="ti ti-upload" style={{ marginRight: 4 }} /> Syllabus, Slides &amp; Attached Materials
               </label>
 
               {/* Simulated Drag & Drop Upload Zone */}
               <div style={{
-                background: '#f8fafc',
+                background: 'var(--paper-sunken)',
                 border: '2px dashed #94a3b8',
                 borderRadius: 8,
                 padding: '16px 12px',
@@ -2629,8 +2629,8 @@ export default function AdminCourseBuilder() {
                   }}
                 />
                 <i className="ti ti-cloud-upload" style={{ fontSize: 28, color: 'var(--blue)', marginBottom: 4 }} />
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>Kéo thả file hoặc Bấm để tải lên tài liệu</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Hỗ trợ: PDF (SOP, Hướng dẫn), PPT/PPTX (Slide bài giảng), DOCX (Biểu mẫu)</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Drag and drop a file, or click to upload a document</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Supports: PDF (SOP, guides), PPT/PPTX (lecture slides), DOCX (forms)</div>
               </div>
 
               {/* Quick manual entry form */}
@@ -2638,7 +2638,7 @@ export default function AdminCourseBuilder() {
                 <input
                   className="field-input"
                   style={{ flex: 1, minWidth: 160, height: 32, fontSize: 12 }}
-                  placeholder="Tên tài liệu đính kèm..."
+                  placeholder="Attached material name..."
                   value={newMaterialName}
                   onChange={(e) => setNewMaterialName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(); } }}
@@ -2655,7 +2655,7 @@ export default function AdminCourseBuilder() {
                   <option value="LINK">LINK</option>
                 </select>
                 <Button size="sm" variant="primary" icon="ti-plus" onClick={addMaterial}>
-                  Thêm File
+                  Add File
                 </Button>
               </div>
 
@@ -2663,11 +2663,11 @@ export default function AdminCourseBuilder() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
                 {(draft.materials || []).length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '14px', background: 'var(--paper-sunken)', borderRadius: 6, color: 'var(--ink-soft)', fontSize: 12 }}>
-                    Chưa có tài liệu đính kèm. Tải file hoặc nhập tên ở trên.
+                    No attached materials yet. Upload a file or enter a name above.
                   </div>
                 ) : (
                   draft.materials.map((mat) => (
-                    <div key={mat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px' }}>
+                    <div key={mat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
                         <i
                           className={mat.type === 'PDF' ? 'ti ti-file-type-pdf' : mat.type === 'PPT' ? 'ti ti-file-type-ppt' : mat.type === 'DOC' ? 'ti ti-file-type-doc' : 'ti ti-link'}
@@ -2675,7 +2675,7 @@ export default function AdminCourseBuilder() {
                         />
                         <div style={{ overflow: 'hidden' }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{mat.name}</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{mat.type} &middot; {mat.size || '2.0 MB'} &middot; {mat.uploadedBy || 'Admin'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{mat.type} &middot; {mat.size || '2.0 MB'} &middot; {mat.uploadedBy || 'Admin'}</div>
                         </div>
                       </div>
                       <button
@@ -2683,7 +2683,7 @@ export default function AdminCourseBuilder() {
                         className="icon-btn"
                         style={{ color: 'var(--rust)' }}
                         onClick={() => removeMaterial(mat.id)}
-                        title="Xóa tài liệu"
+                        title="Remove material"
                       >
                         <i className="ti ti-x" />
                       </button>
@@ -2696,11 +2696,10 @@ export default function AdminCourseBuilder() {
         </div>
       )}
 
-      {/* Module/Lesson editor & Assessment CHỈ áp dụng cho khóa Online E-Learning
-          tự học — không áp dụng cho Virtual Class (lớp live qua Zoom/Teams,
-          hoàn thành = đã tham gia buổi học) và cũng không áp dụng cho khóa
-          Trực Tiếp/ILT (chỉ là buổi học viên đến tham dự tại phòng/xưởng thực
-          hành do User Admin/SysAdmin đặt lịch — không có nội dung tự học nào cả). */}
+      {/* The Module/Lesson editor & Assessment apply ONLY to self-paced Online E-Learning
+          courses — not to a Virtual Class (a live Zoom/Teams session where
+          completion = attendance) and not to an In-Person/ILT course (learners simply attend
+          in a room/workshop scheduled by User Admin/SysAdmin — there is no self-paced content at all). */}
       {draft.deliveryType === 'ONLINE_ELEARNING' && draft.onlineClassType !== 'VIRTUAL_CLASS' && (
       <>
       <div className="grid" style={{ gridTemplateColumns: '260px 1fr', alignItems: 'start', gap: 20, marginBottom: 16 }}>
@@ -2721,7 +2720,7 @@ export default function AdminCourseBuilder() {
             >
               <span style={{
                 width: 20, height: 20, borderRadius: '50%', display: 'inline-flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 10.5, fontFamily: 'var(--font-mono)',
+                justifyContent: 'center', fontSize: 11, fontFamily: 'var(--font-mono)',
                 background: activeModule && m.id === activeModule.id ? 'var(--rail)' : 'var(--slate-soft)',
                 color: activeModule && m.id === activeModule.id ? '#fff' : 'var(--slate-soft-text)',
               }}>{m.displayOrder}</span>
@@ -2784,15 +2783,15 @@ export default function AdminCourseBuilder() {
         </div>
       </div>
 
-      {/* KHỐI ASSESSMENT ĐÁNH GIÁ CUỐI KHÓA HỌC (TÁCH RIÊNG KHỎI MODULES) */}
+      {/* END-OF-COURSE ASSESSMENT BLOCK (SEPARATE FROM THE MODULES) */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <i className="ti ti-shield-check" style={{ color: 'var(--rail)', fontSize: 18 }} />
-            <span>Bài Kiểm Tra / Assessment Đánh Giá Cuối Khóa (Course Assessment)</span>
+            <span>End-Of-Course Assessment (Course Assessment)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <label style={{ fontSize: 12.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <label style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={cfg.assessmentEnabled}
@@ -2804,12 +2803,12 @@ export default function AdminCourseBuilder() {
                   }
                 }}
               />
-              <span>Bắt buộc đạt bài Assessment để hoàn thành khóa học</span>
+              <span>Passing the assessment is required to complete the course</span>
             </label>
             {courseAssessment ? (
-              <Badge tone="sage"><i className="ti ti-check" /> Đã gắn bài thi</Badge>
+              <Badge tone="sage"><i className="ti ti-check" /> Exam attached</Badge>
             ) : (
-              <Badge tone="slate">Chưa có bài thi</Badge>
+              <Badge tone="slate">No exam yet</Badge>
             )}
           </div>
         </div>
@@ -2826,39 +2825,39 @@ export default function AdminCourseBuilder() {
                     {courseAssessment.title}
                   </span>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 8 }}>
-                  {courseAssessment.description || 'Bài kiểm tra đánh giá kiến thức tổng hợp sau khi hoàn thành khóa học.'}
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 8 }}>
+                  {courseAssessment.description || 'A comprehensive knowledge assessment taken after completing the course.'}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button size="sm" variant="primary" icon="ti-edit" onClick={handleOpenCreateAssessment}>
-                  Chỉnh Sửa Assessment
+                  Edit Assessment
                 </Button>
                 <Button size="sm" variant="ghost" icon="ti-trash" style={{ color: 'var(--rust)' }} onClick={handleRemoveCourseAssessment}>
-                  Gỡ Bài Thi
+                  Detach The Exam
                 </Button>
               </div>
             </div>
 
             {/* Badges */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, fontSize: 11.5 }}>
-              <Badge tone="sage" size="sm">🎯 Gắn Liền Khóa Học (Course-linked)</Badge>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, fontSize: 12 }}>
+              <Badge tone="sage" size="sm">🎯 Course-linked</Badge>
               {(courseAssessment.contentFormats || (courseAssessment.contentFormat ? [courseAssessment.contentFormat] : [])).map((fmt) => (
                 <Badge key={fmt} tone="blue" size="sm">
-                  {fmt === 'UPLOAD_DOC' ? '📄 File Đề Tự Luận PDF' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Ngân Hàng Câu Hỏi'}
+                  {fmt === 'UPLOAD_DOC' ? '📄 Essay Prompt PDF' : fmt === 'SCORM_PACKAGE' ? '📦 SCORM' : fmt === 'GOOGLE_FORM' ? '🔗 Form Online' : '💡 Question Bank'}
                 </Badge>
               ))}
               <Badge tone="slate" size="sm">
-                ⏱️ {courseAssessment.timeLimitMinutes} phút
+                ⏱️ {courseAssessment.timeLimitMinutes} min
               </Badge>
               <Badge tone="sage" size="sm">
-                🎯 Điểm đạt: {courseAssessment.passingScorePercent}%
+                🎯 Pass score: {courseAssessment.passingScorePercent}%
               </Badge>
               <Badge tone="slate" size="sm">
-                🔄 Tối đa {courseAssessment.maxAttempts} lần thi
+                🔄 Max {courseAssessment.maxAttempts} attempts
               </Badge>
               <Badge tone="amber" size="sm">
-                🎲 Bốc ngẫu nhiên: {courseAssessment.questionsPerAttempt} câu / đề
+                🎲 Random draw: {courseAssessment.questionsPerAttempt} questions / paper
               </Badge>
             </div>
 
@@ -2866,10 +2865,10 @@ export default function AdminCourseBuilder() {
             {courseAssessment.questionTypesList && courseAssessment.questionTypesList.length > 0 && (
               <div style={{ fontSize: 12, color: 'var(--ink-soft)', background: 'var(--paper-raised)', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
                 <i className="ti ti-list-check" style={{ marginRight: 5, color: 'var(--rail)' }} />
-                <strong>Cấu hình đề thi:</strong> {courseAssessment.questionTypesList.join(' &middot; ')}
+                <strong>Exam configuration:</strong> {courseAssessment.questionTypesList.join(' &middot; ')}
                 {courseAssessment.uploadedFileName && (
                   <span style={{ marginLeft: 8, color: 'var(--ink-faint)' }}>
-                    (Nguồn: {courseAssessment.uploadedFileName} - {courseAssessment.uploadedPoolSize || 150} câu)
+                    (Source: {courseAssessment.uploadedFileName} - {courseAssessment.uploadedPoolSize || 150} questions)
                   </span>
                 )}
               </div>
@@ -2877,25 +2876,25 @@ export default function AdminCourseBuilder() {
 
             {/* Anti-cheat features */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
-              <span style={{ color: 'var(--ink-faint)', marginRight: 4 }}>Bảo mật:</span>
-              {courseAssessment.antiCheatSettings?.enforceFullscreen && <span style={{ color: 'var(--sage)' }}>✓ Toàn màn hình</span>}
-              {courseAssessment.antiCheatSettings?.detectTabSwitch && <span style={{ color: 'var(--amber)' }}>✓ Giám sát chuyển tab</span>}
-              {courseAssessment.antiCheatSettings?.randomizeQuestions && <span style={{ color: 'var(--ink-soft)' }}>✓ Xáo trộn đề</span>}
+              <span style={{ color: 'var(--ink-faint)', marginRight: 4 }}>Security:</span>
+              {courseAssessment.antiCheatSettings?.enforceFullscreen && <span style={{ color: 'var(--sage)' }}>✓ Fullscreen</span>}
+              {courseAssessment.antiCheatSettings?.detectTabSwitch && <span style={{ color: 'var(--amber)' }}>✓ Tab-switch monitoring</span>}
+              {courseAssessment.antiCheatSettings?.randomizeQuestions && <span style={{ color: 'var(--ink-soft)' }}>✓ Shuffled paper</span>}
               {courseAssessment.antiCheatSettings?.showWatermark && <span style={{ color: 'var(--ink-soft)' }}>✓ Watermark</span>}
-              {courseAssessment.antiCheatSettings?.preventCopyPaste && <span style={{ color: 'var(--rust)' }}>✓ Khóa Copy/Paste</span>}
+              {courseAssessment.antiCheatSettings?.preventCopyPaste && <span style={{ color: 'var(--rust)' }}>✓ Copy/Paste locked</span>}
             </div>
           </div>
         ) : (
           <div style={{ padding: '24px 16px', textAlign: 'center', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px dashed var(--line)' }}>
             <i className="ti ti-award" style={{ fontSize: 32, color: 'var(--rail)', display: 'block', marginBottom: 8 }} />
             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginBottom: 4 }}>
-              Khóa học này hiện chưa có bài Assessment đánh giá cuối khóa
+              This course currently has no end-of-course assessment
             </div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', maxWidth: 580, margin: '0 auto 14px' }}>
-              Bài Assessment nằm riêng biệt ngoài các Module bài giảng, dùng để kiểm tra đánh giá năng lực và cấp chứng chỉ sau khi học viên học xong toàn bộ bài học. Bạn có thể bốc câu hỏi ngẫu nhiên từ file ngân hàng, đề tự luận PDF, SCORM hoặc biểu mẫu online.
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', maxWidth: 580, margin: '0 auto 14px' }}>
+              The Assessment sits outside the lesson modules and is used to test competency and issue a certificate once the learner has finished every lesson. You can draw random questions from a bank file, an essay PDF, SCORM or an online form.
             </div>
             <Button variant="primary" icon="ti-plus" onClick={handleOpenCreateAssessment}>
-              Tạo Bài Assessment Riêng Cho Khóa Học Này
+              Create A Dedicated Assessment For This Course
             </Button>
           </div>
         )}
@@ -2908,10 +2907,10 @@ export default function AdminCourseBuilder() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
           <div className="section-label" style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>
             <i className="ti ti-award" style={{ marginRight: 6, color: 'var(--rail)' }} />
-            Quy Tắc Hoàn Thành, Điều Kiện Tiên Quyết &amp; Chứng Chỉ (Completion &amp; Certificate)
+            Completion Rules, Prerequisites &amp; Certificate
           </div>
           <Badge tone={cfg.certificateEnabled ? 'sage' : 'slate'}>
-            {cfg.certificateEnabled ? '🎓 Có cấp chứng chỉ' : 'Không cấp chứng chỉ'}
+            {cfg.certificateEnabled ? '🎓 Issues a certificate' : 'No certificate issued'}
           </Badge>
         </div>
 
@@ -2919,27 +2918,27 @@ export default function AdminCourseBuilder() {
         <div className="grid grid-2" style={{ gap: 14, marginBottom: 14 }}>
           <div>
             <label className="field-label" style={{ fontWeight: 700 }}>
-              Quy tắc hoàn thành khóa học (Course Completion Rule)
+              Course Completion Rule
             </label>
             <input
               className="field-input"
               value={cfg.completionRule}
-              placeholder="VD: Complete all required lessons"
+              placeholder="e.g. Complete all required lessons"
               onChange={(e) => patchConfig({ completionRule: e.target.value })}
             />
             {/* Quick preset chips */}
             <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Gợi ý:</span>
+              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Suggestion:</span>
               {[
                 'Complete all required lessons',
-                'Hoàn thành 100% bài học & Đạt bài thi >= 80%',
-                'Điểm danh đủ các buổi học trực tiếp',
+                '100% of lessons complete & exam score >= 80%',
+                'Attendance at every in-person session',
               ].map((preset) => (
                 <button
                   key={preset}
                   type="button"
                   className="btn btn-sm btn-ghost"
-                  style={{ fontSize: 10.5, padding: '1px 6px', background: 'var(--paper-sunken)' }}
+                  style={{ fontSize: 11, padding: '1px 6px', background: 'var(--paper-sunken)' }}
                   onClick={() => patchConfig({ completionRule: preset })}
                 >
                   {preset}
@@ -2960,15 +2959,15 @@ export default function AdminCourseBuilder() {
                   recertificationMethod: cfg.recertificationMethod ?? 'RETAKE_FULL_COURSE',
                 })}
               />
-              <span style={{ fontSize: 13.5 }}>Cấp chứng chỉ tốt nghiệp có thời hạn &amp; Tái cấp (Digital Certificate &amp; Recertification)</span>
+              <span style={{ fontSize: 14 }}>Issue a time-limited graduation certificate &amp; recertification (Digital Certificate &amp; Recertification)</span>
             </label>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: cfg.certificateEnabled ? 12 : 0, marginLeft: 24 }}>
-              Học viên đạt tiêu chuẩn sẽ nhận chứng chỉ số có mã QR xác thực và được theo dõi chu kỳ tái đào tạo định kỳ.
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: cfg.certificateEnabled ? 12 : 0, marginLeft: 24 }}>
+              Learners who meet the standard receive a digital certificate with a QR verification code and are tracked through the recertification cycle.
             </div>
 
             {cfg.certificateEnabled && (
               <div style={{ marginLeft: 24, paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {/* 0. MẪU CHỨNG CHỈ (Certificate Template) */}
+                {/* 0. CERTIFICATE TEMPLATE */}
                 <CertificateTemplatePicker
                   templateId={cfg.certificateTemplateId || null}
                   onChange={(id) => patchConfig({ certificateTemplateId: id })}
@@ -2978,12 +2977,12 @@ export default function AdminCourseBuilder() {
                   onCreateTemplate={addCertificateTemplate}
                 />
 
-                {/* 1. THỜI HẠN HIỆU LỰC & SỐ NGÀY BÁO TRƯỚC */}
+                {/* 1. VALIDITY PERIOD & ADVANCE NOTICE DAYS */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 3 }}>
+                    <label className="field-label" style={{ fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
                       <i className="ti ti-calendar-time" style={{ marginRight: 4, color: 'var(--blue)' }} />
-                      Thời hạn hiệu lực chứng chỉ:
+                      Certificate validity period:
                     </label>
                     <select
                       className="field-input"
@@ -2991,18 +2990,18 @@ export default function AdminCourseBuilder() {
                       value={cfg.validityPeriodMonths ?? 12}
                       onChange={(e) => patchConfig({ validityPeriodMonths: parseInt(e.target.value, 10) })}
                     >
-                      <option value={6}>6 Tháng (Đợt cao điểm/vệ sinh định kỳ)</option>
-                      <option value={12}>12 Tháng / 1 Năm (Chuẩn ATVSTP, PCCC, An toàn)</option>
-                      <option value={24}>24 Tháng / 2 Năm (Nghiệp vụ Quản lý)</option>
-                      <option value={36}>36 Tháng / 3 Năm (Kỹ năng Lãnh đạo)</option>
-                      <option value={0}>Vĩnh viễn (Không hết hạn / Lifetime)</option>
+                      <option value={6}>6 Months (peak season / recurring hygiene)</option>
+                      <option value={12}>12 Months / 1 Year (Food Safety, Fire Safety, Occupational Safety)</option>
+                      <option value={24}>24 Months / 2 Years (Management operations)</option>
+                      <option value={36}>36 Months / 3 Years (Leadership skills)</option>
+                      <option value={0}>Lifetime (never expires)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 3 }}>
+                    <label className="field-label" style={{ fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
                       <i className="ti ti-bell-ringing" style={{ marginRight: 4, color: 'var(--amber)' }} />
-                      Thông báo trước hạn tái cấp:
+                      Recertification advance notice:
                     </label>
                     <select
                       className="field-input"
@@ -3011,39 +3010,39 @@ export default function AdminCourseBuilder() {
                       value={cfg.recertificationWarningDays ?? 30}
                       onChange={(e) => patchConfig({ recertificationWarningDays: parseInt(e.target.value, 10) })}
                     >
-                      <option value={15}>15 ngày trước khi hết hạn</option>
-                      <option value={30}>30 ngày trước khi hết hạn (Chuẩn)</option>
-                      <option value={45}>45 ngày trước khi hết hạn</option>
-                      <option value={60}>60 ngày trước khi hết hạn (2 tháng)</option>
+                      <option value={15}>15 days before expiry</option>
+                      <option value={30}>30 days before expiry (standard)</option>
+                      <option value={45}>45 days before expiry</option>
+                      <option value={60}>60 days before expiry (2 months)</option>
                     </select>
                   </div>
                 </div>
 
-                {/* 2. HÌNH THỨC TÁI CẤP & MỞ LẠI KHÓA HỌC */}
+                {/* 2. RECERTIFICATION METHOD & COURSE REOPENING */}
                 {cfg.validityPeriodMonths !== 0 && (
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>
+                    <label className="field-label" style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
                       <i className="ti ti-refresh" style={{ marginRight: 4, color: 'var(--bigc-green)' }} />
-                      Hình thức mở lại khóa học cho học viên khi đến hạn tái cấp:
+                      How the course reopens for the learner when recertification is due:
                     </label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
                       {[
                         {
                           id: 'RETAKE_FULL_COURSE',
-                          label: 'Học lại bài học & Thi sát hạch',
-                          desc: 'Mở lại toàn bộ video/slide bài giảng để ôn tập trước khi thi.',
+                          label: 'Retake the lessons & sit the exam',
+                          desc: 'Reopen every lecture video/slide for revision before the exam.',
                           icon: 'ti-book',
                         },
                         {
                           id: 'ASSESSMENT_ONLY',
-                          label: 'Chỉ thi sát hạch (Fast-track Exam)',
-                          desc: 'Bỏ qua lý thuyết, chỉ cần thi đạt điểm chuẩn để cấp mới.',
+                          label: 'Fast-track Exam only',
+                          desc: 'Skip the theory; only a passing exam score is needed to renew.',
                           icon: 'ti-file-certificate',
                         },
                         {
                           id: 'IN_PERSON_WORKSHOP',
-                          label: 'Lớp Workshop / Thực hành Offline',
-                          desc: 'Yêu cầu tham gia lớp tập huấn thực tế tại chi nhánh.',
+                          label: 'Offline Workshop / Practice Class',
+                          desc: 'Requires attendance at the hands-on session at the branch.',
                           icon: 'ti-building',
                         },
                       ].map((m) => {
@@ -3064,7 +3063,7 @@ export default function AdminCourseBuilder() {
                               <i className={`ti ${m.icon}`} />
                               <span>{m.label}</span>
                             </div>
-                            <div style={{ fontSize: 10.5, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.3 }}>
+                            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.3 }}>
                               {m.desc}
                             </div>
                           </div>
@@ -3074,13 +3073,13 @@ export default function AdminCourseBuilder() {
                   </div>
                 )}
 
-                {/* 3. TÓM TẮT TRẢI NGHIỆM HỌC VIÊN */}
-                <div style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(0,158,73,0.06)', border: '1px solid rgba(0,158,73,0.15)', fontSize: 11.5, color: 'var(--bigc-green-soft-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* 3. LEARNER EXPERIENCE SUMMARY */}
+                <div style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(0,158,73,0.06)', border: '1px solid rgba(0,158,73,0.15)', fontSize: 12, color: 'var(--bigc-green-soft-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <i className="ti ti-info-circle" style={{ fontSize: 16, flexShrink: 0 }} />
                   <span>
                     {cfg.validityPeriodMonths === 0
-                      ? 'Chứng chỉ vĩnh viễn, học viên chỉ cần hoàn thành 1 lần.'
-                      : `Chứng chỉ có hiệu lực ${cfg.validityPeriodMonths || 12} tháng. Trước khi hết hạn ${cfg.recertificationWarningDays || 30} ngày, khóa học sẽ mở khóa cho học viên với nhãn "Học & Tái Cấp Chứng Chỉ" để tham gia cấp lại.`}
+                      ? 'A lifetime certificate; the learner only completes it once.'
+                      : `The certificate is valid for ${cfg.validityPeriodMonths || 12} months. ${cfg.recertificationWarningDays || 30} days before it expires, the course reopens for the learner labelled "Study & Recertify" so they can renew it.`}
                   </span>
                 </div>
               </div>
@@ -3099,19 +3098,19 @@ export default function AdminCourseBuilder() {
         />
       </div>
 
-      {/* BOTTOM ACTION BAR — Save/Create được dời xuống cuối trang; lưu xong
-          quay về danh sách khóa học (xem handleSave). */}
+      {/* BOTTOM ACTION BAR — Save/Create moved to the bottom of the page; after saving it
+          returns to the course list (see handleSave). */}
       <div
         className="card card-pad"
         style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, flexWrap: 'wrap', position: 'sticky', bottom: 0, background: 'var(--paper-raised)', zIndex: 5 }}
       >
-        {error && <span style={{ fontSize: 12.5, color: 'var(--rust)', marginRight: 'auto' }}>{error}</span>}
+        {error && <span style={{ fontSize: 13, color: 'var(--rust)', marginRight: 'auto' }}>{error}</span>}
         <Button variant="ghost" icon="ti-x" onClick={() => navigate('/admin/courses')}>Cancel</Button>
         <Button variant="outline" icon="ti-file-pencil" onClick={() => handleSave('DRAFT')}>Save as Draft</Button>
         <Button variant="primary" icon="ti-device-floppy" onClick={() => handleSave('PUBLISHED')}>{isNew ? 'Create Course' : 'Save Changes'}</Button>
       </div>
 
-      {/* MODAL TẠO & CHỈNH SỬA ASSESSMENT CHO KHÓA HỌC */}
+      {/* COURSE ASSESSMENT CREATE & EDIT MODAL */}
       {editingAssessment && (
         <AssessmentEditorModal
           isOpen={Boolean(editingAssessment)}
@@ -3134,22 +3133,22 @@ function VirtualMaterialsEditor({ materials, onAdd, onRemove }) {
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <input
           className="field-input"
-          placeholder="VD: Slide bài giảng.pdf"
+          placeholder="E.g. Lecture slides.pdf"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') { e.preventDefault(); onAdd(name); setName(''); }
           }}
         />
-        <Button size="sm" icon="ti-plus" onClick={() => { onAdd(name); setName(''); }}>Thêm</Button>
+        <Button size="sm" icon="ti-plus" onClick={() => { onAdd(name); setName(''); }}>Add</Button>
       </div>
       {materials.length === 0 ? (
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Chưa có tài liệu đính kèm.</div>
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>No attached materials yet.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {materials.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#fff', border: '1px solid var(--line)', borderRadius: 6 }}>
-              <span style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}><i className="ti ti-paperclip" style={{ color: 'var(--ink-soft)' }} />{m.name}</span>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 6 }}>
+              <span style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><i className="ti ti-paperclip" style={{ color: 'var(--ink-soft)' }} />{m.name}</span>
               <button type="button" className="icon-btn" aria-label="Remove material" onClick={() => onRemove(i)}>
                 <i className="ti ti-x" aria-hidden="true" />
               </button>
@@ -3178,7 +3177,7 @@ function LessonEditor({ lesson, onChange, onRemove }) {
           >
             {['SCORM', 'VIDEO', 'PDF', 'PPT', 'EXTERNAL_LINK'].map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
-          <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={lesson.isRequired} onChange={(e) => onChange({ isRequired: e.target.checked })} /> Required
           </label>
           <LessonRuleFields lesson={lesson} onChange={onChange} />
@@ -3194,9 +3193,9 @@ function LessonEditor({ lesson, onChange, onRemove }) {
 
 const ACCEPT_BY_TYPE = { VIDEO: 'video/*', PDF: '.pdf', SCORM: '.zip' };
 
-// Content upload (5 định dạng chuẩn hóa): file cục bộ chỉ xem trước trong
-// phiên trình duyệt này (không có media server trong bản mô phỏng — xem
-// CourseStore), hoặc Admin có thể dán URL đã host sẵn để giữ nguyên sau khi tải lại.
+// Content upload (the 5 standardized formats): a local file is previewable only within
+// this browser session (there is no media server in the mock build — see
+// CourseStore), or the Admin can paste an already-hosted URL so it survives a reload.
 function LessonContentFields({ lesson, onChange }) {
   const content = lesson.content || {};
 
@@ -3219,7 +3218,7 @@ function LessonContentFields({ lesson, onChange }) {
           />
         </label>
         {content.fileName && <Badge tone="sage" icon="ti-package">{content.fileName}</Badge>}
-        <div className="field-hint">Gói tương tác chuẩn SCORM 1.2 / SCORM 2004, giao tiếp qua CMI Data Model — học viên sẽ thấy trình mô phỏng SCORM tương tác.</div>
+        <div className="field-hint">A SCORM 1.2 / SCORM 2004 interactive package communicating over the CMI data model — learners see the interactive SCORM player.</div>
       </div>
     );
   }
@@ -3241,7 +3240,7 @@ function LessonContentFields({ lesson, onChange }) {
           />
         </label>
         {content.fileName && <Badge tone="amber" icon="ti-presentation">{content.fileName}</Badge>}
-        <div className="field-hint">Slide bài giảng dạng Interactive Slide Deck, học viên lật từng trang.</div>
+        <div className="field-hint">An interactive slide deck; the learner flips through it page by page.</div>
       </div>
     );
   }
@@ -3268,14 +3267,14 @@ function LessonContentFields({ lesson, onChange }) {
         </div>
         <div className="field-hint">
           {content.platform === 'YOUTUBE'
-            ? 'Video YouTube phát trực tiếp trong app qua Embed Player.'
-            : 'Học viên bấm mở tab học tại nền tảng đối tác (SSO doanh nghiệp MMVN) rồi xác nhận hoàn thành để đồng bộ Transcript.'}
+            ? 'A YouTube video played inside the app through the embed player.'
+            : 'The learner opens a study tab on the partner platform (MMVN enterprise SSO) then confirms completion to sync the transcript.'}
         </div>
       </div>
     );
   }
 
-  // VIDEO / PDF: URL đã host, hoặc chọn file cục bộ để xem trước trong phiên này.
+  // VIDEO / PDF: a hosted URL, or pick a local file to preview within this session.
   function onPick(e) {
     const f = e.target.files[0];
     if (!f) return;
@@ -3318,7 +3317,7 @@ function LessonRuleFields({ lesson, onChange }) {
   const rule = lesson.rule || {};
   if (lesson.lessonType === 'VIDEO') {
     return (
-      <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
         Required watch
         <input className="field-input" style={{ width: 60 }} type="number" value={rule.requiredWatchPercent ?? 90}
           onChange={(e) => onChange({ rule: { ...rule, requiredWatchPercent: Number(e.target.value) } })} />%
@@ -3327,16 +3326,16 @@ function LessonRuleFields({ lesson, onChange }) {
   }
   if (lesson.lessonType === 'PPT' || lesson.lessonType === 'SCORM') {
     return (
-      <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
         <input type="checkbox" checked={rule.requireAllViewed ?? true} onChange={(e) => onChange({ rule: { ...rule, requireAllViewed: e.target.checked } })} /> Require all slides/interactions viewed
       </label>
     );
   }
   if (lesson.lessonType === 'EXTERNAL_LINK') {
-    return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Hoàn thành = học viên bấm xác nhận đã học xong tại nền tảng đối tác.</span>;
+    return <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Completion = the learner confirms on the partner platform that they finished.</span>;
   }
   return (
-    <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+    <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
       Required read
       <input className="field-input" style={{ width: 60 }} type="number" value={rule.requiredReadPercent ?? 90}
         onChange={(e) => onChange({ rule: { ...rule, requiredReadPercent: Number(e.target.value) } })} />%
@@ -3351,7 +3350,7 @@ function QuestionEditor({ index, question, editing, onEdit, onDone, onChange, on
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600 }}>Q{index + 1}. {question.text || '(empty question)'}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>
               {question.type.replace('_', ' ')} &middot; {question.category || 'Uncategorized'} &middot; {question.difficulty} &middot; {question.score} pts &middot; {question.options.filter((o) => o.isCorrect).length} correct answer(s)
             </div>
           </div>

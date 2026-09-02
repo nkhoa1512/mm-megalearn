@@ -48,8 +48,8 @@ import {
 import { DEFAULT_CERTIFICATE_TEMPLATES } from '../data/certificateTemplatesData';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
 
-// v6: thang 7 cấp bậc đảo ngược + mô hình 6 role. Bump key để bỏ cache v5 cũ
-// (role `admin` và level 1-5 của bản trước sẽ không còn hợp lệ).
+// v6: the inverted 7-level scale + the 6-role model. The key is bumped to drop the old v5 cache
+// (the previous build's `admin` role and levels 1-5 are no longer valid).
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const STORAGE_KEY = 'mm-megalearn-courses-v11';
 const CLASSROOM_KEY = 'mm-megalearn-classrooms-v11';
@@ -58,24 +58,24 @@ const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
 const ACTION_PLAN_KEY = 'mm-megalearn-actionplans-v6';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 const USERS_KEY = 'mm-megalearn-users-v7';
-// v7: cấu hình lộ trình chuyển từ ma trận Level x Branch phẳng sang Scope Key
-// đa tầng (BU -> Division -> Department -> Sub-Department x Level). Bump key
-// để không nạp nhầm shape cũ từ localStorage.
+// v7: roadmap configuration moves from a flat Level x Branch matrix to a multi-tier
+// Scope Key (BU -> Division -> Department -> Sub-Department x Level). The key is bumped
+// so the old shape is never loaded from localStorage.
 const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
-// Curriculum (Curriculum -> Courses -> Modules -> Lessons) và danh mục lĩnh
-// vực công ty (Category) do System Admin quản lý — hai domain mới, chưa từng
-// tồn tại trước bản Catalog 5-Phân-Hệ này.
+// Curriculum (Curriculum -> Courses -> Modules -> Lessons) and the company area
+// company areas (Category) managed by the System Admin — two new domains that never
+// existed before this 5-section catalog build.
 const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
-// Library (Library -> Lĩnh Vực/Domain -> Courses): admin tự tạo Library, thêm
-// các Lĩnh Vực (mỗi Lĩnh Vực gắn 1 Category có sẵn) rồi gán khóa học thủ công
-// vào từng Lĩnh Vực để dễ tra cứu — khác Curriculum ở chỗ chỉ là góc nhìn
-// tham chiếu/tra cứu cho User Admin & System Admin, không có phân bổ/enroll.
+// Library (Library -> Area/Domain -> Courses): the admin creates the Library, adds
+// the areas (each bound to an existing Category) and then assign courses manually
+// to each area for easy lookup — unlike a Curriculum, it is only a view
+// a reference/lookup view for User Admin & System Admin, with no allocation/enrollment.
 const LIBRARY_KEY = 'mm-megalearn-libraries-v1';
 
-// Dữ liệu mẫu cho vài Library đầu tiên (demo/first-run) — gom sẵn các khóa
-// học seed có trong mockData.js vào Lĩnh Vực đúng Category của chúng, để tab
-// Library không trống trơn khi User Admin/SysAdmin vào lần đầu. Domain nào
-// không có khóa nào khớp thì bỏ qua (không tạo Lĩnh Vực rỗng vô nghĩa).
+// Sample data for the first few Libraries (demo/first-run) — pre-grouping the seed
+// seed courses from mockData.js into the area matching their Category, so the
+// Library is not empty the first time a User Admin/SysAdmin opens it. A domain with
+// no matching course is skipped (no pointless empty area is created).
 function buildSeedLibraries(allCourses) {
   function domainFor(category, limit = 8) {
     const courseIds = allCourses.filter((c) => courseMatchesCategory(c, category)).slice(0, limit).map((c) => c.id);
@@ -85,8 +85,8 @@ function buildSeedLibraries(allCourses) {
   return [
     {
       id: 'LIB-SEED-HARDSKILL',
-      name: 'Thư Viện Kỹ Năng Cứng Vận Hành',
-      description: 'Gom các khóa học nghiệp vụ chuyên môn theo từng lĩnh vực vận hành cửa hàng & kho vận.',
+      name: 'Operations Hard Skills Library',
+      description: 'Groups professional operations courses by store and warehouse operating area.',
       domains: [
         domainFor('Food Safety & Hygiene'),
         domainFor('Cold Chain'),
@@ -100,8 +100,8 @@ function buildSeedLibraries(allCourses) {
     },
     {
       id: 'LIB-SEED-LEADERSHIP',
-      name: 'Thư Viện Kỹ Năng Mềm & Quản Trị',
-      description: 'Các khóa học lãnh đạo, dịch vụ khách hàng và tuân thủ đạo đức dành cho cấp quản lý.',
+      name: 'Soft Skills & Management Library',
+      description: 'Leadership, customer service and ethical compliance courses for management.',
       domains: [
         domainFor('Leadership & Management'),
         domainFor('Customer Service'),
@@ -114,8 +114,8 @@ function buildSeedLibraries(allCourses) {
     },
     {
       id: 'LIB-SEED-DIGITAL',
-      name: 'Thư Viện Chuyển Đổi Số & Chuỗi Cung Ứng',
-      description: 'Khóa học về an ninh thông tin, thương mại điện tử, tài chính và chuỗi cung ứng.',
+      name: 'Digital Transformation & Supply Chain Library',
+      description: 'Courses on information security, e-commerce, finance and supply chain.',
       domains: [
         domainFor('Information Security'),
         domainFor('Digital & E-Commerce'),
@@ -130,11 +130,11 @@ function buildSeedLibraries(allCourses) {
     .filter((lib) => lib.domains.length > 0);
 }
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
-// Certificate Template: thư viện mẫu chứng chỉ do admin quản lý trước, Course
-// Builder & Curriculum Editor chỉ gắn certificateTemplateId tham chiếu tới
-// đây (không copy dữ liệu) — file đính kèm chỉ lưu metadata (tên/kích thước),
-// không dùng để render; các field còn lại (signerName/signerTitle/issuerOrg)
-// mới thực sự thay thế nội dung mặc định trên CertificateModal.
+// Certificate Template: a template library the admin manages up front; the Course
+// Builder & Curriculum Editor only attach a certificateTemplateId referencing
+// here (no data copying) — an attached file only stores metadata (name/size),
+// is not used for rendering; the remaining fields (signerName/signerTitle/issuerOrg)
+// genuinely replaces the default content on the CertificateModal.
 const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v4';
 const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
 const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
@@ -149,10 +149,10 @@ const DEPT_KEY = 'mm-megalearn-dept-v4';
 const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
 const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v4';
 const GROUP_KEY = 'mm-megalearn-groups-v1';
-// Cost Center: chỉ lưu các bút toán PHÁT SINH trong phiên. Sổ cái mở đầu (ngân
-// sách năm + ghi danh lịch sử HRIS) được suy ra lại mỗi lần khởi động từ dữ
-// liệu tĩnh — cùng mô hình overlay với `enrollments`, tránh nhồi vài nghìn
-// dòng giao dịch vào hạn mức localStorage.
+// Cost Center: stores only the entries CREATED in this session. The opening ledger (annual
+// budget + historical HRIS enrollments) is re-derived at every start-up from static
+// data — the same overlay model as `enrollments`, avoiding stuffing thousands of
+// transaction rows into the localStorage quota.
 const COST_LEDGER_KEY = 'mm-megalearn-cost-ledger-v1';
 const THEME_KEY = 'mm-megalearn-theme';
 const LANG_KEY = 'mm-megalearn-lang';
@@ -160,13 +160,13 @@ const LANG_KEY = 'mm-megalearn-lang';
 export const DEFAULT_INTERVENTIONS = [
   {
     id: 'ITV-2026-001',
-    unit: 'Quầy Bánh & Tươi Sống (MM An Phú)',
+    unit: 'Bakery & Fresh Food Counter (MM An Phu)',
     departmentCode: 'PPF',
     skill: 'HACCP & Cold-Chain Storage Protocols',
     courseId: 'CRS-FSH-001',
     courseTitle: 'Food Safety & Hygiene Standards (HACCP)',
     urgency: 'HIGH',
-    impact: 'Tỷ lệ hao hụt quầy bánh tăng 3.2% trong tháng 7. Cần mở lớp thực hành kỹ năng chuẩn hóa quy trình.',
+    impact: 'Bakery counter shrinkage rose 3.2% in July. A hands-on class on standardizing the process is needed.',
     requestedBy: 'Le Thi Mai (HRBP)',
     requesterRole: 'hrbp',
     requestedAt: '2026-08-20',
@@ -176,13 +176,13 @@ export const DEFAULT_INTERVENTIONS = [
   },
   {
     id: 'ITV-2026-002',
-    unit: 'Bộ Phận Thu Ngân & Dịch Vụ Khách Hàng (MM Bình Phú)',
+    unit: 'Cashier & Customer Service Department (MM Binh Phu)',
     departmentCode: 'FE',
     skill: 'Cash Handling, POS Speed & Shrinkage Control',
     courseId: 'CRS-CSERV-087',
     courseTitle: 'Service Mindset & Cashier POS Fast Operation',
     urgency: 'MEDIUM',
-    impact: 'Thời gian thanh toán trung bình tăng 15s/giao dịch trong giờ cao điểm.',
+    impact: 'Average checkout time rose by 15s per transaction during peak hours.',
     requestedBy: 'Le Thi Mai (HRBP)',
     requesterRole: 'hrbp',
     requestedAt: '2026-08-22',
@@ -197,12 +197,12 @@ export const DEFAULT_SUCCESSION_TALENTS = [
     id: 'MMVN-2041',
     userId: 'USR-2041',
     name: 'Trần Quốc Bảo',
-    currentRole: 'Trưởng Quầy Tươi Sống',
-    store: 'MM An Phú',
+    currentRole: 'Fresh Counter Manager',
+    store: 'MM An Phu',
     storeId: 'store-an-phu',
-    targetRole: 'Phó Giám Đốc Siêu Thị (Deputy SGM)',
+    targetRole: 'Deputy Store General Manager (Deputy SGM)',
     readiness: 'READY_NOW',
-    readinessLabel: 'Sẵn Sàng Ngay',
+    readinessLabel: 'Ready Now',
     progress702010: 88,
     ojt70: 90,
     mentoring20: 85,
@@ -214,12 +214,12 @@ export const DEFAULT_SUCCESSION_TALENTS = [
     id: 'MMVN-1042',
     userId: 'USR-1042',
     name: 'Minh Tran',
-    currentRole: 'Chuyên viên Bánh Mì Tuyến Đầu',
-    store: 'MM An Phú',
+    currentRole: 'Front-Line Bakery Executive',
+    store: 'MM An Phu',
     storeId: 'store-an-phu',
-    targetRole: 'Trưởng Bộ Phận Bánh Mì & Thực Phẩm Chế Biến',
+    targetRole: 'Bakery & Processed Food Department Head',
     readiness: 'READY_IN_6_MONTHS',
-    readinessLabel: 'Sẵn Sàng trong 6 Tháng',
+    readinessLabel: 'Ready In 6 Months',
     progress702010: 76,
     ojt70: 80,
     mentoring20: 75,
@@ -232,11 +232,11 @@ export const DEFAULT_SUCCESSION_TALENTS = [
     userId: 'USR-1078',
     name: 'Sarah Johnson',
     currentRole: 'Pastry Chef Associate',
-    store: 'MM An Phú',
+    store: 'MM An Phu',
     storeId: 'store-an-phu',
-    targetRole: 'Trưởng Nhóm Kỹ Thuật Bánh Tươi',
+    targetRole: 'Fresh Bakery Technical Team Leader',
     readiness: 'READY_1_YEAR',
-    readinessLabel: 'Sẵn Sàng trong 1 Năm',
+    readinessLabel: 'Ready In 1 Year',
     progress702010: 72,
     ojt70: 75,
     mentoring20: 70,
@@ -248,12 +248,12 @@ export const DEFAULT_SUCCESSION_TALENTS = [
     id: 'MMVN-0312',
     userId: 'USR-0312',
     name: 'Lê Hoàng Nam',
-    currentRole: 'Trưởng Ca Dịch Vụ Thu Ngân',
-    store: 'MM Bình Phú',
+    currentRole: 'Cashier Service Shift Leader',
+    store: 'MM Binh Phu',
     storeId: 'store-binh-phu',
-    targetRole: 'Trưởng Phòng Dịch Vụ Khách Hàng',
+    targetRole: 'Head of Customer Service',
     readiness: 'READY_NOW',
-    readinessLabel: 'Sẵn Sàng Ngay',
+    readinessLabel: 'Ready Now',
     progress702010: 92,
     ojt70: 95,
     mentoring20: 90,
@@ -265,12 +265,12 @@ export const DEFAULT_SUCCESSION_TALENTS = [
     id: 'MMVN-4055',
     userId: 'USR-4055',
     name: 'Phạm Thị Thảo',
-    currentRole: 'Giám Sát Kiểm Soát Hao Hụt (QA)',
-    store: 'MM Thăng Long',
+    currentRole: 'Shrinkage Control Supervisor (QA)',
+    store: 'MM Thang Long',
     storeId: 'store-thang-long',
-    targetRole: 'Trưởng Bộ Phận QA & An Toàn Thực Phẩm Miền Bắc',
+    targetRole: 'Northern Region QA & Food Safety Department Head',
     readiness: 'READY_NOW',
-    readinessLabel: 'Sẵn Sàng Ngay',
+    readinessLabel: 'Ready Now',
     progress702010: 85,
     ojt70: 85,
     mentoring20: 85,
@@ -285,14 +285,14 @@ export const DEFAULT_ALIGNMENTS = [
     id: 'aln-001',
     candidateId: 'MMVN-1042',
     candidateName: 'Minh Tran',
-    targetRole: 'Trưởng Bộ Phận Bánh Mì & Thực Phẩm Chế Biến',
+    targetRole: 'Bakery & Processed Food Department Head',
     mentorName: 'Trần Minh Quang (SGM)',
     managerName: 'David Tran',
     ojt70Progress: 80,
     mentoring20Progress: 75,
     course10Progress: 70,
     readiness: 'READY_IN_6_MONTHS',
-    notes: 'Ứng viên nắm vững kỹ thuật nướng bánh Artisan, đang kèm cặp 2 nhân viên mới. Cần thêm 10 giờ thực hành quản trị ca đêm.',
+    notes: 'The candidate has mastered artisan baking technique and is coaching 2 new staff. Needs another 10 hours of night-shift management practice.',
     updatedAt: '2026-08-25',
   },
 ];
@@ -309,7 +309,7 @@ function loadItem(key, fallback) {
   return fallback;
 }
 
-// Hồ sơ đăng nhập lưu trong localStorage có thể còn role/level của bản cũ hoặc thiếu subDepartment.
+// The sign-in profile stored in localStorage may still carry an old role/level or be missing subDepartment.
 function hydrateUser(user) {
   if (!user) return null;
   const canonical = typeof allUsers === 'function' ? allUsers().find((u) => u.userId === user.userId || u.employeeCode === user.employeeCode) : null;
@@ -410,30 +410,30 @@ export function CourseStoreProvider({ children }) {
   const [gamification, setGamification] = useState(() => loadItem(GAMIFICATION_KEY, initialGamification));
   const [actionPlans, setActionPlans] = useState(() => loadItem(ACTION_PLAN_KEY, initialActionPlans));
 
-  // Ghi danh phát sinh trong phiên: { [userId]: { [courseId]: enrollment } }.
-  // Chồng lên ma trận ghi danh tĩnh của HRIS.
+  // Enrollments created in the session: { [userId]: { [courseId]: enrollment } }.
+  // Layered on top of the static HRIS enrollment matrix.
   const [enrollments, setEnrollments] = useState(() => loadItem(ENROLLMENT_KEY, {}));
 
-  // Sổ cái Trung Tâm Chi Phí phát sinh trong phiên (ghi danh mới có/không phí,
-  // điều chỉnh thủ công). Chồng lên sổ cái mở đầu suy ra từ dữ liệu tĩnh.
+  // Cost Center ledger entries created in this session (new paid/free enrollments,
+  // manual adjustments). Layered on top of the opening ledger derived from static data.
   const [costLedgerSession, setCostLedgerSession] = useState(() => loadItem(COST_LEDGER_KEY, []));
 
-  // Cấu hình Lộ trình Cấp bậc (Tab 1 "Hiện tại" / Tab 2 "Kế cận" tra cứu chéo
-  // từ đây) — chỉ User Admin/SysAdmin sửa (UI gate), mọi role đọc.
+  // Level roadmap configuration (Tab 1 "current" / Tab 2 "succession" cross-reference
+  // from here) — only User Admin/SysAdmin may edit (UI gate); every role reads.
   const [roadmapsConfig, setRoadmapsConfig] = useState(() => loadItem(ROADMAP_KEY, SCOPE_ROADMAP_MATRIX));
 
-  // Giáo trình (Curriculum): tập hợp nhiều khóa E-Learning tự học theo cấu
-  // trúc Curriculum -> Courses -> Modules -> Lessons (chỉ tham chiếu courseIds,
-  // không sao chép lại module/lesson).
+  // Curriculum: a bundle of several self-paced E-Learning courses following the
+  // structure Curriculum -> Courses -> Modules -> Lessons (referencing courseIds only,
+  // without copying the modules/lessons back).
   const [curricula, setCurricula] = useState(() => loadItem(CURRICULUM_KEY, initialCurricula));
 
-  // Library: admin-managed Library -> Domain(Lĩnh Vực, gắn Category có sẵn) ->
-  // courseIds[] (1 khóa có thể nằm trong nhiều Domain/Library, không loại
-  // trừ lẫn nhau — chỉ là tag tham chiếu, không đổi dữ liệu khóa học gốc).
+  // Library: an admin-managed Library -> Domain (an area bound to an existing Category) ->
+  // courseIds[] (one course may sit in several domains/libraries, they are not
+  // mutually exclusive — it is only a reference tag and does not change the source course data).
   const [libraries, setLibraries] = useState(() => loadItem(LIBRARY_KEY, buildSeedLibraries(initialCourses)));
 
-  // Danh mục Lĩnh Vực Công Ty (Category): danh sách chuẩn rich objects, System Admin có thể
-  // xem toàn bộ & thêm mới từ System Configuration — không giới hạn số lượng.
+  // The company Category catalog: a standard list of rich objects that the System Admin can
+  // view them all & add new ones from System Configuration — with no count limit.
   const [companyCategoryObjects, setCompanyCategoryObjects] = useState(() => {
     const loaded = loadItem(CATEGORY_KEY, DEFAULT_CATEGORY_OBJECTS);
     if (!Array.isArray(loaded)) return DEFAULT_CATEGORY_OBJECTS;
@@ -445,7 +445,7 @@ export function CourseStoreProvider({ children }) {
     [companyCategoryObjects]
   );
 
-  // Certificate Template: xem chú thích ở CERT_TEMPLATE_KEY phía trên.
+  // Certificate Template: see the note at CERT_TEMPLATE_KEY above.
   const [certificateTemplates, setCertificateTemplates] = useState(() => loadItem(CERT_TEMPLATE_KEY, DEFAULT_CERTIFICATE_TEMPLATES));
 
   // Enterprise Org Hierarchy & Job Levels States (BU, Division, Department, Sub-Department, Job Levels)
@@ -484,6 +484,8 @@ export function CourseStoreProvider({ children }) {
   const [language, setLanguageState] = useState(() => {
     const saved = loadItem(LANG_KEY, null);
     if (saved === 'en' || saved === 'vi') return saved;
+    // Both copy variants are English now; 'vi' stays the default because that is
+    // the branch the UI and the verification suite are written against.
     return 'vi';
   });
 
@@ -570,7 +572,7 @@ export function CourseStoreProvider({ children }) {
     }
   }, [users]);
 
-  /** Thăng cấp bậc (Job Level Promotion) - Chỉ User Admin & SysAdmin được gọi */
+  /** Job Level Promotion - only User Admin & SysAdmin may call it */
   const promoteUserLevel = useCallback(
     (userId, newLevel, reason = '') => {
       const normalizedLvl = normalizeLevel(newLevel);
@@ -582,7 +584,7 @@ export function CourseStoreProvider({ children }) {
               level: normalizedLvl,
               levelTitle: levelTitle(normalizedLvl),
               lastPromotedAt: todayIso(),
-              promotionReason: reason || 'Hoàn thành chương trình đào tạo & thẩm định năng lực đạt chuẩn.',
+              promotionReason: reason || 'Completed the training program & met the competency standard.',
             };
             if (currentUser && (currentUser.userId === u.userId || currentUser.employeeCode === u.employeeCode)) {
               setCurrentUser(updated);
@@ -597,7 +599,7 @@ export function CourseStoreProvider({ children }) {
     [currentUser]
   );
 
-  /** Cập nhật thông tin nhân sự (User Master Data: Tên, Email, Chức danh, Phòng ban, Sub-Department, Role...) */
+  /** Updates employee details (User Master Data: name, email, job title, department, sub-department, role...) */
   const updateUser = useCallback(
     (userId, patch) => {
       setUsers((prev) =>
@@ -617,7 +619,7 @@ export function CourseStoreProvider({ children }) {
     [currentUser]
   );
 
-  /** Thêm nhân viên mới */
+  /** Adds a new employee */
   const addUser = useCallback((newUser) => {
     const rawNum = Math.floor(1000 + Math.random() * 9000);
     const id = newUser.userId || `USR-${rawNum}`;
@@ -625,7 +627,7 @@ export function CourseStoreProvider({ children }) {
     const created = {
       userId: id,
       employeeCode: empCode,
-      fullName: newUser.fullName || 'Nhân Viên Mới',
+      fullName: newUser.fullName || 'New Employee',
       email: newUser.email || `employee_${rawNum}@mmvietnam.com`,
       position: newUser.position || newUser.title || 'Store Associate',
       title: newUser.title || newUser.position || 'Store Associate',
@@ -633,7 +635,7 @@ export function CourseStoreProvider({ children }) {
       levelTitle: levelTitle(normalizeLevel(newUser.level || '7')),
       role: normalizeRole(newUser.role || 'learner'),
       branch: newUser.branch || 'SUPPORTING',
-      branchName: newUser.branchName || (newUser.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+      branchName: newUser.branchName || (newUser.branch === 'OPERATIONS' ? 'Store Operations' : 'Head Office'),
       businessUnitId: newUser.businessUnitId || 'bu-mmvn',
       businessUnitCode: newUser.businessUnitCode || 'MMVN',
       divisionId: newUser.divisionId || null,
@@ -651,20 +653,20 @@ export function CourseStoreProvider({ children }) {
       yearsOfService: newUser.yearsOfService || 1.0,
       avatar: (newUser.fullName || 'NV').slice(0, 2).toUpperCase(),
       badgeTone: 'blue',
-      description: newUser.description || 'Hồ sơ nhân sự MM Mega Market.',
+      description: newUser.description || 'MM Mega Market employee profile.',
       ...newUser,
     };
     setUsers((prev) => [created, ...prev]);
     return created;
   }, []);
 
-  /** Xóa nhân sự khỏi danh mục */
+  /** Removes an employee from the directory */
   const deleteUser = useCallback((userId) => {
     setUsers((prev) => prev.filter((u) => u.userId !== userId && u.employeeCode !== userId));
     return { ok: true };
   }, []);
 
-  /** Import hàng loạt nhân sự từ file CSV / JSON */
+  /** Bulk import employees from a CSV / JSON file */
   const importUsers = useCallback((importedUserList) => {
     if (!Array.isArray(importedUserList) || importedUserList.length === 0) return { addedCount: 0, updatedCount: 0, total: 0 };
     let added = 0;
@@ -678,7 +680,7 @@ export function CourseStoreProvider({ children }) {
         const standardized = {
           userId: id,
           employeeCode: incoming.employeeCode || id,
-          fullName: incoming.fullName || 'Nhân Viên Mới',
+          fullName: incoming.fullName || 'New Employee',
           email: incoming.email || `${id.toLowerCase()}@mmvietnam.com`,
           position: incoming.position || incoming.title || 'Specialist',
           title: incoming.title || incoming.position || 'Specialist',
@@ -686,7 +688,7 @@ export function CourseStoreProvider({ children }) {
           levelTitle: levelTitle(normalizeLevel(incoming.level || '7')),
           role: normalizeRole(incoming.role || 'learner'),
           branch: incoming.branch || 'SUPPORTING',
-          branchName: incoming.branchName || (incoming.branch === 'OPERATIONS' ? 'Siêu thị Vận hành' : 'Trụ sở Head Office'),
+          branchName: incoming.branchName || (incoming.branch === 'OPERATIONS' ? 'Store Operations' : 'Head Office'),
           businessUnitId: incoming.businessUnitId || 'bu-mmvn',
           businessUnitCode: incoming.businessUnitCode || 'MMVN',
           businessUnitName: incoming.businessUnitName || 'MM Mega Market Vietnam',
@@ -699,7 +701,7 @@ export function CourseStoreProvider({ children }) {
           subDepartmentId: incoming.subDepartmentId || null,
           subDepartmentCode: incoming.subDepartmentCode || null,
           subDepartmentName: incoming.subDepartmentName || null,
-          storeName: incoming.storeName || (incoming.branch === 'OPERATIONS' ? incoming.divisionName || 'Siêu thị MM' : 'Head Office (An Phú)'),
+          storeName: incoming.storeName || (incoming.branch === 'OPERATIONS' ? incoming.divisionName || 'MM store' : 'Head Office (An Phu)'),
           status: incoming.status || 'ACTIVE',
           yearsOfService: incoming.yearsOfService || 1.0,
           avatar: (incoming.fullName || 'NV').slice(0, 2).toUpperCase(),
@@ -831,7 +833,7 @@ export function CourseStoreProvider({ children }) {
       band: levelObj.band || 'GENERAL',
       authority: levelObj.authority || 'STANDARD',
       typicalRoles: levelObj.typicalRoles || ['learner'],
-      descVi: levelObj.descVi || 'Cấp bậc trong hệ thống MM Mega Market.',
+      descVi: levelObj.descVi || 'The job level in the MM Mega Market system.',
       headcount: levelObj.headcount || 0,
       colors: levelObj.colors || { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' },
       ...levelObj,
@@ -897,9 +899,9 @@ export function CourseStoreProvider({ children }) {
     setCertificateTemplates((prev) => prev.map((t) => (t.id === templateId ? nextTemplate : t)));
   }, []);
 
-  // UI phải tự tính usage (course/curriculum nào đang certificateTemplateId
-  // == templateId) và chỉ gọi khi = 0, giống deleteCompanyCategory ở trên —
-  // action này không tự kiểm tra lại.
+  // the UI must compute usage itself (which course/curriculum has certificateTemplateId
+  // == templateId) and only call it when = 0, like deleteCompanyCategory above —
+  // this action does not re-check it itself.
   const deleteCertificateTemplate = useCallback((templateId) => {
     setCertificateTemplates((prev) => prev.filter((t) => t.id !== templateId));
   }, []);
@@ -981,7 +983,7 @@ export function CourseStoreProvider({ children }) {
     let catObj;
     if (typeof categoryInput === 'string') {
       const clean = categoryInput.trim();
-      if (!clean) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      if (!clean) return { ok: false, reason: 'The category name cannot be empty.' };
       catObj = {
         id: `cat-${Date.now()}`,
         name: clean,
@@ -994,7 +996,7 @@ export function CourseStoreProvider({ children }) {
       };
     } else {
       const cleanName = (categoryInput.name || '').trim();
-      if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+      if (!cleanName) return { ok: false, reason: 'The category name cannot be empty.' };
       catObj = {
         id: categoryInput.id || `cat-${Date.now()}`,
         name: cleanName,
@@ -1018,13 +1020,13 @@ export function CourseStoreProvider({ children }) {
     });
 
     return alreadyExists
-      ? { ok: false, reason: `Danh mục "${catObj.name}" đã tồn tại.` }
+      ? { ok: false, reason: `The category "${catObj.name}" already exists.` }
       : { ok: true, category: catObj, name: catObj.name };
   }, []);
 
   const updateCompanyCategory = useCallback((idOrOldName, updatedData) => {
     const cleanName = (updatedData.name || '').trim();
-    if (!cleanName) return { ok: false, reason: 'Tên danh mục không được để trống.' };
+    if (!cleanName) return { ok: false, reason: 'The category name cannot be empty.' };
 
     let oldName = '';
     let updatedObj = null;
@@ -1219,12 +1221,12 @@ export function CourseStoreProvider({ children }) {
   }, []);
 
   // -------------------------------------------------------------------------
-  // Sequential Level Gate: đơn xin học vượt cấp & trạng thái truy cập khóa học
+  // Sequential Level Gate: level skip requests & course access status
   // -------------------------------------------------------------------------
 
   const role = normalizeRole(currentUser?.role);
 
-  /** Các khóa mà `user` đã được duyệt / đang chờ / bị từ chối học vượt. */
+  /** The courses `user` has been approved for / is pending on / was rejected for. */
   const requestBuckets = useCallback(
     (user) => {
       const uid = user?.userId;
@@ -1240,7 +1242,7 @@ export function CourseStoreProvider({ children }) {
 
   const myRequestBuckets = useMemo(() => requestBuckets(currentUser), [requestBuckets, currentUser]);
 
-  /** Trạng thái truy cập của một khóa học với người đang đăng nhập. */
+  /** The access status of a course for the signed-in user. */
   const accessFor = useCallback(
     (course, user = currentUser) => {
       const buckets = user === currentUser ? myRequestBuckets : requestBuckets(user);
@@ -1273,19 +1275,19 @@ export function CourseStoreProvider({ children }) {
   );
 
   // -------------------------------------------------------------------------
-  // TRUNG TÂM CHI PHÍ (COST CENTER)
+  // COST CENTER
   // -------------------------------------------------------------------------
 
-  /** 42 Division = 42 cost center, ngân sách năm tính theo đầu người thực tế. */
+  /** 42 divisions = 42 cost centers; the annual budget is computed from real headcount. */
   const costCenters = useMemo(() => buildCostCenters(divisions, users), [divisions, users]);
 
-  /** Sổ cái mở đầu: cấp ngân sách năm + toàn bộ ghi danh lịch sử từ HRIS. */
+  /** The opening ledger: the annual budget grant + every historical HRIS enrollment. */
   const openingLedger = useMemo(
     () => seedOpeningLedger({ costCenters, courses, users, enrollmentMatrix: userEnrollmentsMap }),
     [costCenters, courses, users]
   );
 
-  /** Sổ cái hiệu lực = sổ mở đầu + phát sinh trong phiên (trùng id thì phiên thắng). */
+  /** The effective ledger = the opening ledger + entries created in the session (on an id clash the session wins). */
   const costLedger = useMemo(() => {
     const merged = new Map(openingLedger.map((t) => [t.id, t]));
     costLedgerSession.forEach((t) => merged.set(t.id, t));
@@ -1298,9 +1300,9 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Gán / sửa giá tham gia của khóa học. Ghi thẳng vào `course.pricing` nên tự
-   * động được lưu cùng danh mục khóa học; các bút toán đã ghi vẫn giữ nguyên
-   * giá tại thời điểm ghi danh (không hồi tố).
+   * Sets / edits a course's tuition. It writes straight into `course.pricing` so it is
+   * saved with the course catalog automatically; ledger entries already written keep
+   * the price at the time of enrollment (no retroactive change).
    */
   const updateCoursePricing = useCallback((courseId, pricing) => {
     setCourses((prev) =>
@@ -1323,7 +1325,7 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
-  /** Bút toán thủ công (điều chỉnh ngân sách, hoàn phí, chi phí ngoài hệ thống). */
+  /** Manual ledger entries (budget adjustments, refunds, off-system costs). */
   const recordCostTransaction = useCallback(
     (txn) => {
       const date = txn.date || todayIso();
@@ -1349,12 +1351,12 @@ export function CourseStoreProvider({ children }) {
     [costCenters]
   );
 
-  /** Ghi danh khóa học cho người đang đăng nhập (chỉ khi quy tắc cấp bậc cho phép). */
+  /** Enrolls the signed-in user in a course (only when the level rule allows it). */
   const enrollCourse = useCallback(
     (courseId, user = currentUser) => {
-      if (!user) return { ok: false, reason: 'Chưa đăng nhập.' };
+      if (!user) return { ok: false, reason: 'Not signed in.' };
       const course = courses.find((c) => c.id === courseId);
-      if (!course) return { ok: false, reason: 'Không tìm thấy khóa học.' };
+      if (!course) return { ok: false, reason: 'Course not found.' };
 
       const access = accessFor(course, user);
       if (!access.canAccess) return { ok: false, reason: access.reason, access };
@@ -1370,9 +1372,9 @@ export function CourseStoreProvider({ children }) {
               courseId,
               userId: user.userId,
               courseType: course.courseType,
-              // Khóa chặt với phiên bản nội dung tại thời điểm ghi danh — nếu
-              // Admin "Phát Hành Phiên Bản Mới" sau đó, học viên này vẫn tiếp
-              // tục học/được tính điểm theo đúng cấu trúc bài giảng lúc ghi
+              // Locked tightly to the content version at enrollment time — if
+              // the Admin later runs "Publish New Version", this learner still
+              // continues studying/being scored against the syllabus at the time of
               // danh (xem resolveCourseView trong mockData.js).
               enrolledVersion: course.currentVersion || course.version || 'v1.0',
               status: 'NOT_STARTED',
@@ -1389,9 +1391,9 @@ export function CourseStoreProvider({ children }) {
         };
       });
 
-      // Ghi bút toán chi vào Trung Tâm Chi Phí của học viên. Khóa miễn phí vẫn
-      // ghi 1 dòng 0 đồng để báo cáo đếm được lượt học nội bộ. Bút toán dùng id
-      // tất định theo (user, course) nên ghi danh lại không tính phí hai lần.
+      // Writes an expense entry to the learner's Cost Center. A free course still
+      // writes a zero-value entry so reports can count internal enrollments. The entry uses an id
+      // deterministic on (user, course), so re-enrolling is never charged twice.
       const txn = buildEnrollmentTransaction({
         course,
         user,
@@ -1409,24 +1411,24 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Lưu tiến độ học: cập nhật cả object khóa học (trạng thái từng bài) lẫn
-   * overlay ghi danh của học viên, để mọi màn hình đọc ra cùng một con số.
+   * Saves learning progress: updates both the course object (each lesson's status) and
+   * the learner's enrollment overlay, so every screen reads the same number.
    *
-   * `enrolledVersion` (đa phiên bản): nếu học viên đang ở đúng phiên bản đang
-   * sống của khóa học (hoặc không truyền), ghi thẳng vào course.modules như
-   * trước giờ. Nếu học viên đang học dở một phiên bản CŨ đã bị "Phát Hành
-   * Phiên Bản Mới" thay thế, CHỈ cập nhật snapshot đóng băng tương ứng trong
-   * course.versions[enrolledVersion] — tuyệt đối không đụng vào course.modules
-   * (đang thuộc phiên bản mới), tránh làm hỏng nội dung Admin đang biên soạn.
+   * `enrolledVersion` (versioning): if the learner is on the live version of the
+   * course (or nothing is passed), write straight into course.modules as
+   * before. If the learner is part-way through an OLD version replaced by a
+   * "Publish New Version", ONLY update the matching frozen snapshot in
+   * course.versions[enrolledVersion] — never touch course.modules
+   * (which belongs to the new version), so the content the Admin is authoring is not corrupted.
    */
   const saveCourseProgress = useCallback(
     (courseId, nextCourse, user = currentUser, enrolledVersion) => {
       setCourses((prev) => prev.map((c) => {
         if (c.id !== courseId) return c;
         const current = c.currentVersion || c.version || 'v1.0';
-        // Ghi danh không có enrolledVersion (dữ liệu mẫu HRIS gốc, tạo trước
-        // khi có tính năng đa phiên bản) mặc định là v1.0 — khớp với quy tắc
-        // fallback trong resolveCourseView() ở mockData.js.
+        // Enrollments with no enrolledVersion (the original HRIS sample data, created before
+        // versioning existed) default to v1.0 — matching the fallback rule
+        // fallback in resolveCourseView() in mockData.js.
         const resolvedEnrolledVersion = enrolledVersion || 'v1.0';
         if (resolvedEnrolledVersion === current) {
           return nextCourse;
@@ -1453,13 +1455,13 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Đóng băng phiên bản hiện tại thành một snapshot bất biến trong
-   * course.versions[oldVersion] rồi tăng currentVersion lên 1 bậc (v1.0 ->
-   * v2.0 -> v3.0 -> ... không giới hạn số lần). course.modules/configuration
-   * giữ nguyên nội dung (Admin đã biên soạn xong) và từ giờ thuộc về phiên
-   * bản MỚI — học viên đã ghi danh dưới oldVersion (dù đã hoàn thành hay đang
-   * học dở) tiếp tục được phục vụ đúng snapshot đã đóng băng, không bị ảnh
-   * hưởng bởi các chỉnh sửa tiếp theo trên phiên bản mới.
+   * Freezes the current version into an immutable snapshot in
+   * course.versions[oldVersion] and bumps currentVersion by one step (v1.0 ->
+   * v2.0 -> v3.0 -> ... with no cap). course.modules/configuration
+   * keep their content (the Admin has finished authoring) and from now on belong to the
+   * NEW version — learners enrolled under oldVersion (whether completed or part-way
+   * through) keep being served exactly the frozen snapshot, unaffected
+   * by later edits on the new version.
    */
   const publishNewCourseVersion = useCallback((courseId, changeLog = '') => {
     setCourses((prev) => prev.map((c) => {
@@ -1471,7 +1473,7 @@ export function CourseStoreProvider({ children }) {
         publishedAt: c.publishedAt || todayIso(),
         archivedAt: todayIso(),
         updatedBy: currentUser?.fullName || 'L&D Administrator',
-        changeLog: changeLog || `Phiên bản ${oldVersion} được đóng băng khi phát hành ${newVersion}.`,
+        changeLog: changeLog || `Version ${oldVersion} was frozen when ${newVersion} was published.`,
         modules: JSON.parse(JSON.stringify(c.modules)),
         configuration: JSON.parse(JSON.stringify(c.configuration)),
         modality: c.modality,
@@ -1483,26 +1485,26 @@ export function CourseStoreProvider({ children }) {
         version: newVersion,
         versions: { ...c.versions, [oldVersion]: snapshot },
         versionHistory: [
-          { version: newVersion, updatedBy: currentUser?.fullName || 'L&D Administrator', updatedAt: todayIso(), note: changeLog || `Phát hành phiên bản ${newVersion}.` },
+          { version: newVersion, updatedBy: currentUser?.fullName || 'L&D Administrator', updatedAt: todayIso(), note: changeLog || `Published version ${newVersion}.` },
           ...(c.versionHistory || []),
         ],
       };
     }));
   }, [currentUser]);
 
-  /** Học viên gửi đơn xin học vượt đúng 1 cấp liền kề. */
+  /** A learner submits a request to study exactly one grade above. */
   const requestLevelAdvanceApproval = useCallback(
     (course, justification = '', user = currentUser) => {
-      if (!user || !course) return { ok: false, reason: 'Thiếu thông tin học viên hoặc khóa học.' };
+      if (!user || !course) return { ok: false, reason: 'Missing learner or course information.' };
       const access = accessFor(course, user);
       if (!access.requiresApproval) {
-        return { ok: false, reason: access.reason || 'Khóa học này không thuộc diện xin học vượt cấp.', access };
+        return { ok: false, reason: access.reason || 'This course is not eligible for a level skip request.', access };
       }
 
-      // Người duyệt cố định là User Admin / System Admin cho MỌI người gửi đơn
-      // (Learner, Manager, Trainer/L&D, HRBP đều xin vượt cấp cho chính mình
-      // và đều gửi tới cùng 1 hàng đợi) — không còn theo chuỗi role liền trên
-      // như trước, vì Manager/Trainer/HRBP đã bị bỏ quyền duyệt.
+      // The approver is always the User Admin / System Admin for EVERY requester
+      // (Learner, Manager, Trainer/L&D and HRBP all request level skips for themselves
+      // and they all go to the same queue) — no longer following the next role up
+      // as before, because Manager/Trainer/HRBP no longer have approval rights.
       const requesterRole = normalizeRole(user.role);
       const request = {
         id: `req-lvl-${Date.now()}`,
@@ -1520,12 +1522,12 @@ export function CourseStoreProvider({ children }) {
         requestDate: todayIso(),
         justification:
           justification.trim() ||
-          `Xin phê duyệt học vượt lên Level ${access.courseLevel} để chuẩn bị lộ trình thăng tiến.`,
+          `Requesting approval to study up to Level ${access.courseLevel} in preparation for promotion.`,
         courseCost: course.modality === 'EXTERNAL_PLATFORM' ? 'Included in enterprise license package' : 'Internal MMVN complimentary',
         status: 'PENDING',
       };
 
-      // Gửi lại sau khi bị từ chối: thay thế đơn cũ của đúng khóa học đó.
+      // Resubmitting after a rejection: replaces the old request for that same course.
       setApprovals((prev) => [
         request,
         ...prev.filter((a) => !(a.courseId === course.id && (a.userId === user.userId || a.employeeId === user.employeeCode))),
@@ -1536,18 +1538,18 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * HRBP (hoặc Line Manager) gửi đơn đề xuất phân bổ Giáo trình cho nhân viên/bộ phận lên User Admin duyệt.
+   * The HRBP (or line manager) sends the User Admin a curriculum allocation proposal for an employee/sub-department.
    */
   const proposeCurriculumAssignment = useCallback(
     (curriculumId, assignmentData, justification = '') => {
       const cur = curricula.find((c) => c.id === curriculumId);
-      if (!cur) return { ok: false, reason: 'Không tìm thấy giáo trình.' };
+      if (!cur) return { ok: false, reason: 'Curriculum not found.' };
 
       const userRole = normalizeRole(currentUser?.role);
       const canManage = hasCapability(userRole, 'canManageCurriculum');
       const canPropose = hasCapability(userRole, 'canProposeCurriculum');
       if (!canManage && !canPropose) {
-        return { ok: false, reason: 'Bạn không có quyền đề xuất phân bổ giáo trình.' };
+        return { ok: false, reason: 'You do not have permission to propose a curriculum allocation.' };
       }
 
       const request = {
@@ -1565,7 +1567,7 @@ export function CourseStoreProvider({ children }) {
         requestDate: todayIso(),
         justification:
           justification.trim() ||
-          `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} đề xuất phân bổ Giáo trình "${cur.title}" cho ${assignmentData.targetLabel || assignmentData.targetId} nhằm nâng cao năng lực định biên.`,
+          `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} proposes allocating the curriculum "${cur.title}" to ${assignmentData.targetLabel || assignmentData.targetId} to raise the required competency.`,
         status: 'PENDING',
       };
 
@@ -1587,10 +1589,10 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * User Admin / Manager duyệt đơn:
-   * - CURRICULUM_ASSIGNMENT: gán giáo trình chính thức cho học viên/đơn vị
-   * - ROADMAP_PROMOTION: thăng cấp lộ trình
-   * - LEVEL_ADVANCE: mở khóa và ghi danh khóa học vượt cấp
+   * User Admin / Manager approves a request:
+   * - CURRICULUM_ASSIGNMENT: officially allocate the curriculum to the learner/unit
+   * - ROADMAP_PROMOTION: promote along the roadmap
+   * - LEVEL_ADVANCE: unlock and enroll in the above-level course
    */
   const approveRequest = useCallback(
     (reqId) => {
@@ -1602,7 +1604,7 @@ export function CourseStoreProvider({ children }) {
 
       if (!target) return;
 
-      // Đề xuất gán giáo trình từ HRBP được User Admin phê duyệt:
+      // A curriculum allocation proposal from HRBP approved by the User Admin:
       if (target.requestType === 'CURRICULUM_ASSIGNMENT') {
         assignCurriculum(target.curriculumId, {
           assignmentType: target.assignmentType,
@@ -1615,9 +1617,9 @@ export function CourseStoreProvider({ children }) {
         return;
       }
 
-      // Đơn Đề xuất Đánh giá Thăng cấp (Tab 2 Lộ trình kế cận) không gắn với
-      // 1 khóa học cụ thể như LEVEL_ADVANCE — duyệt xong là thăng cấp thật
-      // cho học viên luôn, tái dùng promoteUserLevel đã có sẵn.
+      // A promotion review nomination (Tab 2, the succession roadmap) is not tied to
+      // one specific course like LEVEL_ADVANCE — approving it actually promotes
+      // the learner right away, reusing the existing promoteUserLevel.
       if (target.requestType === 'ROADMAP_PROMOTION') {
         if (target.targetLevel) promoteUserLevel(target.userId, target.targetLevel, target.justification);
         return;
@@ -1661,12 +1663,12 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Lưu (Tạo mới / Chỉnh sửa) danh sách khóa học của đúng 1 Scope Key. Nếu
-   * scope đã tồn tại và danh sách thực sự đổi, phiên bản hiện tại được đóng
-   * băng và tăng lên phiên bản mới (v1.0 -> v2.0 -> ...) — học viên đã hoàn
-   * thành/đang học dở tiếp tục thấy đúng phiên bản họ đã bắt đầu (xem
-   * resolveUserRoadmapVersion trong roadmapScopeMatrix.js); chỉ học viên chưa
-   * từng động vào lộ trình này mới thấy phiên bản mới.
+   * Saves (creates / edits) the course list of exactly one Scope Key. If the
+   * scope already exists and the list genuinely changed, the current version is frozen
+   * and bumped to a new version (v1.0 -> v2.0 -> ...) — learners who completed
+   * or are part-way through keep seeing the version they started (see
+   * resolveUserRoadmapVersion in roadmapScopeMatrix.js); only learners who have
+   * never touched this roadmap see the new version.
    */
   const publishRoadmapScopeAction = useCallback(
     (scopeKey, courseIds, note = '') =>
@@ -1677,16 +1679,16 @@ export function CourseStoreProvider({ children }) {
   );
 
   /**
-   * Gửi Hồ Sơ Đề Xuất Đánh Giá Thăng Cấp: học viên đã hoàn thành 100% Tab 1
-   * (Lộ trình hiện tại) VÀ 100% Tab 2 (Lộ trình kế cận) — gửi 1 đơn
-   * ROADMAP_PROMOTION vào cùng hàng đợi approvals với LEVEL_ADVANCE, chỉ
-   * User Admin/System Admin thấy & duyệt (canApproveLevelSkip).
+   * Submit a promotion review nomination: the learner has completed 100% of Tab 1
+   * (current roadmap) AND 100% of Tab 2 (succession roadmap) — this files one
+   * ROADMAP_PROMOTION request into the same approvals queue as LEVEL_ADVANCE, which only
+   * User Admin/System Admin can see & approve (canApproveLevelSkip).
    */
   const requestRoadmapPromotion = useCallback(
     (user = currentUser) => {
       const roadmap = computeUserRoadmapTabs(user, roadmapsConfig, enrollments, courses);
       if (!roadmap.readyForPromotion) {
-        return { ok: false, reason: 'Chưa hoàn thành 100% Lộ trình hiện tại và Lộ trình kế cận.' };
+        return { ok: false, reason: 'The current roadmap and the succession roadmap are not 100% complete.' };
       }
       const request = {
         id: `req-roadmap-${Date.now()}`,
@@ -1699,7 +1701,7 @@ export function CourseStoreProvider({ children }) {
         currentLevel: roadmap.level,
         targetLevel: roadmap.nextLevel,
         requestDate: todayIso(),
-        justification: 'Đã hoàn thành 100% Lộ trình hiện tại và Lộ trình kế cận (Tab 1 & Tab 2).',
+        justification: '100% of the current roadmap and the succession roadmap are complete (Tab 1 & Tab 2).',
         status: 'PENDING',
       };
       setApprovals((prev) => [
@@ -1718,8 +1720,8 @@ export function CourseStoreProvider({ children }) {
   }, []);
 
   /**
-   * Đơn xin học vượt cấp, thăng cấp lộ trình và đề xuất gán giáo trình mà `approver` có quyền xử lý.
-   * Chỉ User Admin và System Admin có capability `canApproveLevelSkip` và thấy TOÀN BỘ hàng đợi.
+   * Level skip requests, roadmap promotions and curriculum allocation proposals that `approver` may handle.
+   * Only User Admin and System Admin hold the `canApproveLevelSkip` capability and see the ENTIRE queue.
    */
   const levelAdvanceRequestsFor = useCallback(
     (approver = currentUser) => {
@@ -1734,7 +1736,7 @@ export function CourseStoreProvider({ children }) {
     [approvals, currentUser]
   );
 
-  /** Đơn đề xuất phân bổ giáo trình do `user` gửi (dành cho HRBP theo dõi tiến độ phê duyệt). */
+  /** Curriculum allocation proposals submitted by `user` (so the HRBP can track approval progress). */
   const myCurriculumProposals = useCallback(
     (user = currentUser) => {
       const uid = user?.userId;
@@ -1746,7 +1748,7 @@ export function CourseStoreProvider({ children }) {
     [approvals, currentUser]
   );
 
-  /** "Khóa học của tôi" đã gộp ghi danh, khóa thuộc Giáo Trình & các khóa được Admin/HRBP phân bổ trực tiếp / theo nhóm. */
+  /** "My Courses" already merges enrollments, curriculum courses and courses allocated directly / by group by the Admin/HRBP. */
   const myCourses = useCallback(
     (courseList = courses, user = currentUser) => {
       const base = myLearningCourses(courseList, user, enrollments);
@@ -1764,7 +1766,7 @@ export function CourseStoreProvider({ children }) {
         });
       });
 
-      // Quét tất cả các khóa có phân bổ theo Custom Group
+      // Scan every course allocated by custom group
       const groupAssignmentMap = {};
       (courseList || []).forEach((c) => {
         const asgList = c.assignments || (c.assignment ? [c.assignment] : []);
@@ -1792,7 +1794,7 @@ export function CourseStoreProvider({ children }) {
         }
       });
 
-      // Bổ sung thông tin Giáo trình & Phân bổ nhóm cho các khóa đã có trong base
+      // Add curriculum and group-allocation information to courses already in the base
       const enrichedBase = base.map((c) => {
         const curMeta = curriculumMap[c.id];
         const grpMeta = groupAssignmentMap[c.id];
@@ -1818,10 +1820,10 @@ export function CourseStoreProvider({ children }) {
         return c;
       });
 
-      // Tự động gán thêm các khóa học thuộc Giáo trình & Phân bổ nhóm nếu chưa có trong base
+      // Also auto-assign curriculum and group-allocated courses that are missing from the base
       const extraCourses = [];
 
-      // Từ Giáo trình
+      // From a curriculum
       Object.entries(curriculumMap).forEach(([cId, meta]) => {
         if (!baseIds.has(cId) && !groupAssignmentMap[cId]) {
           const raw = courseList.find((c) => c.id === cId);
@@ -1849,7 +1851,7 @@ export function CourseStoreProvider({ children }) {
         }
       });
 
-      // Từ Phân bổ nhóm (Custom Group)
+      // From a group allocation (Custom Group)
       Object.entries(groupAssignmentMap).forEach(([cId, meta]) => {
         if (!baseIds.has(cId)) {
           const raw = courseList.find((c) => c.id === cId);
@@ -1932,7 +1934,7 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
-  /** User Admin phân công Giảng viên đứng lớp cho một khóa học trực tiếp. */
+  /** The User Admin assigns a trainer to teach an in-person course. */
   const assignTrainerToCourse = useCallback((courseId, trainer, schedule = {}) => {
     setCourses((prev) =>
       prev.map((c) =>
@@ -1972,8 +1974,8 @@ export function CourseStoreProvider({ children }) {
       ...group,
       id: newId,
       code,
-      title: group.title || group.name || 'Nhóm Mới',
-      name: group.name || group.title || 'Nhóm Mới',
+      title: group.title || group.name || 'New Group',
+      name: group.name || group.title || 'New Group',
       description: group.description || '',
       type: group.type || 'DYNAMIC',
       criteria: group.criteria || {},
@@ -2013,8 +2015,8 @@ export function CourseStoreProvider({ children }) {
       ...existing,
       id: `grp-${Date.now()}`,
       code: `${existing.code}_COPY`,
-      title: `${existing.title} (Bản Sao)`,
-      name: `${existing.name || existing.title} (Bản Sao)`,
+      title: `${existing.title} (Copy)`,
+      name: `${existing.name || existing.title} (Copy)`,
       createdAt: new Date().toISOString(),
       lastProcessed: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
       createdBy: currentUser ? `${currentUser.userId} (${currentUser.fullName})` : 'User Admin',
@@ -2171,7 +2173,7 @@ export function CourseStoreProvider({ children }) {
         getCategoryMeta: (name) => getCategoryMetadata(name, companyCategoryObjects),
         accessFor,
         enrollCourse,
-        // Trung Tâm Chi Phí (Cost Center)
+        // Cost Center
         costCenters,
         costLedger,
         costReport,

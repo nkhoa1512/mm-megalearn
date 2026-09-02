@@ -6,28 +6,28 @@ import { normalizeLevel } from '../../data/levelSystem';
 import { resolveGroupMembers } from '../../data/customGroupsData';
 
 const COLOR_OPTIONS = [
-  { label: 'Xanh Dương', value: '#0EA5E9' },
-  { label: 'Tím Indigo', value: '#6366F1' },
-  { label: 'Xanh Lá', value: '#10B981' },
-  { label: 'Cam Hổ Phách', value: '#F59E0B' },
-  { label: 'Tím Đậm', value: '#8B5CF6' },
-  { label: 'Hồng Hồng', value: '#EC4899' },
-  { label: 'Đỏ Ruby', value: '#EF4444' },
+  { label: 'Blue', value: '#0EA5E9' },
+  { label: 'Indigo', value: '#6366F1' },
+  { label: 'Green', value: '#10B981' },
+  { label: 'Amber Orange', value: '#F59E0B' },
+  { label: 'Deep Purple', value: '#8B5CF6' },
+  { label: 'Pink', value: '#EC4899' },
+  { label: 'Ruby Red', value: '#EF4444' },
   { label: 'Xanh Lam Cyan', value: '#06B6D4' },
 ];
 
 const CATEGORY_OPTIONS = [
-  { id: 'SPECIAL_COHORT', label: 'Nhóm Đặc Thù / Chuyên Biệt' },
-  { id: 'DEMOGRAPHIC', label: 'Nhân Khẩu / Quốc Tịch' },
-  { id: 'STRATEGIC_INITIATIVE', label: 'Dự Án & Sáng Kiến Chiến Lược' },
-  { id: 'ONBOARDING', label: 'Hội Nhập & Nhân Sự Mới' },
-  { id: 'LEADERSHIP', label: 'Cán Bộ Quản Lý & Lãnh Đạo' },
-  { id: 'TALENT_POOL', label: 'Nhân Tài Kế Cận & Fast-Track' },
-  { id: 'OPERATIONS', label: 'Vận Hành & Chuỗi Cung Ứng' },
-  { id: 'CUSTOMER_SERVICE', label: 'Dịch Vụ Khách Hàng & Thu Ngân' },
-  { id: 'SAFETY_COMPLIANCE', label: 'An Toàn, PCCC & Tuân Thủ' },
-  { id: 'CULTURE_ENGAGEMENT', label: 'Văn Hóa & Gắn Kết Nhân Viên' },
-  { id: 'QUALITY_ASSURANCE', label: 'Kiểm Định & Đảm Bảo Chất Lượng' },
+  { id: 'SPECIAL_COHORT', label: 'Specialized / Dedicated Group' },
+  { id: 'DEMOGRAPHIC', label: 'Demographics / Nationality' },
+  { id: 'STRATEGIC_INITIATIVE', label: 'Strategic Projects & Initiatives' },
+  { id: 'ONBOARDING', label: 'Onboarding & New Hires' },
+  { id: 'LEADERSHIP', label: 'Managers & Leadership' },
+  { id: 'TALENT_POOL', label: 'Succession Talent & Fast-Track' },
+  { id: 'OPERATIONS', label: 'Operations & Supply Chain' },
+  { id: 'CUSTOMER_SERVICE', label: 'Customer Service & Cashier' },
+  { id: 'SAFETY_COMPLIANCE', label: 'Safety, Fire Prevention & Compliance' },
+  { id: 'CULTURE_ENGAGEMENT', label: 'Culture & Employee Engagement' },
+  { id: 'QUALITY_ASSURANCE', label: 'Quality Assurance & Inspection' },
 ];
 
 export default function CustomGroupsManager() {
@@ -55,9 +55,9 @@ export default function CustomGroupsManager() {
   const [collapsedGroupSections, setCollapsedGroupSections] = useState({});
 
   const CUSTOM_GROUP_GROUP_BY_OPTIONS = [
-    { id: 'NONE', label: 'Không gộp nhóm' },
-    { id: 'TYPE', label: 'Theo Hình Thức' },
-    { id: 'CATEGORY', label: 'Theo Lĩnh Vực / Danh Mục' },
+    { id: 'NONE', label: 'No grouping' },
+    { id: 'TYPE', label: 'By Type' },
+    { id: 'CATEGORY', label: 'By Area / Category' },
   ];
 
   // View Members Modal
@@ -143,25 +143,25 @@ export default function CustomGroupsManager() {
     const map = {};
     filteredGroups.forEach((grp) => {
       let key = 'OTHER';
-      let title = 'Khác';
+      let title = 'Other';
       let icon = 'ti-folder';
 
       if (customGroupGroupBy === 'TYPE') {
         key = grp.type || 'DYNAMIC';
         if (key === 'DYNAMIC') {
-          title = '🏢 Nhóm Theo Cơ Cấu (Dynamic)';
+          title = '🏢 Structural Group (Dynamic)';
           icon = 'ti-binary-tree';
         } else if (key === 'MANUAL') {
-          title = '👤 Nhóm Chọn User Thủ Công';
+          title = '👤 Manually Selected User Group';
           icon = 'ti-users';
         } else {
-          title = '📄 Nhóm Import Từ File (Template)';
+          title = '📄 Group Imported From File (Template)';
           icon = 'ti-file-spreadsheet';
         }
       } else if (customGroupGroupBy === 'CATEGORY') {
         key = grp.category || 'SPECIAL_COHORT';
         const cat = CATEGORY_OPTIONS.find((c) => c.id === key);
-        title = cat ? cat.label : 'Nhóm Đặc Thù / Chuyên Biệt';
+        title = cat ? cat.label : 'Specialized / Dedicated Group';
         icon = 'ti-tag';
       }
 
@@ -399,48 +399,48 @@ export default function CustomGroupsManager() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* 1. STATS OVERVIEW CARDS */}
       <div className="grid grid-4" style={{ gap: 12 }}>
-        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Số Nhóm Tùy Chỉnh</span>
-            <span style={{ background: '#EFF6FF', color: '#1D4ED8', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Custom Groups</span>
+            <span style={{ background: 'var(--blue-soft)', color: '#1D4ED8', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
               <i className="ti ti-users-group" />
             </span>
           </div>
           <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink)' }}>{totalGroups}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 4 }}>Nhóm quản trị đối tượng học tập</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>A group for administering learning audiences</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Tổng Nhân Sự Thuộc Nhóm</span>
-            <span style={{ background: '#F0FDF4', color: '#15803D', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees In Group</span>
+            <span style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
               <i className="ti ti-user-check" />
             </span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#15803D' }}>{totalAssignedHeadcount}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>Đã phân vào các nhóm mục tiêu</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--sage-soft-text)' }}>{totalAssignedHeadcount}</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>Assigned to the target groups</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Nhóm Theo Cơ Cấu (Dynamic)</span>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Structural Group (Dynamic)</span>
             <span style={{ background: '#FAF5FF', color: '#7E22CE', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
               <i className="ti ti-binary-tree" />
             </span>
           </div>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#7E22CE' }}>{dynamicGroups}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 4 }}>Tự động cập nhật theo sơ đồ</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>Updates automatically with the org chart</div>
         </div>
 
-        <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12 }}>
+        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 12.5, color: 'var(--ink-soft)', fontWeight: 600 }}>Thủ Công &amp; Import File</span>
-            <span style={{ background: '#FFFBEB', color: '#B45309', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Manual &amp; File Import</span>
+            <span style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
               <i className="ti ti-file-spreadsheet" />
             </span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#B45309' }}>{manualGroups + fileGroups}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 4 }}>Nhóm đặc biệt theo danh sách</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber-soft-text)' }}>{manualGroups + fileGroups}</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>A special group defined by list</div>
         </div>
       </div>
 
@@ -448,7 +448,7 @@ export default function CustomGroupsManager() {
       <div
         className="card"
         style={{
-          background: '#fff',
+          background: 'var(--paper-raised)',
           border: '1px solid var(--line)',
           borderRadius: 12,
           padding: '16px 20px',
@@ -473,7 +473,7 @@ export default function CustomGroupsManager() {
             <input
               type="text"
               className="field-input"
-              placeholder="Tìm kiếm nhóm theo Tên, Mã ID, Mô tả..."
+              placeholder="Search groups by name, ID, description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
@@ -493,14 +493,14 @@ export default function CustomGroupsManager() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken, #F8FAFC)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={customGroupGroupBy}
                 onChange={(e) => setCustomGroupGroupBy(e.target.value)}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: customGroupGroupBy !== 'NONE' ? 700 : 500,
                   color: customGroupGroupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
@@ -521,9 +521,9 @@ export default function CustomGroupsManager() {
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeGroupFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--blue, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeGroupFiltersCount}
                 </span>
               )}
@@ -533,10 +533,10 @@ export default function CustomGroupsManager() {
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <Button variant="outline" size="sm" icon="ti-download" onClick={handleDownloadTemplate} style={{ height: 38 }}>
-                Tải File Mẫu (CSV)
+                Download The Template (CSV)
               </Button>
               <Button variant="primary" size="sm" icon="ti-plus" onClick={handleOpenAdd} style={{ height: 38 }}>
-                + Tạo Nhóm Mới
+                + Create New Group
               </Button>
             </div>
           </div>
@@ -546,10 +546,10 @@ export default function CustomGroupsManager() {
         {showGroupFilters && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
-              {/* Filter 1: Hình Thức Nhóm */}
+              {/* Filter 1: Group Type */}
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Hình Thức Nhóm (Type)
+                  Group Type
                 </label>
                 <select
                   className="field-select"
@@ -558,24 +558,24 @@ export default function CustomGroupsManager() {
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
                     borderColor: typeFilter !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                    background: typeFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                    background: typeFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                     fontWeight: typeFilter !== 'ALL' ? 700 : 500,
                   }}
                 >
-                  <option value="ALL">Tất cả hình thức</option>
-                  <option value="DYNAMIC">🏢 Nhóm Theo Cơ Cấu (Dynamic)</option>
-                  <option value="MANUAL">👤 Nhóm Chọn User Thủ Công</option>
-                  <option value="FILE_IMPORT">📄 Nhóm Import Từ File (Template)</option>
+                  <option value="ALL">All types</option>
+                  <option value="DYNAMIC">🏢 Structural Group (Dynamic)</option>
+                  <option value="MANUAL">👤 Manually Selected User Group</option>
+                  <option value="FILE_IMPORT">📄 Group Imported From File (Template)</option>
                 </select>
               </div>
 
-              {/* Filter 2: Danh Mục / Phân Loại */}
+              {/* Filter 2: Category */}
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
-                  Lĩnh Vực / Danh Mục (Category)
+                  Area / Category
                 </label>
                 <select
                   className="field-select"
@@ -584,14 +584,14 @@ export default function CustomGroupsManager() {
                   style={{
                     width: '100%',
                     height: 38,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     borderRadius: 6,
                     borderColor: categoryFilter !== 'ALL' ? 'var(--blue, #005BAA)' : 'var(--line)',
-                    background: categoryFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : '#fff',
+                    background: categoryFilter !== 'ALL' ? 'var(--blue-soft, #EFF6FF)' : 'var(--paper-raised)',
                     fontWeight: categoryFilter !== 'ALL' ? 700 : 500,
                   }}
                 >
-                  <option value="ALL">Tất cả danh mục ({CATEGORY_OPTIONS.length})</option>
+                  <option value="ALL">All categories ({CATEGORY_OPTIONS.length})</option>
                   {CATEGORY_OPTIONS.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.label}
@@ -604,7 +604,7 @@ export default function CustomGroupsManager() {
             {/* Reset Filters */}
             {activeGroupFiltersCount > 0 && (
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--ink-soft)', paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
-                <span>Đang áp dụng <strong>{activeGroupFiltersCount}</strong> tiêu chí lọc</span>
+                <span>Applied <strong>{activeGroupFiltersCount}</strong> filter criteria</span>
                 <button
                   type="button"
                   onClick={handleClearAllGroupFilters}
@@ -621,7 +621,7 @@ export default function CustomGroupsManager() {
                   }}
                 >
                   <i className="ti ti-trash-x" />
-                  Xóa tất cả bộ lọc
+                  Clear all filters
                 </button>
               </div>
             )}
@@ -633,17 +633,17 @@ export default function CustomGroupsManager() {
       {(() => {
         function renderGroupsTable(groupsToRender) {
           return (
-            <div className="card" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+            <div className="card" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>TÊN NHÓM &amp; MÔ TẢ</th>
-                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 140 }}>MÃ ID</th>
-                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 180 }}>HÌNH THỨC</th>
-                      <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700, width: 150 }}>THÀNH VIÊN</th>
-                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 170 }}>CẬP NHẬT (LAST PROCESSED)</th>
-                      <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, width: 150 }}>THAO TÁC</th>
+                    <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700 }}>GROUP NAME &amp; DESCRIPTION</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 140 }}>GROUP ID</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 180 }}>TYPE</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700, width: 150 }}>MEMBERS</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, width: 170 }}>UPDATED (LAST PROCESSED)</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, width: 150 }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -651,7 +651,7 @@ export default function CustomGroupsManager() {
                       <tr>
                         <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-faint)' }}>
                           <i className="ti ti-folder-off" style={{ fontSize: 32, display: 'block', marginBottom: 8 }} />
-                          Không tìm thấy nhóm người dùng nào phù hợp.
+                          No matching user group found.
                         </td>
                       </tr>
                     ) : (
@@ -683,7 +683,7 @@ export default function CustomGroupsManager() {
                                   }}
                                 />
                                 <div>
-                                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 13.5, marginBottom: 2 }}>
+                                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 14, marginBottom: 2 }}>
                                     {grp.title || grp.name}
                                   </div>
                                   {grp.description && (
@@ -700,9 +700,9 @@ export default function CustomGroupsManager() {
                               <span
                                 style={{
                                   fontFamily: 'monospace',
-                                  fontSize: 11.5,
-                                  background: '#F1F5F9',
-                                  color: '#334155',
+                                  fontSize: 12,
+                                  background: 'var(--slate-soft)',
+                                  color: 'var(--ink-soft)',
                                   padding: '3px 8px',
                                   borderRadius: 6,
                                   fontWeight: 600,
@@ -715,11 +715,11 @@ export default function CustomGroupsManager() {
                             {/* Type */}
                             <td style={{ padding: '12px 14px' }}>
                               {grp.type === 'DYNAMIC' ? (
-                                <Badge tone="purple" icon="ti-binary-tree">Theo Cơ Cấu</Badge>
+                                <Badge tone="purple" icon="ti-binary-tree">By Structure</Badge>
                               ) : grp.type === 'FILE_IMPORT' ? (
                                 <Badge tone="amber" icon="ti-file-spreadsheet">Import File</Badge>
                               ) : (
-                                <Badge tone="blue" icon="ti-user-check">Chọn User</Badge>
+                                <Badge tone="blue" icon="ti-user-check">Select Users</Badge>
                               )}
                             </td>
 
@@ -729,22 +729,22 @@ export default function CustomGroupsManager() {
                                 type="button"
                                 onClick={() => setViewMembersGroup(grp)}
                                 style={{
-                                  background: '#EFF6FF',
+                                  background: 'var(--blue-soft)',
                                   border: '1px solid #BFDBFE',
                                   borderRadius: 20,
                                   padding: '3px 10px',
                                   fontSize: 12,
                                   fontWeight: 700,
-                                  color: '#1E40AF',
+                                  color: 'var(--blue-soft-text)',
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 5,
                                 }}
-                                title="Bấm để xem danh sách thành viên chi tiết"
+                                title="Click to see the detailed member list"
                               >
                                 <i className="ti ti-users" style={{ fontSize: 13 }} />
-                                <span>{memberCount} học viên</span>
+                                <span>{memberCount} learners</span>
                               </button>
                             </td>
 
@@ -764,21 +764,21 @@ export default function CustomGroupsManager() {
                                   variant="ghost"
                                   icon="ti-users"
                                   onClick={() => setViewMembersGroup(grp)}
-                                  title="Xem danh sách thành viên"
+                                  title="View the member list"
                                 />
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   icon="ti-edit"
                                   onClick={() => handleOpenEdit(grp)}
-                                  title="Chỉnh sửa nhóm"
+                                  title="Edit group"
                                 />
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   icon="ti-copy"
                                   onClick={() => duplicateCustomGroup(grp.id)}
-                                  title="Nhân bản nhóm"
+                                  title="Duplicate group"
                                 />
                                 <Button
                                   size="sm"
@@ -786,7 +786,7 @@ export default function CustomGroupsManager() {
                                   icon="ti-trash"
                                   onClick={() => setDeleteConfirm({ isOpen: true, group: grp })}
                                   style={{ color: '#E11D48' }}
-                                  title="Xóa nhóm"
+                                  title="Delete group"
                                 />
                               </div>
                             </td>
@@ -814,7 +814,7 @@ export default function CustomGroupsManager() {
                   key={sec.id}
                   className="card"
                   style={{
-                    background: '#fff',
+                    background: 'var(--paper-raised)',
                     border: '1px solid var(--line)',
                     borderRadius: 12,
                     overflow: 'hidden',
@@ -841,12 +841,12 @@ export default function CustomGroupsManager() {
                         {sec.title}
                       </span>
                       <Badge tone="blue">
-                        {sec.groups.length} nhóm
+                        {sec.groups.length} groups
                       </Badge>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-soft)' }}>
-                      <span style={{ fontSize: 12 }}>{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                      <span style={{ fontSize: 12 }}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
                       <i className={`ti ${isCollapsed ? 'ti-chevron-down' : 'ti-chevron-up'}`} />
                     </div>
                   </div>
@@ -870,16 +870,16 @@ export default function CustomGroupsManager() {
             setViewMembersGroup(null);
             setMemberViewSearch('');
           }}
-          title={`👥 Danh Sách Thành Viên: ${viewMembersGroup.title || viewMembersGroup.name}`}
+          title={`👥 Member List: ${viewMembersGroup.title || viewMembersGroup.name}`}
           maxWidth={850}
         >
           <div>
-            <div style={{ marginBottom: 14, padding: '10px 14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{viewMembersGroup.title} ({viewMembersGroup.code})</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{viewMembersGroup.description || 'Không có mô tả.'}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{viewMembersGroup.description || 'No description.'}</div>
               </div>
-              <Badge tone="blue">{filteredGroupMembers.length} thành viên</Badge>
+              <Badge tone="blue">{filteredGroupMembers.length} members</Badge>
             </div>
 
             <div style={{ marginBottom: 12, position: 'relative' }}>
@@ -887,7 +887,7 @@ export default function CustomGroupsManager() {
               <input
                 type="text"
                 className="field-input"
-                placeholder="Tìm kiếm thành viên theo tên, mã NV, email, phòng ban..."
+                placeholder="Search members by name, employee code, email, department..."
                 value={memberViewSearch}
                 onChange={(e) => setMemberViewSearch(e.target.value)}
                 style={{ paddingLeft: 32, fontSize: 13 }}
@@ -897,11 +897,11 @@ export default function CustomGroupsManager() {
             <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8 }}>
               <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
-                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>HỌ VÀ TÊN</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'left', width: 120 }}>MÃ NHÂN VIÊN</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>PHÒNG BAN / BỘ PHẬN</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'center', width: 100 }}>CẤP BẬC</th>
+                  <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>FULL NAME</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', width: 120 }}>EMPLOYEE CODE</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>DEPARTMENT / SUB-DEPARTMENT</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'center', width: 100 }}>JOB LEVEL</th>
                     <th style={{ padding: '8px 12px', textAlign: 'center', width: 110 }}>ROLE</th>
                   </tr>
                 </thead>
@@ -909,12 +909,12 @@ export default function CustomGroupsManager() {
                   {filteredGroupMembers.length === 0 ? (
                     <tr>
                       <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 13 }}>
-                        Không có nhân sự nào trong nhóm khớp với từ khóa tìm kiếm.
+                        No employee in this group matches the search term.
                       </td>
                     </tr>
                   ) : (
                     filteredGroupMembers.map((m) => (
-                      <tr key={m.userId || m.employeeCode} style={{ borderBottom: '1px solid var(--line)', fontSize: 12.5 }}>
+                      <tr key={m.userId || m.employeeCode} style={{ borderBottom: '1px solid var(--line)', fontSize: 13 }}>
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{m.fullName}</div>
                           <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{m.email}</div>
@@ -939,7 +939,7 @@ export default function CustomGroupsManager() {
 
             <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="outline" type="button" onClick={() => setViewMembersGroup(null)}>
-                Đóng
+                Close
               </Button>
             </div>
           </div>
@@ -953,27 +953,27 @@ export default function CustomGroupsManager() {
         <Modal
           isOpen={groupModal.isOpen}
           onClose={() => setGroupModal({ isOpen: false, mode: 'ADD', data: null })}
-          title={groupModal.mode === 'ADD' ? '✨ Tạo Nhóm Người Dùng Mới' : '✏️ Chỉnh Sửa Nhóm Người Dùng'}
+          title={groupModal.mode === 'ADD' ? '✨ Create A New User Group' : '✏️ Edit User Group'}
           maxWidth={800}
         >
           <form onSubmit={handleSaveSubmit}>
             {/* Basic Info */}
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Tên Nhóm Đối Tượng *</label>
+                <label className="field-label">Audience Group Name *</label>
                 <input
                   className="field-input"
-                  placeholder="Ví dụ: ALL_EXPAT, Nhân viên mới..."
+                  placeholder="E.g. ALL_EXPAT, New employees..."
                   value={form.title}
                   onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   required
                 />
               </div>
               <div>
-                <label className="field-label">Mã Định Danh (Group Code / ID) *</label>
+                <label className="field-label">Group Code / ID *</label>
                 <input
                   className="field-input"
-                  placeholder="Ví dụ: GRP-EXPAT, GRP-NEW-2026..."
+                  placeholder="E.g. GRP-EXPAT, GRP-NEW-2026..."
                   value={form.code}
                   onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
                   required
@@ -983,7 +983,7 @@ export default function CustomGroupsManager() {
 
             <div className="grid grid-2" style={{ marginBottom: 12 }}>
               <div>
-                <label className="field-label">Phân Loại Nhóm (Category)</label>
+                <label className="field-label">Group Category</label>
                 <select
                   className="field-select"
                   value={form.category}
@@ -995,7 +995,7 @@ export default function CustomGroupsManager() {
                 </select>
               </div>
               <div>
-                <label className="field-label">Màu Sắc Nhận Diện Tag</label>
+                <label className="field-label">Tag Identity Color</label>
                 <select
                   className="field-select"
                   value={form.badgeColor}
@@ -1009,11 +1009,11 @@ export default function CustomGroupsManager() {
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Mô Tả Mục Đích Nhóm</label>
+              <label className="field-label">Group Purpose Description</label>
               <textarea
                 className="field-input"
                 rows={2}
-                placeholder="Mô tả chi tiết mục tiêu của nhóm hoặc đối tượng nhân sự..."
+                placeholder="Describe the group's purpose or its target audience in detail..."
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               />
@@ -1021,8 +1021,8 @@ export default function CustomGroupsManager() {
 
             {/* Method Tabs */}
             <div style={{ marginBottom: 14 }}>
-              <label className="field-label" style={{ marginBottom: 6 }}>Phương Thức Xác Định Thành Viên</label>
-              <div style={{ display: 'flex', gap: 6, background: '#F1F5F9', padding: 4, borderRadius: 8 }}>
+              <label className="field-label" style={{ marginBottom: 6 }}>Membership Determination Method</label>
+              <div style={{ display: 'flex', gap: 6, background: 'var(--slate-soft)', padding: 4, borderRadius: 8 }}>
                 <button
                   type="button"
                   onClick={() => setFormTab('DYNAMIC')}
@@ -1031,11 +1031,11 @@ export default function CustomGroupsManager() {
                     padding: '8px 12px',
                     borderRadius: 6,
                     border: 'none',
-                    background: formTab === 'DYNAMIC' ? '#fff' : 'transparent',
+                    background: formTab === 'DYNAMIC' ? 'var(--paper-raised)' : 'transparent',
                     color: formTab === 'DYNAMIC' ? 'var(--blue)' : 'var(--ink-soft)',
                     fontWeight: formTab === 'DYNAMIC' ? 700 : 500,
                     cursor: 'pointer',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1043,7 +1043,7 @@ export default function CustomGroupsManager() {
                     boxShadow: formTab === 'DYNAMIC' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <i className="ti ti-binary-tree" /> 🏢 Theo Cơ Cấu Tổ Chức
+                  <i className="ti ti-binary-tree" /> 🏢 By Org Structure
                 </button>
                 <button
                   type="button"
@@ -1053,11 +1053,11 @@ export default function CustomGroupsManager() {
                     padding: '8px 12px',
                     borderRadius: 6,
                     border: 'none',
-                    background: formTab === 'MANUAL' ? '#fff' : 'transparent',
+                    background: formTab === 'MANUAL' ? 'var(--paper-raised)' : 'transparent',
                     color: formTab === 'MANUAL' ? 'var(--blue)' : 'var(--ink-soft)',
                     fontWeight: formTab === 'MANUAL' ? 700 : 500,
                     cursor: 'pointer',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1065,7 +1065,7 @@ export default function CustomGroupsManager() {
                     boxShadow: formTab === 'MANUAL' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <i className="ti ti-user-check" /> Chọn User
+                  <i className="ti ti-user-check" /> Select Users
                 </button>
                 <button
                   type="button"
@@ -1075,11 +1075,11 @@ export default function CustomGroupsManager() {
                     padding: '8px 12px',
                     borderRadius: 6,
                     border: 'none',
-                    background: formTab === 'FILE_IMPORT' ? '#fff' : 'transparent',
+                    background: formTab === 'FILE_IMPORT' ? 'var(--paper-raised)' : 'transparent',
                     color: formTab === 'FILE_IMPORT' ? 'var(--blue)' : 'var(--ink-soft)',
                     fontWeight: formTab === 'FILE_IMPORT' ? 700 : 500,
                     cursor: 'pointer',
-                    fontSize: 12.5,
+                    fontSize: 13,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1087,21 +1087,21 @@ export default function CustomGroupsManager() {
                     boxShadow: formTab === 'FILE_IMPORT' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <i className="ti ti-file-spreadsheet" /> 📄 Import File / Dán Mã
+                  <i className="ti ti-file-spreadsheet" /> 📄 Import File / Paste Codes
                 </button>
               </div>
             </div>
 
             {/* TAB 1: DYNAMIC CRITERIA */}
             {formTab === 'DYNAMIC' && (
-              <div style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
-                  Cấu Hình Tiêu Chí Lọc Tự Động (Org Hierarchy Criteria):
+              <div style={{ padding: '12px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>
+                  Configure The Automatic Filter Criteria (Org Hierarchy Criteria):
                 </div>
 
                 <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Khối (Division)</label>
+                    <label className="field-label" style={{ fontSize: 12 }}>Division</label>
                     <select
                       className="field-select"
                       style={{ fontSize: 12 }}
@@ -1119,7 +1119,7 @@ export default function CustomGroupsManager() {
                         }));
                       }}
                     >
-                      <option value="ALL">-- Tất cả các Khối --</option>
+                      <option value="ALL">-- All Divisions --</option>
                       {divisions.map((d) => (
                         <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
                       ))}
@@ -1127,7 +1127,7 @@ export default function CustomGroupsManager() {
                   </div>
 
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Phòng Ban (Department)</label>
+                    <label className="field-label" style={{ fontSize: 12 }}>Department</label>
                     <select
                       className="field-select"
                       style={{ fontSize: 12 }}
@@ -1144,7 +1144,7 @@ export default function CustomGroupsManager() {
                         }));
                       }}
                     >
-                      <option value="ALL">-- Tất cả Phòng Ban --</option>
+                      <option value="ALL">-- All Departments --</option>
                       {departments
                         .filter((dept) => !form.criteria?.divisionId || form.criteria.divisionId === 'ALL' || dept.divisionId === form.criteria.divisionId)
                         .map((dept) => (
@@ -1156,14 +1156,14 @@ export default function CustomGroupsManager() {
 
                 <div className="grid grid-3" style={{ gap: 10, marginBottom: 12 }}>
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Bộ Phận Trực Thuộc</label>
+                    <label className="field-label" style={{ fontSize: 12 }}>Parent Sub-Department</label>
                     <select
                       className="field-select"
                       style={{ fontSize: 12 }}
                       value={form.criteria?.subDepartmentId || 'ALL'}
                       onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, subDepartmentId: e.target.value } }))}
                     >
-                      <option value="ALL">-- Tất cả Bộ Phận --</option>
+                      <option value="ALL">-- All Sub-Departments --</option>
                       {subDepartments
                         .filter((s) => !form.criteria?.departmentId || form.criteria.departmentId === 'ALL' || s.departmentId === form.criteria.departmentId)
                         .map((s) => (
@@ -1173,14 +1173,14 @@ export default function CustomGroupsManager() {
                   </div>
 
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Cấp Bậc (Level)</label>
+                    <label className="field-label" style={{ fontSize: 12 }}>Job Level</label>
                     <select
                       className="field-select"
                       style={{ fontSize: 12 }}
                       value={form.criteria?.level || 'ALL'}
                       onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, level: e.target.value } }))}
                     >
-                      <option value="ALL">-- Mọi cấp bậc (1-7) --</option>
+                      <option value="ALL">-- Any level (1-7) --</option>
                       {jobLevels.map((lvl) => (
                         <option key={lvl.level} value={lvl.level}>Level {lvl.level} - {lvl.viTitle || lvl.title}</option>
                       ))}
@@ -1188,14 +1188,14 @@ export default function CustomGroupsManager() {
                   </div>
 
                   <div>
-                    <label className="field-label" style={{ fontSize: 11.5 }}>Vai Trò (Role)</label>
+                    <label className="field-label" style={{ fontSize: 12 }}>Role</label>
                     <select
                       className="field-select"
                       style={{ fontSize: 12 }}
                       value={form.criteria?.role || 'ALL'}
                       onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, role: e.target.value } }))}
                     >
-                      <option value="ALL">-- Mọi vai trò --</option>
+                      <option value="ALL">-- Any role --</option>
                       {ROLE_DEFINITIONS.map((r) => (
                         <option key={r.id} value={r.id}>{r.labelVi}</option>
                       ))}
@@ -1204,13 +1204,13 @@ export default function CustomGroupsManager() {
                 </div>
 
                 {/* Live Match Preview */}
-                <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#1E40AF' }}>
+                <div style={{ background: 'var(--blue-soft)', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 12, color: 'var(--blue-soft-text)' }}>
                     <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-                    Hệ thống đã quét và khớp: <strong>{liveDynamicMembers.length} nhân sự</strong>
+                    The system scanned and matched: <strong>{liveDynamicMembers.length} employees</strong>
                   </div>
-                  <span style={{ fontSize: 11.5, color: '#1E40AF', fontStyle: 'italic' }}>
-                    Tự động cập nhật khi có nhân sự mới phù hợp
+                  <span style={{ fontSize: 12, color: 'var(--blue-soft-text)', fontStyle: 'italic' }}>
+                    Updates automatically when a matching new employee joins
                   </span>
                 </div>
               </div>
@@ -1218,14 +1218,14 @@ export default function CustomGroupsManager() {
 
             {/* TAB 2: MANUAL PICKER */}
             {formTab === 'MANUAL' && (
-              <div style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
+              <div style={{ padding: '12px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
-                    Chọn Từng Nhân Sự Vào Nhóm (Đã chọn: {form.memberUserIds.length})
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                    Select Individual Employees For The Group (Selected: {form.memberUserIds.length})
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <Button type="button" size="sm" variant="outline" onClick={selectAllManual}>Chọn tất cả lọc</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={deselectAllManual}>Bỏ chọn</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={selectAllManual}>Select all filters</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={deselectAllManual}>Deselect</Button>
                   </div>
                 </div>
 
@@ -1244,14 +1244,14 @@ export default function CustomGroupsManager() {
                   <input
                     type="text"
                     className="field-input"
-                    placeholder="Tìm kiếm nhân sự theo Tên, Mã NV, Email, Phòng ban, Chức danh..."
+                    placeholder="Search employees by name, employee code, email, department, job title..."
                     value={manualSearch}
                     onChange={(e) => setManualSearch(e.target.value)}
                     style={{ fontSize: 12, paddingLeft: 30, width: '100%', height: 34 }}
                   />
                 </div>
 
-                <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6, background: '#fff' }}>
+                <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper-raised)' }}>
                   {manualAvailableUsers.map((u) => {
                     const isChecked = form.memberUserIds.includes(u.userId);
                     return (
@@ -1264,7 +1264,7 @@ export default function CustomGroupsManager() {
                           padding: '6px 10px',
                           borderBottom: '1px solid var(--line-soft)',
                           cursor: 'pointer',
-                          background: isChecked ? '#EFF6FF' : 'transparent',
+                          background: isChecked ? 'var(--blue-soft)' : 'transparent',
                           fontSize: 12,
                         }}
                       >
@@ -1290,13 +1290,13 @@ export default function CustomGroupsManager() {
 
             {/* TAB 3: FILE IMPORT */}
             {formTab === 'FILE_IMPORT' && (
-              <div style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
+              <div style={{ padding: '12px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
-                    Nhập Danh Sách Thành Viên (Template / Dán Mã):
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                    Import The Member List (Template / Paste Codes):
                   </div>
                   <Button type="button" size="sm" variant="outline" icon="ti-download" onClick={handleDownloadTemplate}>
-                    Tải File Mẫu (CSV)
+                    Download The Template (CSV)
                   </Button>
                 </div>
 
@@ -1307,7 +1307,7 @@ export default function CustomGroupsManager() {
                 <textarea
                   className="field-input"
                   rows={4}
-                  placeholder="Hoặc dán danh sách Mã nhân viên / Email / UserID vào đây (mỗi mã 1 dòng hoặc cách nhau bởi dấu phẩy)..."
+                  placeholder="Or paste a list of employee codes / emails / user IDs here (one per line or comma-separated)..."
                   value={importText}
                   onChange={(e) => {
                     setImportText(e.target.value);
@@ -1317,12 +1317,12 @@ export default function CustomGroupsManager() {
                 />
 
                 {importFeedback && (
-                  <div style={{ marginTop: 8, fontSize: 12, padding: '6px 10px', borderRadius: 6, background: importFeedback.matched > 0 ? '#F0FDF4' : '#FEF2F2', color: importFeedback.matched > 0 ? '#15803D' : '#B91C1C' }}>
+                  <div style={{ marginTop: 8, fontSize: 12, padding: '6px 10px', borderRadius: 6, background: importFeedback.matched > 0 ? 'var(--sage-soft)' : 'var(--rust-soft)', color: importFeedback.matched > 0 ? 'var(--sage-soft-text)' : 'var(--rust-soft-text)' }}>
                     <i className="ti ti-check" style={{ marginRight: 4 }} />
-                    Khớp thành công: <strong>{importFeedback.matched}</strong> nhân sự (trong tổng số {importFeedback.total} dòng).
+                    Matched successfully: <strong>{importFeedback.matched}</strong> employees (out of {importFeedback.total} rows).
                     {importFeedback.unmatched > 0 && (
-                      <span style={{ color: '#B91C1C', marginLeft: 8 }}>
-                        ({importFeedback.unmatched} mã không tìm thấy trong hệ thống)
+                      <span style={{ color: 'var(--rust-soft-text)', marginLeft: 8 }}>
+                        ({importFeedback.unmatched} codes not found in the system)
                       </span>
                     )}
                   </div>
@@ -1332,10 +1332,10 @@ export default function CustomGroupsManager() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
               <Button type="button" variant="outline" onClick={() => setGroupModal({ isOpen: false, mode: 'ADD', data: null })}>
-                Hủy Bỏ
+                Cancel
               </Button>
               <Button type="submit" variant="primary">
-                {groupModal.mode === 'ADD' ? 'Tạo Nhóm' : 'Lưu Thay Đổi'}
+                {groupModal.mode === 'ADD' ? 'Create Group' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -1357,17 +1357,17 @@ export default function CustomGroupsManager() {
             zIndex: 9999,
           }}
         >
-          <div className="card card-pad" style={{ background: '#fff', borderRadius: 12, maxWidth: 440, width: '90%' }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-raised)', borderRadius: 12, maxWidth: 440, width: '90%' }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>
-              Xác Nhận Xóa Nhóm
+              Confirm Group Deletion
             </div>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '0 0 16px', lineHeight: 1.5 }}>
-              Bạn có chắc chắn muốn xóa nhóm <strong>"{deleteConfirm.group?.title || deleteConfirm.group?.name}"</strong>?
-              Các giáo trình hoặc khóa học đã gán cho nhóm này trước đó sẽ không bị ảnh hưởng.
+              Are you sure you want to delete the group <strong>"{deleteConfirm.group?.title || deleteConfirm.group?.name}"</strong>?
+              Curricula or courses already assigned to this group are unaffected.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <Button variant="ghost" type="button" onClick={() => setDeleteConfirm({ isOpen: false, group: null })}>
-                Hủy Bỏ
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -1380,7 +1380,7 @@ export default function CustomGroupsManager() {
                   setDeleteConfirm({ isOpen: false, group: null });
                 }}
               >
-                Xác Nhận Xóa
+                Confirm Deletion
               </Button>
             </div>
           </div>

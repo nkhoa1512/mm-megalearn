@@ -14,7 +14,7 @@ function isAnswerCorrect(question, answerValue) {
   const type = question.questionType || question.type;
 
   if (type === QUESTION_TYPES.RATING_SCALE) {
-    return true; // Khảo sát luôn ghi nhận hoàn thành
+    return true; // A survey is always recorded as complete
   }
 
   if (type === QUESTION_TYPES.ESSAY) {
@@ -69,7 +69,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
 
   const user = currentUser;
 
-  // Xác định xem đang thi Assessment Độc Lập hay Assessment theo Khóa Học
+  // Determine whether this is a standalone assessment or a course assessment
   const targetAssessmentId = paramAssessmentId || searchParams.get('assessmentId') || (courseId && courseId.startsWith('ASM-') ? courseId : null);
   const standaloneAssessment = targetAssessmentId ? (assessments || []).find((a) => a.id === targetAssessmentId) : null;
 
@@ -82,7 +82,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     ? { ...rawCourse, modules: deriveLessonStatuses(lessonView.modules, rawEnrollment), enrollment: rawEnrollment }
     : null;
 
-  // Lấy Assessment tương ứng (Standalone hoặc lấy từ Course)
+  // Fetch the matching assessment (standalone or from the course)
   const activeAssessment = standaloneAssessment || (course?.configuration?.assessmentEnabled ? {
     id: `ASM-CRS-${course.id}`,
     title: `${course.title} — Final Assessment`,
@@ -118,7 +118,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const [csatRating, setCsatRating] = useState(5);
   const submittedRef = useRef(false);
 
-  // Thẩm định quyền truy cập
+  // Verify access rights
   const access = useMemo(() => {
     if (standaloneAssessment) {
       return getAssessmentAccess(standaloneAssessment, user, courses);
@@ -131,10 +131,10 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         reason: crsAccess.reason,
       };
     }
-    return { canTake: false, isLocked: true, reason: 'Không tìm thấy Assessment' };
+    return { canTake: false, isLocked: true, reason: 'Assessment Not Found' };
   }, [standaloneAssessment, course, user, courses, accessFor]);
 
-  // Anti-cheat: Lắng nghe chuyển tab / mất focus
+  // Anti-cheat: listen for tab switches / focus loss
   useEffect(() => {
     if (phase !== 'in-progress') return;
 
@@ -144,7 +144,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           const next = prev + 1;
           const maxSwitches = activeAssessment?.antiCheatSettings?.maxTabSwitches || 3;
           if (next >= maxSwitches && !submittedRef.current) {
-            alert(`CẢNH BÁO GIAN LẬN: Bạn đã rời màn hình thi quá ${maxSwitches} lần. Hệ thống tự động thu bài.`);
+            alert(`CHEATING ALERT: you left the exam screen more than ${maxSwitches} times. The system has submitted your paper automatically.`);
             handleSubmit();
           }
           return next;
@@ -157,14 +157,14 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, activeAssessment]);
 
-  // Đếm ngược thời gian
+  // Countdown timer
   useEffect(() => {
     if (phase !== 'in-progress' || secondsLeft <= 0) return;
     const timer = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(timer);
   }, [phase, secondsLeft]);
 
-  // Tự động nộp khi hết giờ
+  // Auto-submit when time runs out
   useEffect(() => {
     if (phase === 'in-progress' && secondsLeft === 0 && !submittedRef.current) {
       handleSubmit();
@@ -176,9 +176,9 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     return (
       <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
         <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 18, marginTop: 10 }}>Bài Assessment Chưa Thể Truy Cập</h2>
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>This Assessment Is Not Accessible</h2>
         <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
-        <Button variant="primary" onClick={() => navigate(basePath)}>Quay Lại Danh Mục</Button>
+        <Button variant="primary" onClick={() => navigate(basePath)}>Back To The Catalog</Button>
       </div>
     );
   }
@@ -187,8 +187,8 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     return (
       <div className="empty-state">
         <i className="ti ti-mood-empty" aria-hidden="true" />
-        <p>Assessment không tồn tại.</p>
-        <Link to={basePath}>Quay lại danh mục</Link>
+        <p>The assessment does not exist.</p>
+        <Link to={basePath}>Back to the catalog</Link>
       </div>
     );
   }
@@ -222,7 +222,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     drawn.forEach((q) => {
       if (q.questionType === QUESTION_TYPES.ORDERING) {
         const items = q.options || q.sequenceItems || [];
-        // Xáo trộn ban đầu cho câu hỏi thứ tự để học viên tự sắp xếp
+        // The initial shuffle for an ordering question, for the learner to re-sort
         initialAnswers[q.id] = [...items].sort(() => 0.5 - Math.random()).map((x) => x.id);
       }
     });
@@ -287,7 +287,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     const passingScore = activeAssessment.passingScorePercent ?? 80;
     const passed = activeAssessment.type === 'SURVEY' ? true : scorePercent >= passingScore;
 
-    // Tính Competency Results
+    // Compute competency results
     const compMap = new Map();
     questions.forEach((q) => {
       const comp = q.competency || 'General Competency';
@@ -307,7 +307,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         currentLevel: curLvl,
         requiredLevel: reqLvl,
         gap,
-        recommendation: gap >= 0 ? 'Năng lực vững vàng, sẵn sàng nhận nhiệm vụ cao hơn.' : 'Cần tham gia thêm các khóa bổ trợ kỹ năng thực hành.',
+        recommendation: gap >= 0 ? 'Solid capability; ready for greater responsibility.' : 'Additional hands-on skills courses are needed.',
       };
     });
 
@@ -370,14 +370,14 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     setPhase('result');
   }
 
-  // --- MÀN HÌNH BẮT ĐẦU (START) ---
+  // --- START SCREEN (START) ---
   if (phase === 'start') {
     return (
       <div style={{ maxWidth: 760, margin: '20px auto' }}>
         <div className="page-crumb" style={{ marginBottom: 8 }}>
           <Link to={basePath} style={{ color: 'var(--ink-soft)', textDecoration: 'none' }}>
             <i className="ti ti-arrow-left" style={{ marginRight: 4 }} />
-            Quay lại Danh Mục
+            Back To The Catalog
           </Link>
         </div>
 
@@ -392,34 +392,34 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Thời Gian Làm Bài</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>{activeAssessment.timeLimitMinutes} phút</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Time Taken</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>{activeAssessment.timeLimitMinutes} min</div>
             </div>
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Điểm Chuẩn Đạt</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Pass Mark</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sage)' }}>{activeAssessment.passingScorePercent}%</div>
             </div>
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Số Lần Thi Tối Đa</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--rail)' }}>{activeAssessment.maxAttempts} lần</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Maximum Attempts</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--rail)' }}>{activeAssessment.maxAttempts} attempts</div>
             </div>
           </div>
 
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 6 }}>
               <i className="ti ti-shield-lock" style={{ color: 'var(--rail)', marginRight: 6 }} />
-              Quy Định &amp; Giám Sát Chống Gian Lận:
+              Rules &amp; Anti-Cheating Monitoring:
             </div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-              <li>Không chuyển tab hoặc mở ứng dụng khác trong quá trình thi (Hệ thống ghi nhận vi phạm).</li>
-              <li>Hệ thống tự động nộp bài khi hết thời gian đếm ngược.</li>
-              <li>Bảo mật đề thi: Tên và mã nhân viên của bạn được watermark trên màn hình thi.</li>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+              <li>Do not switch tabs or open other applications during the exam (violations are recorded).</li>
+              <li>The system submits the paper automatically when the countdown ends.</li>
+              <li>Exam security: your name and employee code are watermarked on the exam screen.</li>
             </ul>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
             <Button variant="primary" icon="ti-player-play" size="lg" onClick={start}>
-              Bắt Đầu Làm Bài Ngay
+              Start The Exam Now
             </Button>
           </div>
         </div>
@@ -427,7 +427,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     );
   }
 
-  // --- MÀN HÌNH LÀM BÀI (IN-PROGRESS) ---
+  // --- EXAM SCREEN (IN-PROGRESS) ---
   if (phase === 'in-progress') {
     const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
     const ss = String(secondsLeft % 60).padStart(2, '0');
@@ -472,14 +472,14 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           <div>
             <h2 style={{ fontSize: 16, margin: 0, color: 'var(--ink)' }}>{activeAssessment.title}</h2>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Đã trả lời {Object.keys(answers).length}/{questions.length} câu hỏi
+              Answered {Object.keys(answers).length}/{questions.length} questions
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {tabSwitchViolations > 0 && (
               <Badge tone="rust" icon="ti-alert-triangle">
-                {tabSwitchViolations} vi phạm chuyển tab
+                {tabSwitchViolations} tab-switch violations
               </Badge>
             )}
             <Badge tone={secondsLeft < 120 ? 'rust' : 'amber'} icon="ti-clock" size="lg">
@@ -497,9 +497,9 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
               <div key={q.id} className="card card-pad" style={{ border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>
-                    Câu {idx + 1}: {q.question}
+                    Question {idx + 1}: {q.question}
                   </div>
-                  <Badge tone="slate" size="sm">{q.score || 10} điểm</Badge>
+                  <Badge tone="slate" size="sm">{q.score || 10} points</Badge>
                 </div>
 
                 {/* 1. SINGLE CHOICE, TRUE/FALSE, YES/NO */}
@@ -589,7 +589,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                           value={(currentAnswer && currentAnswer[pair.id]) || ''}
                           onChange={(e) => handleMatchingPair(q, pair.id, e.target.value)}
                         >
-                          <option value="">-- Chọn vế tương ứng --</option>
+                          <option value="">-- Choose the matching side --</option>
                           {(q.options || q.pairs || []).map((o) => (
                             <option key={o.id} value={o.right}>{o.right}</option>
                           ))}
@@ -603,7 +603,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                 {q.questionType === QUESTION_TYPES.ORDERING && (
                   <div>
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8 }}>
-                      Dùng các nút mũi tên lên/xuống để sắp xếp các bước theo đúng trình tự thực hiện:
+                      Use the up/down arrow buttons to put the steps into the correct execution order:
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {(() => {
@@ -627,7 +627,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                                 borderRadius: 6,
                               }}
                             >
-                              <Badge tone="slate" size="sm">Bước {itemIdx + 1}</Badge>
+                              <Badge tone="slate" size="sm">Step {itemIdx + 1}</Badge>
                               <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{itemObj.text}</div>
                               <div style={{ display: 'flex', gap: 4 }}>
                                 <Button
@@ -638,7 +638,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                                   onClick={() => handleMoveOrderItem(q, itemIdx, itemIdx - 1)}
                                   style={{ padding: '2px 6px' }}
                                 >
-                                  ▲ Lên
+                                  ▲ Up
                                 </Button>
                                 <Button
                                   type="button"
@@ -648,7 +648,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                                   onClick={() => handleMoveOrderItem(q, itemIdx, itemIdx + 1)}
                                   style={{ padding: '2px 6px' }}
                                 >
-                                  ▼ Xuống
+                                  ▼ Down
                                 </Button>
                               </div>
                             </div>
@@ -666,7 +666,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                       type="text"
                       className="field-input"
                       style={{ fontSize: 13 }}
-                      placeholder={q.placeholderTemplate || 'Nhập câu trả lời hoặc từ khóa của bạn...'}
+                      placeholder={q.placeholderTemplate || 'Enter your answer or keyword...'}
                       value={currentAnswer || ''}
                       onChange={(e) => handleAnswer(q, e.target.value)}
                     />
@@ -679,8 +679,8 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                   q.questionType === QUESTION_TYPES.SIMULATION) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {q.scenarioContext && (
-                      <div style={{ padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 6, borderLeft: '4px solid var(--rail)', fontSize: 12.5, lineHeight: 1.5, color: 'var(--ink)' }}>
-                        <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--rail)' }}>📖 Tình Huống Thực Tế:</div>
+                      <div style={{ padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 6, borderLeft: '4px solid var(--rail)', fontSize: 13, lineHeight: 1.5, color: 'var(--ink)' }}>
+                        <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--rail)' }}>📖 Real-World Scenario:</div>
                         {q.scenarioContext}
                       </div>
                     )}
@@ -718,7 +718,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {q.imageUrl && (
                       <div style={{ maxHeight: 240, overflow: 'hidden', borderRadius: 8, border: '1px solid var(--line)', textAlign: 'center', background: '#000' }}>
-                        <img src={q.imageUrl} alt="Tình huống trực quan" style={{ maxHeight: 240, maxWidth: '100%', objectFit: 'contain' }} />
+                        <img src={q.imageUrl} alt="A visual scenario" style={{ maxHeight: 240, maxWidth: '100%', objectFit: 'contain' }} />
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -793,7 +793,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                     <textarea
                       className="field-input"
                       rows={4}
-                      placeholder="Nhập câu trả lời hoặc trình bày phương án của bạn tại đây..."
+                      placeholder="Enter your answer or set out your approach here..."
                       value={currentAnswer || ''}
                       onChange={(e) => handleAnswer(q, e.target.value)}
                     />
@@ -822,19 +822,19 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingBottom: 40 }}>
           <Button variant="primary" size="lg" icon="ti-send" onClick={handleSubmit}>
-            Nộp Bài Assessment
+            Submit The Assessment
           </Button>
         </div>
       </div>
     );
   }
 
-  // --- MÀN HÌNH KẾT QUẢ (RESULT) ---
+  // --- RESULT SCREEN (RESULT) ---
   return (
     <div style={{ maxWidth: 760, margin: '20px auto' }}>
       <div className="page-header" style={{ textAlign: 'center', marginBottom: 20 }}>
-        <h1>Kết Quả Đánh Giá Bài Thi</h1>
-        <p>Báo cáo điểm số, đánh giá khoảng cách năng lực và giải thích đáp án</p>
+        <h1>Exam Result</h1>
+        <p>Score report, competency gap review and answer explanations</p>
       </div>
 
       <div className="card card-pad" style={{
@@ -847,15 +847,15 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           {result?.score}%
         </div>
         <Badge tone={result?.passed ? 'sage' : 'rust'} size="lg">
-          {result?.passed ? '🎉 CHÚC MỪNG: BẠN ĐÃ ĐẠT BÀI THI SÁT HẠCH' : '⚠️ CHƯA ĐẠT ĐIỂM CHUẨN'}
+          {result?.passed ? '🎉 CONGRATULATIONS: YOU PASSED THE EXAMINATION' : '⚠️ BELOW THE PASS MARK'}
         </Badge>
         <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 10 }}>
-          Điểm số đạt được: <strong>{result?.earnedScore} / {result?.totalScore} điểm</strong> &middot; Vi phạm: {tabSwitchViolations} lần
+          Score achieved: <strong>{result?.earnedScore} / {result?.totalScore} points</strong> &middot; Violations: {tabSwitchViolations}
         </div>
         {result?.passed && (
           <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'var(--bigc-green-soft)', border: '1px solid rgba(0,158,73,0.2)', fontSize: 13, color: 'var(--bigc-green-soft-text)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <i className="ti ti-certificate" style={{ fontSize: 18 }} />
-            <span>Chứng chỉ số đã được gia hạn hiệu lực thêm 12 tháng tiếp theo!</span>
+            <span>Your digital certificate has been extended for another 12 months!</span>
           </div>
         )}
       </div>
@@ -866,7 +866,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: 'var(--ink)' }}>
             <i className="ti ti-chart-radar" style={{ color: 'var(--rail)', marginRight: 6 }} />
-            Đo Lường Khoảng Cách Năng Lực (Competency Gap Analysis):
+            Competency Gap Analysis:
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {result.competencyResults.map((cr, i) => (
@@ -874,14 +874,14 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <strong>{cr.competencyName}</strong>
                   <Badge tone={cr.gap >= 0 ? 'sage' : 'rust'}>
-                    {cr.gap >= 0 ? `+${cr.gap} Đạt Yêu Cầu` : `${cr.gap} Chưa Đạt`}
+                    {cr.gap >= 0 ? `+${cr.gap} Above Requirement` : `${cr.gap} Below Requirement`}
                   </Badge>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                  Cấp độ đánh giá: <strong>Lvl {cr.currentLevel}</strong> / Yêu cầu: <strong>Lvl {cr.requiredLevel}</strong>
+                  Assessment level: <strong>Lvl {cr.currentLevel}</strong> / Required: <strong>Lvl {cr.requiredLevel}</strong>
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 4 }}>
-                  Khuyến nghị: {cr.recommendation}
+                <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic', marginTop: 4 }}>
+                  Recommendation: {cr.recommendation}
                 </div>
               </div>
             ))}
@@ -894,7 +894,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: 'var(--ink)' }}>
             <i className="ti ti-notes" style={{ color: 'var(--rail)', marginRight: 6 }} />
-            Giải Thích Đáp Án &amp; Chi Tiết Từng Câu:
+            Answer Explanations &amp; Per-Question Detail:
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {questions.map((q, i) => {
@@ -902,8 +902,8 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
               return (
                 <div key={q.id} style={{ padding: '10px 12px', borderRadius: 6, background: 'var(--paper-sunken)', border: '1px solid var(--line)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>Câu {i + 1}: {q.question}</div>
-                    <Badge tone={isCorrect ? 'sage' : 'rust'}>{isCorrect ? 'ĐÚNG' : 'SAI'}</Badge>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>Question {i + 1}: {q.question}</div>
+                    <Badge tone={isCorrect ? 'sage' : 'rust'}>{isCorrect ? 'CORRECT' : 'SAI'}</Badge>
                   </div>
                   {q.explanation && (
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontStyle: 'italic', marginTop: 4 }}>
@@ -920,11 +920,11 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
         {result?.passed && (
           <Button variant="primary" tone="success" icon="ti-certificate" onClick={() => navigate('/learner/certificates')}>
-            Xem Chứng Chỉ Số Mới
+            View The New Digital Certificate
           </Button>
         )}
         <Button variant={result?.passed ? 'outline' : 'primary'} onClick={() => navigate(basePath)}>
-          Hoàn Tất &amp; Về Danh Mục Khóa Học
+          Finish &amp; Return To The Course Catalog
         </Button>
       </div>
 

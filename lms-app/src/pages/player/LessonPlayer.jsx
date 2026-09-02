@@ -23,7 +23,7 @@ function youtubeVideoId(url) {
   return null;
 }
 
-// 5 định dạng bài giảng chuẩn hóa — xem ghi chú ở mockData.js migration.
+// The 5 standardized lesson formats — see the migration note in mockData.js.
 function lessonTypeLabel(t) {
   switch (t) {
     case 'SCORM': return 'SCORM 2004 Interactive Package';
@@ -41,19 +41,19 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
   const { courses, saveCourseProgress, openSurveyModal, currentUser: authUser, accessFor, myEnrollments } = useCourseStore();
   const user = authUser || currentUser;
   const rawCourse = courses.find((c) => c.id === courseId);
-  // Ghi danh nằm ở ma trận HRIS + overlay của store, không nằm trong object khóa học.
+  // Enrollments live in the HRIS matrix + the store overlay, not on the course object.
   const enrollment = rawCourse ? (myEnrollments[rawCourse.id] || rawCourse.enrollment) : null;
-  // Đa phiên bản: CHỈ phục vụ snapshot đóng băng cho người ĐÃ GHI DANH dưới một
-  // phiên bản CŨ đã bị Admin "Phát Hành Phiên Bản Mới" thay thế — người chưa
-  // ghi danh (không nên xảy ra ở trang Lesson Player, nhưng để an toàn) luôn
-  // thấy nội dung mới nhất.
+  // Versioning: this ONLY serves the frozen snapshot to people who ARE ENROLLED under an
+  // OLD version replaced by an Admin "Publish New Version" — anyone not yet
+  // enrolled (which should not happen on the Lesson Player page, but for safety) always
+  // see the newest content.
   const versionedCourse = rawCourse
     ? (enrollment ? resolveCourseView(rawCourse, enrollment.enrolledVersion) : rawCourse)
     : null;
-  // Chuẩn hóa modules cho khớp với enrollment thật (xem ghi chú tại
-  // deriveLessonStatuses() trong mockData.js) — nếu không, một khóa đã có sẵn
-  // tiến độ từ seed data sẽ hiện sai bài đang học/đã xong ngay tại chính màn
-  // hình học thật, dù trang chi tiết khóa học đã hiện đúng.
+  // Normalize the modules to match the real enrollment (see the note in
+  // deriveLessonStatuses() in mockData.js) — otherwise a course with pre-existing
+  // progress from seed data would show the wrong lesson as in progress/finished on the
+  // study screen itself, even though the course detail page showed it correctly.
   const course = versionedCourse
     ? { ...versionedCourse, enrollment, modules: deriveLessonStatuses(versionedCourse.modules, enrollment) }
     : null;
@@ -73,35 +73,35 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
     );
   }
 
-  // Quy tắc cấp bậc được kiểm tra trước cả trạng thái ghi danh: học viên vào
-  // thẳng bằng URL một khóa vượt cấp phải thấy đúng lý do bị chặn.
+  // The level rule is checked before enrollment status: a learner who navigates
+  // straight to an above-level course by URL must see the correct blocking reason.
   const access = accessFor(course, user);
   if (access.isLevelLocked) {
     return (
       <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
         <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học chưa mở theo quy tắc cấp bậc tuần tự</h2>
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>This course is not open under the sequential level rule</h2>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '10px 0' }}>
           <JobLevelBadge level={access.userLevel} />
           <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
           <JobLevelBadge level={access.courseLevel} />
         </div>
         <p style={{ color: 'var(--ink-soft)' }}>{access.reason}</p>
-        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Xem Chi Tiết &amp; Xin Phê Duyệt</Button>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>View Details &amp; Request Approval</Button>
       </div>
     );
   }
 
-  // Khóa Đã Đóng (hết hạn ghi danh) mà chưa từng ghi danh: chặn cả truy cập
-  // trực tiếp bằng URL, không chỉ ẩn link ở trang chi tiết khóa học.
+  // A closed course (enrollment window expired) never enrolled in: block direct
+  // access by URL too, not just hide the link on the course detail page.
   const isRegistrationClosed = !enrollment && computeLifecycleStatus(course) === 'CLOSED';
   if (isRegistrationClosed) {
     return (
       <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
         <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 18, marginTop: 10 }}>Khóa học đã qua thời gian tham gia</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>Cửa sổ ghi danh cho khóa học này đã hết hạn và bạn chưa từng đăng ký, nên không thể vào học.</p>
-        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Quay Lại Chi Tiết Khóa Học</Button>
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>The enrollment window for this course has closed</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>The enrollment window for this course has expired and you never registered, so you cannot enter.</p>
+        <Button variant="primary" onClick={() => navigate(`${basePath}/${course.id}`)}>Back To The Course Details</Button>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
           <p>
             {lessonTypeLabel(lesson.lessonType)} &middot; {lesson.isRequired ? 'Mandatory' : 'Optional'} &middot; Version: <strong>{course.version || course.currentVersion || 'v1.0'}</strong>
             {course.isArchivedVersionView && (
-              <> &middot; <span style={{ color: 'var(--amber)' }}>Bạn đang học theo cấu trúc bài giảng phiên bản này (đã ghi danh trước khi có bản cập nhật mới)</span></>
+              <> &middot; <span style={{ color: 'var(--amber)' }}>You are studying this version of the syllabus (you enrolled before the newer update)</span></>
             )}
           </p>
         </div>
@@ -152,8 +152,8 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
         </div>
       </div>
 
-      {/* DYNAMIC PLAYER CANVAS — 5 định dạng chuẩn hóa, chọn player duy nhất
-          theo lesson.lessonType (không còn đọc course.modality nữa). */}
+      {/* DYNAMIC PLAYER CANVAS — the 5 standardized formats; the player is chosen solely
+          by lesson.lessonType (course.modality is no longer read). */}
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         {lesson.lessonType === 'SCORM' ? (
           <ScormPlayerSimulator course={course} lesson={lesson} onComplete={complete} />
@@ -274,7 +274,7 @@ function ScormPlayerSimulator({ course, lesson, onComplete }) {
 
         {currentSlide.interactive && (
           <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: '#F59E0B', marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#F59E0B', marginBottom: 10 }}>
               {currentSlide.question}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -298,7 +298,7 @@ function ScormPlayerSimulator({ course, lesson, onComplete }) {
               ))}
             </div>
             {interactiveScore !== null && (
-              <div style={{ marginTop: 10, fontSize: 12.5, color: interactiveScore === 100 ? '#009E49' : '#E31B23', fontWeight: 600 }}>
+              <div style={{ marginTop: 10, fontSize: 13, color: interactiveScore === 100 ? '#009E49' : '#E31B23', fontWeight: 600 }}>
                 {interactiveScore === 100 ? '✓ Correct! You identified the required SOP protocol.' : '✗ Incorrect. Please select the safest action compliant with MMVN hygiene standards.'}
               </div>
             )}
@@ -402,15 +402,15 @@ function PptSlidePlayer({ course, lesson, onComplete }) {
 
 // ---------------------------------------------------------------------------
 // 3. External Platform Embed Player (Udemy / LinkedIn Learning / Coursera /
-//    YouTube / Custom LMS Link) — 1 trong 5 định dạng chuẩn hóa, chi tiết
-//    (platform + url) đọc từ lesson.content thay vì course.modality/platformSource.
+//    YouTube / Custom LMS Link) — one of the 5 standardized formats, with details
+//    (platform + url) is read from lesson.content instead of course.modality/platformSource.
 // ---------------------------------------------------------------------------
 const EXTERNAL_PLATFORM_BRANDING = {
   UDEMY: { label: 'Udemy for Business', color: '#A435F0', icon: 'ti-a-b' },
   LINKEDIN: { label: 'LinkedIn Learning Enterprise Embed', color: '#0A66C2', icon: 'ti-brand-linkedin' },
   COURSERA: { label: 'Coursera for Business Integration', color: '#0056D2', icon: 'ti-school' },
   YOUTUBE: { label: 'YouTube Training Stream', color: '#E31B23', icon: 'ti-brand-youtube' },
-  CUSTOM: { label: 'External Training Link', color: '#334155', icon: 'ti-external-link' },
+  CUSTOM: { label: 'External Training Link', color: 'var(--ink-soft)', icon: 'ti-external-link' },
 };
 
 function ExternalPlatformPlayer({ lesson, onComplete }) {
@@ -432,7 +432,7 @@ function ExternalPlatformPlayer({ lesson, onComplete }) {
           <i className={`ti ${branding.icon}`} style={{ fontSize: 24 }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: 14 }}>{branding.label}</div>
-            <div style={{ fontSize: 11.5, opacity: 0.9 }}>Authorized Enterprise Partnership &middot; MMVN L&amp;D Hub</div>
+            <div style={{ fontSize: 12, opacity: 0.9 }}>Authorized Enterprise Partnership &middot; MMVN L&amp;D Hub</div>
           </div>
         </div>
         <Badge tone="slate" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
@@ -456,7 +456,7 @@ function ExternalPlatformPlayer({ lesson, onComplete }) {
         <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: 40, textAlign: 'center' }}>
           <i className={`ti ${branding.icon}`} style={{ fontSize: 40, color: branding.color, marginBottom: 12 }} />
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
-            Bài học được host bên ngoài trên {branding.label}. Đăng nhập bằng tài khoản doanh nghiệp MMVN Enterprise License, hoàn thành bài học, rồi quay lại đây xác nhận để đồng bộ Transcript.
+            This lesson is hosted externally on {branding.label}. Sign in with your MMVN Enterprise License account, finish the lesson, then come back here and confirm to sync your transcript.
           </p>
           <Button
             variant="outline"
@@ -464,13 +464,13 @@ function ExternalPlatformPlayer({ lesson, onComplete }) {
             onClick={() => content.url && window.open(content.url, '_blank', 'noopener,noreferrer')}
             disabled={!content.url}
           >
-            Mở Bài Học Tại {branding.label}
+            Open The Lesson On {branding.label}
           </Button>
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+        <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
           Attendance and course verification will automatically sync to your enterprise transcript upon confirmation.
         </span>
         <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
@@ -510,7 +510,7 @@ function VideoLesson({ lesson, onComplete }) {
           <p>HLS Video Lecture Stream (1080p Full HD).</p>
         </div>
       )}
-      <div style={{ marginTop: 14, fontSize: 12.5, color: 'var(--ink-soft)' }}>
+      <div style={{ marginTop: 14, fontSize: 13, color: 'var(--ink-soft)' }}>
         Watched {watchedPercent}% &middot; Required minimum {required}%
       </div>
       {lesson.status !== 'COMPLETED' && (
@@ -522,8 +522,8 @@ function VideoLesson({ lesson, onComplete }) {
   );
 }
 
-// PDF — 1 trong 5 định dạng chuẩn hóa: SOP/ISO/tài liệu công việc dạng PDF
-// Viewer, có nút xác nhận đã đọc (thay cho DOCUMENT/SCRIPT cũ).
+// PDF — one of the 5 standardized formats: SOP/ISO/work documents as a PDF
+// viewer, with a confirm-read button (replacing the old DOCUMENT/SCRIPT).
 function PdfViewerLesson({ lesson, onComplete }) {
   const content = lesson.content || {};
   return (
@@ -534,8 +534,8 @@ function PdfViewerLesson({ lesson, onComplete }) {
           <span style={{ fontWeight: 700, fontSize: 14 }}>Standard Operating Procedure (PDF): {lesson.title}</span>
         </div>
         {content.url ? (
-          <a href={content.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'var(--rail)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <i className="ti ti-external-link" /> {content.fileName || 'Mở tài liệu PDF'}
+          <a href={content.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--rail)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <i className="ti ti-external-link" /> {content.fileName || 'Open the PDF document'}
           </a>
         ) : (
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5, margin: 0 }}>
@@ -544,7 +544,7 @@ function PdfViewerLesson({ lesson, onComplete }) {
         )}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>Required read: {lesson.rule?.requiredReadPercent ?? 90}%</span>
+        <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>Required read: {lesson.rule?.requiredReadPercent ?? 90}%</span>
         <Button variant="primary" icon="ti-check" onClick={() => onComplete({ progressPercent: 100 })}>
           Confirm Document Understood
         </Button>

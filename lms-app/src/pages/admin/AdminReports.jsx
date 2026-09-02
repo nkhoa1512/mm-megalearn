@@ -24,10 +24,10 @@ export default function AdminReports() {
   function activeReportRows() {
     if (activeReportTab === 'TRAINER_CSAT') {
       return [
-        { classTitle: 'Vận Hành Lò Nướng Bánh Mì Deck Oven & HACCP', csat: 4.95, learners: 52, passRate: '98%' },
-        { classTitle: 'Tiêu Chuẩn Vệ Sinh An Toàn Thực Phẩm Quầy Fresh', csat: 4.88, learners: 45, passRate: '95%' },
-        { classTitle: 'Kỹ Năng Máy POS Tốc Độ Cao & Xử Lý Sự Cố', csat: 4.85, learners: 60, passRate: '96%' },
-        { classTitle: 'Diễn Tập Thực Tế PCCC & Thoát Hiểm Siêu Thị', csat: 4.92, learners: 68, passRate: '100%' },
+        { classTitle: 'Deck Oven Bread Baking Operation & HACCP', csat: 4.95, learners: 52, passRate: '98%' },
+        { classTitle: 'Fresh Counter Food Hygiene & Safety Standards', csat: 4.88, learners: 45, passRate: '95%' },
+        { classTitle: 'High-Speed POS Skills & Incident Handling', csat: 4.85, learners: 60, passRate: '96%' },
+        { classTitle: 'Live Fire Drill & Store Evacuation', csat: 4.92, learners: 68, passRate: '100%' },
       ];
     }
     if (activeReportTab === 'HEATMAP') {
@@ -69,7 +69,7 @@ export default function AdminReports() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h1>
-              {isTrainer ? 'Báo Cáo CSAT & Hiệu Quả Giảng Dạy' : 'Strategic ROI, L&D Budget & Audit Command Center'}
+              {isTrainer ? 'CSAT & Teaching Effectiveness Report' : 'Strategic ROI, L&D Budget & Audit Command Center'}
             </h1>
             <Badge tone="ai" icon="ti-calculator">
               {isTrainer ? 'Faculty CSAT & Teaching Analytics' : 'Kirkpatrick 4-Level ROI & Heatmaps'}
@@ -77,7 +77,7 @@ export default function AdminReports() {
           </div>
           <p>
             {isTrainer
-              ? 'Tổng hợp đánh giá chất lượng sư phạm (CSAT Level 1), tỷ lệ chuyên cần và độ hài lòng của học viên sau các buổi đào tạo thực hành.'
+              ? 'A consolidated view of teaching quality (CSAT Level 1), attendance rate and learner satisfaction after hands-on training sessions.'
               : 'Measure training business impact and financial return (ROI), track L&D expenditure vs budget, analyze cross-branch competency gap heatmaps, and export signed inspection dossiers.'}
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function AdminReports() {
       {/* REPORT SECTION TABS */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
-          { id: 'TRAINER_CSAT', label: '⭐ Đánh Giá CSAT Giảng Dạy (Faculty Performance)', icon: 'ti-star' },
+          { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Faculty Performance)', icon: 'ti-star' },
           { id: 'ROI_KIRKPATRICK', label: 'Kirkpatrick 4-Level ROI Framework', icon: 'ti-chart-arrows' },
           { id: 'HEATMAP', label: 'Competency Gap Heatmap (Operations vs Head Office)', icon: 'ti-layout-grid' },
           { id: 'COST_BUDGET', label: 'Training Cost Tracking & L&D Budget', icon: 'ti-coin' },
@@ -134,87 +134,87 @@ export default function AdminReports() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* 4 SUMMARY METRIC CARDS */}
           <div className="grid grid-4" style={{ gap: 16 }}>
-            <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Điểm CSAT Trung Bình</div>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Average CSAT Score</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>★ 4.88 / 5.0</div>
               <div style={{ fontSize: 11, color: 'var(--sage)', marginTop: 4 }}>
-                <i className="ti ti-arrow-up-right" /> 97.0% học viên hài lòng xuất sắc
+                <i className="ti ti-arrow-up-right" /> 97.0% of learners were highly satisfied
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tỷ Lệ Chuyên Cần Lớp Học</div>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Class Attendance Rate</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--sage)', marginTop: 4 }}>94.2%</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                512 lượt học viên tham gia đầy đủ
+                512 learners attended in full
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tỷ Lệ Đạt Bài Sát Hạch</div>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Examination Pass Rate</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>96.5%</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                Vượt qua ngay trong lần thi thứ nhất
+                Passed on the very first attempt
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Xếp Hạng Năng Lực Giảng Dạy</div>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Teaching Competency Ranking</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>Master Trainer</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                Top 5% giảng viên xuất sắc toàn chuỗi
+                Top 5% of trainers across the chain
               </div>
             </div>
           </div>
 
           {/* 4 PEDAGOGICAL PILLARS */}
-          <div className="card card-pad" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 10 }}>
+          <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', marginBottom: 16 }}>
               <i className="ti ti-chart-radar" style={{ marginRight: 6, color: 'var(--rail)' }} />
-              Đánh Giá Chi Tiết Theo 4 Tiêu Chí Sư Phạm &amp; Chất Lượng Đào Tạo
+              Detailed Ratings Across 4 Teaching &amp; Training Quality Criteria
             </div>
             <div className="grid grid-2" style={{ gap: 16 }}>
               <div style={{ background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>1. Tính ứng dụng thực tế tại quầy siêu thị</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>1. Practical applicability at the store counter</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>4.90 ★</span>
                 </div>
                 <ProgressBar value={98} tone="amber" size="sm" />
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 6 }}>
-                  98% học viên áp dụng trực tiếp được vào ca làm việc ngay ngày hôm sau.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>
+                  98% of learners applied it directly on their shift the very next day.
                 </div>
               </div>
 
               <div style={{ background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>2. Kỹ năng thị phạm &amp; tương tác của Giảng viên</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>2. The trainer's demonstration &amp; interaction skills</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--sage)' }}>4.92 ★</span>
                 </div>
                 <ProgressBar value={98.4} tone="sage" size="sm" />
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 6 }}>
-                  Phương pháp hướng dẫn trực quan, giải đáp thắc mắc cặn kẽ và nhiệt huyết.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>
+                  The teaching method was very visual, questions were answered thoroughly and with energy.
                 </div>
               </div>
 
               <div style={{ background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>3. Giáo trình, Slide &amp; Biểu mẫu SOP đính kèm</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>3. Syllabus, slides &amp; attached SOP forms</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue)' }}>4.82 ★</span>
                 </div>
                 <ProgressBar value={96.4} tone="blue" size="sm" />
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 6 }}>
-                  Tài liệu rõ ràng, chuẩn hóa theo quy trình vận hành chuỗi MM Mega Market.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>
+                  The materials were clear and standardized to the MM Mega Market chain's operating procedures.
                 </div>
               </div>
 
               <div style={{ background: 'var(--paper-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>4. Cơ sở vật chất phòng Lab &amp; An toàn thực hành</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>4. Lab facilities &amp; practice safety</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--rail)' }}>4.86 ★</span>
                 </div>
                 <ProgressBar value={97.2} tone="rail" size="sm" />
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 6 }}>
-                  Trang thiết bị máy nướng, POS và dụng cụ thực hành đầy đủ và an toàn tuyệt đối.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 6 }}>
+                  The ovens, POS terminals and practice equipment were complete and perfectly safe.
                 </div>
               </div>
             </div>
@@ -225,27 +225,27 @@ export default function AdminReports() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Khóa Học Thực Hành / Trực Tuyến</th>
-                  <th>Số Học Viên Đã Học</th>
-                  <th>Điểm CSAT Đánh Giá</th>
-                  <th>Tỷ Lệ Đạt Sát Hạch</th>
-                  <th>Xếp Loại Chất Lượng</th>
+                  <th>Practical / Online Course</th>
+                  <th>Learners Taught</th>
+                  <th>CSAT Rating Score</th>
+                  <th>Examination Pass Rate</th>
+                  <th>Quality Rating</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { title: 'Vận Hành Lò Nướng Bánh Mì Deck Oven & HACCP', learners: 52, csat: 4.95, pass: '98.1%', grade: 'Xuất Sắc (Gold)' },
-                  { title: 'Tiêu Chuẩn Vệ Sinh An Toàn Thực Phẩm Quầy Fresh', learners: 45, csat: 4.88, pass: '95.6%', grade: 'Rất Tốt' },
-                  { title: 'Kỹ Năng Máy POS Tốc Độ Cao & Xử Lý Sự Cố Khách Hàng', learners: 60, csat: 4.85, pass: '96.7%', grade: 'Rất Tốt' },
-                  { title: 'Diễn Tập Thực Tế PCCC & Thoát Hiểm Siêu Thị', learners: 68, csat: 4.92, pass: '100%', grade: 'Xuất Sắc (Gold)' },
-                  { title: 'Kiểm Soát Nhiệt Độ Chuỗi Cung Ứng Lạnh Cold-Chain', learners: 38, csat: 4.80, pass: '94.7%', grade: 'Tốt' },
+                  { title: 'Deck Oven Bread Baking Operation & HACCP', learners: 52, csat: 4.95, pass: '98.1%', grade: 'Outstanding (Gold)' },
+                  { title: 'Fresh Counter Food Hygiene & Safety Standards', learners: 45, csat: 4.88, pass: '95.6%', grade: 'Very Good' },
+                  { title: 'High-Speed POS Skills & Customer Incident Handling', learners: 60, csat: 4.85, pass: '96.7%', grade: 'Very Good' },
+                  { title: 'Live Fire Drill & Store Evacuation', learners: 68, csat: 4.92, pass: '100%', grade: 'Outstanding (Gold)' },
+                  { title: 'Cold-Chain Supply Temperature Control', learners: 38, csat: 4.80, pass: '94.7%', grade: 'Good' },
                 ].map((row, idx) => (
                   <tr key={idx}>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{row.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Đào tạo trực tiếp tại xưởng siêu thị MMVN</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>In-person training at the MMVN store workshop</div>
                     </td>
-                    <td><Badge tone="blue">{row.learners} Học viên</Badge></td>
+                    <td><Badge tone="blue">{row.learners} Learner</Badge></td>
                     <td>
                       <span style={{ fontWeight: 800, color: 'var(--amber)', fontSize: 14 }}>★ {row.csat}</span>
                     </td>
@@ -253,7 +253,7 @@ export default function AdminReports() {
                       <span style={{ fontWeight: 700, color: 'var(--sage)' }}>{row.pass}</span>
                     </td>
                     <td>
-                      <Badge tone={row.grade.includes('Xuất Sắc') ? 'sage' : 'rail'}>
+                      <Badge tone={row.grade.includes('Outstanding') ? 'sage' : 'rail'}>
                         {row.grade}
                       </Badge>
                     </td>
@@ -319,7 +319,7 @@ export default function AdminReports() {
             {/* Level 3 */}
             <div className="card card-pad" style={{ borderLeft: '4px solid #F59E0B' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <span style={{ fontWeight: 800, fontSize: 13, color: '#B45309', textTransform: 'uppercase' }}>
+                <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--amber-soft-text)', textTransform: 'uppercase' }}>
                   Level 3: 3-6 Month Behavioral Change on the Floor
                 </span>
                 <Badge tone="amber">Internal Audit Verified</Badge>
@@ -348,7 +348,7 @@ export default function AdminReports() {
               <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Estimated Cost Savings</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#005BAA' }}>{kirkpatrickROI.level4.costSavingsEstimated}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--blue)' }}>{kirkpatrickROI.level4.costSavingsEstimated}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Fresh Spoilage Reduction</div>
@@ -483,7 +483,7 @@ export default function AdminReports() {
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>External Platform Licenses</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#005BAA', marginTop: 4 }}>1,285,000,000 ₫</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>1,285,000,000 ₫</div>
               <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>LinkedIn / Coursera / Udemy</div>
             </div>
           </div>
@@ -530,7 +530,7 @@ export default function AdminReports() {
             {costTrackingData.externalPlatformLicenses.map((lic, i) => (
               <div key={i} className="card card-pad">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontWeight: 800, fontSize: 13.5 }}>{lic.platform}</span>
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>{lic.platform}</span>
                   <Badge tone="blue">{lic.utilizationRate} Active</Badge>
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>

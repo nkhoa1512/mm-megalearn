@@ -12,12 +12,12 @@ export default function LearnerLearningPaths({ initialTab = 'CURRENT' }) {
     <>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <h1>Lộ Trình Học Tập Của Tôi</h1>
+          <h1>My Learning Roadmap</h1>
           <Badge tone="rail" icon="ti-map-2">{levelDef.emoji} Level {currentUser?.level} &middot; {levelDef.shortVi}</Badge>
         </div>
         <p>
-          4 phân hệ lộ trình: Lộ trình cấp bậc hiện tại, Lộ trình kế cận thăng cấp, Lộ trình tự đề xuất
-          và Khóa học gợi ý theo vị trí công việc.
+          4 roadmap tabs: the current level roadmap, the succession roadmap, the self-proposed roadmap
+          and course suggestions based on the job position.
         </p>
       </div>
       <RoadmapTabsPanel user={currentUser} initialTab={initialTab} />

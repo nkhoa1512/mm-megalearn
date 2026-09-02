@@ -3,15 +3,15 @@ import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
 import { Badge, Button } from './ui';
 
 const CATEGORY_TABS = [
-  { id: 'ALL', label: 'Tất Cả Ảnh Mẫu', icon: 'ti-layout-grid' },
-  { id: 'Food Safety & Hygiene', label: '🥩 Vệ Sinh & HACCP', icon: 'ti-meat' },
-  { id: 'Cold Chain', label: '❄️ Chuỗi Lạnh & Kho Mát', icon: 'ti-snowflake' },
-  { id: 'Store Operations', label: '🏪 Vận Hành Siêu Thị', icon: 'ti-building-store' },
-  { id: 'Information Security', label: '🔒 Bảo Mật Thông Tin', icon: 'ti-shield-lock' },
-  { id: 'Supply Chain & Logistics', label: '🚚 Chuỗi Cung Ứng', icon: 'ti-truck' },
-  { id: 'Leadership & Management', label: '👥 Lãnh Đạo & Quản Trị', icon: 'ti-users' },
-  { id: 'Health & Safety', label: '🧯 PCCC & An Toàn HSE', icon: 'ti-flame' },
-  { id: 'Corporate Governance', label: '🌱 Văn Hóa & ESG', icon: 'ti-certificate' },
+  { id: 'ALL', label: 'All Sample Images', icon: 'ti-layout-grid' },
+  { id: 'Food Safety & Hygiene', label: '🥩 Hygiene & HACCP', icon: 'ti-meat' },
+  { id: 'Cold Chain', label: '❄️ Cold Chain & Chiller Storage', icon: 'ti-snowflake' },
+  { id: 'Store Operations', label: '🏪 Store Operations', icon: 'ti-building-store' },
+  { id: 'Information Security', label: '🔒 Information Security', icon: 'ti-shield-lock' },
+  { id: 'Supply Chain & Logistics', label: '🚚 Supply Chain', icon: 'ti-truck' },
+  { id: 'Leadership & Management', label: '👥 Leadership & Management', icon: 'ti-users' },
+  { id: 'Health & Safety', label: '🧯 Fire Safety & HSE', icon: 'ti-flame' },
+  { id: 'Corporate Governance', label: '🌱 Culture & ESG', icon: 'ti-certificate' },
 ];
 
 export default function CourseImagePickerStudio({
@@ -47,19 +47,19 @@ export default function CourseImagePickerStudio({
     const query = `${courseTitle} ${courseCategory}`.toLowerCase();
     let bestMatch = null;
 
-    if (query.includes('haccp') || query.includes('vệ sinh') || query.includes('thực phẩm') || query.includes('bánh') || query.includes('thịt') || query.includes('cá')) {
+    if (query.includes('haccp') || query.includes('hygiene') || query.includes('food') || query.includes('bakery') || query.includes('meat') || query.includes('fish')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'fsh-haccp' || p.id === 'fsh-kitchen' || p.id === 'fsh-bakery');
-    } else if (query.includes('lạnh') || query.includes('cold') || query.includes('sữa') || query.includes('mát')) {
+    } else if (query.includes('cold') || query.includes('cold') || query.includes('dairy') || query.includes('chilled')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'cold-warehouse' || p.id === 'cold-dairy');
-    } else if (query.includes('pccc') || query.includes('cháy') || query.includes('an toàn') || query.includes('hse') || query.includes('bảo hộ')) {
+    } else if (query.includes('pccc') || query.includes('fire') || query.includes('safety') || query.includes('hse') || query.includes('protective equipment')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'hse-drill' || p.id === 'hse-gear');
-    } else if (query.includes('bảo mật') || query.includes('security') || query.includes('phishing') || query.includes('dữ liệu')) {
+    } else if (query.includes('security') || query.includes('security') || query.includes('phishing') || query.includes('data')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'sec-shield' || p.id === 'sec-code');
-    } else if (query.includes('xe nâng') || query.includes('logistics') || query.includes('kho') || query.includes('giao hàng')) {
+    } else if (query.includes('forklift') || query.includes('logistics') || query.includes('kho') || query.includes('delivery')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'scm-forklift' || p.id === 'scm-fleet');
-    } else if (query.includes('lãnh đạo') || query.includes('lead') || query.includes('quản lý') || query.includes('coaching') || query.includes('họp')) {
+    } else if (query.includes('leadership') || query.includes('lead') || query.includes('management') || query.includes('coaching') || query.includes('meeting')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'lead-meeting' || p.id === 'lead-teamwork');
-    } else if (query.includes('thu ngân') || query.includes('pos') || query.includes('quầy') || query.includes('trưng bày') || query.includes('khách hàng')) {
+    } else if (query.includes('cashier') || query.includes('pos') || query.includes('counter') || query.includes('merchandising') || query.includes('customer')) {
       bestMatch = COURSE_IMAGE_PRESETS.find((p) => p.id === 'store-shelves' || p.id === 'store-pos' || p.id === 'store-customer');
     }
 
@@ -70,7 +70,7 @@ export default function CourseImagePickerStudio({
     if (bestMatch) {
       onChange(bestMatch.url);
       setUrlInput(bestMatch.url);
-      setSuggestNotice(`✨ Đã tự động chọn ảnh: "${bestMatch.label}" phù hợp với chuyên đề`);
+      setSuggestNotice(`✨ Auto-selected image: "${bestMatch.label}" matches the topic`);
       setTimeout(() => setSuggestNotice(''), 4000);
     }
   }
@@ -79,7 +79,7 @@ export default function CourseImagePickerStudio({
   function handleFileSelect(file) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, WEBP).');
+      alert('Please choose a valid image file (PNG, JPG, WEBP).');
       return;
     }
     const reader = new FileReader();
@@ -87,7 +87,7 @@ export default function CourseImagePickerStudio({
       const dataUrl = e.target.result;
       onChange(dataUrl);
       setUrlInput(dataUrl);
-      setSuggestNotice(`✓ Đã tải ảnh lên từ thiết bị: ${file.name}`);
+      setSuggestNotice(`✓ Image uploaded from your device: ${file.name}`);
       setTimeout(() => setSuggestNotice(''), 4000);
     };
     reader.readAsDataURL(file);
@@ -96,12 +96,12 @@ export default function CourseImagePickerStudio({
   const effectiveImage = imageUrl || getCourseImage({ title: courseTitle, category: courseCategory, domain: courseCategory });
 
   return (
-    <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+    <div style={{ background: 'var(--paper-raised)', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
       {/* 1. STUDIO HEADER */}
       <div
         style={{
           padding: '14px 18px',
-          background: '#F8FAFC',
+          background: 'var(--paper-sunken)',
           borderBottom: '1px solid var(--line)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -111,15 +111,15 @@ export default function CourseImagePickerStudio({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#EFF6FF', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue-soft)', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <i className="ti ti-photo-edit" style={{ fontSize: 18 }} />
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
-              Hình Ảnh Đại Diện Khóa Học &amp; Mốc Lộ Trình (Course Visual Studio)
+              Course &amp; Roadmap Milestone Cover Image (Course Visual Studio)
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-              Tối ưu chuẩn 16:9 cho Thẻ bài giảng &amp; Vòng tròn 1:1 cho Lộ trình cấp bậc (Roadmap)
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              Optimized 16:9 for the lesson card &amp; 1:1 circle for the level roadmap
             </div>
           </div>
         </div>
@@ -128,12 +128,12 @@ export default function CourseImagePickerStudio({
           <button
             type="button"
             className="btn btn-sm btn-outline"
-            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderColor: 'var(--blue)', color: 'var(--blue)', background: '#EFF6FF' }}
+            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, borderColor: 'var(--blue)', color: 'var(--blue)', background: 'var(--blue-soft)' }}
             onClick={handleSmartSuggest}
-            title="Tự động chọn ảnh phù hợp theo tên khóa học"
+            title="Automatically pick a matching image from the course name"
           >
             <i className="ti ti-sparkles" />
-            <span>AI Gợi Ý Ảnh Phù Hợp</span>
+            <span>AI Image Suggestions</span>
           </button>
           {imageUrl && (
             <Button
@@ -145,16 +145,16 @@ export default function CourseImagePickerStudio({
                 setUrlInput('');
               }}
               style={{ color: 'var(--rust)' }}
-              title="Xóa ảnh tùy chỉnh, sử dụng ảnh mặc định"
+              title="Remove the custom image and use the default"
             >
-              Xóa Ảnh
+              Remove Image
             </Button>
           )}
         </div>
       </div>
 
       {suggestNotice && (
-        <div style={{ padding: '8px 18px', background: '#ECFDF5', color: '#065F46', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ padding: '8px 18px', background: 'var(--sage-soft)', color: '#065F46', fontSize: 12, fontWeight: 600, borderBottom: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', gap: 6 }}>
           <i className="ti ti-circle-check" />
           {suggestNotice}
         </div>
@@ -167,9 +167,9 @@ export default function CourseImagePickerStudio({
           {/* Mode Switcher */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, background: 'var(--paper-sunken)', padding: 4, borderRadius: 8 }}>
             {[
-              { id: 'GALLERY', label: 'Thư Viện Ảnh MMVN', icon: 'ti-library-photo' },
-              { id: 'UPLOAD', label: 'Tải Lên Từ Máy', icon: 'ti-cloud-upload' },
-              { id: 'URL', label: 'Nhập Link Ảnh', icon: 'ti-link' },
+              { id: 'GALLERY', label: 'MMVN Image Library', icon: 'ti-library-photo' },
+              { id: 'UPLOAD', label: 'Upload From Device', icon: 'ti-cloud-upload' },
+              { id: 'URL', label: 'Paste Image Link', icon: 'ti-link' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -180,7 +180,7 @@ export default function CourseImagePickerStudio({
                   padding: '7px 10px',
                   borderRadius: 6,
                   border: 'none',
-                  background: activeSourceTab === tab.id ? '#fff' : 'transparent',
+                  background: activeSourceTab === tab.id ? 'var(--paper-raised)' : 'transparent',
                   color: activeSourceTab === tab.id ? 'var(--blue)' : 'var(--ink-soft)',
                   fontWeight: activeSourceTab === tab.id ? 700 : 500,
                   fontSize: 12,
@@ -216,7 +216,7 @@ export default function CourseImagePickerStudio({
                       fontSize: 11,
                       fontWeight: selectedCategory === cat.id ? 700 : 500,
                       border: selectedCategory === cat.id ? '1px solid var(--blue)' : '1px solid var(--line)',
-                      background: selectedCategory === cat.id ? '#EFF6FF' : '#fff',
+                      background: selectedCategory === cat.id ? 'var(--blue-soft)' : 'var(--paper-raised)',
                       color: selectedCategory === cat.id ? 'var(--blue)' : 'var(--ink-soft)',
                       cursor: 'pointer',
                     }}
@@ -241,7 +241,7 @@ export default function CourseImagePickerStudio({
                         borderRadius: 8,
                         overflow: 'hidden',
                         border: isSelected ? '2.5px solid var(--blue)' : '1px solid var(--line)',
-                        background: isSelected ? '#EFF6FF' : '#fff',
+                        background: isSelected ? 'var(--blue-soft)' : 'var(--paper-raised)',
                         cursor: 'pointer',
                         transition: 'transform 0.15s, box-shadow 0.15s',
                         position: 'relative',
@@ -280,7 +280,7 @@ export default function CourseImagePickerStudio({
                       <div style={{ padding: '6px 8px' }}>
                         <div
                           style={{
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: isSelected ? 700 : 600,
                             color: isSelected ? 'var(--blue)' : 'var(--ink)',
                             lineHeight: 1.3,
@@ -331,7 +331,7 @@ export default function CourseImagePickerStudio({
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
                 style={{
                   border: dragOver ? '2px dashed var(--blue)' : '2px dashed var(--line-strong, #CBD5E1)',
-                  background: dragOver ? '#EFF6FF' : '#F8FAFC',
+                  background: dragOver ? 'var(--blue-soft)' : 'var(--paper-sunken)',
                   borderRadius: 10,
                   padding: '32px 20px',
                   textAlign: 'center',
@@ -344,7 +344,7 @@ export default function CourseImagePickerStudio({
                     width: 48,
                     height: 48,
                     borderRadius: '50%',
-                    background: '#EFF6FF',
+                    background: 'var(--blue-soft)',
                     color: 'var(--blue)',
                     display: 'flex',
                     alignItems: 'center',
@@ -356,10 +356,10 @@ export default function CourseImagePickerStudio({
                   <i className="ti ti-cloud-upload" />
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
-                  Kéo thả tệp ảnh vào đây hoặc bấm để chọn
+                  Drag and drop an image here, or click to browse
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                  Hỗ trợ JPG, PNG, WEBP &middot; Tối đa 5 MB &middot; Tỉ lệ khuyến nghị 16:9 (1200 x 675 px)
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                  Supports JPG, PNG, WEBP &middot; Max 5 MB &middot; Recommended ratio 16:9 (1200 x 675 px)
                 </div>
                 <button
                   type="button"
@@ -370,7 +370,7 @@ export default function CourseImagePickerStudio({
                     fileInputRef.current && fileInputRef.current.click();
                   }}
                 >
-                  <i className="ti ti-folder-open" /> Chọn Tệp Từ Máy
+                  <i className="ti ti-folder-open" /> Browse Files
                 </button>
               </div>
             </div>
@@ -380,19 +380,19 @@ export default function CourseImagePickerStudio({
           {activeSourceTab === 'URL' && (
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 6 }}>
-                ĐƯỜNG DẪN ẢNH (IMAGE URL)
+                IMAGE URL
               </label>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <input
                   type="text"
                   className="field-input"
-                  placeholder="https://images.unsplash.com/... hoặc link ảnh nội bộ"
+                  placeholder="https://images.unsplash.com/... or an internal image link"
                   value={urlInput}
                   onChange={(e) => {
                     setUrlInput(e.target.value);
                     onChange(e.target.value);
                   }}
-                  style={{ fontSize: 12.5, height: 38 }}
+                  style={{ fontSize: 13, height: 38 }}
                 />
                 {urlInput && (
                   <Button
@@ -403,13 +403,13 @@ export default function CourseImagePickerStudio({
                       setUrlInput('');
                       onChange('');
                     }}
-                    title="Xóa link"
+                    title="Clear link"
                   />
                 )}
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
                 <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-                Bạn có thể copy &amp; paste bất kỳ đường dẫn ảnh HTTPS trực tiếp từ kho lưu trữ Unsplash, Cloudinary hoặc máy chủ Media nội bộ MMVN.
+                You can copy &amp; paste any direct HTTPS image URL from Unsplash, Cloudinary or the internal MMVN media server.
               </div>
             </div>
           )}
@@ -421,19 +421,19 @@ export default function CourseImagePickerStudio({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <i className="ti ti-device-laptop" style={{ color: 'var(--sage)' }} />
-                Xem Trước Hiển Thị Thực Tế
+                Live Preview
               </span>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[
-                  { id: 'CATALOG', label: 'Thẻ Bài Giảng', icon: 'ti-layout-grid' },
-                  { id: 'ROADMAP', label: 'Mốc Lộ Trình', icon: 'ti-stairs-up' },
+                  { id: 'CATALOG', label: 'Lesson Card', icon: 'ti-layout-grid' },
+                  { id: 'ROADMAP', label: 'Roadmap Milestone', icon: 'ti-stairs-up' },
                 ].map((mode) => (
                   <button
                     key={mode.id}
                     type="button"
                     onClick={() => setPreviewMode(mode.id)}
                     style={{
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: previewMode === mode.id ? 700 : 500,
                       padding: '2px 8px',
                       borderRadius: 4,
@@ -451,7 +451,7 @@ export default function CourseImagePickerStudio({
 
             {/* PREVIEW MODE 1: CATALOG CARD */}
             {previewMode === 'CATALOG' && (
-              <div style={{ maxWidth: 260, margin: '0 auto', background: '#fff', borderRadius: 10, border: '1px solid var(--line)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+              <div style={{ maxWidth: 260, margin: '0 auto', background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
                 <div style={{ position: 'relative', width: '100%', height: 120, overflow: 'hidden', background: '#E2E8F0' }}>
                   <img
                     src={effectiveImage}
@@ -461,7 +461,7 @@ export default function CourseImagePickerStudio({
                   <div style={{ position: 'absolute', top: 8, left: 8 }}>
                     <span
                       style={{
-                        fontSize: 9.5,
+                        fontSize: 10,
                         fontWeight: 800,
                         padding: '2px 6px',
                         borderRadius: 4,
@@ -470,7 +470,7 @@ export default function CourseImagePickerStudio({
                         backdropFilter: 'blur(4px)',
                       }}
                     >
-                      {courseType === 'MANDATORY' ? 'BẮT BUỘC' : 'TỰ CHỌN'}
+                      {courseType === 'MANDATORY' ? 'MANDATORY' : 'OPTIONAL'}
                     </span>
                   </div>
                 </div>
@@ -481,7 +481,7 @@ export default function CourseImagePickerStudio({
                   </div>
                   <div
                     style={{
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: 700,
                       color: 'var(--ink)',
                       marginTop: 2,
@@ -492,7 +492,7 @@ export default function CourseImagePickerStudio({
                       lineHeight: 1.3,
                     }}
                   >
-                    {courseTitle || 'Tên Khóa Học Mẫu'}
+                    {courseTitle || 'Sample Course Name'}
                   </div>
                 </div>
               </div>
@@ -510,7 +510,7 @@ export default function CourseImagePickerStudio({
                       overflow: 'hidden',
                       border: '3.5px solid var(--blue)',
                       boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
-                      background: '#fff',
+                      background: 'var(--paper-raised)',
                     }}
                   >
                     <img
@@ -539,18 +539,18 @@ export default function CourseImagePickerStudio({
                     <i className="ti ti-check" />
                   </div>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center', maxWidth: 180 }}>
-                  {courseTitle || 'Chặng Lộ Trình Cấp Bậc'}
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center', maxWidth: 180 }}>
+                  {courseTitle || 'Level Roadmap Stage'}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 2 }}>
-                  Mốc năng lực hoàn thành
+                  Competency milestone completed
                 </div>
               </div>
             )}
           </div>
 
           <div style={{ fontSize: 11, color: 'var(--ink-faint)', textAlign: 'center', marginTop: 10, borderTop: '1px dashed var(--line)', paddingTop: 8 }}>
-            ✓ Tự động căn chỉnh độ nét cao trên mọi màn hình
+            ✓ Automatically sharpened for every screen
           </div>
         </div>
       </div>

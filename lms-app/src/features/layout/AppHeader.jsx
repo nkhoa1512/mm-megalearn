@@ -6,70 +6,70 @@ import { normalizeRole, roleDefinition, hasCapability, ROLE_HOME, ROLE_ORDER } f
 import { levelShortLabel } from '../../data/levelSystem';
 import { Button, Badge } from '../common/ui';
 
-// Nhóm "Học tập của tôi" — giống hệt nhau cho cả 6 role, vì role nào cũng là Learner.
+// The "My Learning" group — identical for all 6 roles, because every role is a Learner.
 const LEARNER_SELF_NAV = [
-  { to: '/my-learning', label: 'Khóa Học Của Tôi', labelVi: 'Khóa Học Của Tôi', labelEn: 'My Courses', icon: 'ti-book-2' },
-  { to: '/my-learning-dashboard', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard' },
-  { to: '/my-learning-calendar', label: 'Lịch Học Tập', labelVi: 'Lịch Học Tập', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
-  { to: '/my-learning-path', label: 'Lộ Trình Học Tập', labelVi: 'Lộ Trình Học Tập', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
-  { to: '/my-certificates', label: 'Chứng Chỉ Của Tôi', labelVi: 'Chứng Chỉ Của Tôi', labelEn: 'My Certificates', icon: 'ti-certificate' },
-  { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', labelVi: 'Đánh Giá Giảng Viên (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
+  { to: '/my-learning', label: 'My Courses', labelVi: 'My Courses', labelEn: 'My Courses', icon: 'ti-book-2' },
+  { to: '/my-learning-dashboard', label: 'Learning Dashboard', labelVi: 'Learning Dashboard', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard' },
+  { to: '/my-learning-calendar', label: 'Learning Calendar', labelVi: 'Learning Calendar', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
+  { to: '/my-learning-path', label: 'Learning Roadmap', labelVi: 'Learning Roadmap', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
+  { to: '/my-certificates', label: 'My Certificates', labelVi: 'My Certificates', labelEn: 'My Certificates', icon: 'ti-certificate' },
+  { to: '/trainer-ratings', label: 'Trainer Ratings (CSAT)', labelVi: 'Trainer Ratings (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
 ];
 
-// Nhóm "Quản Trị Hệ Thống" — riêng cho User Admin & System Admin, tách biệt
-// khỏi "Công việc của <role>" vì đây là 2 trang cấu hình toàn hệ thống
-// (Certificate Template & Category), không phải nghiệp vụ quản lý khóa học
-// hàng ngày.
+// The "System Administration" group — for User Admin & System Admin only, kept separate
+// from "<role> workspace" because these are 2 system-wide configuration pages
+// (Certificate Template & Category), not day-to-day course management
+// daily.
 const SYSTEM_ADMIN_NAV = [
-  { to: '/admin/certifications', label: 'Quản Lý Chứng Chỉ', labelVi: 'Quản Lý Chứng Chỉ', labelEn: 'Manage Certification', icon: 'ti-certificate' },
-  { to: '/admin/categories', label: 'Quản Lý Danh Mục', labelVi: 'Quản Lý Danh Mục', labelEn: 'Manage Category', icon: 'ti-tags' },
+  { to: '/admin/certifications', label: 'Certificate Management', labelVi: 'Certificate Management', labelEn: 'Manage Certification', icon: 'ti-certificate' },
+  { to: '/admin/categories', label: 'Category Management', labelVi: 'Category Management', labelEn: 'Manage Category', icon: 'ti-tags' },
 ];
 
-// Nhóm "Công việc của <role>" — đặc thù từng role.
+// The "<role> workspace" group — specific to each role.
 const ROLE_WORK_NAV = {
   learner: [
-    { to: '/learner', label: 'Bảng Điều Khiển Học Tập', labelVi: 'Bảng Điều Khiển Học Tập', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/learner/calendar', label: 'Lịch Học Tập', labelVi: 'Lịch Học Tập', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
-    { to: '/learner/courses', label: 'Khóa Học Của Tôi', labelVi: 'Khóa Học Của Tôi', labelEn: 'My Courses', icon: 'ti-book-2' },
-    { to: '/learner/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-stack-2' },
-    { to: '/learner/classrooms', label: 'Lớp Trực Tiếp & QR Check-in', labelVi: 'Lớp Trực Tiếp & QR Check-in', labelEn: 'Live Classrooms & QR', icon: 'ti-chalkboard' },
-    { to: '/learner/paths', label: 'Lộ Trình Học Tập', labelVi: 'Lộ Trình Học Tập', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
+    { to: '/learner', label: 'Learning Dashboard', labelVi: 'Learning Dashboard', labelEn: 'Learning Dashboard', icon: 'ti-layout-dashboard', end: true },
+    { to: '/learner/calendar', label: 'Learning Calendar', labelVi: 'Learning Calendar', labelEn: 'Learning Calendar', icon: 'ti-calendar-event' },
+    { to: '/learner/courses', label: 'My Courses', labelVi: 'My Courses', labelEn: 'My Courses', icon: 'ti-book-2' },
+    { to: '/learner/catalog', label: 'Full Course Catalog', labelVi: 'Full Course Catalog', labelEn: 'Full Course Catalog', icon: 'ti-stack-2' },
+    { to: '/learner/classrooms', label: 'In-Person Class & QR Check-in', labelVi: 'In-Person Class & QR Check-in', labelEn: 'Live Classrooms & QR', icon: 'ti-chalkboard' },
+    { to: '/learner/paths', label: 'Learning Roadmap', labelVi: 'Learning Roadmap', labelEn: 'Learning Roadmap', icon: 'ti-git-branch' },
     { to: '/learner/ai-hub', label: 'AI Learning Hub', labelVi: 'AI Learning Hub', labelEn: 'AI Learning Hub', icon: 'ti-sparkles', badge: 'AI' },
-    { to: '/learner/certificates', label: 'Chứng Chỉ', labelVi: 'Chứng Chỉ', labelEn: 'Certificates', icon: 'ti-certificate' },
-    { to: '/learner/history', label: 'Lịch Sử Học Tập', labelVi: 'Lịch Sử Học Tập', labelEn: 'Learning History', icon: 'ti-history' },
-    { to: '/trainer-ratings', label: 'Đánh Giá Giảng Viên (CSAT)', labelVi: 'Đánh Giá Giảng Viên (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
+    { to: '/learner/certificates', label: 'Certificates', labelVi: 'Certificates', labelEn: 'Certificates', icon: 'ti-certificate' },
+    { to: '/learner/history', label: 'Learning History', labelVi: 'Learning History', labelEn: 'Learning History', icon: 'ti-history' },
+    { to: '/trainer-ratings', label: 'Trainer Ratings (CSAT)', labelVi: 'Trainer Ratings (CSAT)', labelEn: 'Trainer Ratings (CSAT)', icon: 'ti-star' },
   ],
   manager: [
-    { to: '/manager', label: 'Bảng Điều Khiển Đội Ngũ', labelVi: 'Bảng Điều Khiển Đội Ngũ', labelEn: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/team', label: 'Quản Lý & Đào Tạo Đội Ngũ', labelVi: 'Quản Lý & Đào Tạo Đội Ngũ', labelEn: 'Team Learning & Competencies', icon: 'ti-users' },
-    { to: '/manager/courses', label: 'Khóa Học Của Phòng Ban', labelVi: 'Khóa Học Của Phòng Ban', labelEn: 'Department Courses', icon: 'ti-stack-2' },
-    { to: '/manager/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
+    { to: '/manager', label: 'Team Dashboard', labelVi: 'Team Dashboard', labelEn: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
+    { to: '/manager/team', label: 'Team Management & Training', labelVi: 'Team Management & Training', labelEn: 'Team Learning & Competencies', icon: 'ti-users' },
+    { to: '/manager/courses', label: 'Department Courses', labelVi: 'Department Courses', labelEn: 'Department Courses', icon: 'ti-stack-2' },
+    { to: '/manager/catalog', label: 'Full Course Catalog', labelVi: 'Full Course Catalog', labelEn: 'Full Course Catalog', icon: 'ti-database' },
   ],
   trainer: [
-    { to: '/trainer', label: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelVi: 'Bảng Điều Khiển Giảng Dạy & Lớp Học', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },
-    { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
-    { to: '/trainer/reports', label: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelVi: 'Báo Cáo CSAT & Đánh Giá Giảng Dạy', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
+    { to: '/trainer', label: 'Teaching & Classroom Dashboard', labelVi: 'Teaching & Classroom Dashboard', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },
+    { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
+    { to: '/trainer/reports', label: 'CSAT & Teaching Quality Report', labelVi: 'CSAT & Teaching Quality Report', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
   ],
   hrbp: [
-    { to: '/hrbp', label: 'Phân Tích Nhân Tài & Tuân Thủ', labelVi: 'Phân Tích Nhân Tài & Tuân Thủ', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },
-    { to: '/hrbp/catalog', label: 'Danh Mục Toàn Bộ Khóa Học', labelVi: 'Danh Mục Toàn Bộ Khóa Học', labelEn: 'Full Course Catalog', icon: 'ti-database' },
-    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
+    { to: '/hrbp', label: 'Talent & Compliance Analytics', labelVi: 'Talent & Compliance Analytics', labelEn: 'Talent & Compliance Analytics', icon: 'ti-chart-radar', end: false },
+    { to: '/hrbp/catalog', label: 'Full Course Catalog', labelVi: 'Full Course Catalog', labelEn: 'Full Course Catalog', icon: 'ti-database' },
+    { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
   ],
   useradmin: [
-    { to: '/user-admin', label: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelVi: 'Quản Trị Nhân Sự & Cơ Cấu Tổ Chức', labelEn: 'User & Org Administration', icon: 'ti-users-group', end: true },
-    { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
-    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
-    { to: '/admin/roadmaps', label: 'Quản Lý Lộ Trình Cấp Bậc', labelVi: 'Quản Lý Lộ Trình Cấp Bậc', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
-    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', labelVi: 'Duyệt Đơn Học Vượt Cấp', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
-    { to: '/admin/cost-center', label: 'Trung Tâm Chi Phí Đào Tạo', labelVi: 'Trung Tâm Chi Phí Đào Tạo', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
+    { to: '/user-admin', label: 'People Administration & Org Structure', labelVi: 'People Administration & Org Structure', labelEn: 'User & Org Administration', icon: 'ti-users-group', end: true },
+    { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
+    { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
+    { to: '/admin/roadmaps', label: 'Level Roadmap Management', labelVi: 'Level Roadmap Management', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
+    { to: '/approvals', label: 'Approve Level Skip Requests', labelVi: 'Approve Level Skip Requests', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
+    { to: '/admin/cost-center', label: 'Training Cost Center', labelVi: 'Training Cost Center', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
   ],
   sysadmin: [
-    { to: '/sysadmin', label: 'Quản Trị Hệ Thống & Bảo Mật', labelVi: 'Quản Trị Hệ Thống & Bảo Mật', labelEn: 'System Admin & Security', icon: 'ti-server-cog', end: true },
-    { to: '/admin/courses', label: 'Tạo & Quản Lý Khóa Học', labelVi: 'Tạo & Quản Lý Khóa Học', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
-    { to: '/trainer', label: 'Lớp Giảng Dạy & Live QR', labelVi: 'Lớp Giảng Dạy & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
-    { to: '/admin/roadmaps', label: 'Quản Lý Lộ Trình Cấp Bậc', labelVi: 'Quản Lý Lộ Trình Cấp Bậc', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
-    { to: '/approvals', label: 'Duyệt Đơn Học Vượt Cấp', labelVi: 'Duyệt Đơn Học Vượt Cấp', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
-    { to: '/admin/cost-center', label: 'Trung Tâm Chi Phí Đào Tạo', labelVi: 'Trung Tâm Chi Phí Đào Tạo', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
+    { to: '/sysadmin', label: 'System Administration & Security', labelVi: 'System Administration & Security', labelEn: 'System Admin & Security', icon: 'ti-server-cog', end: true },
+    { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
+    { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
+    { to: '/admin/roadmaps', label: 'Level Roadmap Management', labelVi: 'Level Roadmap Management', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
+    { to: '/approvals', label: 'Approve Level Skip Requests', labelVi: 'Approve Level Skip Requests', labelEn: 'Level Advance Approvals', icon: 'ti-clipboard-check', approvalBadge: true },
+    { to: '/admin/cost-center', label: 'Training Cost Center', labelVi: 'Training Cost Center', labelEn: 'Training Cost Center', icon: 'ti-report-money' },
   ],
 };
 
@@ -86,7 +86,6 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
     theme,
     toggleTheme,
     language,
-    toggleLanguage,
     t,
   } = useCourseStore();
   const [navOpen, setNavOpen] = useState(false);
@@ -213,14 +212,14 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
           <nav className={`app-nav-drawer ${navOpen ? 'open' : ''}`}>
             <div className="app-nav-drawer-group">
               <div className="app-nav-drawer-group-label">
-                {language === 'en' ? `Work · ${roleShort}` : `Công việc của ${roleShort}`}
+                {language === 'en' ? `Work · ${roleShort}` : `${roleShort} workspace`}
               </div>
               {workItems.map(renderNavItem)}
             </div>
             {systemAdminItems.length > 0 && (
               <div className="app-nav-drawer-group">
                 <div className="app-nav-drawer-group-label">
-                  {language === 'en' ? 'System Administration' : 'Quản Trị Hệ Thống'}
+                  {language === 'en' ? 'System Administration' : 'System Administration'}
                 </div>
                 {systemAdminItems.map(renderNavItem)}
               </div>
@@ -228,7 +227,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
             {selfItems.length > 0 && (
               <div className="app-nav-drawer-group">
                 <div className="app-nav-drawer-group-label">
-                  {language === 'en' ? 'My Learning' : 'Học tập của tôi'}
+                  {language === 'en' ? 'My Learning' : 'My Learning'}
                 </div>
                 {selfItems.map(renderNavItem)}
               </div>
@@ -243,33 +242,12 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
             type="button"
             className="app-theme-btn"
             onClick={toggleTheme}
-            title={theme === 'dark' ? (language === 'en' ? 'Switch to Light Theme' : 'Chuyển sang Giao Diện Sáng') : (language === 'en' ? 'Switch to Dark Theme' : 'Chuyển sang Giao Diện Tối')}
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             aria-label="Toggle Dark Light Theme"
           >
             <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon-stars'} ${theme === 'dark' ? 'dark' : 'light'}`} aria-hidden="true" />
-            <span>{theme === 'dark' ? (language === 'en' ? 'Dark' : 'Tối') : (language === 'en' ? 'Light' : 'Sáng')}</span>
+            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </button>
-
-          {/* 2. Language Segmented Switcher */}
-          <div className="app-lang-switcher" title={language === 'en' ? 'Switch Language (EN / VI)' : 'Chuyển Ngôn Ngữ (Anh / Việt)'}>
-            <button
-              type="button"
-              className={`app-lang-btn ${language === 'vi' ? 'active' : ''}`}
-              onClick={() => language !== 'vi' && toggleLanguage()}
-              aria-label="Tiếng Việt"
-            >
-              VI
-            </button>
-            <span className="app-lang-divider" />
-            <button
-              type="button"
-              className={`app-lang-btn ${language === 'en' ? 'active' : ''}`}
-              onClick={() => language !== 'en' && toggleLanguage()}
-              aria-label="English"
-            >
-              EN
-            </button>
-          </div>
 
           {/* 3. AI Assistant Trigger */}
           <button
@@ -281,7 +259,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
             <span className="app-ai-sparkle-icon">
               <i className="ti ti-sparkles" aria-hidden="true" />
             </span>
-            <span>{t('aiTutor', 'Trợ Lý AI')}</span>
+            <span>{t('aiTutor', 'AI Assistant')}</span>
           </button>
 
           {/* 4. Role View Dropdown Switcher */}
@@ -290,7 +268,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               type="button"
               className={`app-role-dropdown-btn ${showRoleMenu ? 'active' : ''}`}
               onClick={() => setShowRoleMenu((v) => !v)}
-              title={language === 'en' ? 'Switch Role View' : 'Chuyển đổi góc nhìn Role'}
+              title={language === 'en' ? 'Switch Role View' : 'Switch role perspective'}
             >
               <i className={`ti ${def.icon}`} style={{ color: 'var(--rail)', fontSize: 14 }} />
               <span className="app-role-label">{roleShort}</span>
@@ -300,7 +278,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
             {showRoleMenu && (
               <div className="app-role-popover">
                 <div className="app-role-popover-title">
-                  {t('select_role_view', 'Chọn Góc Nhìn Role (Demo 6 Phân Quyền):')}
+                  {t('select_role_view', 'Choose Role Perspective (6-Permission Demo):')}
                 </div>
                 <div className="app-role-list">
                   {ROLE_ORDER.map((r) => {
@@ -332,10 +310,10 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
           </div>
 
           {/* 5. Gamification Streak Badge */}
-          <div className="app-streak-badge" title={language === 'en' ? `${streakDays} days learning streak` : `Chuỗi học tập liên tục ${streakDays} ngày`}>
+          <div className="app-streak-badge" title={language === 'en' ? `${streakDays} days learning streak` : `${streakDays}-day learning streak`}>
             <i className="ti ti-flame app-streak-icon" aria-hidden="true" />
             <span className="app-streak-val">{streakDays}</span>
-            <span className="app-streak-unit">{t('days', 'ngày')}</span>
+            <span className="app-streak-unit">{t('days', 'days')}</span>
           </div>
 
           {/* 6. Notifications Center */}
@@ -345,7 +323,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               className={`app-notif-btn ${showNotifications ? 'active' : ''}`}
               onClick={() => setShowNotifications((v) => !v)}
               aria-label="Notifications"
-              title={t('notifications', 'Thông Báo')}
+              title={t('notifications', 'Notifications')}
             >
               <i className="ti ti-bell" aria-hidden="true" />
               {unreadCount > 0 && (
@@ -357,18 +335,18 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
               <div className="app-notif-popover">
                 <div className="app-notif-popover-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>
-                      {t('notifications', 'Thông Báo')}
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                      {t('notifications', 'Notifications')}
                     </div>
                     {unreadCount > 0 && (
                       <span className="badge badge-rust" style={{ fontSize: 10, padding: '1px 6px' }}>
-                        {unreadCount} {language === 'en' ? 'new' : 'mới'}
+                        {unreadCount} {language === 'en' ? 'new' : 'new'}
                       </span>
                     )}
                   </div>
                   {unreadCount > 0 && (
-                    <button type="button" onClick={markAllRead} className="app-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
-                      <i className="ti ti-checks" /> {t('markAllRead', 'Đánh dấu đã đọc')}
+                    <button type="button" onClick={markAllRead} className="app-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                      <i className="ti ti-checks" /> {t('markAllRead', 'Mark as read')}
                     </button>
                   )}
                 </div>
@@ -379,14 +357,14 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                     className={`app-notif-tab ${notifFilter === 'ALL' ? 'active' : ''}`}
                     onClick={() => setNotifFilter('ALL')}
                   >
-                    {t('all_notifications', 'Tất cả')} ({inbox.length})
+                    {t('all_notifications', 'All')} ({inbox.length})
                   </button>
                   <button 
                     type="button"
                     className={`app-notif-tab ${notifFilter === 'UNREAD' ? 'active' : ''}`}
                     onClick={() => setNotifFilter('UNREAD')}
                   >
-                    {t('unread_notifications', 'Chưa đọc')} ({unreadCount})
+                    {t('unread_notifications', 'Unread')} ({unreadCount})
                   </button>
                 </div>
 
@@ -397,10 +375,10 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                         <i className="ti ti-bell-check" />
                       </div>
                       <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 13 }}>
-                        {t('notifications_all_caught_up', 'Bạn đã đọc hết thông báo!')}
+                        {t('notifications_all_caught_up', 'You are all caught up!')}
                       </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 3 }}>
-                        {t('notifications_empty_sub', 'Không có thông báo mới nào cần xử lý.')}
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 3 }}>
+                        {t('notifications_empty_sub', 'No new notifications to act on.')}
                       </div>
                     </div>
                   ) : (
@@ -414,7 +392,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                       const displayTitle = language === 'en' ? (n.titleEn || n.title) : (n.titleVi || n.title);
                       const displayMessage = language === 'en' ? (n.messageEn || n.message) : (n.messageVi || n.message);
                       const displayTime = language === 'en' ? (n.timeEn || n.time) : (n.timeVi || n.time);
-                      const displayTag = language === 'en' ? (n.tagEn || (isCourse ? 'Mandatory' : isDeadline ? 'Due Soon' : 'Reminder')) : (n.tagVi || (isCourse ? 'Bắt buộc' : isDeadline ? 'Hạn chót' : 'Nhắc nhở'));
+                      const displayTag = language === 'en' ? (n.tagEn || (isCourse ? 'Mandatory' : isDeadline ? 'Due Soon' : 'Reminder')) : (n.tagVi || (isCourse ? 'Mandatory' : isDeadline ? 'Deadline' : 'Reminder'));
 
                       return (
                         <div 
@@ -452,7 +430,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                       navigate(effectiveRole === 'learner' ? '/learner/calendar' : '/my-learning-calendar');
                     }}
                   >
-                    <i className="ti ti-calendar-event" /> {t('view_calendar_tasks', 'Xem Lịch Học Tập & Nhiệm Vụ')} &rarr;
+                    <i className="ti ti-calendar-event" /> {t('view_calendar_tasks', 'View Learning Calendar & Tasks')} &rarr;
                   </button>
                 </div>
               </div>
@@ -490,7 +468,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                       <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                         {profile.fullName}
                       </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 1 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 1 }}>
                         {profile.position}
                       </div>
                       <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', marginTop: 3 }}>
@@ -513,14 +491,14 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                         openTalentProfile(profile);
                       }}
                     >
-                      {t('viewTalentProfile', 'Xem Hồ Sơ Năng Lực')}
+                      {t('viewTalentProfile', 'View Competency Profile')}
                     </Button>
                   </div>
                 </div>
 
                 <div className="app-profile-section">
                   <div className="app-profile-section-title">
-                    <i className="ti ti-users-group" /> {t('switchRoleDemo', 'Đổi nhanh 6 Persona (Demo):')}
+                    <i className="ti ti-users-group" /> {t('switchRoleDemo', 'Quick-switch 6 personas (demo):')}
                   </div>
                   <div className="app-persona-list">
                     {rolePersonaList.map((u) => {
@@ -539,7 +517,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                           <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                             <div className="app-persona-name">
                               {u.fullName}
-                              {isCurrent && <span className="app-persona-current-tag">{t('active_tag', 'Đang chọn')}</span>}
+                              {isCurrent && <span className="app-persona-current-tag">{t('active_tag', 'Selecting')}</span>}
                             </div>
                             <div className="app-persona-role">
                               {language === 'en' ? (uRoleDef.shortEn || uRoleDef.shortVi) : uRoleDef.shortVi} &middot; {levelShortLabel(u.level)}
@@ -558,7 +536,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
                     className="app-signout-btn"
                     onClick={handleLogout}
                   >
-                    <i className="ti ti-logout" /> {t('signOut', 'Đăng Xuất')}
+                    <i className="ti ti-logout" /> {t('signOut', 'Sign Out')}
                   </button>
                 </div>
               </div>

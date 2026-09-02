@@ -99,21 +99,21 @@ export default function AiAssistantDrawer() {
           <button
             className={`tab-btn ${tab === 'tutor' ? 'active' : ''}`}
             onClick={() => setTab('tutor')}
-            style={{ fontSize: 12.5 }}
+            style={{ fontSize: 13 }}
           >
             <i className="ti ti-message-chatbot" /> AI Tutor Chat
           </button>
           <button
             className={`tab-btn ${tab === 'search' ? 'active' : ''}`}
             onClick={() => setTab('search')}
-            style={{ fontSize: 12.5 }}
+            style={{ fontSize: 13 }}
           >
             <i className="ti ti-search" /> SOP Semantic Search
           </button>
           <button
             className={`tab-btn ${tab === 'insights' ? 'active' : ''}`}
             onClick={() => setTab('insights')}
-            style={{ fontSize: 12.5 }}
+            style={{ fontSize: 13 }}
           >
             <i className="ti ti-bulb" /> AI Recommendations ({aiRecommendations.length})
           </button>
@@ -220,7 +220,7 @@ export default function AiAssistantDrawer() {
                     background: 'var(--paper-sunken)',
                     padding: '6px 10px',
                     borderRadius: 6,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontStyle: 'italic',
                     color: 'var(--ink-soft)',
                     borderLeft: '3px solid var(--ai-primary)',
@@ -259,19 +259,19 @@ export default function AiAssistantDrawer() {
             {aiRecommendations.map((rec, idx) => (
               <div key={idx} className="card card-pad card-interactive" style={{ padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{rec.title}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{rec.title}</div>
                   <Badge tone={rec.badgeTone}>Match {rec.confidence}%</Badge>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8 }}>{rec.reason}</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                   {rec.matchSkills.map((sk) => (
-                    <span key={sk} style={{ fontSize: 10.5, background: 'var(--paper-sunken)', padding: '2px 7px', borderRadius: 10, color: 'var(--ink-soft)' }}>
+                    <span key={sk} style={{ fontSize: 11, background: 'var(--paper-sunken)', padding: '2px 7px', borderRadius: 10, color: 'var(--ink-soft)' }}>
                       ✓ {sk}
                     </span>
                   ))}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
                     <i className="ti ti-clock" style={{ marginRight: 4 }} /> {rec.estimatedHours}
                   </span>
                   <Button size="sm" variant="primary" icon="ti-player-play">Start Learning</Button>

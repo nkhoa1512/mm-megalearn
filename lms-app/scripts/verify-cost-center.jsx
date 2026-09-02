@@ -1,9 +1,9 @@
-/* Verification harness cho phân hệ Trung Tâm Chi Phí (Cost Center).
+/* Verification harness for the Cost Center module.
  *
- * Kiểm 2 lớp:
- *   A. Toán sổ cái thuần (không React): định giá, dựng cost center, seed sổ cái
- *      mở đầu, tổng hợp báo cáo, ghi danh mới có/không phí, chống tính 2 lần.
- *   B. SSR: trang AdminCostCenter render được cho từng role, không nổ.
+ * Two layers are checked:
+ *   A. Pure ledger arithmetic (no React): pricing, building cost centers, seeding the
+ *      opening ledger, report aggregation, new paid/free enrollments, no double counting.
+ *   B. SSR: the AdminCostCenter page renders for every role without blowing up.
  */
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -59,66 +59,66 @@ function section(title) {
 }
 
 // ===========================================================================
-// A. TOÁN SỔ CÁI
+// A. LEDGER ARITHMETIC
 // ===========================================================================
 
-section('A1. Định giá khóa học theo hình thức tổ chức');
+section('A1. Course pricing by delivery format');
 
 const paid = courses.filter(isPaidCourse);
 const free = courses.filter((c) => !isPaidCourse(c));
 
-check('Danh mục có cả khóa có phí lẫn khóa miễn phí', paid.length > 0 && free.length > 0,
-  `${paid.length} có phí / ${free.length} miễn phí / ${courses.length} tổng`);
+check('The catalog has both paid and free courses', paid.length > 0 && free.length > 0,
+  `${paid.length} paid / ${free.length} free / ${courses.length} total`);
 
 const externalSample = courses.find((c) => c.modality === 'EXTERNAL_PLATFORM');
 const classroomSample = courses.find((c) => c.modality === 'CLASSROOM_LAB');
 const scormSample = courses.find((c) => c.modality === 'SCORM_PACKAGE');
 
-check('Khóa nền tảng ngoài tính phí theo suất license',
+check('External-platform courses are charged per licence seat',
   pricingOf(externalSample).costType === COST_TYPE.EXTERNAL_LICENSE && pricingOf(externalSample).price > 0,
   `${externalSample.code} = ${formatVnd(pricingOf(externalSample).price)}`);
 
-check('Khóa lớp trực tiếp tính chi phí tổ chức trên đầu học viên',
+check('In-person classes charge a delivery cost per learner',
   pricingOf(classroomSample).costType === COST_TYPE.VENDOR_CLASSROOM && pricingOf(classroomSample).price > 0,
   `${classroomSample.code} = ${formatVnd(pricingOf(classroomSample).price)}`);
 
-check('Khóa e-learning nội bộ là miễn phí (0 đồng)',
+check('Internal e-learning is free (zero cost)',
   pricingOf(scormSample).isFree && pricingOf(scormSample).price === 0,
   `${scormSample.code} = ${formatVnd(0)}`);
 
 const manualPriced = { ...scormSample, pricing: { isFree: false, price: 1234000, costType: COST_TYPE.CERTIFICATION_FEE } };
-check('Giá Admin gán thủ công ghi đè giá suy ra',
+check('A price set by the Admin overrides the derived price',
   pricingOf(manualPriced).price === 1234000 && pricingOf(manualPriced).source === 'MANUAL',
   `${formatVnd(pricingOf(manualPriced).price)} thay cho ${formatVnd(derivePricing(scormSample).price)}`);
 
 const manualFree = { ...externalSample, pricing: { isFree: true, price: 0 } };
-check('Admin chuyển khóa có phí thành miễn phí được',
+check('The Admin can switch a paid course to free',
   pricingOf(manualFree).isFree && !isPaidCourse(manualFree));
 
 // ---------------------------------------------------------------------------
 
-section('A2. Trung tâm chi phí & ngân sách');
+section('A2. Cost centers & budgets');
 
 const costCenters = buildCostCenters(divisions, allUsers);
 const totalBudget = costCenters.reduce((s, c) => s + c.budgetAnnual, 0);
 const totalHead = costCenters.reduce((s, c) => s + c.headcount, 0);
 
-check('Mỗi Division là một cost center', costCenters.length >= divisions.length,
+check('Every Division is a cost center', costCenters.length >= divisions.length,
   `${costCenters.length} cost center / ${divisions.length} division`);
-check('Tổng đầu người khớp danh sách nhân sự', totalHead === allUsers.length,
+check('Total headcount matches the employee list', totalHead === allUsers.length,
   `${totalHead} = ${allUsers.length}`);
-check('Mọi cost center đều có ngân sách dương', costCenters.every((c) => c.budgetAnnual > 0),
-  `tổng ngân sách ${formatVndShort(totalBudget)}`);
+check('Every cost center has a positive budget', costCenters.every((c) => c.budgetAnnual > 0),
+  `total budget ${formatVndShort(totalBudget)}`);
 
 const sampleUser = allUsers.find((u) => u.divisionId);
 const sampleCc = costCenterForUser(sampleUser, costCenters);
-check('Học viên được quy về đúng cost center của Division mình',
+check('A learner maps to the cost center of their own Division',
   sampleCc && sampleCc.divisionId === sampleUser.divisionId,
   `${sampleUser.fullName} -> ${sampleCc?.code} ${sampleCc?.name}`);
 
 // ---------------------------------------------------------------------------
 
-section('A3. Sổ cái mở đầu & báo cáo tổng hợp');
+section('A3. Opening ledger & aggregated report');
 
 const ledger = seedOpeningLedger({ costCenters, courses, users: allUsers, enrollmentMatrix: userEnrollmentsMap });
 const report = summarizeLedger(ledger, { costCenters, courses });
@@ -127,57 +127,57 @@ const { totals } = report;
 const incomeTxns = ledger.filter((t) => t.type === TXN_TYPE.INCOME);
 const enrollTxns = ledger.filter((t) => t.source === TXN_SOURCE.ENROLLMENT);
 
-check('Sổ cái có cả bút toán THU (cấp ngân sách) và CHI (ghi danh)',
+check('The ledger holds both INCOME (budget grants) and EXPENSE (enrollments) entries',
   incomeTxns.length > 0 && enrollTxns.length > 0,
   `${incomeTxns.length} thu / ${enrollTxns.length} chi`);
 
-check('Tổng THU = tổng ngân sách các cost center', totals.income === totalBudget,
+check('Total income = the sum of every cost center budget', totals.income === totalBudget,
   formatVndShort(totals.income));
 
-check('Lượt ghi danh chia đúng thành có phí + miễn phí',
+check('Enrollments split correctly into paid + free',
   totals.paidEnrollments + totals.freeEnrollments === totals.totalEnrollments,
-  `${totals.paidEnrollments} có phí + ${totals.freeEnrollments} miễn phí = ${totals.totalEnrollments}`);
+  `${totals.paidEnrollments} paid + ${totals.freeEnrollments} free = ${totals.totalEnrollments}`);
 
-check('Khóa miễn phí không làm phát sinh chi phí',
+check('A free course incurs no cost',
   enrollTxns.filter((t) => t.isFree).every((t) => t.amount === 0),
-  `${totals.freeEnrollments} lượt học nội bộ 0 đồng`);
+  `${totals.freeEnrollments} zero-cost internal enrollments`);
 
-check('Mọi lượt ghi danh có phí đều ghi số tiền dương',
+check('Every paid enrollment records a positive amount',
   enrollTxns.filter((t) => !t.isFree).every((t) => t.amount > 0));
 
 const expenseSum = ledger.filter((t) => t.type === TXN_TYPE.EXPENSE).reduce((s, t) => s + t.amount, 0);
-check('Tổng CHI khớp tổng các bút toán chi', totals.expense === expenseSum, formatVndShort(totals.expense));
-check('Số dư = THU - CHI', totals.balance === totals.income - totals.expense, formatVndShort(totals.balance));
-check('Ngân sách chưa bị bội chi ở cấp toàn công ty', totals.expense < totals.income,
-  `sử dụng ${totals.utilization}%`);
+check('Total expense matches the sum of the expense entries', totals.expense === expenseSum, formatVndShort(totals.expense));
+check('Balance = income - expense', totals.balance === totals.income - totals.expense, formatVndShort(totals.balance));
+check('The budget is not overspent company-wide', totals.expense < totals.income,
+  `${totals.utilization}% utilized`);
 
 const ccSum = report.byCostCenter.reduce((s, c) => s + c.spent, 0);
-check('Chi bóc theo cost center cộng lại bằng tổng chi', ccSum === totals.expense, formatVndShort(ccSum));
+check('Spend broken down by cost center adds up to the total', ccSum === totals.expense, formatVndShort(ccSum));
 
-// Nhân sự chưa gán Division: bút toán vẫn phải vào báo cáo, không được rơi mất.
-const orphanUser = { userId: 'USR-ORPHAN', fullName: 'Nhân Sự Chưa Gán Phòng Ban', divisionId: null, divisionCode: null };
+// An employee with no Division: their entries must still reach the report, never be dropped.
+const orphanUser = { userId: 'USR-ORPHAN', fullName: 'Employee With No Department', divisionId: null, divisionCode: null };
 const orphanTxn = buildEnrollmentTransaction({ course: paid[0], user: orphanUser, costCenters, date: '2026-08-31' });
 const orphanReport = summarizeLedger([...ledger, orphanTxn], { costCenters, courses });
-check('Bút toán của nhân sự chưa gán Division không bị rơi khỏi báo cáo',
+check('Entries for employees with no Division are not dropped from the report',
   orphanReport.byCostCenter.reduce((s, c) => s + c.spent, 0) === orphanReport.totals.expense &&
     orphanReport.totals.expense === totals.expense + orphanTxn.amount,
   `${orphanTxn.costCenterName} · ${formatVnd(orphanTxn.amount)}`);
 
 const courseSum = report.byCourse.reduce((s, c) => s + c.spent, 0);
-check('Chi bóc theo khóa học cộng lại bằng tổng chi', courseSum === totals.expense, formatVndShort(courseSum));
+check('Spend broken down by course adds up to the total', courseSum === totals.expense, formatVndShort(courseSum));
 
-check('Bảng giá liệt kê đủ 100% khóa học (kể cả khóa chưa ai học)',
+check('The price list covers 100% of courses (including ones nobody has taken)',
   report.byCourse.length === courses.length, `${report.byCourse.length}/${courses.length}`);
 
-check('Biểu đồ chi theo tháng có dữ liệu trải nhiều tháng', report.byMonth.length >= 6,
+check('The monthly spend chart has data spread across several months', report.byMonth.length >= 6,
   report.byMonth.map((m) => `${m.label}:${formatVndShort(m.value)}`).join(' · '));
 
 const overspent = report.byCostCenter.filter((c) => c.remaining < 0);
-console.log(`  ℹ ${overspent.length} cost center vượt ngân sách: ${overspent.slice(0, 3).map((c) => `${c.code} (${c.utilization}%)`).join(', ') || 'không có'}`);
+console.log(`  ℹ ${overspent.length} cost center(s) over budget: ${overspent.slice(0, 3).map((c) => `${c.code} (${c.utilization}%)`).join(', ') || 'none'}`);
 
 // ---------------------------------------------------------------------------
 
-section('A4. Ghi danh mới đẩy giao dịch vào sổ cái');
+section('A4. A new enrollment pushes a transaction into the ledger');
 
 const learner = allUsers.find((u) => u.divisionId && u.role === 'learner') || allUsers[0];
 const learnerCc = costCenterForUser(learner, costCenters);
@@ -187,42 +187,42 @@ const freeCourse = free[0];
 const paidTxn = buildEnrollmentTransaction({ course: paidCourse, user: learner, costCenters, date: '2026-08-31' });
 const freeTxn = buildEnrollmentTransaction({ course: freeCourse, user: learner, costCenters, date: '2026-08-31' });
 
-check('Ghi danh khóa CÓ PHÍ ghi nợ đúng cost center của học viên',
+check('Enrolling in a PAID course debits the learner\'s own cost center',
   paidTxn.costCenterId === learnerCc.id && paidTxn.amount === pricingOf(paidCourse).price && !paidTxn.isFree,
   `${learner.fullName} · ${paidCourse.code} · ${formatVnd(paidTxn.amount)} -> ${paidTxn.costCenterName}`);
 
-check('Ghi danh khóa MIỄN PHÍ ghi 0 đồng nhưng vẫn có bút toán',
+check('Enrolling in a FREE course records zero but still writes an entry',
   freeTxn.isFree && freeTxn.amount === 0 && freeTxn.source === TXN_SOURCE.ENROLLMENT,
   `${freeCourse.code} · ${formatVnd(0)}`);
 
 const afterLedger = [...ledger.filter((t) => t.id !== paidTxn.id && t.id !== freeTxn.id), paidTxn, freeTxn];
 const afterReport = summarizeLedger(afterLedger, { costCenters, courses });
-check('Tổng chi tăng đúng bằng giá khóa vừa ghi danh',
+check('Total spend rises by exactly the price of the course just enrolled in',
   afterReport.totals.expense - summarizeLedger(ledger.filter((t) => t.id !== paidTxn.id && t.id !== freeTxn.id), { costCenters, courses }).totals.expense === paidTxn.amount,
   `+${formatVnd(paidTxn.amount)}`);
 
 const dupTxn = buildEnrollmentTransaction({ course: paidCourse, user: learner, costCenters, date: '2026-09-01' });
-check('Ghi danh lại cùng khóa không sinh bút toán mới (id tất định)',
+check('Re-enrolling in the same course creates no new entry (deterministic id)',
   dupTxn.id === paidTxn.id, dupTxn.id);
 
 // ---------------------------------------------------------------------------
 
-section('A5. Tạo khóa học mới kèm giá ngay lúc tạo (như AdminCourseBuilder)');
+section('A5. Creating a course with its price set up front (as AdminCourseBuilder does)');
 
-// Mô phỏng đúng field mà CoursePricingSection ghi vào draft.pricing khi Admin
-// gõ giá trong lúc tạo khóa — KHÔNG qua tab "Bảng Giá" sửa sau.
+// Mirrors exactly the field CoursePricingSection writes into draft.pricing when the
+// Admin types a price while creating the course — NOT edited later via the "Price List" tab.
 const brandNewCourse = {
   id: 'CRS-DEMO-NEW-001',
   code: 'DEMO-001',
-  title: 'Khóa Demo Vừa Tạo Có Phí',
+  title: 'Newly Created Paid Demo Course',
   category: 'Leadership & Management',
-  modality: 'SCORM_PACKAGE', // mặc định sẽ MIỄN PHÍ nếu không set pricing thủ công
+  modality: 'SCORM_PACKAGE', // defaults to FREE unless pricing is set by hand
   pricing: { isFree: false, price: 1500000, currency: CURRENCY, costType: COST_TYPE.CERTIFICATION_FEE, vendor: 'PMI Vietnam' },
 };
 
-check('Khóa mới tạo lấy giá từ pricing đã nhập, không rơi về suy luận theo modality',
+check('A newly created course takes the entered price instead of falling back to the modality default',
   pricingOf(brandNewCourse).price === 1500000 && !pricingOf(brandNewCourse).isFree,
-  `${formatVnd(pricingOf(brandNewCourse).price)} (nếu không set sẽ là Miễn Phí vì modality=SCORM_PACKAGE)`);
+  `${formatVnd(pricingOf(brandNewCourse).price)} (would be Free if unset, because modality=SCORM_PACKAGE)`);
 
 const demoLearner = allUsers.find((u) => u.divisionId) || allUsers[0];
 const demoTxn = buildEnrollmentTransaction({ course: brandNewCourse, user: demoLearner, costCenters, date: '2026-08-31' });
@@ -230,23 +230,23 @@ const ledgerWithNewCourse = [...ledger, demoTxn];
 const reportWithNewCourse = summarizeLedger(ledgerWithNewCourse, { costCenters, courses: [...courses, brandNewCourse] });
 const newCourseRow = reportWithNewCourse.byCourse.find((r) => r.courseId === brandNewCourse.id);
 
-check('Ghi danh khóa mới tạo được tính đúng giá vào sổ giao dịch',
+check('Enrolling in the newly created course books the right price into the ledger',
   demoTxn.amount === 1500000 && !demoTxn.isFree,
   `${demoTxn.userName} ghi danh ${brandNewCourse.title} -> ${formatVnd(demoTxn.amount)}`);
 
-check('Khóa mới tạo xuất hiện trong Bảng Giá / báo cáo Cost Center với đúng số tiền',
+check('The newly created course appears in the Price List / Cost Center report with the right amount',
   newCourseRow && newCourseRow.spent === 1500000 && newCourseRow.seats === 1,
-  `${newCourseRow?.title}: ${newCourseRow?.seats} suất, tổng chi ${formatVnd(newCourseRow?.spent || 0)}`);
+  `${newCourseRow?.title}: ${newCourseRow?.seats} seats, total spend ${formatVnd(newCourseRow?.spent || 0)}`);
 
-check('Tổng chi toàn công ty tăng đúng bằng học phí của khóa mới',
+check('Company-wide spend rises by exactly the tuition of the new course',
   reportWithNewCourse.totals.expense === totals.expense + 1500000,
   `+${formatVnd(1500000)}`);
 
 // ===========================================================================
-// B. SSR TRANG BÁO CÁO
+// B. SSR OF THE REPORT PAGE
 // ===========================================================================
 
-section('B. Render trang Cost Center cho từng role');
+section('B. Rendering the Cost Center page for every role');
 
 const { CourseStoreProvider } = await import('../src/store/CourseStore');
 const { personaForRole } = await import('../src/data/mockData');
@@ -273,48 +273,48 @@ ROLE_ORDER.forEach((role) => {
     );
 
     if (shouldSee) {
-      check(`role=${role} xem được báo cáo thu chi`, html.length > 2000 && html.includes('₫'),
-        `${html.length} ký tự HTML`);
+      check(`role=${role} can see the income/expense report`, html.length > 2000 && html.includes('₫'),
+        `${html.length} characters of HTML`);
     } else {
-      // Học viên thường không được xem báo cáo tài chính đào tạo.
-      check(`role=${role} bị chặn khỏi báo cáo tài chính`,
-        html.includes('không có quyền xem') && !html.includes('₫'),
-        'hiện thẻ khóa quyền thay vì số liệu');
+      // An ordinary learner may not see the training finance report.
+      check(`role=${role} is blocked from the finance report`,
+        html.includes('Access Restricted') && !html.includes('₫'),
+        'shows the access-denied card instead of the figures');
     }
   } catch (err) {
     check(`role=${role} render trang Cost Center`, false, err.message);
   }
 });
 
-// Manager chỉ được thấy cost center của Division mình.
+// A Manager may only see the cost center of their own Division.
 store.clear();
 store.set(AUTH_KEY, JSON.stringify(personaForRole('manager')));
 const managerPersona = personaForRole('manager');
 const managerLedger = scopeLedgerForUser(ledger, managerPersona, { seeAll: false });
-check('Manager chỉ thấy bút toán của Division mình',
+check('A Manager only sees entries from their own Division',
   managerLedger.length > 0 &&
     managerLedger.every((t) => t.costCenterCode === managerPersona.costCenterCode),
-  `${managerLedger.length}/${ledger.length} bút toán · ${managerPersona.divisionName} · CC ${managerPersona.costCenterCode}`);
+  `${managerLedger.length}/${ledger.length} ledger entries · ${managerPersona.divisionName} · CC ${managerPersona.costCenterCode}`);
 
 // ===========================================================================
 
 // ===========================================================================
-// C. MÃ COST CENTER 5 SỐ & FILE XUẤT CHO HR / KIỂM TOÁN
+// C. THE 5-DIGIT COST CENTER CODE & THE HR / AUDIT EXPORT FILE
 // ===========================================================================
 
-section('C1. Mỗi Division đúng một mã Trung Tâm Chi Phí 5 số');
+section('C1. Exactly one 5-digit Cost Center code per Division');
 
 const ccCodes = costCenters.filter((c) => c.divisionId).map((c) => c.code);
 
-check('Mọi cost center mang mã 5 chữ số',
+check('Every cost center carries a 5-digit code',
   ccCodes.length > 0 && ccCodes.every((c) => /^\d{5}$/.test(c)),
-  `${ccCodes.length} mã · ví dụ ${ccCodes.slice(0, 4).join(', ')}`);
+  `${ccCodes.length} codes · e.g. ${ccCodes.slice(0, 4).join(', ')}`);
 
-check('Không có mã trùng giữa các Division',
+check('No code is shared between Divisions',
   new Set(ccCodes).size === ccCodes.length,
-  `${new Set(ccCodes).size} mã duy nhất / ${ccCodes.length} Division`);
+  `${new Set(ccCodes).size} unique codes / ${ccCodes.length} Divisions`);
 
-check('Số cost center đúng bằng số Division',
+check('The cost center count equals the Division count',
   ccCodes.length === divisions.length,
   `${ccCodes.length} cost center / ${divisions.length} Division`);
 
@@ -323,17 +323,17 @@ const multiDeptDivision = divisions.find((d) =>
 );
 const sameDivUsers = allUsers.filter((u) => u.divisionId === multiDeptDivision.id);
 
-check('Nhân sự khác Department trong cùng Division dùng chung một mã',
+check('Employees in different Departments of the same Division share one code',
   new Set(sameDivUsers.map((u) => costCenterForUser(u, costCenters)?.code)).size === 1,
-  `${multiDeptDivision.name}: ${sameDivUsers.length} người · ${new Set(sameDivUsers.map((u) => u.departmentName)).size} phòng ban · 1 mã ${costCenterForUser(sameDivUsers[0], costCenters)?.code}`);
+  `${multiDeptDivision.name}: ${sameDivUsers.length} people · ${new Set(sameDivUsers.map((u) => u.departmentName)).size} departments · 1 code ${costCenterForUser(sameDivUsers[0], costCenters)?.code}`);
 
-check('Bút toán ghi danh lưu đúng mã cost center của học viên',
+check('An enrollment entry stores the learner\'s own cost center code',
   ledger
     .filter((t) => t.source === TXN_SOURCE.ENROLLMENT)
     .every((t) => t.costCenterCode === allUsers.find((u) => u.userId === t.userId)?.costCenterCode),
-  'khớp 100% giữa sổ cái và hồ sơ nhân sự');
+  '100% match between the ledger and the employee records');
 
-section('C2. File xuất chi phí theo nhân sự (15 cột HR + phần chi phí)');
+section('C2. The per-employee cost export (15 HR columns + the cost section)');
 
 const learnerRows = summarizeLearnerCosts(ledger, allUsers);
 const exportRows = buildEmployeeCostExportRows(learnerRows);
@@ -344,30 +344,30 @@ const HR_COLUMNS = [
   'HO/Store', 'Division', 'Department', 'Sub Department', 'Location',
 ];
 
-check('Mọi nhân sự đều có dòng trong file xuất, kể cả người chưa học',
+check('Every employee has a row in the export, including those who never studied',
   learnerRows.length >= allUsers.length,
-  `${learnerRows.length} dòng / ${allUsers.length} nhân sự`);
+  `${learnerRows.length} rows / ${allUsers.length} employees`);
 
-check('File xuất có đủ 15 cột HR, đúng thứ tự',
+check('The export has all 15 HR columns, in order',
   HR_COLUMNS.every((col, i) => Object.keys(exportRows[0])[i] === col),
   Object.keys(exportRows[0]).slice(0, 15).join(' | '));
 
-check('Không dòng nào thiếu mã Cost center hoặc Personnel Number',
+check('No row is missing its Cost center code or Personnel Number',
   exportRows.every((r) => /^\d{5}$/.test(r['Cost center']) && r['Personnel Number']),
-  `${exportRows.length} dòng hợp lệ`);
+  `${exportRows.length} valid rows`);
 
 const totalCompanyPaid = learnerRows.reduce((sum, r) => sum + r.companyPaid, 0);
 const totalEnrollmentExpense = ledger
   .filter((t) => t.source === TXN_SOURCE.ENROLLMENT)
   .reduce((s, t) => s + t.amount, 0);
 
-check('Tổng chi theo từng nhân sự khớp tổng chi ghi danh của toàn công ty',
+check('Per-employee spend adds up to the company-wide enrollment spend',
   totalCompanyPaid === totalEnrollmentExpense,
   `${formatVnd(totalCompanyPaid)} = ${formatVnd(totalEnrollmentExpense)}`);
 
 // ===========================================================================
 
 console.log(`\n${'='.repeat(60)}`);
-console.log(failures === 0 ? `PASS — ${checks}/${checks} kiểm tra thành công.` : `FAIL — ${failures}/${checks} kiểm tra thất bại.`);
+console.log(failures === 0 ? `PASS — ${checks}/${checks} checks passed.` : `FAIL — ${failures}/${checks} checks failed.`);
 console.log('='.repeat(60));
 process.exit(failures === 0 ? 0 : 1);

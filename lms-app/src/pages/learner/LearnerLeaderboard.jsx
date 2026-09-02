@@ -31,7 +31,7 @@ export default function LearnerLeaderboard() {
         <div className="card card-pad" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #115E59 100%)', color: '#ffffff', borderColor: '#0D9488' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.85 }}>Competency Tier</div>
+              <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.85 }}>Competency Tier</div>
               <div style={{ fontSize: 22, fontWeight: 700 }}>Level {userStats.currentLevel}</div>
             </div>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
@@ -40,7 +40,7 @@ export default function LearnerLeaderboard() {
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{userStats.levelTitle}</div>
           <ProgressBar value={xpProgress} tone="amber" size="sm" />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, opacity: 0.9, marginTop: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.9, marginTop: 6 }}>
             <span>{userStats.points} XP</span>
             <span>{userStats.nextLevelXp - userStats.points} XP to Level 5</span>
           </div>
@@ -51,12 +51,12 @@ export default function LearnerLeaderboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
             <div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Learning Streak</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: '#C2410C', marginTop: 4 }}>
+              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--amber-soft-text)', marginTop: 4 }}>
                 <i className="ti ti-flame" style={{ marginRight: 4 }} />
                 {userStats.streakDays} Days
               </div>
             </div>
-            <div className="stat-icon-badge" style={{ background: '#FFEDD5', color: '#C2410C' }}>
+            <div className="stat-icon-badge" style={{ background: '#FFEDD5', color: 'var(--amber-soft-text)' }}>
               <i className="ti ti-calendar-stats" />
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function LearnerLeaderboard() {
                 }}
               >
                 {day}
-                <div style={{ fontSize: 9 }}>{idx < 6 ? '✓' : '•'}</div>
+                <div style={{ fontSize: 10 }}>{idx < 6 ? '✓' : '•'}</div>
               </div>
             ))}
           </div>
@@ -128,12 +128,12 @@ export default function LearnerLeaderboard() {
                     {user.name}
                     {user.isCurrent && <span style={{ fontSize: 10, background: 'var(--rail)', color: '#fff', padding: '1px 6px', borderRadius: 10 }}>You</span>}
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>{user.department} &middot; Level {user.level}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>{user.department} &middot; Level {user.level}</div>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--rail)' }}>{user.points} XP</div>
-                  <div style={{ fontSize: 11, color: '#C2410C' }}>
+                  <div style={{ fontSize: 11, color: 'var(--amber-soft-text)' }}>
                     <i className="ti ti-flame" /> {user.streak}d
                   </div>
                 </div>
@@ -170,8 +170,8 @@ export default function LearnerLeaderboard() {
                     width: 38,
                     height: 38,
                     borderRadius: '50%',
-                    background: badge.tier === 'Gold' ? '#FEF3C7' : badge.tier === 'Silver' ? '#F1F5F9' : '#FFEDD5',
-                    color: badge.tier === 'Gold' ? '#B45309' : badge.tier === 'Silver' ? '#475569' : '#9A3412',
+                    background: badge.tier === 'Gold' ? 'var(--amber-soft)' : badge.tier === 'Silver' ? 'var(--slate-soft)' : '#FFEDD5',
+                    color: badge.tier === 'Gold' ? 'var(--amber-soft-text)' : badge.tier === 'Silver' ? 'var(--ink-soft)' : '#9A3412',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -184,19 +184,19 @@ export default function LearnerLeaderboard() {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {badge.name}
-                    <span style={{ fontSize: 9.5, padding: '1px 5px', borderRadius: 4, background: badge.tier === 'Gold' ? '#FEF3C7' : '#F1F5F9', color: badge.tier === 'Gold' ? '#B45309' : '#475569' }}>
+                    <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: badge.tier === 'Gold' ? 'var(--amber-soft)' : 'var(--slate-soft)', color: badge.tier === 'Gold' ? 'var(--amber-soft-text)' : 'var(--ink-soft)' }}>
                       {badge.tier}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4, lineHeight: 1.4 }}>
                     {badge.description}
                   </div>
                   {badge.earned ? (
-                    <div style={{ fontSize: 10.5, color: 'var(--sage)', marginTop: 6, fontWeight: 600 }}>
+                    <div style={{ fontSize: 11, color: 'var(--sage)', marginTop: 6, fontWeight: 600 }}>
                       ✓ Earned {badge.earnedDate}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 6 }}>
+                    <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 6 }}>
                       🔒 Locked
                     </div>
                   )}

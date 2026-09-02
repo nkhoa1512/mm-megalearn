@@ -4,9 +4,9 @@ import { currentUser as defaultLearner } from '../../data/mockData';
 import LearnerCourses from '../learner/LearnerCourses';
 
 /**
- * Cổng học tập cá nhân dùng chung cho cả 6 role.
- * Mọi role (Manager, Trainer, HRBP, User Admin, System Admin) đều là Learner nên
- * đều vào được màn hình này với hồ sơ và cấp bậc của chính họ.
+ * The personal learning portal shared by all 6 roles.
+ * Every role (Manager, Trainer, HRBP, User Admin, System Admin) is also a Learner, so
+ * they all reach this screen with their own profile and job level.
  */
 export default function MyLearning() {
   const { currentUser } = useCourseStore();

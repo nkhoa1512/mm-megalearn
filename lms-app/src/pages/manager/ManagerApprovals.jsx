@@ -84,9 +84,9 @@ export default function ManagerApprovals() {
     return (
       <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 520 }}>
         <i className="ti ti-lock" style={{ fontSize: 44, color: 'var(--rust)' }} />
-        <h2 style={{ fontSize: 17, marginTop: 10 }}>Bạn không có quyền phê duyệt học vượt cấp</h2>
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>You do not have permission to approve level skips</h2>
         <p style={{ color: 'var(--ink-soft)' }}>
-          Chỉ các vai trò từ Quản lý trực tiếp trở lên mới xử lý được đơn xin học vượt cấp của nhân viên.
+          Only roles from line manager upward can act on an employee's level skip request.
         </p>
       </div>
     );
@@ -113,102 +113,102 @@ export default function ManagerApprovals() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div className="avatar" style={{ background: isCurriculumAssignment ? '#0284C7' : 'var(--rail)', color: '#fff', fontWeight: 700, width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isCurriculumAssignment ? '📚' : (req.employeeName || 'NV').split(' ').map((n) => n[0]).slice(0, 2).join('')}
+              {isCurriculumAssignment ? '📚' : (req.employeeName || 'Employee').split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14.5 }}>
-                {isCurriculumAssignment ? `Đề Xuất Phân Bổ Giáo Trình: ${req.curriculumTitle}` : `${req.employeeName} (${req.employeeId})`}
+              <div style={{ fontWeight: 700, fontSize: 15 }}>
+                {isCurriculumAssignment ? `Curriculum Allocation Proposal: ${req.curriculumTitle}` : `${req.employeeName} (${req.employeeId})`}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                {isCurriculumAssignment ? `Người đề xuất: ${req.requesterName} (${req.requesterRole?.toUpperCase() || 'HRBP'})` : `${req.position} · ${req.department}`}
+                {isCurriculumAssignment ? `Proposed by: ${req.requesterName} (${req.requesterRole?.toUpperCase() || 'HRBP'})` : `${req.position} · ${req.department}`}
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {isLevelSkip && <Badge tone="blue" icon="ti-stairs-up">Học vượt cấp</Badge>}
-            {isRoadmapPromotion && <Badge tone="sage" icon="ti-trophy">Đề xuất Thăng cấp Lộ trình</Badge>}
-            {isCurriculumAssignment && <Badge tone="teal" icon="ti-books">Đề xuất Gán Giáo Trình</Badge>}
-            <Badge tone="amber" icon="ti-clock">Gửi ngày: {req.requestDate}</Badge>
+            {isLevelSkip && <Badge tone="blue" icon="ti-stairs-up">Level skip</Badge>}
+            {isRoadmapPromotion && <Badge tone="sage" icon="ti-trophy">Roadmap Promotion Proposal</Badge>}
+            {isCurriculumAssignment && <Badge tone="teal" icon="ti-books">Curriculum Allocation Proposal</Badge>}
+            <Badge tone="amber" icon="ti-clock">Send days: {req.requestDate}</Badge>
           </div>
         </div>
 
-        {/* Cấp hiện tại -> cấp khóa học (LEVEL_ADVANCE) hoặc cấp mục tiêu (ROADMAP_PROMOTION) */}
+        {/* Current level -> course level (LEVEL_ADVANCE) or target level (ROADMAP_PROMOTION) */}
         {isLevelSkip && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#EFF6FF', borderRadius: 8 }}>
-            <span style={{ fontSize: 12, color: '#1E3A8A' }}>Cấp bậc hiện tại:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: 'var(--blue-soft)', borderRadius: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--blue-soft-text)' }}>Current job level:</span>
             <JobLevelBadge level={req.currentLevel} />
-            <i className="ti ti-arrow-right" style={{ color: '#1E40AF' }} />
-            <span style={{ fontSize: 12, color: '#1E3A8A' }}>Xin học khóa cấp:</span>
+            <i className="ti ti-arrow-right" style={{ color: 'var(--blue-soft-text)' }} />
+            <span style={{ fontSize: 12, color: 'var(--blue-soft-text)' }}>Requested course level:</span>
             <JobLevelBadge level={req.courseLevel} />
             {jumpIsLegal ? (
-              <Badge tone="sage" icon="ti-check">Vượt đúng 1 cấp liền kề — hợp lệ</Badge>
+              <Badge tone="sage" icon="ti-check">Exactly one grade above — valid</Badge>
             ) : (
-              <Badge tone="rust" icon="ti-ban">Nhảy cóc ≥ 2 cấp — không được phép duyệt</Badge>
+              <Badge tone="rust" icon="ti-ban">Skipping 2+ grades — approval not permitted</Badge>
             )}
           </div>
         )}
         {isRoadmapPromotion && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#F0FDF4', borderRadius: 8 }}>
-            <span style={{ fontSize: 12, color: '#166534' }}>Cấp bậc hiện tại:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: 'var(--sage-soft)', borderRadius: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--sage-soft-text)' }}>Current job level:</span>
             <JobLevelBadge level={req.currentLevel} />
-            <i className="ti ti-arrow-right" style={{ color: '#166534' }} />
-            <span style={{ fontSize: 12, color: '#166534' }}>Đề xuất thăng lên:</span>
+            <i className="ti ti-arrow-right" style={{ color: 'var(--sage-soft-text)' }} />
+            <span style={{ fontSize: 12, color: 'var(--sage-soft-text)' }}>Proposed promotion to:</span>
             <JobLevelBadge level={req.targetLevel} />
-            <Badge tone="sage" icon="ti-check">Đã hoàn thành Tab 1 &amp; Tab 2 (Lộ trình hiện tại + kế cận)</Badge>
+            <Badge tone="sage" icon="ti-check">Completed Tab 1 &amp; Tab 2 (current + succession roadmaps)</Badge>
           </div>
         )}
         {isCurriculumAssignment && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px', background: '#F0F9FF', borderRadius: 8, border: '1px solid #BAE6FD' }}>
-            <span style={{ fontSize: 12.5, color: '#0369A1', fontWeight: 600 }}>🎯 Đối tượng được gán:</span>
+            <span style={{ fontSize: 13, color: '#0369A1', fontWeight: 600 }}>🎯 Assigned audience:</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#0C4A6E' }}>{req.targetLabel}</span>
             {req.dueDate && (
               <span style={{ fontSize: 12, color: '#0369A1', marginLeft: 12 }}>
-                ⏰ Hạn chót: <strong>{req.dueDate}</strong>
+                ⏰ Deadline: <strong>{req.dueDate}</strong>
               </span>
             )}
           </div>
         )}
 
-        {/* Khóa học xin học (đối với LEVEL_ADVANCE) */}
+        {/* Requested course (for LEVEL_ADVANCE) */}
         {isLevelSkip && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12, padding: '8px 12px', background: 'var(--paper-sunken)', borderRadius: 8 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700 }}>
                 {req.courseCode} — {req.courseTitle}
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                {req.category} &middot; {req.modality === 'ONLINE_SELF_PACED' ? 'Trực tuyến' : 'Trực tiếp'} &middot; {req.durationHours} giờ
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                {req.category} &middot; {req.modality === 'ONLINE_SELF_PACED' ? 'Online' : 'In-person'} &middot; {req.durationHours} hours
               </div>
             </div>
             <CourseTypeBadge courseType={req.courseType} />
           </div>
         )}
 
-        {/* Lý do xin học / Đề xuất */}
-        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12.5 }}>
-          <strong style={{ color: 'var(--ink)' }}>{isCurriculumAssignment ? 'Lý Do Đề Xuất Phân Bổ (HRBP Justification):' : 'Lý Do Xin Học / Đề Xuất:'}</strong>{' '}
-          <span style={{ color: 'var(--ink-soft)' }}>{req.reason || req.justification || '(Không ghi)'}</span>
+        {/* Reason for the request / proposal */}
+        <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+          <strong style={{ color: 'var(--ink)' }}>{isCurriculumAssignment ? 'Allocation Justification (HRBP Justification):' : 'Reason For The Request / Proposal:'}</strong>{' '}
+          <span style={{ color: 'var(--ink-soft)' }}>{req.reason || req.justification || '(Not stated)'}</span>
         </div>
 
-        {/* Tình trạng sẵn sàng (readiness) chỉ áp dụng cho LEVEL_ADVANCE */}
+        {/* Readiness only applies to LEVEL_ADVANCE */}
         {isLevelSkip && readiness && (
-          <div style={{ marginBottom: 14, padding: '10px 14px', background: readiness.ready ? '#F0FDF4' : '#FEF3C7', borderRadius: 8, border: `1px solid ${readiness.ready ? '#86EFAC' : '#FCD34D'}` }}>
+          <div style={{ marginBottom: 14, padding: '10px 14px', background: readiness.ready ? 'var(--sage-soft)' : 'var(--amber-soft)', borderRadius: 8, border: `1px solid ${readiness.ready ? '#86EFAC' : '#FCD34D'}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: readiness.ready ? '#166534' : '#92400E' }}>
-                Tiến độ hoàn thành khóa bắt buộc Level {req.currentLevel} hiện tại:
+              <span style={{ fontSize: 13, fontWeight: 700, color: readiness.ready ? 'var(--sage-soft-text)' : 'var(--amber-soft-text)' }}>
+                Mandatory Level {req.currentLevel} course completion progress:
               </span>
-              <strong style={{ color: readiness.ready ? '#166534' : '#92400E' }}>
-                {readiness.done}/{readiness.total} khóa ({readiness.total ? Math.round((readiness.done / readiness.total) * 100) : 100}%)
+              <strong style={{ color: readiness.ready ? 'var(--sage-soft-text)' : 'var(--amber-soft-text)' }}>
+                {readiness.done}/{readiness.total} course ({readiness.total ? Math.round((readiness.done / readiness.total) * 100) : 100}%)
               </strong>
             </div>
             {readiness.ready ? (
-              <div style={{ fontSize: 12, color: '#166534' }}>
-                ✓ Nhân viên đã hoàn thành 100% khóa học bắt buộc của cấp hiện tại. Đủ điều kiện học vượt cấp.
+              <div style={{ fontSize: 12, color: 'var(--sage-soft-text)' }}>
+                ✓ The employee has completed 100% of the mandatory courses at their current level and is eligible for a level skip.
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: '#92400E' }}>
-                ⚠️ Còn {readiness.outstanding.length} khóa bắt buộc cấp {req.currentLevel} chưa hoàn thành:{' '}
-                <strong>{readiness.outstanding.map((c) => c.title).slice(0, 2).join(', ')}{readiness.outstanding.length > 2 ? '...' : ''}</strong>. Cân nhắc kỹ trước khi duyệt.
+              <div style={{ fontSize: 12, color: 'var(--amber-soft-text)' }}>
+                ⚠️ {readiness.outstanding.length} mandatory Level {req.currentLevel} courses are still incomplete:{' '}
+                <strong>{readiness.outstanding.map((c) => c.title).slice(0, 2).join(', ')}{readiness.outstanding.length > 2 ? '...' : ''}</strong>. Consider carefully before approving.
               </div>
             )}
           </div>
@@ -216,28 +216,28 @@ export default function ManagerApprovals() {
 
         {/* Footer actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-          <span style={{ fontSize: 11.5, color: 'var(--ink-faint)' }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
             {isCurriculumAssignment
-              ? 'Phê duyệt sẽ tự động gán toàn bộ lộ trình bài học trong giáo trình vào tài khoản học viên.'
+              ? 'Approval automatically assigns every lesson roadmap in the curriculum to the learner\'s account.'
               : isRoadmapPromotion
-              ? 'Phê duyệt sẽ thăng cấp bậc thật cho nhân sự này ngay lập tức.'
-              : 'Phê duyệt sẽ mở khóa riêng khóa học này cho học viên và ghi danh ngay — không mở toàn bộ cấp bậc.'}
+              ? 'Approval immediately promotes this employee to the new level for real.'
+              : 'Approval unlocks this one course for the learner and enrolls them immediately — it does not open the whole level.'}
           </span>
           {canApprove ? (
             <div style={{ display: 'flex', gap: 10 }}>
-              <Button variant="ghost" icon="ti-x" onClick={() => rejectRequest(req.id)}>Từ Chối</Button>
+              <Button variant="ghost" icon="ti-x" onClick={() => rejectRequest(req.id)}>Reject</Button>
               <Button
                 variant="primary"
                 icon="ti-check"
                 disabled={isLevelSkip && !jumpIsLegal}
-                title={isLevelSkip && !jumpIsLegal ? 'Không thể duyệt đơn nhảy cóc từ 2 cấp trở lên.' : undefined}
+                title={isLevelSkip && !jumpIsLegal ? 'A request skipping 2 or more grades cannot be approved.' : undefined}
                 onClick={() => approveRequest(req.id)}
               >
-                {isCurriculumAssignment ? 'Phê Duyệt & Gán Giáo Trình' : isRoadmapPromotion ? 'Phê Duyệt Thăng Cấp Bậc' : 'Phê Duyệt Đơn Học Vượt Cấp'}
+                {isCurriculumAssignment ? 'Approve & Assign The Curriculum' : isRoadmapPromotion ? 'Approve The Promotion' : 'Approve The Level Skip Request'}
               </Button>
             </div>
           ) : (
-            <Badge tone="amber" icon="ti-clock">Đang chờ User Admin phê duyệt</Badge>
+            <Badge tone="amber" icon="ti-clock">Awaiting User Admin approval</Badge>
           )}
         </div>
       </div>
@@ -249,27 +249,27 @@ export default function ManagerApprovals() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Phê Duyệt Đơn Xin Học Vượt Cấp</h1>
-            <Badge tone="amber" icon="ti-clipboard-check">{pendingList.length} đơn chờ xử lý</Badge>
+            <h1>Approve Level Skip Requests</h1>
+            <Badge tone="amber" icon="ti-clipboard-check">{pendingList.length} pending requests</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Bạn đang duyệt với vai trò <strong>{roleDef.labelVi}</strong> &middot; Xử lý đơn học vượt cấp và đề xuất phân bổ giáo trình của{' '}
-            <strong>toàn bộ nhân sự trong hệ thống</strong> (Learner, Manager, Trainer/L&amp;D, HRBP đều gửi đơn về đây).
+            You are approving in the role of <strong>{roleDef.labelVi}</strong> &middot; Handling level skip requests and curriculum allocation proposals from{' '}
+            <strong>every employee in the system</strong> (Learner, Manager, Trainer/L&amp;D and HRBP all submit requests here).
           </p>
         </div>
       </div>
 
-      {/* Nhắc lại quy tắc tuần tự */}
-      <div className="card card-pad" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)', fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-        <strong style={{ color: 'var(--ink)' }}>Cơ Chế Phê Duyệt Hệ Thống:</strong>
+      {/* A reminder of the sequential rule */}
+      <div className="card card-pad" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)', fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+        <strong style={{ color: 'var(--ink)' }}>System Approval Mechanism:</strong>
         <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
-          <li><strong>Đề xuất phân bổ Giáo trình (Curriculum):</strong> HRBP gửi đề xuất phân bổ cho nhân sự/bộ phận lên User Admin duyệt. Khi được duyệt, toàn bộ học viên tương ứng sẽ nhận giáo trình bắt buộc.</li>
-          <li><strong>Học vượt cấp (Sequential Level Gate):</strong> Nhân viên chỉ được xin học vượt <strong>đúng 1 cấp liền kề</strong>; đơn nhảy cóc ≥ 2 cấp hệ thống tự động chặn.</li>
+          <li><strong>Proposed curriculum allocation:</strong> The HRBP sends an allocation proposal for an employee/sub-department to the User Admin. Once approved, every matching learner receives the mandatory curriculum.</li>
+          <li><strong>Level skip (Sequential Level Gate):</strong> An employee may only request a level skip <strong>exactly one grade above</strong>; the system automatically blocks requests skipping 2+ grades.</li>
         </ul>
       </div>
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
-      <div className="card card-pad" style={{ marginBottom: 20, background: '#fff', borderRadius: 10, border: '1px solid var(--line)' }}>
+      <div className="card card-pad" style={{ marginBottom: 20, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* Row 0: Tab Buttons with Badges */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           <button
@@ -288,13 +288,13 @@ export default function ManagerApprovals() {
             }}
           >
             <i className="ti ti-clock" />
-            <span>Đơn Chờ Duyệt</span>
+            <span>Pending Requests</span>
             <span style={{
               background: activeTab === 'PENDING' ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
               color: activeTab === 'PENDING' ? '#fff' : 'var(--ink-soft)',
               padding: '1px 6px',
               borderRadius: 10,
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 700,
             }}>
               {pendingList.length}
@@ -317,13 +317,13 @@ export default function ManagerApprovals() {
             }}
           >
             <i className="ti ti-history" />
-            <span>Lịch Sử Đã Xử Lý</span>
+            <span>Processed History</span>
             <span style={{
               background: activeTab === 'PROCESSED' ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
               color: activeTab === 'PROCESSED' ? '#fff' : 'var(--ink-soft)',
               padding: '1px 6px',
               borderRadius: 10,
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 700,
             }}>
               {processedList.length}
@@ -340,7 +340,7 @@ export default function ManagerApprovals() {
               type="text"
               className="field-input"
               style={{ paddingLeft: 36, paddingRight: search ? 32 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder="Tìm theo tên học viên, mã NV, khóa học, giáo trình..."
+              placeholder="Search by learner name, employee code, course, curriculum..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -359,23 +359,23 @@ export default function ManagerApprovals() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Group By Select */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-sunken)', padding: '3px 10px', borderRadius: 8, border: '1px solid var(--line)', height: 38 }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Gộp nhóm:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value)}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: groupBy !== 'NONE' ? 700 : 500,
                   color: groupBy !== 'NONE' ? 'var(--blue, #005BAA)' : 'var(--ink)',
                   cursor: 'pointer',
                   outline: 'none',
                 }}
               >
-                <option value="NONE">Không gộp nhóm</option>
-                <option value="TYPE">Theo Loại Đơn</option>
-                <option value="LEVEL">Theo Cấp Bậc</option>
+                <option value="NONE">No grouping</option>
+                <option value="TYPE">By Request Type</option>
+                <option value="LEVEL">By Job Level</option>
               </select>
             </div>
 
@@ -387,9 +387,9 @@ export default function ManagerApprovals() {
               style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 8 }}
             >
               <i className="ti ti-filter" />
-              <span>Bộ Lọc</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span style={{ background: '#fff', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
+                <span style={{ background: 'var(--paper-raised)', color: 'var(--rail, #005BAA)', borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>
                   {activeFiltersCount}
                 </span>
               )}
@@ -404,8 +404,8 @@ export default function ManagerApprovals() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
               {/* Type Filter */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  LOẠI ĐƠN PHÊ DUYỆT
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  APPROVAL REQUEST TYPE
                 </label>
                 <select
                   className="field-select"
@@ -414,7 +414,7 @@ export default function ManagerApprovals() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: typeFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: typeFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: typeFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: typeFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: typeFilter !== 'ALL' ? 700 : 500,
@@ -422,17 +422,17 @@ export default function ManagerApprovals() {
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả loại đơn</option>
-                  <option value="LEVEL_ADVANCE">🔒 Học Vượt Cấp</option>
-                  <option value="ROADMAP_PROMOTION">🏆 Đề Xuất Thăng Cấp</option>
-                  <option value="CURRICULUM_ASSIGNMENT">📚 Đề Xuất Giáo Trình</option>
+                  <option value="ALL">All request types</option>
+                  <option value="LEVEL_ADVANCE">🔒 Level Skip</option>
+                  <option value="ROADMAP_PROMOTION">🏆 Promotion Proposal</option>
+                  <option value="CURRICULUM_ASSIGNMENT">📚 Curriculum Proposal</option>
                 </select>
               </div>
 
               {/* Level Filter */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  CẤP BẬC MỤC TIÊU
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  TARGET JOB LEVEL
                 </label>
                 <select
                   className="field-select"
@@ -441,7 +441,7 @@ export default function ManagerApprovals() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: levelFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: levelFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: levelFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: levelFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: levelFilter !== 'ALL' ? 700 : 500,
@@ -449,7 +449,7 @@ export default function ManagerApprovals() {
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả cấp bậc</option>
+                  <option value="ALL">All job levels</option>
                   <option value="5">Level 5 (Supervisor)</option>
                   <option value="6">Level 6 (Officer / Specialist)</option>
                   <option value="7">Level 7 (Staff)</option>
@@ -458,8 +458,8 @@ export default function ManagerApprovals() {
 
               {/* Legality Filter */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                  TÍNH HỢP LỆ CỦA ĐƠN
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  REQUEST VALIDITY
                 </label>
                 <select
                   className="field-select"
@@ -468,7 +468,7 @@ export default function ManagerApprovals() {
                     height: 36,
                     fontSize: 12,
                     borderRadius: 6,
-                    background: legalityFilter !== 'ALL' ? '#EFF6FF' : 'var(--paper)',
+                    background: legalityFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
                     borderColor: legalityFilter !== 'ALL' ? 'var(--blue)' : 'var(--line)',
                     color: legalityFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
                     fontWeight: legalityFilter !== 'ALL' ? 700 : 500,
@@ -476,9 +476,9 @@ export default function ManagerApprovals() {
                   value={legalityFilter}
                   onChange={(e) => setLegalityFilter(e.target.value)}
                 >
-                  <option value="ALL">Tất cả tính hợp lệ</option>
-                  <option value="LEGAL">🟢 Hợp lệ (Đúng 1 cấp liền kề / Đã đủ điều kiện)</option>
-                  <option value="ILLEGAL">🔴 Nhảy cóc ≥ 2 cấp (Không được phép duyệt)</option>
+                  <option value="ALL">All validity states</option>
+                  <option value="LEGAL">🟢 Valid (exactly one grade above / already eligible)</option>
+                  <option value="ILLEGAL">🔴 Skipping 2+ grades (approval not permitted)</option>
                 </select>
               </div>
             </div>
@@ -489,34 +489,34 @@ export default function ManagerApprovals() {
         {(search || typeFilter !== 'ALL' || levelFilter !== 'ALL' || legalityFilter !== 'ALL' || groupBy !== 'NONE') && (
           <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Đang lọc theo:</span>
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Filtering by:</span>
               {search && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Từ khóa: <strong>"{search}"</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Search term: <strong>"{search}"</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />
                 </span>
               )}
               {typeFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Loại đơn: <strong>{typeFilter === 'LEVEL_ADVANCE' ? 'Học vượt cấp' : typeFilter === 'ROADMAP_PROMOTION' ? 'Thăng cấp' : 'Giáo trình'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Request type: <strong>{typeFilter === 'LEVEL_ADVANCE' ? 'Level skip' : typeFilter === 'ROADMAP_PROMOTION' ? 'Promotion' : 'Curriculum'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setTypeFilter('ALL')} />
                 </span>
               )}
               {levelFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Cấp bậc: <strong>Level {levelFilter}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Job level: <strong>Level {levelFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setLevelFilter('ALL')} />
                 </span>
               )}
               {legalityFilter !== 'ALL' && (
-                <span className="badge" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Tính hợp lệ: <strong>{legalityFilter === 'LEGAL' ? 'Hợp lệ' : 'Vi phạm nhảy cóc'}</strong>
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Validity: <strong>{legalityFilter === 'LEGAL' ? 'Valid' : 'Grade-skipping violation'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setLegalityFilter('ALL')} />
                 </span>
               )}
               {groupBy !== 'NONE' && (
-                <span className="badge" style={{ background: '#F8FAFC', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Gộp nhóm: <strong>{groupBy === 'TYPE' ? 'Theo Loại Đơn' : 'Theo Cấp Bậc'}</strong>
+                <span className="badge" style={{ background: 'var(--paper-sunken)', color: 'var(--ink-soft)', border: '1px solid var(--line)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Group by: <strong>{groupBy === 'TYPE' ? 'By Request Type' : 'By Job Level'}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setGroupBy('NONE')} />
                 </span>
               )}
@@ -525,11 +525,11 @@ export default function ManagerApprovals() {
                 onClick={handleResetAllFilters}
                 style={{ border: 'none', background: 'transparent', color: 'var(--rust, #DC2626)', fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', padding: '2px 4px' }}
               >
-                Xóa tất cả bộ lọc
+                Clear all filters
               </button>
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              Tìm thấy <strong>{currentList.length}</strong> / {activeTab === 'PENDING' ? rawPendingList.length : rawProcessedList.length} đơn
+              Found <strong>{currentList.length}</strong> / {activeTab === 'PENDING' ? rawPendingList.length : rawProcessedList.length} requests
             </div>
           </div>
         )}
@@ -540,15 +540,15 @@ export default function ManagerApprovals() {
         <div className="card empty-state" style={{ padding: '48px 16px', textAlign: 'center' }}>
           <i className="ti ti-clipboard-check" style={{ fontSize: 36, color: 'var(--ink-faint)', display: 'block', marginBottom: 10 }} />
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>
-            Không có đơn nào khớp với bộ lọc
+            No request matches the filters
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '0 auto 16px', maxWidth: 400 }}>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '0 auto 16px', maxWidth: 400 }}>
             {activeTab === 'PENDING'
-              ? 'Tất cả các đơn xin học vượt cấp hoặc đề xuất giáo trình đã được xử lý xong.'
-              : 'Chưa có lịch sử đơn nào phù hợp với các tiêu chí tìm kiếm hiện tại.'}
+              ? 'Every level skip request and curriculum proposal has been handled.'
+              : 'No request history matches the current search criteria.'}
           </p>
           <Button variant="outline" size="sm" onClick={handleResetAllFilters}>
-            Xóa Tất Cả Bộ Lọc
+            Clear All Filters
           </Button>
         </div>
       ) : (

@@ -69,12 +69,12 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   // Operational tab label based on role
   const operationalScopeLabel = useMemo(() => {
     switch (role) {
-      case 'manager': return language === 'en' ? 'Team Schedule' : 'Lịch Đào Tạo Đội Ngũ';
-      case 'trainer': return language === 'en' ? 'Teaching & Lab Ops' : 'Lịch Giảng Dạy & Phòng Lab';
-      case 'hrbp': return language === 'en' ? 'Regional & Succession' : 'Lịch Vùng & Kế Nhiệm';
-      case 'useradmin': return language === 'en' ? 'Enterprise Ops' : 'Tổng Lịch Đào Tạo Toàn Công Ty';
-      case 'sysadmin': return language === 'en' ? 'System Ops & Audit' : 'Lịch Vận Hành IT & Audit';
-      default: return language === 'en' ? 'Operations' : 'Lịch Vận Hành';
+      case 'manager': return language === 'en' ? 'Team Schedule' : 'Team Training Calendar';
+      case 'trainer': return language === 'en' ? 'Teaching & Lab Ops' : 'Teaching & Lab Schedule';
+      case 'hrbp': return language === 'en' ? 'Regional & Succession' : 'Regional & Succession Calendar';
+      case 'useradmin': return language === 'en' ? 'Enterprise Ops' : 'Company-Wide Training Calendar';
+      case 'sysadmin': return language === 'en' ? 'System Ops & Audit' : 'IT Operations & Audit Calendar';
+      default: return language === 'en' ? 'Operations' : 'Operations Calendar';
     }
   }, [role, language]);
 
@@ -238,7 +238,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   }
 
   function handleExportIcs() {
-    const calendarTitle = `MM MegaLearn - Lịch Đào Tạo (${roleDef.shortVi})`;
+    const calendarTitle = `MM MegaLearn - Training Calendar (${roleDef.shortVi})`;
     generateIcsFile(filteredEvents, calendarTitle);
   }
 
@@ -257,47 +257,47 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h1 className="cal-main-title">
               <i className="ti ti-calendar-event" style={{ color: 'var(--bigc-green)', marginRight: 6 }} />
-              {language === 'en' ? 'Learning & Operations Calendar' : 'Lịch Học Tập & Đào Tạo Vận Hành'}
+              {language === 'en' ? 'Learning & Operations Calendar' : 'Learning & Operations Training Calendar'}
             </h1>
             <Badge tone="rail" icon="ti-sparkles">
-              {monthEventCount} {language === 'en' ? 'events this month' : 'sự kiện trong tháng'}
+              {monthEventCount} {language === 'en' ? 'events this month' : 'events this month'}
             </Badge>
           </div>
           <p className="cal-sub-title">
             {language === 'en'
               ? 'Track your personal course milestones, workshop schedules, and operational team deadlines.'
-              : 'Theo dõi hạn hoàn thành khóa học cá nhân, lịch thực hành siêu thị và kế hoạch đào tạo đội ngũ.'}
+              : 'Track your own course deadlines, the store practice schedule and the team training plan.'}
           </p>
         </div>
 
         <div className="cal-header-right">
           <Button variant="outline" size="sm" icon="ti-download" onClick={handleExportIcs}>
-            {language === 'en' ? 'Export iCal (.ics)' : 'Xuất Lịch (.ics)'}
+            {language === 'en' ? 'Export iCal (.ics)' : 'Export Calendar (.ics)'}
           </Button>
           <div className="cal-view-switchers">
             <button
               className={`cal-view-btn ${viewMode === 'MONTH' ? 'active' : ''}`}
               onClick={() => setViewMode('MONTH')}
-              title={language === 'en' ? 'Month Grid View' : 'Lưới Tháng'}
+              title={language === 'en' ? 'Month Grid View' : 'Month Grid'}
             >
               <i className="ti ti-layout-grid" />
-              <span>{language === 'en' ? 'Month' : 'Tháng'}</span>
+              <span>{language === 'en' ? 'Month' : 'Month'}</span>
             </button>
             <button
               className={`cal-view-btn ${viewMode === 'WEEK' ? 'active' : ''}`}
               onClick={() => setViewMode('WEEK')}
-              title={language === 'en' ? 'Week Timeline View' : 'Lưới Tuần'}
+              title={language === 'en' ? 'Week Timeline View' : 'Week Grid'}
             >
               <i className="ti ti-layout-columns" />
-              <span>{language === 'en' ? 'Week' : 'Tuần'}</span>
+              <span>{language === 'en' ? 'Week' : 'Week'}</span>
             </button>
             <button
               className={`cal-view-btn ${viewMode === 'AGENDA' ? 'active' : ''}`}
               onClick={() => setViewMode('AGENDA')}
-              title={language === 'en' ? 'Agenda List View' : 'Lịch Trình'}
+              title={language === 'en' ? 'Agenda List View' : 'Schedule'}
             >
               <i className="ti ti-list-details" />
-              <span>{language === 'en' ? 'Agenda' : 'Lịch Trình'}</span>
+              <span>{language === 'en' ? 'Agenda' : 'Schedule'}</span>
             </button>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
             onClick={() => setScope('ALL')}
           >
             <i className="ti ti-calendar-stats" />
-            <span>{language === 'en' ? 'All Events' : 'Toàn Bộ Lịch'}</span>
+            <span>{language === 'en' ? 'All Events' : 'Full Calendar'}</span>
             <span className="cal-scope-count">{allEvents.length}</span>
           </button>
           <button
@@ -319,7 +319,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
             onClick={() => setScope('PERSONAL')}
           >
             <i className="ti ti-user" />
-            <span>{language === 'en' ? 'Personal Learning' : 'Lịch Học Cá Nhân'}</span>
+            <span>{language === 'en' ? 'Personal Learning' : 'Personal Learning Calendar'}</span>
             <span className="cal-scope-count">{personalEvents.length}</span>
           </button>
           <button
@@ -348,7 +348,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
             <i className="ti ti-chevron-right" />
           </button>
           <Button size="sm" variant="outline" onClick={handleToday}>
-            {language === 'en' ? 'Today' : 'Hôm Nay'}
+            {language === 'en' ? 'Today' : 'Today'}
           </Button>
         </div>
 
@@ -357,7 +357,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           <input
             type="text"
             className="cal-search-input"
-            placeholder={language === 'en' ? 'Search course, trainer, venue...' : 'Tìm khóa học, giảng viên, xưởng thực hành...'}
+            placeholder={language === 'en' ? 'Search course, trainer, venue...' : 'Search courses, trainers, practice workshops...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -440,7 +440,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                               {Number(cell.date.slice(8, 10))}
                             </span>
                             {dayEvents.length > 0 && (
-                              <span className="cal-day-density-dot" title={`${dayEvents.length} sự kiện`} />
+                              <span className="cal-day-density-dot" title={`${dayEvents.length} events`} />
                             )}
                           </div>
 
@@ -461,7 +461,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                             ))}
                             {overflowCount > 0 && (
                               <div className="cal-overflow-badge">
-                                +{overflowCount} {language === 'en' ? 'more' : 'khác'}
+                                +{overflowCount} {language === 'en' ? 'more' : 'more'}
                               </div>
                             )}
                           </div>
@@ -495,7 +495,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                           {d.dayNum}
                         </span>
                         <span className="cal-week-col-count">
-                          {dayEvents.length} {language === 'en' ? 'events' : 'sự kiện'}
+                          {dayEvents.length} {language === 'en' ? 'events' : 'events'}
                         </span>
                       </div>
 
@@ -503,7 +503,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                         {dayEvents.length === 0 ? (
                           <div className="cal-week-empty-col">
                             <i className="ti ti-circle-dashed" />
-                            <span>{language === 'en' ? 'No items' : 'Trống'}</span>
+                            <span>{language === 'en' ? 'No items' : 'No events'}</span>
                           </div>
                         ) : (
                           dayEvents.map((ev) => (
@@ -548,8 +548,8 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
               {filteredEvents.length === 0 ? (
                 <div className="cal-agenda-empty">
                   <i className="ti ti-calendar-off" />
-                  <h3>{language === 'en' ? 'No scheduled events found' : 'Không tìm thấy sự kiện nào'}</h3>
-                  <p>{language === 'en' ? 'Try adjusting your filters or search keywords.' : 'Hãy thử chọn danh mục khác hoặc xóa từ khóa tìm kiếm.'}</p>
+                  <h3>{language === 'en' ? 'No scheduled events found' : 'No events found'}</h3>
+                  <p>{language === 'en' ? 'Try adjusting your filters or search keywords.' : 'Try a different category or clear the search term.'}</p>
                 </div>
               ) : (
                 <div className="cal-agenda-list">
@@ -622,7 +622,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
               <h2 className="cal-panel-date-title">{formatFullDateLabel(selectedDate, language)}</h2>
             </div>
             <span className="cal-panel-events-badge">
-              {selectedEvents.length} {language === 'en' ? 'events' : 'sự kiện'}
+              {selectedEvents.length} {language === 'en' ? 'events' : 'events'}
             </span>
           </div>
 
@@ -633,18 +633,18 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   <i className="ti ti-calendar-heart" />
                 </div>
                 <div className="cal-panel-empty-title">
-                  {language === 'en' ? 'No events on this day' : 'Không có lịch học vào ngày này'}
+                  {language === 'en' ? 'No events on this day' : 'No sessions scheduled on this day'}
                 </div>
                 <p className="cal-panel-empty-desc">
                   {language === 'en'
                     ? 'You have no scheduled classes or pending deadlines.'
-                    : 'Bạn không có buổi học trực tiếp hoặc hạn chót nào trong ngày đã chọn.'}
+                    : 'You have no in-person sessions or deadlines on the selected day.'}
                 </p>
 
                 {/* UPCOMING EVENTS SUGGESTION PREVIEW */}
                 <div className="cal-upcoming-preview-box">
                   <div className="cal-upcoming-preview-label">
-                    <i className="ti ti-clock-forward" /> {language === 'en' ? 'Upcoming This Month' : 'Lịch Sắp Diễn Ra Gần Nhất'}
+                    <i className="ti ti-clock-forward" /> {language === 'en' ? 'Upcoming This Month' : 'Next Upcoming Sessions'}
                   </div>
                   <div className="cal-upcoming-preview-list">
                     {upcomingEvents.map((ev) => (
@@ -685,15 +685,15 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                     <div className="cal-detail-card-meta">
                       <div className="cal-detail-meta-item">
                         <i className="ti ti-clock" />
-                        <span><strong>{language === 'en' ? 'Time:' : 'Thời gian:'}</strong> {ev.time}</span>
+                        <span><strong>{language === 'en' ? 'Time:' : 'Time:'}</strong> {ev.time}</span>
                       </div>
                       <div className="cal-detail-meta-item">
                         <i className="ti ti-map-pin" />
-                        <span><strong>{language === 'en' ? 'Venue:' : 'Địa điểm:'}</strong> {ev.venue}</span>
+                        <span><strong>{language === 'en' ? 'Venue:' : 'Location:'}</strong> {ev.venue}</span>
                       </div>
                       <div className="cal-detail-meta-item">
                         <i className="ti ti-user" />
-                        <span><strong>{language === 'en' ? 'Instructor:' : 'Giảng viên:'}</strong> {ev.instructor}</span>
+                        <span><strong>{language === 'en' ? 'Instructor:' : 'Trainer:'}</strong> {ev.instructor}</span>
                       </div>
                     </div>
 
@@ -713,7 +713,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                         size="sm"
                         icon="ti-info-circle"
                         onClick={() => setDetailModalEvent(ev)}
-                        title={language === 'en' ? 'View Details' : 'Xem Chi Tiết'}
+                        title={language === 'en' ? 'View Details' : 'View Details'}
                       />
                     </div>
                   </div>
@@ -725,7 +725,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           <div className="cal-panel-footer">
             <button className="cal-sync-link-btn" onClick={handleExportIcs}>
               <i className="ti ti-calendar-plus" />
-              <span>{language === 'en' ? 'Sync with Outlook / Google Calendar' : 'Đồng Bộ Vào Lịch Google / Outlook'}</span>
+              <span>{language === 'en' ? 'Sync with Outlook / Google Calendar' : 'Sync To Google / Outlook Calendar'}</span>
             </button>
           </div>
         </div>
@@ -739,7 +739,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         >
           <div className="cal-popover-header">
             <strong>{formatFullDateLabel(hoverCell.date, language)}</strong>
-            <span>{hoverCell.events.length} {language === 'en' ? 'events' : 'sự kiện'}</span>
+            <span>{hoverCell.events.length} {language === 'en' ? 'events' : 'events'}</span>
           </div>
           <div className="cal-popover-list">
             {hoverCell.events.map((ev) => (
@@ -768,7 +768,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           footer={
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
               <Button variant="outline" onClick={() => setDetailModalEvent(null)}>
-                {language === 'en' ? 'Close' : 'Đóng'}
+                {language === 'en' ? 'Close' : 'Close'}
               </Button>
               <div style={{ display: 'flex', gap: 10 }}>
                 <Button
@@ -776,7 +776,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   icon="ti-download"
                   onClick={() => generateIcsFile([detailModalEvent], detailModalEvent.title)}
                 >
-                  {language === 'en' ? 'Export Event (.ics)' : 'Xuất Sự Kiện'}
+                  {language === 'en' ? 'Export Event (.ics)' : 'Export Event'}
                 </Button>
                 <Button
                   variant="primary"
@@ -804,19 +804,19 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
 
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
-                  {language === 'en' ? 'Venue / Platform' : 'Địa Điểm / Phòng Học'}
+                <div style={{ fontSize: 12, color: 'var(--ink-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  {language === 'en' ? 'Venue / Platform' : 'Location / Classroom'}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', marginTop: 2 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginTop: 2 }}>
                   <i className="ti ti-map-pin" style={{ color: 'var(--bigc-green)', marginRight: 4 }} />
                   {detailModalEvent.venue}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
-                  {language === 'en' ? 'Instructor / Organizer' : 'Giảng Viên / Ban Tổ Chức'}
+                <div style={{ fontSize: 12, color: 'var(--ink-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  {language === 'en' ? 'Instructor / Organizer' : 'Trainer / Organizer'}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)', marginTop: 2 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginTop: 2 }}>
                   <i className="ti ti-user-check" style={{ color: 'var(--mm-blue)', marginRight: 4 }} />
                   {detailModalEvent.instructor}
                 </div>
@@ -825,16 +825,16 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
 
             <div>
               <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700 }}>
-                {language === 'en' ? 'Course & Session Overview' : 'Nội Dung Chương Trình Đào Tạo'}
+                {language === 'en' ? 'Course & Session Overview' : 'Training Program Content'}
               </h4>
-              <p style={{ margin: 0, fontSize: 13.5, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-                {detailModalEvent.subtitle || 'Chương trình chuẩn hóa năng lực nghiệp vụ theo Khung 7 Cấp Bậc MM Mega Market.'}
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+                {detailModalEvent.subtitle || 'A program that standardizes operational competency against the MM Mega Market 7-Level Framework.'}
               </p>
             </div>
 
-            <div style={{ padding: 12, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', fontSize: 13, color: '#1E3A8A' }}>
+            <div style={{ padding: 12, borderRadius: 8, background: 'var(--blue-soft)', border: '1px solid #BFDBFE', fontSize: 13, color: 'var(--blue-soft-text)' }}>
               <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
-              <strong>{language === 'en' ? 'Attendance Requirement:' : 'Yêu cầu tham gia:'}</strong> Vui lòng có mặt đúng giờ và quét mã QR hoặc đăng nhập tài khoản MM MegaLearn để ghi nhận điểm danh chính thức.
+              <strong>{language === 'en' ? 'Attendance Requirement:' : 'Attendance requirement:'}</strong> Please arrive on time and scan the QR code or sign in to your MM MegaLearn account so your attendance is recorded officially.
             </div>
           </div>
         </Modal>
@@ -845,7 +845,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         <Modal
           isOpen={true}
           onClose={() => setScannerSession(null)}
-          title={language === 'en' ? 'Live QR Check-in' : 'Quét Mã Live QR Điểm Danh'}
+          title={language === 'en' ? 'Live QR Check-in' : 'Scan The Live QR Attendance Code'}
           subtitle={scannerSession.title}
           size="md"
         >
@@ -856,20 +856,20 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   <div className="scanner-laser" />
                   <div style={{ color: '#fff', fontSize: 13, zIndex: 2 }}>
                     <i className="ti ti-camera" style={{ fontSize: 32, display: 'block', marginBottom: 8 }} />
-                    {language === 'en' ? 'Point camera at classroom QR' : 'Hướng camera vào mã QR trên máy chiếu'}
+                    {language === 'en' ? 'Point camera at classroom QR' : 'Point your camera at the QR code on the projector'}
                   </div>
                 </>
               )}
               {scanState === 'VERIFYING' && (
                 <div style={{ color: '#fff', fontSize: 14 }}>
                   <i className="ti ti-loader animate-spin" style={{ fontSize: 32, display: 'block', marginBottom: 8 }} />
-                  {language === 'en' ? 'Verifying attendance...' : 'Đang xác thực điểm danh...'}
+                  {language === 'en' ? 'Verifying attendance...' : 'Verifying attendance...'}
                 </div>
               )}
               {scanState === 'SUCCESS' && (
                 <div style={{ color: 'var(--sage)', fontSize: 14, fontWeight: 700 }}>
                   <i className="ti ti-circle-check" style={{ fontSize: 48, display: 'block', marginBottom: 8 }} />
-                  {language === 'en' ? 'Checked-in Successfully!' : 'Điểm Danh Thành Công!'}
+                  {language === 'en' ? 'Checked-in Successfully!' : 'Attendance Recorded!'}
                 </div>
               )}
             </div>
@@ -881,7 +881,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
               disabled={scanState !== 'SCANNING'}
               onClick={handleSimulateScan}
             >
-              {language === 'en' ? 'Simulate Camera QR Scan' : 'Mô Phỏng Quét Mã QR'}
+              {language === 'en' ? 'Simulate Camera QR Scan' : 'QR Scan Simulation'}
             </Button>
           </div>
         </Modal>
@@ -892,12 +892,12 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         <Modal
           isOpen={true}
           onClose={() => setLiveQrSession(null)}
-          title={language === 'en' ? 'Project Live QR Code' : 'Chiếu Mã Live QR Điểm Danh'}
+          title={language === 'en' ? 'Project Live QR Code' : 'Show The Live QR Attendance Code'}
           subtitle={`${liveQrSession.title} · ${liveQrSession.venue}`}
           size="md"
         >
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ width: 200, height: 200, margin: '0 auto 16px', background: '#fff', padding: 12, borderRadius: 12, border: '2px solid var(--bigc-green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 200, height: 200, margin: '0 auto 16px', background: 'var(--paper-raised)', padding: 12, borderRadius: 12, border: '2px solid var(--bigc-green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg viewBox="0 0 100 100" width="100%" height="100%">
                 <rect width="100" height="100" fill="#fff" />
                 <path d="M10 10 h30 v30 h-30 z M15 15 v20 h20 v-20 z M20 20 h10 v10 h-10 z" fill="#007A38" />
@@ -914,10 +914,10 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '0 0 16px' }}>
               {language === 'en'
                 ? 'Display this QR code on the classroom projector for learners to check in.'
-                : 'Chiếu mã QR này lên máy chiếu lớp học để học viên quét điểm danh.'}
+                : 'Project this QR code in the classroom so learners can scan to check in.'}
             </p>
-            <Button variant="outline" icon="ti-copy" onClick={() => alert('Đã sao chép mã điểm danh!')}>
-              {language === 'en' ? 'Copy QR Token' : 'Sao Chép Mã Điểm Danh'}
+            <Button variant="outline" icon="ti-copy" onClick={() => alert('Attendance code copied!')}>
+              {language === 'en' ? 'Copy QR Token' : 'Copy The Attendance Code'}
             </Button>
           </div>
         </Modal>

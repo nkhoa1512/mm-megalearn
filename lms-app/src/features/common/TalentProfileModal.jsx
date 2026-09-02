@@ -51,7 +51,7 @@ export default function TalentProfileModal() {
               width: 68,
               height: 68,
               borderRadius: '50%',
-              background: '#fff',
+              background: 'var(--paper-raised)',
               color: 'var(--bigc-green)',
               fontWeight: 800,
               fontSize: 24,
@@ -71,7 +71,7 @@ export default function TalentProfileModal() {
                   background: 'rgba(255,255,255,0.2)',
                   padding: '2px 8px',
                   borderRadius: 12,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                 }}
               >
@@ -81,7 +81,7 @@ export default function TalentProfileModal() {
                 {u.status === 'ACTIVE' ? 'Active' : u.status === 'TRANSFER' ? 'Transfer' : u.status === 'NEW_JOINER' ? 'New Joiner' : 'Inactive'}
               </Badge>
             </div>
-            <div style={{ fontSize: 13.5, opacity: 0.95, marginBottom: 4 }}>
+            <div style={{ fontSize: 14, opacity: 0.95, marginBottom: 4 }}>
               <strong>{u.position}</strong> &middot; Grade: <strong>Level {u.level}</strong> ({u.levelTitle})
             </div>
             <div style={{ fontSize: 12, opacity: 0.85, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -116,7 +116,7 @@ export default function TalentProfileModal() {
           <div style={{ fontSize: 15, fontWeight: 800, color: '#F59E0B', marginTop: 2 }}>
             {u.talentProfile?.potential === 'TOP_EXECUTIVE' ? 'Top Executive' : u.talentProfile?.potential === 'HIGH_POTENTIAL' ? 'Hi-Po Fast Track' : 'Core Key Talent'}
           </div>
-          <div style={{ fontSize: 11.5, opacity: 0.9, marginTop: 4 }}>
+          <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>
             Succession: <strong>{u.talentProfile?.readiness === 'READY_NOW' ? 'Ready Now' : 'In 6 Months'}</strong>
           </div>
         </div>
@@ -167,7 +167,7 @@ export default function TalentProfileModal() {
                   {u.talentProfile?.successorFor || 'Hypermarket Shift Manager'}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 16, fontSize: 12.5 }}>
+              <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
                 <div>
                   <span style={{ color: 'var(--ink-soft)' }}>Readiness Level: </span>
                   <Badge tone="sage">{u.talentProfile?.readiness || 'READY_IN_6_MONTHS'}</Badge>
@@ -204,7 +204,7 @@ export default function TalentProfileModal() {
                     border: '1px solid var(--line)',
                     padding: '6px 12px',
                     borderRadius: 20,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: 600,
                     color: 'var(--ink)',
                     display: 'flex',
@@ -232,7 +232,7 @@ export default function TalentProfileModal() {
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                 {u.storeName || 'Head Office'} &middot; 2025 - Present
               </div>
-              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '4px 0 0' }}>
                 Responsible for department compliance, product quality, and standard SOP execution.
               </p>
             </div>
@@ -243,7 +243,7 @@ export default function TalentProfileModal() {
             ]).map((pos, i) => (
               <div key={i} style={{ marginBottom: 16, position: 'relative' }}>
                 <div style={{ position: 'absolute', left: -31, top: 2, width: 12, height: 12, borderRadius: '50%', background: 'var(--slate)', border: '2px solid #fff' }} />
-                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{pos.role}</div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{pos.role}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                   {pos.org} &middot; {pos.period}
                 </div>
@@ -268,7 +268,7 @@ export default function TalentProfileModal() {
                   <i className="ti ti-folder-check" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ink)' }}>{prj}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{prj}</div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                     Role: Technical Lead &middot; Awarded Outstanding Contribution Certificate
                   </div>
@@ -285,15 +285,15 @@ export default function TalentProfileModal() {
         <div>
           <div className="grid grid-3" style={{ gap: 12, marginBottom: 18 }}>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Total Learning Hours</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Total Learning Hours</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>38.5 Hours</div>
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Average Exam Score</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Average Exam Score</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage)', marginTop: 4 }}>92.4%</div>
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>Certificates Earned</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Certificates Earned</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>6 Credentials</div>
             </div>
           </div>
@@ -301,7 +301,7 @@ export default function TalentProfileModal() {
           <div className="card card-pad">
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Enrolled Career Pipeline</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Thánh Gióng Fast-track Leadership Program</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Thanh Giong Fast-track Leadership Program</span>
               <Badge tone="amber">65% Progress</Badge>
             </div>
             <ProgressBar value={65} tone="rail" size="sm" />

@@ -1,12 +1,12 @@
 /**
- * Đo bề rộng tối thiểu của mọi bảng dữ liệu trong app, cho cả 6 role.
+ * Measures the minimum width of every data table in the app, for all 6 roles.
  *
- * Không có trình duyệt nên ta ước lượng: với mỗi ô, tính "đoạn không thể xuống
- * dòng" dài nhất (badge / button / span có white-space:nowrap là một khối liền),
- * cộng padding của .table th|td. Bề rộng tối thiểu của bảng = tổng bề rộng tối
- * thiểu các cột. Nếu vượt quá vùng nội dung thì người dùng buộc phải kéo ngang.
+ * There is no browser here, so we estimate: for each cell, take the longest
+ * unbreakable run (a badge / button / span with white-space:nowrap counts as one
+ * block) plus the .table th|td padding. A table's minimum width is the sum of its
+ * columns' minimum widths. Anything wider than the content area forces a sideways scroll.
  *
- * Chạy: npm run check:tables
+ * Run: npm run check:tables
  */
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -45,19 +45,19 @@ const UserTranscriptModal = (await import('../src/features/common/UserTranscript
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 
 // ---------------------------------------------------------------------------
-// Mô hình đo
+// Measurement model
 // ---------------------------------------------------------------------------
 const SIDEBAR_W = 260;      // --sidebar-w
-const CONTENT_PAD = 36 * 2; // .content padding trái/phải
+const CONTENT_PAD = 32 * 2; // .content left/right padding (--frame-gutter)
 const CARD_BORDER = 2;
 
-// Đọc padding ngang thật của .table td từ CSS, để công cụ luôn bám theo style
-// hiện tại thay vì một hằng số chép tay dễ lệch.
+// Read the real horizontal padding of .table td from the CSS so the tool always
+// tracks the current style instead of a hand-copied constant that drifts.
 const css = (await import('node:fs')).readFileSync('src/styles/app.css', 'utf8');
 const tdPad = css.match(/\.table td \{[\s\S]*?padding:\s*[\d.]+px\s+([\d.]+)px/);
 const CELL_PAD = tdPad ? Number(tdPad[1]) * 2 : 44;
 
-// Bề rộng ký tự trung bình theo cỡ chữ (font Inter).
+// Average character width per font size (Inter).
 const CH = { td: 6.75, th: 7.1, badge: 6.1, btn: 6.5 };
 
 function budgetAt(viewport) {
@@ -75,13 +75,45 @@ function textOf(html) {
   return decode(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
 }
 
-/** Bề rộng đoạn không thể xuống dòng, dài nhất trong một ô. */
-function cellRunWidth(cellHtml, charW, cellAttrs = '') {
+/**
+ * Removes subtrees hidden with an inline display:none so they cannot contribute
+ * width. ActionsMenu renders its item labels inside a hidden span for SSR
+ * discoverability; counting those made the course catalog table measure ~380px
+ * wider than it renders — a measurement artifact, not a layout defect.
+ *
+ * The nesting has to be tracked properly: a non-greedy regex stops at the first
+ * inner </span> and leaves the rest of the hidden labels behind.
+ */
+function stripHidden(html) {
+  const open = /<(span|div)\b[^>]*style="[^"]*display:\s*none[^"]*"[^>]*>/;
+  let out = html;
+  for (let guard = 0; guard < 50; guard += 1) {
+    const m = open.exec(out);
+    if (!m) break;
+    const tag = m[1];
+    const tagRe = new RegExp(`<${tag}\\b[^>]*>|</${tag}>`, 'g');
+    tagRe.lastIndex = m.index + m[0].length;
+    let depth = 1;
+    let closeEnd = -1;
+    let t;
+    while ((t = tagRe.exec(out))) {
+      depth += t[0][1] === '/' ? -1 : 1;
+      if (depth === 0) { closeEnd = t.index + t[0].length; break; }
+    }
+    if (closeEnd < 0) { out = out.slice(0, m.index); break; }
+    out = out.slice(0, m.index) + out.slice(closeEnd);
+  }
+  return out;
+}
+
+/** Width of the longest unbreakable run inside a cell. */
+function cellRunWidth(rawCellHtml, charW, cellAttrs = '') {
+  const cellHtml = stripHidden(rawCellHtml);
   let widest = 0;
 
-  // Hàng flex KHÔNG có flex-wrap:wrap thì các con nằm trên đúng một dòng, nên
-  // bề rộng tối thiểu = tổng bề rộng các con + khoảng gap. Đây là thủ phạm hay
-  // bị bỏ sót nhất (vd. dòng "mã khóa · chuyên ngành · thời lượng").
+  // A flex row WITHOUT flex-wrap:wrap keeps its children on a single line, so the
+  // minimum width is the sum of the children plus the gaps. This is the most
+  // commonly missed culprit (e.g. the "course code · specialization · duration" row).
   for (const m of cellHtml.matchAll(/<div style="([^"]*display:\s*flex[^"]*)"[^>]*>([\s\S]*?)<\/div>/g)) {
     const style = m[1];
     if (/flex-wrap:\s*wrap/.test(style)) continue;
@@ -92,30 +124,30 @@ function cellRunWidth(cellHtml, charW, cellAttrs = '') {
     widest = Math.max(widest, w);
   }
 
-  // Ô tự đặt white-space:nowrap -> toàn bộ nội dung là một khối liền.
+  // A cell that sets white-space:nowrap itself -> its whole content is one block.
   if (/white-space:\s*nowrap/.test(cellAttrs)) {
     widest = Math.max(widest, textOf(cellHtml).length * charW);
   }
 
-  // Badge: .badge có white-space:nowrap -> cả nhãn là một khối liền.
+  // Badge: .badge sets white-space:nowrap -> the whole label is one block.
   for (const m of cellHtml.matchAll(/<span class="badge[^"]*"[^>]*>([\s\S]*?)<\/span>/g)) {
     const hasIcon = /<i class="ti/.test(m[1]);
     widest = Math.max(widest, textOf(m[1]).length * CH.badge + 18 + (hasIcon ? 19 : 9));
   }
-  // Button: không muốn chữ trong nút xuống dòng.
+  // Button: we do not want the label inside a button to wrap.
   for (const m of cellHtml.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)) {
     const hasIcon = /<i class="ti/.test(m[1]);
     widest = Math.max(widest, textOf(m[1]).length * CH.btn + 22 + (hasIcon ? 21 : 0));
   }
-  // Span đặt white-space:nowrap thủ công (vd. JobLevelBadge).
+  // A span that sets white-space:nowrap by hand (e.g. JobLevelBadge).
   for (const m of cellHtml.matchAll(/<span[^>]*white-space:\s*nowrap[^>]*>([\s\S]*?)<\/span>/g)) {
     widest = Math.max(widest, textOf(m[1]).length * CH.badge + 18);
   }
-  // Lưu ý: KHÔNG suy ra "cả ô nowrap" từ thẻ con đầu tiên. Một badge nowrap
-  // không làm các phần tử anh em của nó mất khả năng xuống dòng; nowrap của
-  // chính ô đã được xử lý ở nhánh cellAttrs bên trên.
+  // Note: do NOT infer "the whole cell is nowrap" from the first child. A nowrap
+  // badge does not stop its siblings from wrapping; a nowrap on the cell itself is
+  // already handled by the cellAttrs branch above.
 
-  // Phần chữ còn lại: chỉ từ dài nhất mới không xuống dòng được.
+  // The remaining text: only the longest word is unbreakable.
   const plain = textOf(cellHtml.replace(/<span class="badge[\s\S]*?<\/span>/g, '').replace(/<button[\s\S]*?<\/button>/g, ''));
   for (const word of plain.split(' ')) {
     widest = Math.max(widest, word.length * charW);
@@ -123,7 +155,7 @@ function cellRunWidth(cellHtml, charW, cellAttrs = '') {
   return widest;
 }
 
-/** Tách các bảng .table trong HTML rồi tính bề rộng tối thiểu. */
+/** Extracts the .table elements from the HTML and computes their minimum widths. */
 function measureTables(html) {
   const results = [];
   const tableRe = /<table class="table"[^>]*>([\s\S]*?)<\/table>/g;
@@ -136,14 +168,14 @@ function measureTables(html) {
     let headers = [];
     for (const row of rows) {
       const cells = [...row.matchAll(/<(th|td)([^>]*)>([\s\S]*?)<\/\1>/g)];
-      // Bỏ qua hàng "không có dữ liệu" (một ô colSpan trải hết bảng).
+      // Skip the "no data" row (a single colSpan cell spanning the table).
       if (cells.length === 1 && /colspan/i.test(cells[0][2])) continue;
       cells.forEach((c, i) => {
         const isTh = c[1] === 'th';
         const w = cellRunWidth(c[3], isTh ? CH.th : CH.td, c[2]) + CELL_PAD;
-        // DEBUG_COL=<index>: in ra ô nào đang giữ bề ngang của cột đó.
+        // DEBUG_COL=<index>: print which cell is holding that column open.
         if (process.env.DEBUG_COL && Number(process.env.DEBUG_COL) === i && w > (cols[i] || 0)) {
-          console.log(`[debug][${globalThis.__label}] cột ${i} -> ${Math.round(w)}px :: ${c[3].slice(0, 600)}`);
+          console.log(`[debug][${globalThis.__label}] column ${i} ->${Math.round(w)}px :: ${c[3].slice(0, 600)}`);
         }
         cols[i] = Math.max(cols[i] || 0, w);
         if (isTh) headers[i] = textOf(c[3]);
@@ -175,44 +207,44 @@ function render(element, path, pattern) {
 }
 
 const PAGES = [
-  ['Khóa Học Của Tôi (learner)', <LearnerCourses />, '/learner/courses'],
-  ['Học tập của tôi (mọi role)', <MyLearning />, '/my-learning'],
-  ['Lịch Sử Học Tập', <LearnerHistory />, '/learner/history'],
-  ['Manager · Đội ngũ', <ManagerTeam />, '/manager/team'],
-  ['Manager · Khóa phòng ban', <ManagerCourses />, '/manager/courses'],
-  ['Manager · Báo cáo', <ManagerReports />, '/manager/reports'],
-  ['Duyệt học vượt cấp', <ManagerApprovals />, '/manager/approvals'],
-  ['Trainer · Lớp dạy', <TrainerHub initialTab="CLASSES" />, '/trainer'],
-  ['Trainer · Điểm danh', <TrainerHub initialTab="ATTENDANCE" />, '/trainer/attendance'],
+  ['My Courses (learner)', <LearnerCourses />, '/learner/courses'],
+  ['My Learning (all roles)', <MyLearning />, '/my-learning'],
+  ['Learning History', <LearnerHistory />, '/learner/history'],
+  ['Manager · Team', <ManagerTeam />, '/manager/team'],
+  ['Manager · Department courses', <ManagerCourses />, '/manager/courses'],
+  ['Manager · Reports', <ManagerReports />, '/manager/reports'],
+  ['Level skip approvals', <ManagerApprovals />, '/manager/approvals'],
+  ['Trainer · Classes', <TrainerHub initialTab="CLASSES" />, '/trainer'],
+  ['Trainer · Attendance', <TrainerHub initialTab="ATTENDANCE" />, '/trainer/attendance'],
   ['Trainer · CSAT', <TrainerHub initialTab="FEEDBACK" />, '/trainer/feedback'],
-  ['Trainer · Xưởng lab', <TrainerHub initialTab="LABS" />, '/trainer/labs'],
+  ['Trainer · Labs', <TrainerHub initialTab="LABS" />, '/trainer/labs'],
   ['HRBP · Skill gap', <HrbpDashboard initialTab="SKILL_GAP" />, '/hrbp'],
-  ['HRBP · Kế nhiệm', <HrbpDashboard initialTab="SUCCESSION" />, '/hrbp/succession'],
-  ['HRBP · Tuân thủ', <HrbpDashboard initialTab="COMPLIANCE" />, '/hrbp/compliance'],
-  ['UserAdmin · Danh mục NS', <UserAdminPortal initialTab="DIRECTORY" />, '/user-admin'],
-  ['UserAdmin · 7 cấp bậc', <UserAdminPortal initialTab="JOB_LEVELS" />, '/user-admin/job-levels'],
-  ['UserAdmin · Phân bổ khóa', <UserAdminPortal initialTab="ALLOCATION" />, '/user-admin/allocation'],
-  ['UserAdmin · Phân công GV', <UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />, '/user-admin/trainers'],
+  ['HRBP · Succession', <HrbpDashboard initialTab="SUCCESSION" />, '/hrbp/succession'],
+  ['HRBP · Compliance', <HrbpDashboard initialTab="COMPLIANCE" />, '/hrbp/compliance'],
+  ['UserAdmin · Employee directory', <UserAdminPortal initialTab="DIRECTORY" />, '/user-admin'],
+  ['UserAdmin · 7 job levels', <UserAdminPortal initialTab="JOB_LEVELS" />, '/user-admin/job-levels'],
+  ['UserAdmin · Course allocation', <UserAdminPortal initialTab="ALLOCATION" />, '/user-admin/allocation'],
+  ['UserAdmin · Trainer assignment', <UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />, '/user-admin/trainers'],
   ['SysAdmin · HRIS', <SysAdminPortal initialTab="HRIS" />, '/sysadmin'],
   ['SysAdmin · Audit log', <SysAdminPortal initialTab="AUDIT_LOGS" />, '/sysadmin/audit'],
-  ['SysAdmin · Quản trị role', <SysAdminPortal initialTab="ROLE_GOVERNANCE" />, '/sysadmin/roles'],
+  ['SysAdmin · Role governance', <SysAdminPortal initialTab="ROLE_GOVERNANCE" />, '/sysadmin/roles'],
   ['L&D · Dashboard', <AdminDashboard />, '/admin'],
-  ['L&D · Danh mục khóa', <AdminCourses />, '/admin/courses'],
-  ['L&D · Cấu hình & RBAC', <AdminConfig />, '/admin/config'],
-  ['L&D · Báo cáo ROI', <AdminReports />, '/admin/reports'],
+  ['L&D · Course catalog', <AdminCourses />, '/admin/courses'],
+  ['L&D · Configuration & RBAC', <AdminConfig />, '/admin/config'],
+  ['L&D · ROI report', <AdminReports />, '/admin/reports'],
   ['L&D · Training Ops', <AdminTrainingOps />, '/admin/training-ops'],
-  // Modal (không phải route riêng) — vẫn phải đo vì trước đây từng lọt lưới:
-  // các trang thường mở nó bằng state (transcriptUser !== null) nên route-only
-  // audit không bao giờ chạm tới bảng bên trong.
-  ['Hồ Sơ Nhân Sự (UserTranscriptModal)', <UserTranscriptModal targetUser={personaForRole('learner')} isOpen onClose={() => {}} />, '/manager/team'],
+  // Modals (not routes of their own) — still measured, because they used to slip
+  // through: pages open them from state (transcriptUser !== null), so a route-only
+  // audit never reaches the table inside.
+  ['Profile Employee (UserTranscriptModal)', <UserTranscriptModal targetUser={personaForRole('learner')} isOpen onClose={() => {}} />, '/manager/team'],
 ];
 
 const VIEWPORTS = [1920, 1600, 1440, 1280];
-const PRIMARY = 1440; // laptop phổ thông — mốc bắt buộc phải vừa
+const PRIMARY = 1440; // the common laptop width — tables must fit here
 
-console.log(`Padding ngang .table td đang là ${CELL_PAD}px (đọc từ app.css)`);
-console.log("Vùng nội dung khả dụng:");
-for (const v of VIEWPORTS) console.log(`  màn ${v}px -> bảng có ${budgetAt(v)}px`);
+console.log(`.table td horizontal padding is ${CELL_PAD}px (read from app.css)`);
+console.log('Available content area:');
+for (const v of VIEWPORTS) console.log(`  ${v}px viewport -> ${budgetAt(v)}px for the table`);
 console.log('');
 
 globalThis.__label = "";
@@ -235,20 +267,20 @@ for (const role of ROLE_ORDER) {
   }
 }
 
-console.log('10 bảng rộng nhất hiện tại:');
+console.log('The 10 widest tables right now:');
 const ranked = [...all.values()].sort((a, b) => b.minWidth - a.minWidth);
 ranked.slice(0, 10).forEach((t, i) => {
   const narrowest = VIEWPORTS.filter((v) => t.minWidth <= budgetAt(v)).pop();
-  console.log(`  ${String(t.minWidth).padStart(5)}px  ${String(t.columns).padStart(2)} cột  ${t.label.padEnd(30)} vừa từ màn ${narrowest ? narrowest + 'px' : '>1920px'}`);
-  // 3 bảng đầu: in luôn cột nào đang giữ bề ngang, để biết chỗ cần rút gọn.
+  console.log(`  ${String(t.minWidth).padStart(5)}px  ${String(t.columns).padStart(2)} cols  ${t.label.padEnd(30)} fits from ${narrowest ? narrowest + 'px' : '>1920px'}`);
+  // Top 3: also print which column is holding the width, to show what to trim.
   if (i < 3 && t.widest) {
     const top = [...t.widest].sort((a, b) => b.w - a.w).slice(0, 3);
-    console.log(`         cột nặng nhất: ${top.map((w) => `${w.header} ${w.w}px`).join(' · ')}`);
+    console.log(`         widest columns:${top.map((w) => `${w.header} ${w.w}px`).join(' · ')}`);
   }
 });
 console.log('');
 
-// Gộp theo trang: cùng một bảng thường lặp lại ở nhiều role.
+// Group by page: the same table usually repeats across several roles.
 const grouped = new Map();
 for (const o of offenders) {
   const key = o.label + '|' + o.columns;
@@ -261,15 +293,15 @@ for (const o of offenders) {
 const list = [...grouped.values()].sort((a, b) => b.minWidth - a.minWidth);
 
 if (list.length === 0) {
-  console.log(`✅ Không bảng nào vượt ${budgetAt(PRIMARY)}px — mọi cột hiển thị hết ở màn ${PRIMARY}px trở lên.`);
+  console.log(`✅ No table exceeds ${budgetAt(PRIMARY)}px — every column is fully visible at ${PRIMARY}px and above.`);
 } else {
-  console.log(`⚠️  ${list.length} bảng vượt quá ${budgetAt(PRIMARY)}px (màn ${PRIMARY}px) — người dùng phải kéo ngang:\n`);
+  console.log(`⚠️  ${list.length} table(s) exceed ${budgetAt(PRIMARY)}px (at ${PRIMARY}px) — users must scroll sideways:\n`);
   for (const g of list) {
     const fitsAt = VIEWPORTS.filter((v) => g.minWidth <= budgetAt(v));
-    console.log(`  ${String(g.minWidth).padStart(5)}px  ${g.columns} cột  ${g.label}`);
-    console.log(`         role bị: ${[...g.roles].join(', ')}`);
-    console.log(`         cột rộng nhất: ${g.widest.map((w) => `${w.header} ${w.w}px`).join(' · ')}`);
-    console.log(`         chỉ vừa từ màn: ${fitsAt.length ? fitsAt[fitsAt.length - 1] + 'px' : 'không màn nào trong danh sách'}`);
+    console.log(`  ${String(g.minWidth).padStart(5)}px  ${g.columns} cols  ${g.label}`);
+    console.log(`         affected roles:${[...g.roles].join(', ')}`);
+    console.log(`         widest columns:${g.widest.map((w) => `${w.header} ${w.w}px`).join(' · ')}`);
+    console.log(`         only fits from: ${fitsAt.length ? fitsAt[fitsAt.length - 1] + 'px' : 'none of the listed viewports'}`);
     console.log('');
   }
 }

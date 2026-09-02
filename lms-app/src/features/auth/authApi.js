@@ -5,7 +5,7 @@ export const authApi = {
   async login(username, password) {
     const user = allUsers.find(u => u.username === username || u.id === username || u.email === username);
     if (!user) {
-      throw new Error('Tài khoản hoặc mật khẩu không chính xác');
+      throw new Error('Incorrect username or password');
     }
     return user;
   },

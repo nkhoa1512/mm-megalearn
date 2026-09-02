@@ -7,7 +7,7 @@
 import { LEVEL_DEFINITIONS } from './levelSystem';
 
 export const businessUnits = [
-  { id: 'bu-mmvn', code: 'MMVN', name: 'MM Mega Market Vietnam (Retail & Wholesale)', description: 'Chuỗi trung tâm bán sỉ và bán lẻ MM Mega Market Việt Nam' },
+  { id: 'bu-mmvn', code: 'MMVN', name: 'MM Mega Market Vietnam (Retail & Wholesale)', description: 'MM Mega Market Vietnam wholesale and retail center chain' },
 ];
 
 export const orgBranches = [
@@ -73,72 +73,72 @@ export const storeSections = [
 // ---------------------------------------------------------------------------
 // 42 OFFICIAL DIVISIONS OF MM MEGA MARKET VIETNAM
 //
-// `costCenter` — mã Trung Tâm Chi Phí 5 số do HR cấp. Mỗi Division sở hữu ĐÚNG
-// MỘT mã; mọi Department và Sub-Department bên trong Division dùng chung mã đó,
-// nên chi phí đào tạo của một nhân sự luôn về đúng một mã duy nhất dù họ đổi
-// phòng ban trong cùng Division. Quy tắc cấp mã:
-//   • OPERATIONS  = số hiệu siêu thị + hậu tố 0   (1010_AP -> 10100)
-//   • SUPPORTING  = dải 50xx0 theo thứ tự khai báo (BSM -> 50010, CDD -> 50020…)
-// `location` — địa điểm làm việc của Division, dùng cho cột "Location" khi xuất
-// file nhân sự.
+// `costCenter` — the 5-digit cost center code issued by HR. Each Division owns EXACTLY
+// exactly ONE code; every Department and Sub-Department inside the Division shares it,
+// so an employee's training cost always maps to one single code even if they change
+// department within the same Division. Code allocation rules:
+//   • OPERATIONS  = the store number plus a trailing 0   (1010_AP -> 10100)
+//   • SUPPORTING  = the 50xx0 range in declaration order (BSM -> 50010, CDD -> 50020…)
+// `location` — the Division's work location, used for the "Location" column when exporting
+// the HR file.
 // ---------------------------------------------------------------------------
 
 export const divisions = [
   // --- 23 Operations Divisions (Stores & Depots) ---
-  { id: 'div-1010-ap', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1010_AP', costCenter: '10100', name: 'MM An Phú', location: 'TP. Hồ Chí Minh (Thủ Đức)' },
-  { id: 'div-1011-bp', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1011_BP', costCenter: '10110', name: 'MM Bình Phú', location: 'TP. Hồ Chí Minh (Quận 6)' },
-  { id: 'div-1012-hp', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1012_HP', costCenter: '10120', name: 'MM Hiệp Phú', location: 'TP. Hồ Chí Minh (Quận 12)' },
-  { id: 'div-1013-tl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1013_TL', costCenter: '10130', name: 'MM Thăng Long', location: 'Hà Nội (Bắc Từ Liêm)' },
-  { id: 'div-1014-hm', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1014_HM', costCenter: '10140', name: 'MM Hoàng Mai', location: 'Hà Nội (Hoàng Mai)' },
-  { id: 'div-1015-hl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1015_HL', costCenter: '10150', name: 'MM Hưng Lợi', location: 'Cần Thơ (Ninh Kiều)' },
-  { id: 'div-1016-hb', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1016_HB', costCenter: '10160', name: 'MM Hồng Bàng', location: 'Hải Phòng (Hồng Bàng)' },
-  { id: 'div-1017-dn', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1017_DN', costCenter: '10170', name: 'MM Đà Nẵng', location: 'Đà Nẵng (Cẩm Lệ)' },
-  { id: 'div-1018-bh', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1018_BH', costCenter: '10180', name: 'MM Biên Hòa', location: 'Đồng Nai (Biên Hòa)' },
-  { id: 'div-1019-bd', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1019_BD', costCenter: '10190', name: 'MM Bình Dương', location: 'Bình Dương (Thuận An)' },
-  { id: 'div-1020-lx', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1020_LX', costCenter: '10200', name: 'MM Long Xuyên', location: 'An Giang (Long Xuyên)' },
-  { id: 'div-1021-qn', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1021_QN', costCenter: '10210', name: 'MM Quy Nhơn', location: 'Bình Định (Quy Nhơn)' },
-  { id: 'div-1022-vt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1022_VT', costCenter: '10220', name: 'MM Vũng Tàu', location: 'Bà Rịa - Vũng Tàu' },
-  { id: 'div-1023-vi', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1023_VI', costCenter: '10230', name: 'MM Vinh', location: 'Nghệ An (TP. Vinh)' },
-  { id: 'div-1024-hal', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1024_HaL', costCenter: '10240', name: 'MM Hạ Long', location: 'Quảng Ninh (Hạ Long)' },
-  { id: 'div-1025-nt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1025_NT', costCenter: '10250', name: 'MM Nha Trang', location: 'Khánh Hòa (Nha Trang)' },
-  { id: 'div-1026-hd', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1026_HD', costCenter: '10260', name: 'MM Hà Đông', location: 'Hà Nội (Hà Đông)' },
-  { id: 'div-1027-bmt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1027_BMT', costCenter: '10270', name: 'MM Buôn Ma Thuột', location: 'Đắk Lắk (Buôn Ma Thuột)' },
-  { id: 'div-1028-rg', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1028_RG', costCenter: '10280', name: 'MM Rạch Giá', location: 'Kiên Giang (Rạch Giá)' },
-  { id: 'div-1029-hup', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1029_HuP', costCenter: '10290', name: 'MM Hưng Phú', location: 'Cần Thơ (Cái Răng)' },
-  { id: 'div-1052-dl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1052_DL', costCenter: '10520', name: 'Depot Đà Lạt', location: 'Lâm Đồng (Đà Lạt)' },
-  { id: 'div-1055-hue', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1055_HUE', costCenter: '10550', name: 'Depot Huế', location: 'Thừa Thiên Huế (TP. Huế)' },
-  { id: 'div-2090-tx', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '2090_TX', costCenter: '20900', name: 'MM Thanh Xuân', location: 'Hà Nội (Thanh Xuân)' },
+  { id: 'div-1010-ap', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1010_AP', costCenter: '10100', name: 'MM An Phu', location: 'Ho Chi Minh City (Thu Duc)' },
+  { id: 'div-1011-bp', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1011_BP', costCenter: '10110', name: 'MM Binh Phu', location: 'Ho Chi Minh City (District 6)' },
+  { id: 'div-1012-hp', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1012_HP', costCenter: '10120', name: 'MM Hiep Phu', location: 'Ho Chi Minh City (District 12)' },
+  { id: 'div-1013-tl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1013_TL', costCenter: '10130', name: 'MM Thang Long', location: 'Hanoi (Bac Tu Liem)' },
+  { id: 'div-1014-hm', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1014_HM', costCenter: '10140', name: 'MM Hoang Mai', location: 'Hanoi (Hoang Mai)' },
+  { id: 'div-1015-hl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1015_HL', costCenter: '10150', name: 'MM Hung Loi', location: 'Can Tho (Ninh Kieu)' },
+  { id: 'div-1016-hb', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1016_HB', costCenter: '10160', name: 'MM Hong Bang', location: 'Hai Phong (Hong Bang)' },
+  { id: 'div-1017-dn', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1017_DN', costCenter: '10170', name: 'MM Da Nang', location: 'Da Nang (Cam Le)' },
+  { id: 'div-1018-bh', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1018_BH', costCenter: '10180', name: 'MM Bien Hoa', location: 'Dong Nai (Bien Hoa)' },
+  { id: 'div-1019-bd', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1019_BD', costCenter: '10190', name: 'MM Binh Duong', location: 'Binh Duong (Thuan An)' },
+  { id: 'div-1020-lx', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1020_LX', costCenter: '10200', name: 'MM Long Xuyen', location: 'An Giang (Long Xuyen)' },
+  { id: 'div-1021-qn', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1021_QN', costCenter: '10210', name: 'MM Quy Nhon', location: 'Binh Dinh (Quy Nhon)' },
+  { id: 'div-1022-vt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1022_VT', costCenter: '10220', name: 'MM Vung Tau', location: 'Ba Ria - Vung Tau' },
+  { id: 'div-1023-vi', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1023_VI', costCenter: '10230', name: 'MM Vinh', location: 'Nghe An (Vinh City)' },
+  { id: 'div-1024-hal', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1024_HaL', costCenter: '10240', name: 'MM Ha Long', location: 'Quang Ninh (Ha Long)' },
+  { id: 'div-1025-nt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1025_NT', costCenter: '10250', name: 'MM Nha Trang', location: 'Khanh Hoa (Nha Trang)' },
+  { id: 'div-1026-hd', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1026_HD', costCenter: '10260', name: 'MM Ha Dong', location: 'Hanoi (Ha Dong)' },
+  { id: 'div-1027-bmt', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1027_BMT', costCenter: '10270', name: 'MM Buon Ma Thuot', location: 'Dak Lak (Buon Ma Thuot)' },
+  { id: 'div-1028-rg', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1028_RG', costCenter: '10280', name: 'MM Rach Gia', location: 'Kien Giang (Rach Gia)' },
+  { id: 'div-1029-hup', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1029_HuP', costCenter: '10290', name: 'MM Hung Phu', location: 'Can Tho (Cai Rang)' },
+  { id: 'div-1052-dl', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1052_DL', costCenter: '10520', name: 'Da Lat Depot', location: 'Lam Dong (Da Lat)' },
+  { id: 'div-1055-hue', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '1055_HUE', costCenter: '10550', name: 'Hue Depot', location: 'Thua Thien Hue (Hue City)' },
+  { id: 'div-2090-tx', businessUnitId: 'bu-mmvn', branch: 'OPERATIONS', code: '2090_TX', costCenter: '20900', name: 'MM Thanh Xuan', location: 'Hanoi (Thanh Xuan)' },
 
   // --- 19 Supporting Divisions (Head Office) ---
-  { id: 'div-bsm-format', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'BSM', costCenter: '50010', name: 'BSM Format', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-cdd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'CDD', costCenter: '50020', name: 'Corporate Development', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-cop', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'COP', costCenter: '50030', name: 'Cost Optimization & Procurement', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-dnsc', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'DNSC', costCenter: '50040', name: 'DN SC', location: 'Đà Nẵng (Cẩm Lệ)' },
-  { id: 'div-ecom', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'ECOM', costCenter: '50050', name: 'E-commerce & New Service Development', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-fad', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'FAD', costCenter: '50060', name: 'Finance & Accounting', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-gm', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'GM', costCenter: '50070', name: 'General Management', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-hrd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'HRD', costCenter: '50080', name: 'Human Resources', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-ia', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'IA_RM', costCenter: '50090', name: 'Internal Audit & SOP & Risk Management', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-lgd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'LGD', costCenter: '50100', name: 'Legal', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-lpqa', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'LP_QA', costCenter: '50110', name: 'LP-QA', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-mkt', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'MKT', costCenter: '50120', name: 'Marketing', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-omd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'OMD', costCenter: '50130', name: 'Merchandise', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-mis', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'MIS', costCenter: '50140', name: 'MIS', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-opt', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'OPS', costCenter: '50150', name: 'Operations', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-prop', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'PROP', costCenter: '50160', name: 'Property', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-st41', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'ST41', costCenter: '50170', name: 'ST41', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-scm', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'SCM', costCenter: '50180', name: 'Supply Chain', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
-  { id: 'div-tu', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'TU', costCenter: '50190', name: 'Trade Union', location: 'TP. Hồ Chí Minh (Head Office - An Phú)' },
+  { id: 'div-bsm-format', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'BSM', costCenter: '50010', name: 'BSM Format', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-cdd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'CDD', costCenter: '50020', name: 'Corporate Development', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-cop', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'COP', costCenter: '50030', name: 'Cost Optimization & Procurement', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-dnsc', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'DNSC', costCenter: '50040', name: 'DN SC', location: 'Da Nang (Cam Le)' },
+  { id: 'div-ecom', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'ECOM', costCenter: '50050', name: 'E-commerce & New Service Development', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-fad', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'FAD', costCenter: '50060', name: 'Finance & Accounting', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-gm', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'GM', costCenter: '50070', name: 'General Management', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-hrd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'HRD', costCenter: '50080', name: 'Human Resources', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-ia', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'IA_RM', costCenter: '50090', name: 'Internal Audit & SOP & Risk Management', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-lgd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'LGD', costCenter: '50100', name: 'Legal', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-lpqa', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'LP_QA', costCenter: '50110', name: 'LP-QA', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-mkt', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'MKT', costCenter: '50120', name: 'Marketing', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-omd', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'OMD', costCenter: '50130', name: 'Merchandise', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-mis', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'MIS', costCenter: '50140', name: 'MIS', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-opt', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'OPS', costCenter: '50150', name: 'Operations', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-prop', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'PROP', costCenter: '50160', name: 'Property', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-st41', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'ST41', costCenter: '50170', name: 'ST41', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-scm', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'SCM', costCenter: '50180', name: 'Supply Chain', location: 'Ho Chi Minh City (Head Office - An Phu)' },
+  { id: 'div-tu', businessUnitId: 'bu-mmvn', branch: 'SUPPORTING', code: 'TU', costCenter: '50190', name: 'Trade Union', location: 'Ho Chi Minh City (Head Office - An Phu)' },
 ];
 
-// Tra cứu Division theo mã Trung Tâm Chi Phí 5 số. Dùng khi đọc ngược từ file
-// kế toán / HR (chỉ có mã) về cơ cấu tổ chức.
+// Looks up a Division by its 5-digit cost center code. Used when reading back from the
+// accounting / HR file (which only carries codes) back to the org structure.
 export const divisionByCostCenter = divisions.reduce((acc, d) => {
   acc[d.costCenter] = d;
   return acc;
 }, {});
 
-/** Mã Trung Tâm Chi Phí 5 số của một Division (theo id hoặc code). */
+/** The 5-digit cost center code of a Division (by id or code). */
 export function costCenterCodeOfDivision(divisionIdOrCode) {
   const hit = divisions.find((d) => d.id === divisionIdOrCode || d.code === divisionIdOrCode);
   return hit ? hit.costCenter : null;
@@ -442,7 +442,7 @@ export const subDepartments = [
 ];
 
 // ---------------------------------------------------------------------------
-// Khung 7 Cấp Bậc Định Biên (thang ĐẢO NGƯỢC: Level 7 thấp nhất -> Level 1 cao nhất)
+// 7-Level Job Grade Framework (INVERTED scale: Level 7 lowest -> Level 1 highest)
 // ---------------------------------------------------------------------------
 
 export const LEVEL_HR_META = {
@@ -450,49 +450,49 @@ export const LEVEL_HR_META = {
     code: 'L1_DIRECTOR',
     authority: 'SUPREME_EXECUTIVE',
     typicalRoles: ['sysadmin'],
-    descVi: 'Giám đốc / Lãnh đạo cấp cao: hoạch định chiến lược tập đoàn, quản trị rủi ro & định hướng phát triển toàn diện.',
+    descVi: 'Director / Senior Leadership: sets group strategy, manages risk and drives overall development direction.',
     headcount: 2,
   },
   '2': {
     code: 'L2_HEAD',
     authority: 'DIVISION_LEAD',
     typicalRoles: ['hrbp', 'useradmin'],
-    descVi: 'Phó Giám đốc / Trưởng Phòng/Khối: chịu trách nhiệm P&L, ngân sách và quy hoạch nhân tài kế nhiệm của khối/phòng ban.',
+    descVi: 'Associate Director / Head of Department or Division: owns the P&L, budget and succession talent planning for the division/department.',
     headcount: 4,
   },
   '3': {
     code: 'L3_SENIOR_MANAGER',
     authority: 'SENIOR_MANAGER',
     typicalRoles: ['trainer'],
-    descVi: 'Quản lý cấp cao: quản trị mảng chức năng lớn, đàm phán đối tác chiến lược và dẫn dắt đào tạo chuyên sâu.',
+    descVi: 'Senior Manager: runs a major functional area, negotiates with strategic partners and leads advanced training.',
     headcount: 8,
   },
   '4': {
     code: 'L4_MANAGER',
     authority: 'SECTION_MANAGER',
     typicalRoles: ['manager'],
-    descVi: 'Quản lý: điều phối chỉ tiêu, quản lý trực tiếp đội ngũ nhân viên phòng ban và giám sát hiệu quả công việc.',
+    descVi: 'Manager: coordinates targets, directly manages the department team and monitors performance.',
     headcount: 14,
   },
   '5': {
     code: 'L5_SUPERVISOR',
     authority: 'SUPERVISOR',
     typicalRoles: ['manager', 'learner'],
-    descVi: 'Giám sát / Chuyên viên cao cấp: kiểm soát quy trình nghiệp vụ, chuyên môn kỹ thuật sâu và kèm cặp nhân viên.',
+    descVi: 'Supervisor / Senior Executive: controls business processes, holds deep technical expertise and coaches staff.',
     headcount: 22,
   },
   '6': {
     code: 'L6_EXECUTIVE',
     authority: 'SENIOR_STAFF',
     typicalRoles: ['learner'],
-    descVi: 'Chuyên viên / Nhân viên nghiệp vụ: thực thi nghiệp vụ độc lập, phối hợp liên phòng ban và hướng dẫn nhân viên mới.',
+    descVi: 'Executive / Operations Specialist: executes work independently, coordinates across departments and coaches new staff.',
     headcount: 35,
   },
   '7': {
     code: 'L7_STAFF',
     authority: 'FRONTLINE',
     typicalRoles: ['learner'],
-    descVi: 'Nhân viên: nhân viên mới gia nhập / nhân sự tuyến đầu, hoàn thành đào tạo hội nhập, tuân thủ nội quy và phục vụ khách hàng.',
+    descVi: 'Staff: new joiners / front-line employees who complete onboarding, follow the rules and serve customers.',
     headcount: 42,
   },
 };
@@ -534,12 +534,12 @@ export function getFullOrgChainForUser(subDeptId) {
 }
 
 export const meetingRoomsAndLabs = [
-  { id: 'lab-ap-fresh', name: 'Fresh Food & Bakery Practical Lab (MM An Phú)', capacity: 25, type: 'LAB', location: 'MM An Phú, TP. Thủ Đức', equipment: ['Bếp nướng công nghiệp', 'Tủ ủ bánh mì', 'Bàn thao tác inox HACCP', 'Máy đo nhiệt độ thực phẩm'] },
-  { id: 'lab-bp-dry', name: 'FMCG & Dry Grocery Storage Lab (MM Bình Phú)', capacity: 30, type: 'LAB', location: 'MM Bình Phú, Q.6, TP.HCM', equipment: ['Xe nâng Reach Truck mô phỏng', 'Giá kệ pallet tiêu chuẩn', 'Máy quét mã vạch không dây', 'Màn hình hướng dẫn SOP'] },
-  { id: 'lab-hp-gr', name: 'Goods Receiving & Cold-Chain Lab (MM Hiệp Phú)', capacity: 20, type: 'LAB', location: 'MM Hiệp Phú, Q.12, TP.HCM', equipment: ['Cảm biến nhiệt độ kho lạnh', 'Cân điện tử công nghiệp', 'Bộ dụng cụ kiểm tra chất lượng nhập hàng'] },
-  { id: 'lab-tl-frontline', name: 'Cashier & Customer Service POS Lab (MM Thăng Long)', capacity: 35, type: 'LAB', location: 'MM Thăng Long, Hà Nội', equipment: ['Quầy thu ngân POS thực nghiệm', 'Máy in hóa đơn & POS thanh toán thẻ', 'Bộ đàm nội bộ', 'Bảng quy chuẩn CSAT'] },
-  { id: 'room-ho-auditorium', name: 'Grand Auditorium & Training Hall (Head Office)', capacity: 100, type: 'AUDITORIUM', location: 'Head Office, An Phú', equipment: ['Máy chiếu 4K & Màn hình LED 200 inch', 'Hệ thống âm thanh hội trường không dây', 'Bục phát biểu & Cabin phiên dịch'] },
-  { id: 'room-ho-innovation', name: 'Digital Innovation & E-Learning Lab (Head Office)', capacity: 40, type: 'LAB', location: 'Head Office, An Phú', equipment: ['30 Máy tính bảng học tập chuyên dụng', 'Màn hình cảm ứng tương tác 85 inch', 'Kính VR mô phỏng PCCC'] },
+  { id: 'lab-ap-fresh', name: 'Fresh Food & Bakery Practical Lab (MM An Phu)', capacity: 25, type: 'LAB', location: 'MM An Phu, Thu Duc City', equipment: ['Industrial baking oven', 'Bread proofing cabinet', 'HACCP stainless steel work table', 'Food thermometer'] },
+  { id: 'lab-bp-dry', name: 'FMCG & Dry Grocery Storage Lab (MM Binh Phu)', capacity: 30, type: 'LAB', location: 'MM Binh Phu, District 6, HCMC', equipment: ['Reach truck simulator', 'Standard pallet racking', 'Wireless barcode scanner', 'SOP guidance display'] },
+  { id: 'lab-hp-gr', name: 'Goods Receiving & Cold-Chain Lab (MM Hiep Phu)', capacity: 20, type: 'LAB', location: 'MM Hiep Phu, District 12, HCMC', equipment: ['Cold storage temperature sensors', 'Industrial digital scale', 'Inbound goods quality inspection kit'] },
+  { id: 'lab-tl-frontline', name: 'Cashier & Customer Service POS Lab (MM Thang Long)', capacity: 35, type: 'LAB', location: 'MM Thang Long, Hanoi', equipment: ['Live POS checkout counter', 'Receipt printer & card payment POS', 'Internal two-way radios', 'CSAT standards board'] },
+  { id: 'room-ho-auditorium', name: 'Grand Auditorium & Training Hall (Head Office)', capacity: 100, type: 'AUDITORIUM', location: 'Head Office, An Phu', equipment: ['4K projector & 200-inch LED screen', 'Wireless auditorium sound system', 'Speaker podium & interpreter booth'] },
+  { id: 'room-ho-innovation', name: 'Digital Innovation & E-Learning Lab (Head Office)', capacity: 40, type: 'LAB', location: 'Head Office, An Phu', equipment: ['30 dedicated learning tablets', '85-inch interactive touchscreen', 'Fire drill VR headset'] },
 ];
 
 export const competencyFramework = [

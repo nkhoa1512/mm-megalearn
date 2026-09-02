@@ -5,18 +5,18 @@ import { levelTitle, LEVEL_DEFINITIONS } from '../../data/levelSystem';
 import RoadmapProgressSummary from '../roadmaps/RoadmapProgressSummary';
 
 const statusMap = {
-  COMPLETED: { tone: 'sage', label: 'Đã Hoàn Thành' },
-  IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
-  NOT_STARTED: { tone: 'slate', label: 'Chưa Bắt Đầu' },
-  OVERDUE: { tone: 'rust', label: 'Quá Hạn' },
-  FAILED: { tone: 'rust', label: 'Cần Thi Lại' },
+  COMPLETED: { tone: 'sage', label: 'Completed' },
+  IN_PROGRESS: { tone: 'amber', label: 'In Progress' },
+  NOT_STARTED: { tone: 'slate', label: 'Not Started' },
+  OVERDUE: { tone: 'rust', label: 'Overdue' },
+  FAILED: { tone: 'rust', label: 'Retake Required' },
 };
 
 function formatDate(iso) {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
     return iso;
   }
@@ -29,14 +29,14 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
   const [promoteModalOpen, setPromoteModalOpen] = useState(false);
   const [selectedNewLevel, setSelectedNewLevel] = useState('6');
   const [promotionReason, setPromotionReason] = useState(
-    'Hoàn thành xuất sắc các khóa học định biên và đạt chuẩn năng lực nghiệp vụ theo quy chế L&OD.'
+    'Excellent completion of the required courses and achievement of the L&OD operational competency standard.'
   );
   const [promotionSuccess, setPromotionSuccess] = useState(false);
 
-  // Toàn bộ khóa học (đã ghi danh) của người này, gộp cả ghi danh phát sinh
-  // trong phiên — dùng myCourses của store thay vì enrollmentsForUser (hàm đó
-  // trả về object theo courseId, không phải mảng, và nhận (user, overlay) chứ
-  // không phải (courseList, user) như từng gọi nhầm ở đây gây crash "filter is
+  // All of this person's (enrolled) courses, including enrollments created
+  // during the session — use the store's myCourses instead of enrollmentsForUser (that function
+  // returns an object keyed by courseId, not an array, and takes (user, overlay) rather than
+  // not (courseList, user) as it was once mistakenly called here, causing the "filter is
   // not a function").
   const userCourses = useMemo(() => {
     if (!targetUser) return [];
@@ -74,7 +74,7 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
       <Modal
         isOpen={isOpen && !promoteModalOpen}
         onClose={onClose}
-        title="Hồ Sơ &amp; Chi Tiết Khóa Học Của Nhân Sự"
+        title="Employee Profile &amp; Course Details"
         size="lg"
       >
         <div style={{ padding: '4px 0' }}>
@@ -121,11 +121,11 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                   </span>
                   <JobLevelBadge level={targetUser.level} />
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 4 }}>
                   <strong>{targetUser.position}</strong> &middot; {targetUser.storeName || targetUser.branchName || 'MM Mega Market VN'}
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>Phòng ban: <strong>{targetUser.departmentName || targetUser.departmentCode || targetUser.department}</strong></span>
+                <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>Department: <strong>{targetUser.departmentName || targetUser.departmentCode || targetUser.department}</strong></span>
                   {(targetUser.subDepartmentName || targetUser.subDepartmentCode) && (
                     <>
                       <span>&middot;</span>
@@ -133,8 +133,8 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 4,
-                        color: '#1E40AF',
-                        background: '#EFF6FF',
+                        color: 'var(--blue-soft-text)',
+                        background: 'var(--blue-soft)',
                         border: '1px solid #BFDBFE',
                         padding: '1px 8px',
                         borderRadius: 4,
@@ -147,12 +147,12 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                     </>
                   )}
                   <span>&middot;</span>
-                  <span>Thâm niên: {targetUser.yearsOfService || '1.5'} năm</span>
+                  <span>Tenure: {targetUser.yearsOfService || '1.5'} years</span>
                 </div>
               </div>
             </div>
 
-            {/* Mọi thao tác trên nhân sự gom về đây, thay vì rải rác ngoài bảng danh mục. */}
+            {/* Every action on an employee is gathered here rather than scattered around the directory table. */}
             {(onEdit || canPromote || onDelete) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {onEdit && (
@@ -161,9 +161,9 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                     icon="ti-edit"
                     size="sm"
                     onClick={() => onEdit(targetUser)}
-                    title="Sửa tên, email, chức danh, cấp bậc và vai trò hệ thống"
+                    title="Edit the name, email, job title, level and system role"
                   >
-                    Sửa Thông Tin
+                    Edit Details
                   </Button>
                 )}
                 {canPromote && (
@@ -178,7 +178,7 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                       fontWeight: 700,
                     }}
                   >
-                    ⭐ Thăng Cấp Bậc (Promote Level)
+                    ⭐ Promote Level
                   </Button>
                 )}
                 {onDelete && (
@@ -187,10 +187,10 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                     icon="ti-trash"
                     size="sm"
                     onClick={() => onDelete(targetUser)}
-                    title="Xóa hồ sơ nhân sự"
+                    title="Delete employee record"
                     style={{ color: 'var(--rose, #E11D48)' }}
                   >
-                    Xóa Nhân Sự
+                    Delete Employee
                   </Button>
                 )}
               </div>
@@ -203,13 +203,13 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
               onClick={() => setActiveTab('transcript')}
               className={`btn btn-sm ${activeTab === 'transcript' ? 'btn-primary' : 'btn-outline'}`}
             >
-              <i className="ti ti-table" /> Bảng Điểm Khóa Học
+              <i className="ti ti-table" /> Course Score Report
             </button>
             <button
               onClick={() => setActiveTab('roadmap')}
               className={`btn btn-sm ${activeTab === 'roadmap' ? 'btn-primary' : 'btn-outline'}`}
             >
-              <i className="ti ti-map-2" /> Lộ Trình Cấp Bậc
+              <i className="ti ti-map-2" /> Level Roadmap
             </button>
           </div>
 
@@ -221,37 +221,37 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
           <div className="grid grid-4" style={{ gap: 12, marginBottom: 20 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', textAlign: 'center' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase' }}>
-                Tổng Khóa Đã Gán
+                Total Assigned Courses
               </div>
               <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--ink)', marginTop: 4 }}>
                 {totalCourses}
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#F0FDF4', borderColor: '#BBF7D0', textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
-                Đã Hoàn Thành
+            <div className="card card-pad" style={{ background: 'var(--sage-soft)', borderColor: '#BBF7D0', textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--sage-soft-text)', textTransform: 'uppercase' }}>
+                Completed
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#15803D', marginTop: 4 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--sage-soft-text)', marginTop: 4 }}>
                 {completedList.length}
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#166534', marginLeft: 4 }}>
-                  (ĐTB: {avgScore}%)
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--sage-soft-text)', marginLeft: 4 }}>
+                  (Avg: {avgScore}%)
                 </span>
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#FEFCE8', borderColor: '#FEF08A', textAlign: 'center' }}>
+            <div className="card card-pad" style={{ background: 'var(--amber-soft)', borderColor: '#FEF08A', textAlign: 'center' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#854D0E', textTransform: 'uppercase' }}>
-                Đang Học Dở Dang
+                In Progress
               </div>
               <div style={{ fontSize: 22, fontWeight: 900, color: '#A16207', marginTop: 4 }}>
                 {inProgressList.length}
               </div>
             </div>
 
-            <div className="card card-pad" style={{ background: '#FEF2F2', borderColor: '#FECACA', textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>
-                Quá Hạn / Cần Thi Lại
+            <div className="card card-pad" style={{ background: 'var(--rust-soft)', borderColor: '#FECACA', textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--rust-soft-text)', textTransform: 'uppercase' }}>
+                Overdue / Retake Required
               </div>
               <div style={{ fontSize: 22, fontWeight: 900, color: '#DC2626', marginTop: 4 }}>
                 {overdueList.length}
@@ -262,30 +262,30 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
           {/* COURSE TRANSCRIPT TABLE */}
           <div className="card" style={{ overflowX: 'auto' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>
-                Chi Tiết Tiến Độ Từng Khóa Học ({userCourses.length} Khóa)
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                Per-Course Progress Detail ({userCourses.length} courses)
               </div>
-              <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-                Chuẩn hóa định biên &amp; phân quyền truy cập
+              <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                Standardize the job framework &amp; access rights
               </span>
             </div>
 
             <table className="table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Khóa Học</th>
-                  <th style={{ width: 120 }}>Cấp Bậc (Level)</th>
-                  <th style={{ width: 120 }}>Trạng Thái</th>
-                  <th style={{ width: 130 }}>Tiến Độ</th>
-                  <th style={{ width: 80 }}>Điểm Thi</th>
-                  <th style={{ width: 110 }}>Hạn / Hoàn Thành</th>
+                  <th>Course</th>
+                  <th style={{ width: 120 }}>Job Level</th>
+                  <th style={{ width: 120 }}>Status</th>
+                  <th style={{ width: 130 }}>Progress</th>
+                  <th style={{ width: 80 }}>Exam Score</th>
+                  <th style={{ width: 110 }}>Due / Completed</th>
                 </tr>
               </thead>
               <tbody>
                 {userCourses.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
-                      Chưa có khóa học nào được ghi nhận cho nhân sự này.
+                      No course has been recorded for this employee yet.
                     </td>
                   </tr>
                 ) : (
@@ -298,9 +298,9 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
 
                     return (
                       <tr key={c.id}>
-                        {/* Bảng tổng hợp này chỉ hiện mã khóa (gọn, không xuống dòng lung tung
-                            khi cột hẹp) — tên đầy đủ xem trong tooltip hoặc trang "Khóa Học Của
-                            Tôi" của learner, nơi vẫn hiện tên bình thường như trước. */}
+                        {/* This summary table shows only the course code (compact, so it does not wrap awkwardly
+                            in a narrow column) — the full name is in the tooltip or on the learner's "My
+                            Courses" page, where it still appears in full as before. */}
                         <td>
                           <div
                             style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', fontFamily: 'var(--font-mono)' }}
@@ -346,7 +346,7 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                           </span>
                         </td>
 
-                        <td style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                        <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                           {isCompleted ? formatDate(enr?.completedAt) : formatDate(enr?.dueDate || c.assignment?.dueDate)}
                         </td>
                       </tr>
@@ -366,31 +366,31 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
         <Modal
           isOpen={promoteModalOpen}
           onClose={() => setPromoteModalOpen(false)}
-          title="Quyết Định Thăng Cấp Bậc (Job Level Promotion)"
+          title="Job Level Promotion Decision"
           size="md"
         >
           {promotionSuccess ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 12px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--sage-soft)', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 12px' }}>
                 <i className="ti ti-check" />
               </div>
-              <h3 style={{ margin: '0 0 6px', fontWeight: 800 }}>Thăng Cấp Bậc Thành Công!</h3>
+              <h3 style={{ margin: '0 0 6px', fontWeight: 800 }}>Promotion Successful!</h3>
               <p style={{ color: 'var(--ink-soft)', fontSize: 13, margin: 0 }}>
-                Học viên <strong>{targetUser.fullName}</strong> đã được nâng lên <strong>Level {selectedNewLevel} ({levelTitle(selectedNewLevel)})</strong>.
+                Learner <strong>{targetUser.fullName}</strong> has been raised to <strong>Level {selectedNewLevel} ({levelTitle(selectedNewLevel)})</strong>.
               </p>
             </div>
           ) : (
             <form onSubmit={handlePromoteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ background: 'var(--paper-sunken)', padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Nhân viên được xem xét:</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Employee under review:</div>
                 <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginTop: 2 }}>
-                  {targetUser.fullName} &middot; Level hiện tại: <JobLevelBadge level={targetUser.level} />
+                  {targetUser.fullName} &middot; Current level: <JobLevelBadge level={targetUser.level} />
                 </div>
               </div>
 
               <div>
                 <label className="field-label" style={{ fontWeight: 700, marginBottom: 6, display: 'block' }}>
-                  Chọn Cấp Bậc Mới (Thang Level 7 Thấp Nhất &rarr; Level 1 Cao Nhất):
+                  Choose The New Level (scale: Level 7 lowest &rarr; Level 1 highest):
                 </label>
                 <select
                   className="field-select"
@@ -399,36 +399,36 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                   style={{ width: '100%', height: 38, fontSize: 13, fontWeight: 700 }}
                 >
                   {LEVEL_DEFINITIONS
-                    .filter((def) => Number(def.level) < Number(targetUser.level || 7)) // Chỉ cho phép thăng lên level cao hơn (số nhỏ hơn)
+                    .filter((def) => Number(def.level) < Number(targetUser.level || 7)) // Only promotion to a higher level (a smaller number) is allowed
                     .map((def) => (
                       <option key={def.level} value={def.level}>
                         Level {def.level} &mdash; {def.titleEn || def.titleVi} ({def.titleVi}) [{def.code}]
                       </option>
                     ))}
                 </select>
-                <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 4 }}>
-                  Khi thăng cấp thành công, học viên sẽ tự động được mở khóa toàn bộ chương trình đào tạo của cấp bậc mới.
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>
+                  On a successful promotion the learner is automatically unlocked into the entire training program of the new level.
                 </div>
               </div>
 
               <div>
                 <label className="field-label" style={{ fontWeight: 700, marginBottom: 6, display: 'block' }}>
-                  Lý Do / Căn Cứ Đánh Giá Thăng Cấp:
+                  Reason / Basis For The Promotion Review:
                 </label>
                 <textarea
                   className="field-textarea"
                   rows={3}
                   value={promotionReason}
                   onChange={(e) => setPromotionReason(e.target.value)}
-                  placeholder="Ghi chú thành tích học tập, chứng chỉ đạt được, đánh giá 1-on-1 của quản lý..."
+                  placeholder="Record learning achievements, certificates earned, the manager's 1-on-1 review..."
                   required
-                  style={{ width: '100%', fontSize: 12.5 }}
+                  style={{ width: '100%', fontSize: 13 }}
                 />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                 <Button variant="outline" type="button" onClick={() => setPromoteModalOpen(false)}>
-                  Hủy Bỏ
+                  Cancel
                 </Button>
                 <Button
                   variant="primary"
@@ -436,7 +436,7 @@ export default function UserTranscriptModal({ targetUser, isOpen, onClose, onEdi
                   icon="ti-award"
                   style={{ background: 'linear-gradient(135deg, #4338CA 0%, #6D28D9 100%)', borderColor: '#4338CA' }}
                 >
-                  Xác Nhận Thăng Cấp Bậc
+                  Confirm The Promotion
                 </Button>
               </div>
             </form>

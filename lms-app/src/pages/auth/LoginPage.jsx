@@ -14,7 +14,7 @@ import { ROLE_ORDER, ROLE_HOME, normalizeRole, roleDefinition } from '../../data
 import { levelShortLabel } from '../../data/levelSystem';
 import { Badge, Button } from '../../features/common/ui';
 
-// Nhãn hiển thị của 6 role, xếp theo rank từ thấp lên cao.
+// Display labels for the 6 roles, ordered by rank from low to high.
 const ROLE_BADGE_EMOJI = {
   learner: '👤',
   manager: '💼',
@@ -42,7 +42,7 @@ export default function LoginPage() {
 
   const totalUserList = allUsers ? allUsers() : demoUsers;
 
-  // 6 persona chuẩn, xếp đúng thứ tự phân cấp: Learner -> ... -> System Admin (IT).
+  // The 6 standard personas, in rank order: Learner -> ... -> System Admin (IT).
   const featuredUsers = ROLE_ORDER.map((roleId, idx) => {
     const def = roleDefinition(roleId);
     const user = personaForRole(roleId);
@@ -162,7 +162,7 @@ export default function LoginPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: '1px solid var(--line)', paddingBottom: 10, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="ti ti-users" style={{ color: 'var(--rail)' }} />
-                  6 Persona Chuẩn Theo Thứ Tự Phân Cấp (Learner → System Admin IT)
+                  The 6 Standard Personas In Rank Order (Learner → System Admin IT)
                 </div>
                 <Button size="sm" variant="ai" icon="ti-search" onClick={() => setShowAllUsersModal(true)}>
                   Browse All 100 Users ({demoUsers.length})
@@ -193,19 +193,19 @@ export default function LoginPage() {
                       <div>
                         {/* Top role & level tag */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontSize: 10.5, fontWeight: 700, background: `var(--${user.roleTone}-soft)`, color: `var(--${user.roleTone}-soft-text)`, padding: '2px 7px', borderRadius: 12 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: `var(--${user.roleTone}-soft)`, color: `var(--${user.roleTone}-soft-text)`, padding: '2px 7px', borderRadius: 12 }}>
                             {user.roleBadge}
                           </span>
-                          <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink-faint)' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-faint)' }}>
                             {levelShortLabel(user.level)}
                           </span>
                         </div>
 
                         {/* User name & ID */}
-                        <div style={{ fontWeight: 700, fontSize: 13.5, color: isSelected ? 'var(--rail-soft-text)' : 'var(--ink)', marginBottom: 2 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: isSelected ? 'var(--rail-soft-text)' : 'var(--ink)', marginBottom: 2 }}>
                           {user.fullName}
                         </div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
                           {user.position}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6, lineHeight: 1.4 }}>
@@ -231,7 +231,7 @@ export default function LoginPage() {
             </div>
 
             {/* Matrix count summary footer */}
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: 'var(--ink-soft)', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--ink-soft)', flexWrap: 'wrap', gap: 8 }}>
               <span>Total Dataset: <strong>100 Active Users</strong> &middot; <strong>100 Courses</strong></span>
               <span style={{ color: 'var(--rail)', fontWeight: 600, cursor: 'pointer' }} onClick={() => setShowAllUsersModal(true)}>
                 <i className="ti ti-list-details" /> Open Full 100 User Roster &rarr;
@@ -245,7 +245,7 @@ export default function LoginPage() {
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: 'var(--ink)' }}>
                 Sign In to MMVN Portal
               </div>
-              <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
                 Selected Profile: <strong>{selectedUser.fullName}</strong> ({selectedUser.employeeCode} &middot; Level {selectedUser.level})
               </p>
 
@@ -265,7 +265,7 @@ export default function LoginPage() {
                   gap: 10,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#1E293B',
+                  color: 'var(--ink)',
                   cursor: 'pointer',
                   marginBottom: 16,
                   boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
@@ -332,7 +332,7 @@ export default function LoginPage() {
             </div>
 
             {/* Security Notice */}
-            <div style={{ background: 'var(--paper-sunken)', padding: '10px 12px', borderRadius: 6, fontSize: 11.5, color: 'var(--ink-soft)', marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ background: 'var(--paper-sunken)', padding: '10px 12px', borderRadius: 6, fontSize: 12, color: 'var(--ink-soft)', marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
               <i className="ti ti-shield-check" style={{ color: 'var(--sage)', fontSize: 16 }} />
               <span>Protected by Enterprise Dynamic Watermark &amp; Role-based Access Control (RBAC).</span>
             </div>
@@ -375,7 +375,7 @@ export default function LoginPage() {
                 <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--ink)' }}>
                   MMVN 100 Employee Roster Directory
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 2 }}>
                   Click any employee below to log in directly to their dedicated LMS workspace.
                 </div>
               </div>
@@ -403,7 +403,7 @@ export default function LoginPage() {
 
               <select
                 className="field-select"
-                style={{ width: 180, height: 36, fontSize: 12.5 }}
+                style={{ width: 180, height: 36, fontSize: 13 }}
                 value={divisionFilter}
                 onChange={(e) => setDivisionFilter(e.target.value)}
               >
@@ -435,7 +435,7 @@ export default function LoginPage() {
                       </td>
                       <td>
                         <div style={{ fontWeight: 700, fontSize: 13 }}>{u.fullName}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{u.position}</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{u.position}</div>
                       </td>
                       <td>
                         {getRoleBadge(u.role)}
@@ -443,7 +443,7 @@ export default function LoginPage() {
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                         {levelShortLabel(u.level)}
                       </td>
-                      <td style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                      <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                         <strong>{u.divisionCode}</strong> / {u.departmentCode}
                       </td>
                       <td>

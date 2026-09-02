@@ -22,11 +22,11 @@ import {
 const PAGE_SIZE = 20;
 
 const TABS = [
-  { id: 'OVERVIEW', label: 'Tổng Quan Thu Chi', icon: 'ti-report-money' },
-  { id: 'CENTERS', label: 'Theo Trung Tâm Chi Phí', icon: 'ti-building-bank' },
-  { id: 'PRICING', label: 'Bảng Giá Khóa Học', icon: 'ti-tag' },
-  { id: 'EMPLOYEES', label: 'Theo Nhân Sự (Xuất HR)', icon: 'ti-users' },
-  { id: 'LEDGER', label: 'Sổ Giao Dịch', icon: 'ti-list-details' },
+  { id: 'OVERVIEW', label: 'Income & Expense Overview', icon: 'ti-report-money' },
+  { id: 'CENTERS', label: 'By Cost Center', icon: 'ti-building-bank' },
+  { id: 'PRICING', label: 'Course Price List', icon: 'ti-tag' },
+  { id: 'EMPLOYEES', label: 'By Employee (HR Export)', icon: 'ti-users' },
+  { id: 'LEDGER', label: 'Transaction Ledger', icon: 'ti-list-details' },
 ];
 
 function utilizationTone(percent) {
@@ -53,7 +53,7 @@ export default function AdminCostCenter() {
 
   const [activeTab, setActiveTab] = useState('OVERVIEW');
 
-  // Manager chỉ được nhìn chi phí đào tạo của chính Division mình.
+  // A Manager only sees the training cost of their own Division.
   const scopedLedger = useMemo(
     () => scopeLedgerForUser(costLedger, currentUser, { seeAll }),
     [costLedger, currentUser, seeAll]
@@ -67,7 +67,7 @@ export default function AdminCostCenter() {
           ),
     [costCenters, currentUser, seeAll]
   );
-  // Chỉ xuất/liệt kê nhân sự trong đúng Division của Manager — cùng phạm vi với sổ cái.
+  // Only exports/lists employees within the Manager's own Division — the same scope as the ledger.
   const scopedUsers = useMemo(
     () => (seeAll ? users : users.filter((u) => u.divisionId === currentUser?.divisionId)),
     [users, currentUser, seeAll]
@@ -84,13 +84,13 @@ export default function AdminCostCenter() {
           <i className="ti ti-lock" aria-hidden="true" />
         </div>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>
-          Truy Cập Bị Giới Hạn (Access Restricted)
+          Access Restricted
         </h2>
-        <p style={{ color: 'var(--ink-soft)', fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
-          Trung Tâm Chi Phí Đào Tạo là báo cáo tài chính nội bộ, chỉ dành riêng cho <strong>Quản Trị Nhân Sự (User Admin)</strong> và <strong>Quản Trị Hệ Thống (System Admin)</strong>. Các vai trò khác (Học viên, Quản lý, Giảng viên, HRBP) không có quyền truy cập trang này.
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+          The Training Cost Center is an internal financial report, reserved for <strong>People Administration (User Admin)</strong> and <strong>System Administration (System Admin)</strong>. The other roles (Learner, Manager, Trainer, HRBP) cannot access this page.
         </p>
         <Button variant="primary" icon="ti-arrow-left" onClick={() => window.history.back()}>
-          Quay Lại Trang Trước
+          Back To Previous Page
         </Button>
       </div>
     );
@@ -103,20 +103,20 @@ export default function AdminCostCenter() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <h1>Trung Tâm Chi Phí Đào Tạo</h1>
-            <Badge tone="amber" icon="ti-report-money">Cost Center · Năm tài chính {FISCAL_YEAR}</Badge>
+            <h1>Training Cost Center</h1>
+            <Badge tone="amber" icon="ti-report-money">Cost Center · Fiscal year {FISCAL_YEAR}</Badge>
             {!seeAll && (
               <Badge tone="blue" icon="ti-filter">
-                Phạm vi: {currentUser?.divisionName || 'Phòng ban của bạn'}
-                {currentUser?.costCenterCode ? ` · Mã ${currentUser.costCenterCode}` : ''}
+                Scope: {currentUser?.divisionName || 'Your department'}
+                {currentUser?.costCenterCode ? ` · Code ${currentUser.costCenterCode}` : ''}
               </Badge>
             )}
           </div>
           <p>
-            Mỗi Division sở hữu đúng một mã Trung Tâm Chi Phí (5 số) do HR cấp. Khi học viên ghi danh khóa{' '}
-            <strong>có phí</strong>, toàn bộ học phí do <strong>công ty chi trả</strong> — ghi nợ thẳng vào mã của
-            Division học viên đó, học viên không phải thanh toán. Khóa <strong>miễn phí</strong> vẫn được ghi nhận
-            lượt học với giá trị 0 đồng để so sánh hiệu quả giữa nội dung nội bộ và nội dung mua ngoài.
+            Each Division owns exactly one 5-digit Cost Center code issued by HR. When a learner enrolls in a course{' '}
+            <strong>paid</strong>, the full tuition is paid by <strong>paid by the company</strong> — debited straight to the code of that
+            learner's Division; the learner pays nothing. A course <strong>free</strong> is still recorded
+            as an enrollment at zero cost, so internal content can be compared against externally purchased content.
           </p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function AdminCostCenter() {
 }
 
 // ===========================================================================
-// TAB 1 — TỔNG QUAN
+// TAB 1 — OVERVIEW
 // ===========================================================================
 
 function OverviewTab({ report, totals }) {
@@ -165,64 +165,64 @@ function OverviewTab({ report, totals }) {
     <>
       <div className="grid grid-4" style={{ gap: 16, marginBottom: 20 }}>
         <StatCard
-          label="Tổng Thu (Ngân Sách Được Cấp)"
+          label="Total Income (Budget Granted)"
           value={formatVndShort(totals.income)}
           tone="sage"
           icon="ti-wallet"
-          sublabel={`Năm tài chính ${FISCAL_YEAR}`}
+          sublabel={`Fiscal year ${FISCAL_YEAR}`}
         />
         <StatCard
-          label="Tổng Chi (Đã Sử Dụng)"
+          label="Total Spend (Used)"
           value={formatVndShort(totals.expense)}
           tone="rust"
           icon="ti-cash-off"
-          sublabel={`${totals.paidEnrollments.toLocaleString('vi-VN')} lượt ghi danh có phí`}
+          sublabel={`${totals.paidEnrollments.toLocaleString('en-US')} paid enrollments`}
         />
         <StatCard
-          label="Số Dư Còn Lại"
+          label="Remaining Balance"
           value={formatVndShort(totals.balance)}
           tone={totals.balance < 0 ? 'rust' : 'blue'}
           icon="ti-pig-money"
-          sublabel={totals.balance < 0 ? 'Đã bội chi ngân sách' : 'Còn khả dụng đến cuối năm'}
+          sublabel={totals.balance < 0 ? 'Budget overspent' : 'Available until year end'}
         />
         <StatCard
-          label="Tỷ Lệ Sử Dụng Ngân Sách"
+          label="Budget Utilization Rate"
           value={`${totals.utilization}%`}
           tone={utilizationTone(totals.utilization)}
           icon="ti-percentage"
-          sublabel={`Chi phí bình quân ${formatVndShort(totals.costPerLearner)} / học viên`}
+          sublabel={`Average cost ${formatVndShort(totals.costPerLearner)} / learner`}
         />
       </div>
 
       <div className="grid grid-3" style={{ gap: 16, marginBottom: 20 }}>
         <StatCard
-          label="Lượt Ghi Danh Có Phí"
-          value={totals.paidEnrollments.toLocaleString('vi-VN')}
+          label="Paid Enrollments"
+          value={totals.paidEnrollments.toLocaleString('en-US')}
           tone="amber"
           icon="ti-coin"
-          sublabel="Tốn ngân sách đào tạo"
+          sublabel="Draws on the training budget"
         />
         <StatCard
-          label="Lượt Ghi Danh Miễn Phí"
-          value={totals.freeEnrollments.toLocaleString('vi-VN')}
+          label="Free Enrollments"
+          value={totals.freeEnrollments.toLocaleString('en-US')}
           tone="sage"
           icon="ti-gift"
-          sublabel="Nội dung nội bộ MMVN · 0 đồng"
+          sublabel="MMVN internal content · zero cost"
         />
         <StatCard
-          label="Học Viên Phát Sinh Chi Phí"
-          value={totals.distinctLearners.toLocaleString('vi-VN')}
+          label="Learners Incurring Cost"
+          value={totals.distinctLearners.toLocaleString('en-US')}
           tone="blue"
           icon="ti-users"
-          sublabel={`${totals.txnCount.toLocaleString('vi-VN')} bút toán trong sổ cái`}
+          sublabel={`${totals.txnCount.toLocaleString('en-US')} ledger entries`}
         />
       </div>
 
       <div className="grid grid-2" style={{ gap: 16, marginBottom: 20 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 4 }}>Chi Phí Đào Tạo Theo Tháng</div>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Training Cost By Month</div>
           <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 0, marginBottom: 14 }}>
-            Tổng số tiền ghi nợ vào các trung tâm chi phí trong từng tháng (triệu đồng).
+            Total amount debited to the cost centers each month (millions of VND).
           </p>
           <BarChart
             data={report.byMonth.map((m) => ({ label: m.label, value: Math.round(m.value / 1e6), detail: `${m.label}: ${formatVnd(m.value)}` }))}
@@ -232,12 +232,12 @@ function OverviewTab({ report, totals }) {
         </div>
 
         <div className="card card-pad">
-          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 4 }}>Cơ Cấu Chi Theo Loại Chi Phí</div>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Spend Breakdown By Cost Type</div>
           <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 0, marginBottom: 14 }}>
-            Tiền chảy về đâu: license nền tảng ngoài hay chi phí tổ chức lớp trực tiếp.
+            Where the money goes: external platform licences or the cost of running in-person classes.
           </p>
           {report.byCostType.filter((t) => t.amount > 0).length === 0 ? (
-            <div className="empty-state" style={{ padding: 12 }}><p>Chưa phát sinh chi phí nào.</p></div>
+            <div className="empty-state" style={{ padding: 12 }}><p>No cost incurred yet.</p></div>
           ) : (
             <>
               <DonutChart
@@ -252,10 +252,10 @@ function OverviewTab({ report, totals }) {
               />
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {report.byCostType.filter((t) => t.amount > 0).map((t) => (
-                  <div key={t.costType} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                  <div key={t.costType} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span>
                       <i className={`ti ${COST_TYPE_META[t.costType]?.icon || 'ti-coin'}`} style={{ marginRight: 6, color: 'var(--ink-soft)' }} />
-                      {COST_TYPE_META[t.costType]?.labelVi || t.costType} &middot; {t.count.toLocaleString('vi-VN')} lượt
+                      {COST_TYPE_META[t.costType]?.labelVi || t.costType} &middot; {t.count.toLocaleString('en-US')} enrollments
                     </span>
                     <strong>{formatVnd(t.amount)}</strong>
                   </div>
@@ -268,9 +268,9 @@ function OverviewTab({ report, totals }) {
 
       <div className="grid grid-2" style={{ gap: 16 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 14 }}>Top Trung Tâm Chi Phí Chi Nhiều Nhất</div>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 14 }}>Top Spending Cost Centers</div>
           {topCenters.length === 0 ? (
-            <div className="empty-state" style={{ padding: 12 }}><p>Chưa có trung tâm chi phí nào phát sinh chi.</p></div>
+            <div className="empty-state" style={{ padding: 12 }}><p>No cost center has incurred spending yet.</p></div>
           ) : (
             <BarChart
               data={topCenters.map((c) => ({
@@ -285,15 +285,15 @@ function OverviewTab({ report, totals }) {
         </div>
 
         <div className="card card-pad">
-          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 14 }}>Top Khóa Học Tốn Ngân Sách Nhất</div>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 14 }}>Most Budget-Intensive Courses</div>
           {topCourses.length === 0 ? (
-            <div className="empty-state" style={{ padding: 12 }}><p>Chưa có khóa học có phí nào được ghi danh.</p></div>
+            <div className="empty-state" style={{ padding: 12 }}><p>No paid course has been enrolled in yet.</p></div>
           ) : (
             <BarChart
               data={topCourses.map((c) => ({
                 label: c.title,
                 value: Math.round(c.spent / 1e6),
-                detail: `${c.title}: ${c.seats} suất × ${formatVnd(c.unitPrice)} = ${formatVnd(c.spent)}`,
+                detail: `${c.title}: ${c.seats} seats × ${formatVnd(c.unitPrice)} = ${formatVnd(c.spent)}`,
                 tone: 'blue',
               }))}
               valueSuffix=" tr"
@@ -306,7 +306,7 @@ function OverviewTab({ report, totals }) {
 }
 
 // ===========================================================================
-// TAB 2 — THEO TRUNG TÂM CHI PHÍ
+// TAB 2 — BY COST CENTER
 // ===========================================================================
 
 function CostCentersTab({ report }) {
@@ -326,18 +326,18 @@ function CostCentersTab({ report }) {
     downloadCsv(
       `cost-center-summary-${FISCAL_YEAR}.csv`,
       rows.map((c) => ({
-        'Mã Cost Center (5 số)': c.code,
-        'Trung Tâm Chi Phí (Division)': c.name,
-        Khối: c.branchName || c.branch,
+        'Cost Center Code (5 digits)': c.code,
+        'Cost Center (Division)': c.name,
+        Division: c.branchName || c.branch,
         'Location': c.location || '',
-        'Nhân Sự': c.headcount,
-        'Ngân Sách (VND)': c.budget,
-        'Đã Chi (VND)': c.spent,
-        'Còn Lại (VND)': c.remaining,
-        'Sử Dụng (%)': c.utilization,
-        'Lượt Có Phí': c.paidEnrollments,
-        'Lượt Miễn Phí': c.freeEnrollments,
-        'Học Viên': c.learners,
+        'Employee': c.headcount,
+        'Budget (VND)': c.budget,
+        'Spent (VND)': c.spent,
+        'Remaining (VND)': c.remaining,
+        'Utilization (%)': c.utilization,
+        'Paid Enrollments': c.paidEnrollments,
+        'Free Enrollments': c.freeEnrollments,
+        'Learner': c.learners,
       }))
     );
   }
@@ -346,25 +346,25 @@ function CostCentersTab({ report }) {
     <div className="card card-pad">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>Ngân Sách &amp; Mức Sử Dụng Theo Trung Tâm Chi Phí</div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-            Mỗi Division sở hữu đúng một mã Trung Tâm Chi Phí 5 số do HR cấp. Ngân sách năm được cấp theo đầu người của khối.
+          <div style={{ fontSize: 15, fontWeight: 800 }}>Budget &amp; Utilization By Cost Center</div>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+            Each Division owns exactly one 5-digit Cost Center code issued by HR. The annual budget is granted per head of the division.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select className="field-input" value={branch} onChange={(e) => setBranch(e.target.value)} style={{ fontSize: 12.5 }}>
-            <option value="ALL">Tất cả khối</option>
-            <option value="OPERATIONS">Khối Vận Hành Siêu Thị</option>
-            <option value="SUPPORTING">Khối Chức Năng Hỗ Trợ</option>
+          <select className="field-input" value={branch} onChange={(e) => setBranch(e.target.value)} style={{ fontSize: 13 }}>
+            <option value="ALL">All divisions</option>
+            <option value="OPERATIONS">Store Operations Division</option>
+            <option value="SUPPORTING">Supporting Functions Division</option>
           </select>
           <input
             className="field-input"
-            placeholder="Tìm mã / tên trung tâm..."
+            placeholder="Search center code / name..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ fontSize: 12.5, minWidth: 220 }}
+            style={{ fontSize: 13, minWidth: 220 }}
           />
-          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Xuất CSV</Button>
+          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Export CSV</Button>
         </div>
       </div>
 
@@ -372,13 +372,13 @@ function CostCentersTab({ report }) {
         <table className="table">
           <thead>
             <tr>
-              <th>Trung Tâm Chi Phí</th>
-              <th style={{ textAlign: 'right' }}>Nhân Sự</th>
-              <th style={{ textAlign: 'right' }}>Ngân Sách</th>
-              <th style={{ textAlign: 'right' }}>Đã Chi</th>
-              <th style={{ textAlign: 'right' }}>Còn Lại</th>
-              <th style={{ minWidth: 150 }}>Mức Sử Dụng</th>
-              <th style={{ textAlign: 'right' }}>Lượt Ghi Danh</th>
+              <th>Cost Center</th>
+              <th style={{ textAlign: 'right' }}>Employee</th>
+              <th style={{ textAlign: 'right' }}>Budget</th>
+              <th style={{ textAlign: 'right' }}>Spent</th>
+              <th style={{ textAlign: 'right' }}>Remaining</th>
+              <th style={{ minWidth: 150 }}>Utilization</th>
+              <th style={{ textAlign: 'right' }}>Enrollments</th>
             </tr>
           </thead>
           <tbody>
@@ -389,7 +389,7 @@ function CostCentersTab({ report }) {
                     <span style={{ fontWeight: 700, fontSize: 13 }}>{c.name}</span>
                     <Badge tone="slate" size="sm">{c.code}</Badge>
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                     {c.branchName || c.branch}
                     {c.location ? ` · ${c.location}` : ''}
                   </div>
@@ -410,16 +410,16 @@ function CostCentersTab({ report }) {
                 </td>
                 <td style={{ textAlign: 'right', fontSize: 12 }}>
                   <span style={{ color: 'var(--amber)', fontWeight: 700 }}>{c.paidEnrollments}</span>
-                  {' có phí · '}
+                  {' paid · '}
                   <span style={{ color: 'var(--sage)', fontWeight: 700 }}>{c.freeEnrollments}</span>
-                  {' miễn phí'}
+                  {' free'}
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-faint)', padding: 20 }}>
-                  Không có trung tâm chi phí nào khớp bộ lọc.
+                  No cost center matches the filters.
                 </td>
               </tr>
             )}
@@ -431,7 +431,7 @@ function CostCentersTab({ report }) {
 }
 
 // ===========================================================================
-// TAB 3 — BẢNG GIÁ KHÓA HỌC
+// TAB 3 — COURSE PRICE LIST
 // ===========================================================================
 
 function PricingTab({ report, courses, canManage, updateCoursePricing }) {
@@ -468,14 +468,14 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
     downloadCsv(
       `course-pricing-${FISCAL_YEAR}.csv`,
       rows.map((c) => ({
-        'Mã Khóa': c.courseCode,
-        'Tên Khóa Học': c.title,
-        'Lĩnh Vực': c.category || '',
-        'Loại Chi Phí': COST_TYPE_META[c.costType]?.labelVi || c.costType || '',
-        'Miễn Phí': c.isFree ? 'Có' : 'Không',
-        'Giá / Suất (VND)': c.unitPrice,
-        'Lượt Ghi Danh': c.seats,
-        'Tổng Chi (VND)': c.spent,
+        'Course Code': c.courseCode,
+        'Course Name': c.title,
+        'Area': c.category || '',
+        'Cost Type': COST_TYPE_META[c.costType]?.labelVi || c.costType || '',
+        'Free': c.isFree ? 'Yes' : 'No',
+        'Price / Seat (VND)': c.unitPrice,
+        'Enrollments': c.seats,
+        'Total Spend (VND)': c.spent,
       }))
     );
   }
@@ -485,29 +485,29 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
       <div className="card card-pad">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>Bảng Giá Khóa Học (Công Ty Chi Trả)</div>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-              {paidCount} khóa có phí &middot; {freeCount} khóa miễn phí. Giá dưới đây là chi phí công ty phải trả cho
-              mỗi suất học — học viên không thanh toán.{' '}
+            <div style={{ fontSize: 15, fontWeight: 800 }}>Course Price List (Company-Paid)</div>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+              {paidCount} course paid &middot; {freeCount} course free. The prices below are what the company pays for
+              each seat — the learner pays nothing.{' '}
               {canManage
-                ? 'Bấm "Sửa giá" để đặt giá hoặc chuyển khóa về miễn phí — giá mới chỉ áp dụng cho lượt ghi danh sau đó.'
-                : 'Chỉ User Admin / System Admin được sửa giá.'}
+                ? 'Click "Edit price" to set a price or make the course free — the new price applies only to later enrollments.'
+                : 'Only User Admin / System Admin may edit prices.'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select className="field-input" value={filter} onChange={(e) => resetPage(setFilter)(e.target.value)} style={{ fontSize: 12.5 }}>
-              <option value="ALL">Tất cả khóa học</option>
-              <option value="PAID">Chỉ khóa có phí</option>
-              <option value="FREE">Chỉ khóa miễn phí</option>
+            <select className="field-input" value={filter} onChange={(e) => resetPage(setFilter)(e.target.value)} style={{ fontSize: 13 }}>
+              <option value="ALL">All courses</option>
+              <option value="PAID">Paid courses only</option>
+              <option value="FREE">Free courses only</option>
             </select>
             <input
               className="field-input"
-              placeholder="Tìm mã / tên khóa học..."
+              placeholder="Search course code / name..."
               value={query}
               onChange={(e) => resetPage(setQuery)(e.target.value)}
-              style={{ fontSize: 12.5, minWidth: 220 }}
+              style={{ fontSize: 13, minWidth: 220 }}
             />
-            <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Xuất CSV</Button>
+            <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Export CSV</Button>
           </div>
         </div>
 
@@ -515,12 +515,12 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
           <table className="table">
             <thead>
               <tr>
-                <th>Khóa Học</th>
-                <th>Loại Chi Phí</th>
-                <th style={{ textAlign: 'right' }}>Công Ty Trả / Học Viên</th>
-                <th style={{ textAlign: 'right' }}>Lượt Ghi Danh</th>
-                <th style={{ textAlign: 'right' }}>Tổng Chi</th>
-                {canManage && <th style={{ textAlign: 'right' }}>Thao Tác</th>}
+                <th>Course</th>
+                <th>Cost Type</th>
+                <th style={{ textAlign: 'right' }}>Company Paid / Learner</th>
+                <th style={{ textAlign: 'right' }}>Enrollments</th>
+                <th style={{ textAlign: 'right' }}>Total Spend</th>
+                {canManage && <th style={{ textAlign: 'right' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -528,7 +528,7 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
                 <tr key={c.courseId}>
                   <td>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{c.title}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                       {c.courseCode}{c.category ? ` · ${c.category}` : ''}
                     </div>
                   </td>
@@ -538,14 +538,14 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
                     </Badge>
                   </td>
                   <td style={{ textAlign: 'right', fontWeight: 700, color: c.isFree ? 'var(--sage)' : 'var(--ink)' }}>
-                    {c.isFree ? 'Miễn Phí' : formatVnd(c.unitPrice)}
+                    {c.isFree ? 'Free' : formatVnd(c.unitPrice)}
                   </td>
-                  <td style={{ textAlign: 'right' }}>{c.seats.toLocaleString('vi-VN')}</td>
+                  <td style={{ textAlign: 'right' }}>{c.seats.toLocaleString('en-US')}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>{c.spent > 0 ? formatVndShort(c.spent) : '—'}</td>
                   {canManage && (
                     <td style={{ textAlign: 'right' }}>
                       <Button size="sm" variant="ghost" icon="ti-pencil" onClick={() => setEditing(courseById.get(c.courseId) || null)}>
-                        Sửa giá
+                        Edit price
                       </Button>
                     </td>
                   )}
@@ -554,7 +554,7 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
               {paged.length === 0 && (
                 <tr>
                   <td colSpan={canManage ? 6 : 5} style={{ textAlign: 'center', color: 'var(--ink-faint)', padding: 20 }}>
-                    Không có khóa học nào khớp bộ lọc.
+                    No course matches the filters.
                   </td>
                 </tr>
               )}
@@ -565,7 +565,7 @@ function PricingTab({ report, courses, canManage, updateCoursePricing }) {
         <Pagination page={page} pageCount={pageCount} total={rows.length} onChange={setPage} />
       </div>
 
-      {/* key theo khóa học: mở khóa khác thì modal remount, form tự nạp lại giá. */}
+      {/* keyed by course: opening a different course remounts the modal so the form reloads the price. */}
       <PricingEditorModal
         key={editing?.id || 'none'}
         course={editing}
@@ -596,24 +596,24 @@ function PricingEditorModal({ course, onClose, onSave }) {
     <Modal
       isOpen
       onClose={onClose}
-      title="Đặt Giá Khóa Học"
+      title="Set The Course Price"
       subtitle={`${course.code} · ${course.title}`}
       size="sm"
       footer={
         <Button variant="primary" icon="ti-device-floppy" onClick={() => onSave({ isFree, price: parsedPrice, costType, vendor })}>
-          Lưu Bảng Giá
+          Save Price List
         </Button>
       }
     >
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
         <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} />
-        Khóa học miễn phí (không trừ ngân sách khi học viên ghi danh)
+        Free course (no budget is drawn when a learner enrolls)
       </label>
 
       {!isFree && (
         <>
-          <label style={{ fontSize: 12.5, fontWeight: 700, display: 'block', marginBottom: 6 }}>
-            Chi phí công ty trả trên mỗi học viên (VNĐ)
+          <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+            Cost paid by the company per learner (VND)
           </label>
           <input
             className="field-input"
@@ -623,10 +623,10 @@ function PricingEditorModal({ course, onClose, onSave }) {
             style={{ width: '100%', marginBottom: 4 }}
           />
           <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 14 }}>
-            Thành tiền: <strong>{formatVnd(parsedPrice)}</strong>
+            Amount: <strong>{formatVnd(parsedPrice)}</strong>
           </div>
 
-          <label style={{ fontSize: 12.5, fontWeight: 700, display: 'block', marginBottom: 6 }}>Loại chi phí</label>
+          <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>Cost type</label>
           <select className="field-input" value={costType} onChange={(e) => setCostType(e.target.value)} style={{ width: '100%', marginBottom: 14 }}>
             {Object.entries(COST_TYPE_META)
               .filter(([id]) => id !== COST_TYPE.INTERNAL_FREE)
@@ -635,12 +635,12 @@ function PricingEditorModal({ course, onClose, onSave }) {
               ))}
           </select>
 
-          <label style={{ fontSize: 12.5, fontWeight: 700, display: 'block', marginBottom: 6 }}>Nhà cung cấp / Đơn vị tổ chức</label>
+          <label style={{ fontSize: 13, fontWeight: 700, display: 'block', marginBottom: 6 }}>Vendor / Organizer</label>
           <input
             className="field-input"
             value={vendor}
             onChange={(e) => setVendor(e.target.value)}
-            placeholder="VD: Coursera for Business"
+            placeholder="e.g. Coursera for Business"
             style={{ width: '100%', marginBottom: 14 }}
           />
         </>
@@ -648,16 +648,16 @@ function PricingEditorModal({ course, onClose, onSave }) {
 
       <div style={{ background: 'var(--paper-sunken)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--ink-soft)' }}>
         <i className="ti ti-info-circle" style={{ marginRight: 6, color: 'var(--blue)' }} />
-        Toàn bộ chi phí do Trung Tâm Chi Phí (mã 5 số) của Division học viên chi trả — học viên không thanh toán.
-        Giá mới chỉ áp dụng cho các lượt ghi danh phát sinh sau khi lưu; các bút toán đã ghi trong sổ cái giữ nguyên
-        giá tại thời điểm ghi danh để báo cáo quá khứ không bị sai lệch.
+        Every cost is paid by the Cost Center (5-digit code) of the learner's Division — learners never pay.
+        A new price applies only to enrollments created after saving; entries already in the ledger keep the
+        price at the time of enrollment so historical reports stay accurate.
       </div>
     </Modal>
   );
 }
 
 // ===========================================================================
-// TAB 4 — THEO NHÂN SỰ (file xuất cho HR / Kế toán / Kiểm toán)
+// TAB 4 — BY EMPLOYEE (the export for HR / Accounting / Audit)
 // ===========================================================================
 
 function EmployeesTab({ ledger, users }) {
@@ -698,29 +698,29 @@ function EmployeesTab({ ledger, users }) {
     <div className="card card-pad">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>Chi Phí Đào Tạo Theo Từng Nhân Sự</div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-            {rows.length.toLocaleString('vi-VN')} nhân sự &middot; Công ty đã chi{' '}
-            <strong style={{ color: 'var(--rust)' }}>{formatVndShort(totalCompanyPaid)}</strong> cho các khóa có phí.
-            Xuất CSV theo đúng 15 cột hồ sơ HR (Employee Status, Personnel Number, Cost center, Full Name, Entry
+          <div style={{ fontSize: 15, fontWeight: 800 }}>Training Cost By Employee</div>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+            {rows.length.toLocaleString('en-US')} employees &middot; The company has spent{' '}
+            <strong style={{ color: 'var(--rust)' }}>{formatVndShort(totalCompanyPaid)}</strong> for paid courses.
+            Exports a CSV with exactly the 15 HR profile columns (Employee Status, Personnel Number, Cost center, Full Name, Entry
             Date, Gender, Date of birth, Business Email Address, Position, Level, HO/Store, Division, Department,
-            Sub Department, Location) kèm phần chi phí đào tạo để nộp Kế toán / Kiểm toán.
+            Sub Department, Location) plus the training cost, ready for Accounting / Audit.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select className="field-input" value={filter} onChange={(e) => resetPage(setFilter)(e.target.value)} style={{ fontSize: 12.5 }}>
-            <option value="ALL">Tất cả nhân sự</option>
-            <option value="PAID">Đã phát sinh chi phí có phí</option>
-            <option value="UNPAID">Chưa từng học khóa có phí</option>
+          <select className="field-input" value={filter} onChange={(e) => resetPage(setFilter)(e.target.value)} style={{ fontSize: 13 }}>
+            <option value="ALL">All employees</option>
+            <option value="PAID">Has incurred paid spending</option>
+            <option value="UNPAID">Has never taken a paid course</option>
           </select>
           <input
             className="field-input"
-            placeholder="Tìm mã NV / tên / mã cost center..."
+            placeholder="Search employee code / name / cost center code..."
             value={query}
             onChange={(e) => resetPage(setQuery)(e.target.value)}
-            style={{ fontSize: 12.5, minWidth: 240 }}
+            style={{ fontSize: 13, minWidth: 240 }}
           />
-          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Xuất CSV (HR)</Button>
+          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Export CSV (HR)</Button>
         </div>
       </div>
 
@@ -728,12 +728,12 @@ function EmployeesTab({ ledger, users }) {
         <table className="table">
           <thead>
             <tr>
-              <th>Nhân Sự</th>
-              <th>Mã Cost Center</th>
+              <th>Employee</th>
+              <th>Cost Center Code</th>
               <th>Division / Department</th>
-              <th style={{ textAlign: 'right' }}>Lượt Có Phí</th>
-              <th style={{ textAlign: 'right' }}>Lượt Miễn Phí</th>
-              <th style={{ textAlign: 'right' }}>Công Ty Đã Chi</th>
+              <th style={{ textAlign: 'right' }}>Paid Enrollments</th>
+              <th style={{ textAlign: 'right' }}>Free Enrollments</th>
+              <th style={{ textAlign: 'right' }}>Company Spend</th>
             </tr>
           </thead>
           <tbody>
@@ -741,16 +741,16 @@ function EmployeesTab({ ledger, users }) {
               <tr key={r.userId}>
                 <td>
                   <div style={{ fontWeight: 700, fontSize: 13 }}>{r.fullName}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                     {r.personnelNumber || r.userId}{r.position ? ` · ${r.position}` : ''}
                   </div>
                 </td>
                 <td>
                   <Badge tone="slate" size="sm">{r.costCenterCode || 'UNASSIGNED'}</Badge>
                 </td>
-                <td style={{ fontSize: 12.5 }}>
+                <td style={{ fontSize: 13 }}>
                   {r.divisionName || '—'}
-                  {r.departmentName ? <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{r.departmentName}</div> : null}
+                  {r.departmentName ? <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{r.departmentName}</div> : null}
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <span style={{ color: 'var(--amber)', fontWeight: 700 }}>{r.paidEnrollments}</span>
@@ -766,7 +766,7 @@ function EmployeesTab({ ledger, users }) {
             {paged.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', color: 'var(--ink-faint)', padding: 20 }}>
-                  Không có nhân sự nào khớp bộ lọc.
+                  No employee matches the filters.
                 </td>
               </tr>
             )}
@@ -780,7 +780,7 @@ function EmployeesTab({ ledger, users }) {
 }
 
 // ===========================================================================
-// TAB 5 — SỔ GIAO DỊCH
+// TAB 5 — TRANSACTION LEDGER
 // ===========================================================================
 
 function LedgerTab({ ledger, centers }) {
@@ -818,16 +818,16 @@ function LedgerTab({ ledger, centers }) {
     downloadCsv(
       `cost-center-ledger-${FISCAL_YEAR}.csv`,
       rows.map((t) => ({
-        'Mã Bút Toán': t.id,
-        Ngày: t.date,
+        'Entry ID': t.id,
+        Date: t.date,
         'Thu/Chi': t.type === TXN_TYPE.INCOME ? 'THU' : 'CHI',
-        'Nghiệp Vụ': TXN_SOURCE_META[t.source]?.labelVi || t.source,
-        'Trung Tâm Chi Phí': t.costCenterName || '',
-        'Khóa Học': t.courseTitle || '',
-        'Học Viên': t.userName || '',
-        'Loại Chi Phí': COST_TYPE_META[t.costType]?.labelVi || '',
-        'Miễn Phí': t.source === TXN_SOURCE.ENROLLMENT ? (t.isFree ? 'Có' : 'Không') : '',
-        'Số Tiền (VND)': t.amount,
+        'Operations': TXN_SOURCE_META[t.source]?.labelVi || t.source,
+        'Cost Center': t.costCenterName || '',
+        'Course': t.courseTitle || '',
+        'Learner': t.userName || '',
+        'Cost Type': COST_TYPE_META[t.costType]?.labelVi || '',
+        'Free': t.source === TXN_SOURCE.ENROLLMENT ? (t.isFree ? 'Yes' : 'No') : '',
+        'Amount (VND)': t.amount,
       }))
     );
   }
@@ -836,34 +836,34 @@ function LedgerTab({ ledger, centers }) {
     <div className="card card-pad">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>Sổ Giao Dịch Thu &ndash; Chi</div>
-          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
-            {rows.length.toLocaleString('vi-VN')} bút toán &middot; Thu <strong style={{ color: 'var(--sage)' }}>{formatVndShort(filteredIncome)}</strong>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>Income &ndash; Expense Ledger</div>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '2px 0 0' }}>
+            {rows.length.toLocaleString('en-US')} ledger entries &middot; Income <strong style={{ color: 'var(--sage)' }}>{formatVndShort(filteredIncome)}</strong>
             {' '}&middot; Chi <strong style={{ color: 'var(--rust)' }}>{formatVndShort(filteredExpense)}</strong>
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select className="field-input" value={type} onChange={(e) => resetPage(setType)(e.target.value)} style={{ fontSize: 12.5 }}>
-            <option value="ALL">Tất cả bút toán</option>
-            <option value="INCOME">Chỉ khoản THU</option>
-            <option value="EXPENSE">Chỉ khoản CHI</option>
-            <option value="PAID">Ghi danh có phí</option>
-            <option value="FREE">Ghi danh miễn phí</option>
+          <select className="field-input" value={type} onChange={(e) => resetPage(setType)(e.target.value)} style={{ fontSize: 13 }}>
+            <option value="ALL">All ledger entries</option>
+            <option value="INCOME">Income only</option>
+            <option value="EXPENSE">Expenses only</option>
+            <option value="PAID">Paid enrollment</option>
+            <option value="FREE">Free enrollment</option>
           </select>
-          <select className="field-input" value={centerId} onChange={(e) => resetPage(setCenterId)(e.target.value)} style={{ fontSize: 12.5, maxWidth: 220 }}>
-            <option value="ALL">Tất cả trung tâm chi phí</option>
+          <select className="field-input" value={centerId} onChange={(e) => resetPage(setCenterId)(e.target.value)} style={{ fontSize: 13, maxWidth: 220 }}>
+            <option value="ALL">All cost centers</option>
             {centers.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
           <input
             className="field-input"
-            placeholder="Tìm khóa học / học viên..."
+            placeholder="Search courses / learners..."
             value={query}
             onChange={(e) => resetPage(setQuery)(e.target.value)}
-            style={{ fontSize: 12.5, minWidth: 200 }}
+            style={{ fontSize: 13, minWidth: 200 }}
           />
-          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Xuất CSV</Button>
+          <Button size="sm" variant="outline" icon="ti-download" onClick={exportRows}>Export CSV</Button>
         </div>
       </div>
 
@@ -871,41 +871,41 @@ function LedgerTab({ ledger, centers }) {
         <table className="table">
           <thead>
             <tr>
-              <th>Ngày</th>
-              <th>Nghiệp Vụ</th>
-              <th>Trung Tâm Chi Phí</th>
-              <th>Nội Dung</th>
-              <th style={{ textAlign: 'right' }}>Số Tiền</th>
+              <th>Date</th>
+              <th>Operations</th>
+              <th>Cost Center</th>
+              <th>Content</th>
+              <th style={{ textAlign: 'right' }}>Amount</th>
             </tr>
           </thead>
           <tbody>
             {paged.map((t) => (
               <tr key={t.id}>
-                <td style={{ whiteSpace: 'nowrap', fontSize: 12.5 }}>{t.date}</td>
+                <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{t.date}</td>
                 <td>
                   <Badge tone={TXN_SOURCE_META[t.source]?.tone || 'slate'} icon={TXN_SOURCE_META[t.source]?.icon} size="sm">
                     {TXN_SOURCE_META[t.source]?.labelVi || t.source}
                   </Badge>
                 </td>
-                <td style={{ fontSize: 12.5 }}>{t.costCenterName}</td>
+                <td style={{ fontSize: 13 }}>{t.costCenterName}</td>
                 <td>
                   {t.courseTitle ? (
                     <>
-                      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{t.courseTitle}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{t.courseTitle}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                         {t.userName}
                         {t.source === TXN_SOURCE.ENROLLMENT && (
                           <>
                             {' · '}
                             <span style={{ color: t.isFree ? 'var(--sage)' : 'var(--amber)', fontWeight: 700 }}>
-                              {t.isFree ? 'Miễn phí' : COST_TYPE_META[t.costType]?.labelVi || 'Có phí'}
+                              {t.isFree ? 'Free' : COST_TYPE_META[t.costType]?.labelVi || 'Paid'}
                             </span>
                           </>
                         )}
                       </div>
                     </>
                   ) : (
-                    <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t.note}</div>
+                    <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{t.note}</div>
                   )}
                 </td>
                 <td
@@ -923,7 +923,7 @@ function LedgerTab({ ledger, centers }) {
             {paged.length === 0 && (
               <tr>
                 <td colSpan={5} style={{ textAlign: 'center', color: 'var(--ink-faint)', padding: 20 }}>
-                  Không có bút toán nào khớp bộ lọc.
+                  No ledger entry matches the filters.
                 </td>
               </tr>
             )}
@@ -941,11 +941,11 @@ function Pagination({ page, pageCount, total, onChange }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 10 }}>
       <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-        Trang {page + 1} / {pageCount} &middot; {total.toLocaleString('vi-VN')} dòng
+        Page {page + 1} / {pageCount} &middot; {total.toLocaleString('en-US')} rows
       </span>
       <div style={{ display: 'flex', gap: 6 }}>
         <Button size="sm" variant="outline" icon="ti-chevron-left" disabled={page === 0} onClick={() => onChange(page - 1)}>
-          Trước
+          Previous
         </Button>
         <Button size="sm" variant="outline" icon="ti-chevron-right" disabled={page >= pageCount - 1} onClick={() => onChange(page + 1)}>
           Sau

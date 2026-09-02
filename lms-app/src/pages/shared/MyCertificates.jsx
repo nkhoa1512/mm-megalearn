@@ -3,7 +3,7 @@ import { useCourseStore } from '../../store/CourseStore';
 import { currentUser as defaultLearner } from '../../data/mockData';
 import LearnerCertificates from '../learner/LearnerCertificates';
 
-/** Chứng chỉ cá nhân, dùng chung cho cả 6 role. */
+/** Personal certificates, shared by all 6 roles. */
 export default function MyCertificates() {
   const { currentUser } = useCourseStore();
   return <LearnerCertificates user={currentUser || defaultLearner} />;

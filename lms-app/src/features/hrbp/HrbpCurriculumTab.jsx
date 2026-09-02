@@ -119,7 +119,7 @@ export default function HrbpCurriculumTab() {
       const grp = customGroups.find((g) => g.id === selectedTalentId);
       if (grp) {
         targetId = grp.id;
-        targetLabel = `👥 ${grp.title || grp.name} (${grp.memberCount || grp.memberUserIds?.length || 0} thành viên)`;
+        targetLabel = `👥 ${grp.title || grp.name} (${grp.memberCount || grp.memberUserIds?.length || 0} members)`;
       }
     } else {
       const u = allUserOptions.find((opt) => opt.id === selectedTalentId);
@@ -140,7 +140,7 @@ export default function HrbpCurriculumTab() {
         dueDate,
       },
       justification ||
-        `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} đề xuất phân bổ Giáo trình "${cur?.title}" cho đối tượng ${targetLabel} nhằm phát triển năng lực định biên.`
+        `HRBP ${currentUser?.fullName || 'Lê Thị Mai'} proposes allocating the curriculum "${cur?.title}" to ${targetLabel} to develop the required competency.`
     );
 
     if (result && result.ok) {
@@ -150,7 +150,7 @@ export default function HrbpCurriculumTab() {
           curriculumProposalId: result.request?.id,
         });
       }
-      showToast(`📋 Đã gửi đơn đề xuất gán Giáo Trình "${cur?.title}" cho ${targetLabel} lên User Admin phê duyệt!`);
+      showToast(`📋 Sent the request to allocate the curriculum "${cur?.title}" to ${targetLabel} for User Admin approval!`);
     }
 
     handleCloseNominate();
@@ -164,9 +164,9 @@ export default function HrbpCurriculumTab() {
           style={{
             marginBottom: 16,
             borderLeft: '4px solid var(--blue)',
-            background: '#EFF6FF',
+            background: 'var(--blue-soft)',
             fontSize: 13,
-            color: '#1E40AF',
+            color: 'var(--blue-soft-text)',
             fontWeight: 600,
           }}
         >
@@ -188,14 +188,14 @@ export default function HrbpCurriculumTab() {
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)', marginBottom: 4 }}>
               <i className="ti ti-books" style={{ color: 'var(--blue)', fontSize: 18 }} />
-              <span>Phân Bổ Giáo Trình &amp; Đề Xuất Phát Triển Nhân Tài</span>
+              <span>Curriculum Allocation &amp; Talent Development Proposals</span>
             </div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-              HRBP có quyền xem <strong>Toàn bộ Giáo trình đã phát hành</strong> và gửi <strong>Đơn đề xuất phân bổ</strong> cho các ứng viên kế nhiệm/nhân sự vùng lên User Admin phê duyệt.
+            <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+              HRBP has view access <strong>All published curricula</strong> and send <strong>Allocation proposal</strong> for succession candidates/regional staff to the User Admin for approval.
             </div>
           </div>
           <Button variant="primary" icon="ti-send" onClick={() => handleOpenNominate(null)}>
-            Đề Xuất Gán Giáo Trình Mới
+            New Curriculum Allocation Proposal
           </Button>
         </div>
       </div>
@@ -214,9 +214,9 @@ export default function HrbpCurriculumTab() {
       >
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {[
-            { id: 'MINE', label: 'Giáo Trình Của Bản Thân', icon: 'ti-user-check', count: mine.length },
-            { id: 'PROPOSED', label: 'Giáo Trình Tôi Đã Đề Xuất', icon: 'ti-send', count: proposed.length },
-            { id: 'ALL', label: 'Toàn Bộ Giáo Trình (Chỉ Xem & Đề Xuất)', icon: 'ti-books', count: publishedCurricula.length },
+            { id: 'MINE', label: 'My Own Curricula', icon: 'ti-user-check', count: mine.length },
+            { id: 'PROPOSED', label: 'Curricula I Have Proposed', icon: 'ti-send', count: proposed.length },
+            { id: 'ALL', label: 'All Curricula (View & Propose Only)', icon: 'ti-books', count: publishedCurricula.length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -244,7 +244,7 @@ export default function HrbpCurriculumTab() {
                   color: activeFilter === tab.id ? '#fff' : 'var(--ink-soft)',
                   padding: '1px 6px',
                   borderRadius: 10,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: 700,
                 }}
               >
@@ -260,7 +260,7 @@ export default function HrbpCurriculumTab() {
             type="text"
             className="field-input"
             style={{ paddingLeft: 30, height: 32, fontSize: 12, width: '100%' }}
-            placeholder="Tìm theo tên giáo trình, lĩnh vực..."
+            placeholder="Search by curriculum name, area..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -286,9 +286,9 @@ export default function HrbpCurriculumTab() {
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                    <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{cur.title}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
                     <Badge tone={prog.status === 'COMPLETED' ? 'sage' : prog.status === 'IN_PROGRESS' ? 'amber' : 'rail'} size="sm">
-                      {prog.status === 'COMPLETED' ? 'Đã Hoàn Thành' : prog.status === 'IN_PROGRESS' ? 'Đang Học' : 'Chưa Bắt Đầu'}
+                      {prog.status === 'COMPLETED' ? 'Completed' : prog.status === 'IN_PROGRESS' ? 'In Progress' : 'Not Started'}
                     </Badge>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 32, lineHeight: 1.4 }}>
@@ -297,27 +297,27 @@ export default function HrbpCurriculumTab() {
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
                     <span>&middot;</span>
-                    <span>{prog.totalCourses} khóa E-Learning</span>
+                    <span>{prog.totalCourses} course E-Learning</span>
                     {cur.assignedVia?.dueDate && (
                       <>
                         <span>&middot;</span>
                         <span style={{ color: 'var(--rust)', fontWeight: 600 }}>
-                          <i className="ti ti-clock" /> Hạn: {cur.assignedVia.dueDate}
+                          <i className="ti ti-clock" /> Due: {cur.assignedVia.dueDate}
                         </span>
                       </>
                     )}
                   </div>
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                      <span>Tiến độ cá nhân:</span>
-                      <strong>{prog.completedCourses}/{prog.totalCourses} khóa ({prog.progressPercent}%)</strong>
+                      <span>Personal progress:</span>
+                      <strong>{prog.completedCourses}/{prog.totalCourses} course ({prog.progressPercent}%)</strong>
                     </div>
                     <ProgressBar value={prog.progressPercent} tone={prog.status === 'COMPLETED' ? 'sage' : 'blue'} size="sm" />
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
                   <Button size="sm" variant="outline" icon="ti-sitemap" onClick={() => setViewingCurriculum(cur)}>
-                    Xem Lộ Trình
+                    View Roadmap
                   </Button>
                 </div>
               </div>
@@ -328,8 +328,8 @@ export default function HrbpCurriculumTab() {
             const req = cur.proposalRequest;
             const asg = cur.proposalAssignment;
             const status = req ? req.status : 'APPROVED';
-            const targetLabel = req?.targetLabel || asg?.targetLabel || 'Ứng viên';
-            const dueDateText = req?.dueDate || asg?.dueDate || 'Không hạn';
+            const targetLabel = req?.targetLabel || asg?.targetLabel || 'Candidate';
+            const dueDateText = req?.dueDate || asg?.dueDate || 'No deadline';
 
             return (
               <div
@@ -345,22 +345,22 @@ export default function HrbpCurriculumTab() {
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                    <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{cur.title}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
                     <Badge tone={status === 'APPROVED' ? 'sage' : status === 'REJECTED' ? 'rust' : 'amber'} size="sm">
-                      {status === 'APPROVED' ? 'Đã Duyệt' : status === 'REJECTED' ? 'Bị Từ Chối' : 'Chờ Duyệt'}
+                      {status === 'APPROVED' ? 'Approved' : status === 'REJECTED' ? 'Rejected' : 'Pending Approval'}
                     </Badge>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 32, lineHeight: 1.4 }}>
                     {cur.description}
                   </div>
-                  <div style={{ fontSize: 11.5, background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, background: 'var(--paper-sunken)', padding: '8px 10px', borderRadius: 6, marginBottom: 10 }}>
                     <div style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 2 }}>
                       <i className="ti ti-user" style={{ color: 'var(--blue)', marginRight: 4 }} />
-                      Ứng viên: {targetLabel}
+                      Candidate: {targetLabel}
                     </div>
                     <div style={{ color: 'var(--ink-soft)', fontSize: 11 }}>
-                      <span>Hạn chót: {dueDateText}</span>
-                      {req?.requestDate && <span> &middot; Ngày gửi: {req.requestDate}</span>}
+                      <span>Deadline: {dueDateText}</span>
+                      {req?.requestDate && <span> &middot; Submitted: {req.requestDate}</span>}
                     </div>
                     {req?.justification && (
                       <div style={{ color: 'var(--ink-soft)', fontSize: 11, fontStyle: 'italic', marginTop: 4, borderTop: '1px dashed var(--line)', paddingTop: 4 }}>
@@ -371,10 +371,10 @@ export default function HrbpCurriculumTab() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
                   <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                    Xem Chi Tiết
+                    View Details
                   </Button>
                   <Button size="sm" variant="ghost" icon="ti-send" onClick={() => handleOpenNominate(cur)}>
-                    Đề Xuất Thêm
+                    Propose Another
                   </Button>
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function HrbpCurriculumTab() {
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                  <div style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--ink)' }}>{cur.title}</div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
                   <Badge tone="sage" size="sm">Published</Badge>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, minHeight: 32, lineHeight: 1.4 }}>
@@ -405,17 +405,17 @@ export default function HrbpCurriculumTab() {
                 <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <Badge tone="slate" size="sm">{cur.category || 'Chung'}</Badge>
                   <span>&middot;</span>
-                  <span>{(cur.courseIds || []).length} khóa E-Learning</span>
+                  <span>{(cur.courseIds || []).length} course E-Learning</span>
                   <span>&middot;</span>
-                  <span>{(cur.assignments || []).length} đối tượng chính thức</span>
+                  <span>{(cur.assignments || []).length} official audiences</span>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
                 <Button size="sm" variant="outline" icon="ti-eye" onClick={() => setViewingCurriculum(cur)}>
-                  Xem Chi Tiết
+                  View Details
                 </Button>
                 <Button size="sm" variant="primary" icon="ti-send" onClick={() => handleOpenNominate(cur)}>
-                  Đề Xuất Cho Ứng Viên
+                  Propose For A Candidate
                 </Button>
               </div>
             </div>
@@ -427,10 +427,10 @@ export default function HrbpCurriculumTab() {
             <i className="ti ti-books" aria-hidden="true" style={{ fontSize: 32, color: 'var(--ink-faint)' }} />
             <p style={{ marginTop: 8, color: 'var(--ink-soft)', fontSize: 13 }}>
               {activeFilter === 'MINE'
-                ? 'Bạn chưa được phân bổ giáo trình bắt buộc nào.'
+                ? 'No mandatory curriculum has been allocated to you.'
                 : activeFilter === 'PROPOSED'
-                ? 'Bạn chưa gửi đề xuất giáo trình nào cho nhân viên / ứng viên.'
-                : 'Không tìm thấy giáo trình nào phù hợp.'}
+                ? 'You have not proposed a curriculum for any employee / candidate yet.'
+                : 'No matching curriculum found.'}
             </p>
           </div>
         )}
@@ -442,10 +442,10 @@ export default function HrbpCurriculumTab() {
           <div>
             <div style={{ fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
               <i className="ti ti-clipboard-list" style={{ color: 'var(--blue)' }} />
-              <span>Hàng Đợi Theo Dõi Đơn Đề Xuất Của Bạn ({proposalsList.length})</span>
+              <span>Your Proposal Tracking Queue ({proposalsList.length})</span>
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
-              Trạng thái phê duyệt từ User Admin cho các đề xuất gán giáo trình
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              User Admin approval status for curriculum allocation proposals
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -455,9 +455,9 @@ export default function HrbpCurriculumTab() {
                 type="button"
                 className={`btn btn-sm ${proposalStatusFilter === st ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setProposalStatusFilter(st)}
-                style={{ fontSize: 11.5 }}
+                style={{ fontSize: 12 }}
               >
-                {st === 'ALL' ? 'Tất Cả' : st === 'PENDING' ? 'Chờ Duyệt' : st === 'APPROVED' ? 'Đã Duyệt' : 'Bị Từ Chối'}
+                {st === 'ALL' ? 'All' : st === 'PENDING' ? 'Pending Approval' : st === 'APPROVED' ? 'Approved' : 'Rejected'}
               </button>
             ))}
           </div>
@@ -467,11 +467,11 @@ export default function HrbpCurriculumTab() {
           <table className="table" style={{ width: '100%', fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={{ width: 220 }}>Giáo Trình</th>
-                <th>Ứng Viên / Đối Tượng</th>
-                <th style={{ width: 110 }}>Ngày Gửi</th>
-                <th style={{ width: 120 }}>Trạng Thái</th>
-                <th>Thông Tin Phê Duyệt / Lý Do</th>
+                <th style={{ width: 220 }}>Curriculum</th>
+                <th>Candidate / Audience</th>
+                <th style={{ width: 110 }}>Submitted On</th>
+                <th style={{ width: 120 }}>Status</th>
+                <th>Approval Details / Reason</th>
               </tr>
             </thead>
             <tbody>
@@ -480,28 +480,28 @@ export default function HrbpCurriculumTab() {
                   <td style={{ fontWeight: 700, color: 'var(--ink)' }}>{req.curriculumTitle}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{req.targetLabel}</div>
-                    {req.dueDate && <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Hạn: {req.dueDate}</div>}
+                    {req.dueDate && <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Due: {req.dueDate}</div>}
                   </td>
                   <td style={{ color: 'var(--ink-soft)' }}>{req.requestDate}</td>
                   <td>
                     <Badge tone={req.status === 'APPROVED' ? 'sage' : req.status === 'REJECTED' ? 'rust' : 'amber'}>
-                      {req.status === 'APPROVED' ? 'Đã Duyệt' : req.status === 'REJECTED' ? 'Từ Chối' : 'Chờ Duyệt'}
+                      {req.status === 'APPROVED' ? 'Approved' : req.status === 'REJECTED' ? 'Reject' : 'Pending Approval'}
                     </Badge>
                   </td>
-                  <td style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>
+                  <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
                     {req.status === 'APPROVED' && (
                       <span style={{ color: 'var(--sage)', fontWeight: 600 }}>
-                        <i className="ti ti-check" /> Đã duyệt vào hệ thống ({req.decidedAt || req.requestDate})
+                        <i className="ti ti-check" /> Approved into the system ({req.decidedAt || req.requestDate})
                       </span>
                     )}
                     {req.status === 'REJECTED' && (
                       <span style={{ color: 'var(--rust)' }}>
-                        <i className="ti ti-x" /> {req.decisionNote || 'User Admin đã từ chối đơn đề xuất.'}
+                        <i className="ti ti-x" /> {req.decisionNote || 'The User Admin rejected the proposal.'}
                       </span>
                     )}
                     {req.status === 'PENDING' && (
                       <span style={{ color: 'var(--amber)' }}>
-                        <i className="ti ti-clock" /> Đang chờ User Admin xem xét
+                        <i className="ti ti-clock" /> Awaiting User Admin review
                       </span>
                     )}
                   </td>
@@ -510,7 +510,7 @@ export default function HrbpCurriculumTab() {
               {proposalsList.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '18px 0', color: 'var(--ink-faint)' }}>
-                    Không có đơn đề xuất nào trong danh mục này.
+                    There are no proposals in this category.
                   </td>
                 </tr>
               )}
@@ -522,31 +522,31 @@ export default function HrbpCurriculumTab() {
       {/* NOMINATE MODAL */}
       <Modal
         isOpen={nominateModal.open}
-        title="Đề Xuất Gán Giáo Trình Cho Nhân Viên"
-        subtitle="Gửi đơn đề xuất lên User Admin để phân bổ giáo trình chính thức cho ứng viên nhân tài."
+        title="Propose A Curriculum For An Employee"
+        subtitle="Send a proposal to the User Admin to formally allocate the curriculum to the talent candidate."
         onClose={handleCloseNominate}
         size="md"
       >
         <form onSubmit={handleSubmitNominate}>
           <div style={{ marginBottom: 12 }}>
-            <label className="field-label">Chọn Giáo Trình</label>
+            <label className="field-label">Choose A Curriculum</label>
             <select
               className="field-select"
-              style={{ width: '100%', height: 36, fontSize: 12.5 }}
+              style={{ width: '100%', height: 36, fontSize: 13 }}
               value={selectedCurriculumId}
               onChange={(e) => setSelectedCurriculumId(e.target.value)}
               required
             >
               {publishedCurricula.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.title} ({c.category || 'Chung'} · {(c.courseIds || []).length} khóa)
+                  {c.title} ({c.category || 'Chung'} · {(c.courseIds || []).length} course)
                 </option>
               ))}
             </select>
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label className="field-label">Nguồn Đối Tượng / Ứng Viên</label>
+            <label className="field-label">Audience / Candidate Source</label>
             <div style={{ display: 'flex', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -558,7 +558,7 @@ export default function HrbpCurriculumTab() {
                     setSelectedTalentId(successionTalents[0]?.id || '');
                   }}
                 />
-                Ứng viên Quy hoạch Kế nhiệm ({successionTalents.length})
+                Succession Candidates ({successionTalents.length})
               </label>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -570,7 +570,7 @@ export default function HrbpCurriculumTab() {
                     setSelectedTalentId(customGroups[0]?.id || '');
                   }}
                 />
-                👥 Nhóm Tùy Chỉnh ({customGroups.length} nhóm)
+                👥 Custom Group ({customGroups.length} groups)
               </label>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input
@@ -582,14 +582,14 @@ export default function HrbpCurriculumTab() {
                     setSelectedTalentId(allUserOptions[0]?.id || '');
                   }}
                 />
-                Từng Nhân sự Cá nhân
+                Individual Employee
               </label>
             </div>
 
             {candidateSource === 'SUCCESSION' ? (
               <select
                 className="field-select"
-                style={{ width: '100%', height: 36, fontSize: 12.5 }}
+                style={{ width: '100%', height: 36, fontSize: 13 }}
                 value={selectedTalentId}
                 onChange={(e) => setSelectedTalentId(e.target.value)}
                 required
@@ -603,21 +603,21 @@ export default function HrbpCurriculumTab() {
             ) : candidateSource === 'CUSTOM_GROUP' ? (
               <select
                 className="field-select"
-                style={{ width: '100%', height: 36, fontSize: 12.5 }}
+                style={{ width: '100%', height: 36, fontSize: 13 }}
                 value={selectedTalentId}
                 onChange={(e) => setSelectedTalentId(e.target.value)}
                 required
               >
                 {customGroups.map((g) => (
                   <option key={g.id} value={g.id}>
-                    👥 {g.title || g.name} ({g.memberCount || g.memberUserIds?.length || 0} thành viên · {g.code})
+                    👥 {g.title || g.name} ({g.memberCount || g.memberUserIds?.length || 0} members · {g.code})
                   </option>
                 ))}
               </select>
             ) : (
               <select
                 className="field-select"
-                style={{ width: '100%', height: 36, fontSize: 12.5 }}
+                style={{ width: '100%', height: 36, fontSize: 13 }}
                 value={selectedTalentId}
                 onChange={(e) => setSelectedTalentId(e.target.value)}
                 required
@@ -632,11 +632,11 @@ export default function HrbpCurriculumTab() {
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label className="field-label">Hạn Chót Hoàn Thành (Due Date)</label>
+            <label className="field-label">Completion Due Date</label>
             <input
               type="date"
               className="field-input"
-              style={{ width: '100%', height: 36, fontSize: 12.5 }}
+              style={{ width: '100%', height: 36, fontSize: 13 }}
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               required
@@ -644,12 +644,12 @@ export default function HrbpCurriculumTab() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label className="field-label">Lý do &amp; Thuyết minh Đề xuất (Gửi User Admin)</label>
+            <label className="field-label">Reason &amp; Justification (sent to the User Admin)</label>
             <textarea
               className="field-input"
               rows={3}
-              style={{ resize: 'vertical', fontSize: 12.5 }}
-              placeholder="Thuyết minh nhu cầu phát triển năng lực định biên của ứng viên..."
+              style={{ resize: 'vertical', fontSize: 13 }}
+              placeholder="Explain the candidate's required competency development need..."
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
             />
@@ -657,10 +657,10 @@ export default function HrbpCurriculumTab() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <Button variant="ghost" onClick={handleCloseNominate}>
-              Hủy
+              Cancel
             </Button>
             <Button variant="primary" icon="ti-send" type="submit">
-              Gửi Đơn Đề Xuất
+              Submit The Proposal
             </Button>
           </div>
         </form>
@@ -671,14 +671,14 @@ export default function HrbpCurriculumTab() {
         <Modal
           isOpen
           title={viewingCurriculum.title}
-          subtitle={`${viewingCurriculum.category || 'General'} · ${(viewingCurriculum.courseIds || []).length} khóa học E-Learning`}
+          subtitle={`${viewingCurriculum.category || 'General'} · ${(viewingCurriculum.courseIds || []).length} E-Learning courses`}
           onClose={() => setViewingCurriculum(null)}
           size="lg"
           footer={(
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Badge tone="sage">Published</Badge>
               <Button variant="ghost" onClick={() => setViewingCurriculum(null)}>
-                Đóng
+                Close
               </Button>
             </div>
           )}
