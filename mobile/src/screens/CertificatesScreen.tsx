@@ -8,9 +8,10 @@ import { currentUser as fallbackUser, deriveCertificates } from '../data/mockDat
 // @ts-ignore
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../utils/recertification';
 import { Badge, Button, CertificateModal } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow, useColors } from '../components/layout';
 
 export default function CertificatesScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const { courses, currentUser: authUser, enrollments, certificateTemplates } = useCourseStore();
   const user = authUser || fallbackUser;
@@ -52,7 +53,7 @@ export default function CertificatesScreen() {
 
   return (
     <Screen title="Chứng Chỉ Số" subtitle={`${certificates.length} chứng chỉ đã nhận`} back>
-      <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+      <Card style={{ backgroundColor: COLORS.railSoft, borderColor: COLORS.railBorder }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           <Ionicons name="shield-checkmark" size={19} color={COLORS.rail} style={{ marginRight: 10 }} />
           <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
@@ -114,6 +115,7 @@ export default function CertificatesScreen() {
 }
 
 function StatusTile({ label, value, color }: { label: string; value: number; color: string }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -134,6 +136,7 @@ function StatusTile({ label, value, color }: { label: string; value: number; col
 }
 
 function CertificateCard({ cert, onView, onRetake }: { cert: any; onView: () => void; onRetake: () => void }) {
+  const COLORS = useColors();
   const state = cert.recert.state;
   const tone =
     state === RECERTIFICATION_STATE.EXPIRED ? 'rust' : state === RECERTIFICATION_STATE.DUE_SOON ? 'amber' : 'sage';
@@ -154,7 +157,7 @@ function CertificateCard({ cert, onView, onRetake }: { cert: any; onView: () => 
             borderRadius: 10,
             backgroundColor: '#FEF3C7',
             borderWidth: 1.5,
-            borderColor: '#FDE68A',
+            borderColor: COLORS.amberBorder,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 11,

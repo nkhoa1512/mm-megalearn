@@ -10,7 +10,7 @@ import { currentUser as fallbackUser } from '../data/mockData';
 // @ts-ignore
 import { getCourseImage } from '../data/courseImages';
 import { Badge, Button } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState, useColors } from '../components/layout';
 
 const QUICK_PROMPTS = [
   'Quy chuẩn nhiệt độ tủ ủ bột quầy bánh?',
@@ -20,6 +20,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AiLearningHubScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const { courses: allCourses, currentUser: authUser, enrollCourse } = useCourseStore();
   const user = authUser || fallbackUser;
@@ -96,7 +97,7 @@ export default function AiLearningHubScreen() {
 
         {tab === 'RECOMMEND' ? (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-            <Card style={{ backgroundColor: COLORS.purpleSoft, borderColor: '#DDD6FE' }}>
+            <Card style={{ backgroundColor: COLORS.purpleSoft, borderColor: COLORS.purpleBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                 <Ionicons name="sparkles" size={18} color={COLORS.purple} style={{ marginRight: 9 }} />
                 <Text style={{ fontSize: 11.5, color: COLORS.purple, flex: 1, lineHeight: 17 }}>
@@ -259,7 +260,7 @@ export default function AiLearningHubScreen() {
                     paddingHorizontal: 12,
                     borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: '#DDD6FE',
+                    borderColor: COLORS.purpleBorder,
                     backgroundColor: COLORS.purpleSoft,
                     marginRight: 6,
                   }}

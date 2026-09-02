@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from './theme';
 
 // ---------------------------------------------------------------------------
 // 1. BADGE COMPONENT
@@ -26,28 +27,29 @@ export const Badge = ({
   size?: 'sm' | 'md' | 'lg';
   style?: any;
 }) => {
+  const C = useColors();
   const getColors = () => {
     switch (tone) {
       case 'amber':
       case 'warning':
-        return { bg: '#FEF3C7', text: '#B45309', border: '#FDE68A', iconColor: '#D97706' };
+        return { bg: C.amberSoft, text: C.amberText, border: C.amberBorder, iconColor: C.amber };
       case 'sage':
       case 'success':
-        return { bg: '#ECFDF5', text: '#047857', border: '#A7F3D0', iconColor: '#059669' };
+        return { bg: C.greenSoft, text: C.greenText, border: C.greenBorder, iconColor: C.green };
       case 'rust':
       case 'danger':
-        return { bg: '#FEE2E2', text: '#B91C1C', border: '#FECACA', iconColor: '#DC2626' };
+        return { bg: C.redSoft, text: C.redText, border: C.redBorder, iconColor: C.red };
       case 'rail':
-        return { bg: '#CCFBF1', text: '#0F766E', border: '#99F6E4', iconColor: '#0D9488' };
+        return { bg: C.railSoft, text: C.rail, border: C.railBorder, iconColor: C.rail };
       case 'ai':
       case 'purple':
-        return { bg: '#EDE9FE', text: '#6D28D9', border: '#DDD6FE', iconColor: '#7C3AED' };
+        return { bg: C.purpleSoft, text: C.purple, border: C.purpleBorder, iconColor: C.purple };
       case 'slate':
-        return { bg: '#F1F5F9', text: '#475569', border: '#E2E8F0', iconColor: '#64748B' };
+        return { bg: C.sunken, text: C.inkSoft, border: C.line, iconColor: C.inkFaint };
       case 'blue':
       case 'primary':
       default:
-        return { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE', iconColor: '#2563EB' };
+        return { bg: C.blueSoft, text: C.blue, border: C.blueBorder, iconColor: C.blue };
     }
   };
 
@@ -68,6 +70,11 @@ export const Badge = ({
           flexDirection: 'row',
           alignItems: 'center',
           alignSelf: 'flex-start',
+          // Nhãn tiếng Việt có thể rất dài (vd levelShortLabel: "🟢 Level 6:
+          // Chuyên viên / Nhân viên nghiệp vụ"). Cho badge co lại trong hàng
+          // thay vì đẩy tràn ra ngoài mép màn hình.
+          flexShrink: 1,
+          maxWidth: '100%',
         },
         style,
       ]}
@@ -81,10 +88,13 @@ export const Badge = ({
         />
       )}
       <Text
+        numberOfLines={1}
         style={{
           color: colors.text,
           fontSize: isSm ? 10 : isLg ? 13 : 11,
+          lineHeight: isSm ? 14 : isLg ? 18 : 15,
           fontWeight: '700',
+          flexShrink: 1,
         }}
       >
         {children}
@@ -107,20 +117,21 @@ export const ProgressBar = ({
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
 }) => {
+  const C = useColors();
   const clamped = Math.min(100, Math.max(0, Math.round(value)));
   const getBarColor = () => {
     switch (tone) {
       case 'amber':
-        return '#F59E0B';
+        return C.amber;
       case 'rust':
-        return '#EF4444';
+        return C.red;
       case 'rail':
-        return '#0F766E';
+        return C.rail;
       case 'blue':
-        return '#2563EB';
+        return C.blue;
       case 'sage':
       default:
-        return '#009E49';
+        return C.green;
     }
   };
 
@@ -131,7 +142,7 @@ export const ProgressBar = ({
       <View
         style={{
           height,
-          backgroundColor: '#E2E8F0',
+          backgroundColor: C.line,
           borderRadius: 999,
           overflow: 'hidden',
           width: '100%',
@@ -147,7 +158,7 @@ export const ProgressBar = ({
         />
       </View>
       {showLabel && (
-        <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '600', marginTop: 2, textAlign: 'right' }}>
+        <Text style={{ fontSize: 10, color: C.inkSoft, fontWeight: '600', marginTop: 2, textAlign: 'right' }}>
           {clamped}%
         </Text>
       )}
@@ -181,54 +192,30 @@ export const Button = ({
   loading?: boolean;
   style?: any;
 }) => {
+  const C = useColors();
   const getStyles = () => {
     if (disabled) {
-      return {
-        bg: '#F1F5F9',
-        border: '#E2E8F0',
-        text: '#94A3B8',
-        iconColor: '#94A3B8',
-      };
+      return { bg: C.sunken, border: C.line, text: C.inkFaint, iconColor: C.inkFaint };
     }
     if (variant === 'outline') {
       return {
-        bg: '#FFFFFF',
-        border: tone === 'danger' ? '#EF4444' : '#CBD5E1',
-        text: tone === 'danger' ? '#DC2626' : '#334155',
-        iconColor: tone === 'danger' ? '#DC2626' : '#334155',
+        bg: C.paper,
+        border: tone === 'danger' ? C.red : C.lineStrong,
+        text: tone === 'danger' ? C.red : C.inkSoft,
+        iconColor: tone === 'danger' ? C.red : C.inkSoft,
       };
     }
     if (variant === 'ghost') {
-      return {
-        bg: 'transparent',
-        border: 'transparent',
-        text: '#009E49',
-        iconColor: '#009E49',
-      };
+      return { bg: 'transparent', border: 'transparent', text: C.green, iconColor: C.green };
     }
     if (variant === 'danger' || tone === 'danger') {
-      return {
-        bg: '#DC2626',
-        border: '#DC2626',
-        text: '#FFFFFF',
-        iconColor: '#FFFFFF',
-      };
+      return { bg: C.red, border: C.red, text: C.paper, iconColor: C.paper };
     }
     if (variant === 'rail') {
-      return {
-        bg: '#0F766E',
-        border: '#0F766E',
-        text: '#FFFFFF',
-        iconColor: '#FFFFFF',
-      };
+      return { bg: C.rail, border: C.rail, text: C.paper, iconColor: C.paper };
     }
     // Primary / default
-    return {
-      bg: '#009E49',
-      border: '#009E49',
-      text: '#FFFFFF',
-      iconColor: '#FFFFFF',
-    };
+    return { bg: C.green, border: C.green, text: C.paper, iconColor: C.paper };
   };
 
   const btnColors = getStyles();
@@ -252,7 +239,7 @@ export const Button = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: variant === 'primary' ? '#009E49' : '#000',
+          shadowColor: variant === 'primary' ? C.green : '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: variant === 'primary' ? 0.15 : 0.05,
           shadowRadius: 2,
@@ -268,7 +255,20 @@ export const Button = ({
           {icon && iconPosition === 'left' && (
             <Ionicons name={icon as any} size={fontSize + 2} color={btnColors.iconColor} style={{ marginRight: 6 }} />
           )}
-          <Text style={{ color: btnColors.text, fontSize, fontWeight: '700' }}>{children}</Text>
+          {/* lineHeight tường minh để dấu tiếng Việt (ổ, ộ, ề) không bị cắt,
+              flexShrink để nhãn dài co lại thay vì tràn khỏi nút. */}
+          <Text
+            numberOfLines={1}
+            style={{
+              color: btnColors.text,
+              fontSize,
+              lineHeight: fontSize + 5,
+              fontWeight: '700',
+              flexShrink: 1,
+            }}
+          >
+            {children}
+          </Text>
           {icon && iconPosition === 'right' && (
             <Ionicons name={icon as any} size={fontSize + 2} color={btnColors.iconColor} style={{ marginLeft: 6 }} />
           )}
@@ -296,19 +296,20 @@ export const StatTile = ({
   icon?: string;
   onClick?: () => void;
 }) => {
+  const C = useColors();
   const getTheme = () => {
     switch (tone) {
       case 'sage':
-        return { bg: '#F0FDF4', border: '#BBF7D0', valColor: '#009E49', iconColor: '#009E49' };
+        return { bg: C.greenSoft, border: C.greenBorder, valColor: C.green, iconColor: C.green };
       case 'amber':
-        return { bg: '#FFFBEB', border: '#FDE68A', valColor: '#D97706', iconColor: '#D97706' };
+        return { bg: C.amberSoft, border: C.amberBorder, valColor: C.amber, iconColor: C.amber };
       case 'rail':
-        return { bg: '#F0FDFA', border: '#99F6E4', valColor: '#0F766E', iconColor: '#0F766E' };
+        return { bg: C.railSoft, border: C.railBorder, valColor: C.rail, iconColor: C.rail };
       case 'rust':
-        return { bg: '#FEF2F2', border: '#FECACA', valColor: '#DC2626', iconColor: '#DC2626' };
+        return { bg: C.redSoft, border: C.redBorder, valColor: C.red, iconColor: C.red };
       case 'blue':
       default:
-        return { bg: '#EFF6FF', border: '#BFDBFE', valColor: '#2563EB', iconColor: '#2563EB' };
+        return { bg: C.blueSoft, border: C.blueBorder, valColor: C.blue, iconColor: C.blue };
     }
   };
 
@@ -319,8 +320,8 @@ export const StatTile = ({
       style={{
         flex: 1,
         minWidth: '46%',
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        backgroundColor: C.paper,
+        borderColor: C.line,
         borderWidth: 1,
         borderRadius: 14,
         padding: 12,
@@ -336,7 +337,7 @@ export const StatTile = ({
       activeOpacity={0.7}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 }} numberOfLines={1}>
+        <Text style={{ fontSize: 11, color: C.inkSoft, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 }} numberOfLines={1}>
           {label}
         </Text>
         {icon && (
@@ -346,7 +347,7 @@ export const StatTile = ({
         )}
       </View>
       <Text style={{ fontSize: 20, fontWeight: '800', color: theme.valColor, marginBottom: 2 }}>{value}</Text>
-      {subtext && <Text style={{ fontSize: 10, color: '#94A3B8' }} numberOfLines={1}>{subtext}</Text>}
+      {subtext && <Text style={{ fontSize: 10, color: C.inkFaint }} numberOfLines={1}>{subtext}</Text>}
     </TouchableOpacity>
   );
 };
@@ -397,12 +398,13 @@ export const BarChart = ({
   valueSuffix?: string;
   tone?: 'sage' | 'blue' | 'amber' | 'rail';
 }) => {
+  const C = useColors();
   if (!data || data.length === 0) {
-    return <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', padding: 20 }}>Chưa có dữ liệu</Text>;
+    return <Text style={{ color: C.inkFaint, fontSize: 12, textAlign: 'center', padding: 20 }}>Chưa có dữ liệu</Text>;
   }
 
   const maxVal = Math.max(...data.map((d) => d.value), 1);
-  const barColor = tone === 'blue' ? '#2563EB' : tone === 'amber' ? '#F59E0B' : tone === 'rail' ? '#0F766E' : '#009E49';
+  const barColor = tone === 'blue' ? C.blue : tone === 'amber' ? C.amber : tone === 'rail' ? C.rail : C.green;
 
   return (
     <View style={{ flexDirection: 'row', height: 140, alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 10, paddingBottom: 6 }}>
@@ -410,19 +412,19 @@ export const BarChart = ({
         const heightPct = Math.max(8, (d.value / maxVal) * 100);
         return (
           <View key={idx} style={{ flex: 1, alignItems: 'center', marginHorizontal: 2 }}>
-            <Text style={{ fontSize: 9, color: '#64748B', fontWeight: '700', marginBottom: 4 }}>
+            <Text style={{ fontSize: 9, color: C.inkSoft, fontWeight: '700', marginBottom: 4 }}>
               {d.value > 0 ? `${d.value}${valueSuffix}` : ''}
             </Text>
             <View
               style={{
                 width: '75%',
                 maxWidth: 24,
-                backgroundColor: d.value > 0 ? barColor : '#E2E8F0',
+                backgroundColor: d.value > 0 ? barColor : C.line,
                 borderRadius: 4,
                 height: `${heightPct}%`,
               }}
             />
-            <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '600', marginTop: 6 }}>{d.label}</Text>
+            <Text style={{ fontSize: 10, color: C.inkSoft, fontWeight: '600', marginTop: 6 }}>{d.label}</Text>
           </View>
         );
       })}
@@ -437,25 +439,26 @@ export const DonutChart = ({
   data: Array<{ label: string; value: number; tone?: string }>;
   valueSuffix?: string;
 }) => {
+  const C = useColors();
   if (!data || data.length === 0) return null;
   const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
 
   const getToneColor = (t?: string) => {
     switch (t) {
-      case 'sage': return '#009E49';
-      case 'amber': return '#F59E0B';
-      case 'rail': return '#0F766E';
-      case 'rust': return '#EF4444';
-      case 'purple': return '#7C3AED';
+      case 'sage': return C.green;
+      case 'amber': return C.amber;
+      case 'rail': return C.rail;
+      case 'rust': return C.red;
+      case 'purple': return C.purple;
       case 'blue':
-      default: return '#2563EB';
+      default: return C.blue;
     }
   };
 
   return (
     <View style={{ paddingVertical: 8 }}>
       {/* Proportion Bar */}
-      <View style={{ flexDirection: 'row', height: 16, borderRadius: 8, overflow: 'hidden', backgroundColor: '#E2E8F0', marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', height: 16, borderRadius: 8, overflow: 'hidden', backgroundColor: C.line, marginBottom: 12 }}>
         {data.map((d, i) => {
           const pct = Math.max(4, Math.round((d.value / total) * 100));
           return (
@@ -465,7 +468,7 @@ export const DonutChart = ({
                 width: `${pct}%`,
                 backgroundColor: getToneColor(d.tone),
                 borderRightWidth: i < data.length - 1 ? 1.5 : 0,
-                borderColor: '#FFFFFF',
+                borderColor: C.paper,
               }}
             />
           );
@@ -480,7 +483,7 @@ export const DonutChart = ({
           return (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', width: '48%', marginBottom: 4 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: '#334155', flex: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: 11, color: C.inkSoft, flex: 1 }} numberOfLines={1}>
                 {d.label} <Text style={{ fontWeight: '700', color }}>({pct}%)</Text>
               </Text>
             </View>
@@ -500,9 +503,10 @@ export const LineChart = ({
   valueSuffix?: string;
   tone?: string;
 }) => {
+  const C = useColors();
   if (!data || data.length === 0) return null;
   const maxVal = Math.max(...data.map((d) => d.value), 1);
-  const color = tone === 'rail' ? '#0F766E' : '#009E49';
+  const color = tone === 'rail' ? C.rail : C.green;
 
   return (
     <View style={{ paddingVertical: 10 }}>
@@ -521,7 +525,7 @@ export const LineChart = ({
                   borderRadius: 7,
                   backgroundColor: color,
                   borderWidth: 3,
-                  borderColor: '#FFFFFF',
+                  borderColor: C.paper,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
                   shadowOpacity: 0.2,
@@ -530,7 +534,7 @@ export const LineChart = ({
                   marginBottom: pct,
                 }}
               />
-              <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '600' }}>{d.label}</Text>
+              <Text style={{ fontSize: 10, color: C.inkSoft, fontWeight: '600' }}>{d.label}</Text>
             </View>
           );
         })}
@@ -553,12 +557,13 @@ export const Modal = ({
   title?: string;
   children: React.ReactNode;
 }) => {
+  const C = useColors();
   return (
     <RNModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' }}>
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: C.paper,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             maxHeight: '90%',
@@ -572,16 +577,16 @@ export const Modal = ({
               paddingTop: 16,
               paddingBottom: 14,
               borderBottomWidth: 1,
-              borderColor: '#E2E8F0',
+              borderColor: C.line,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', flex: 1, marginRight: 10 }} numberOfLines={1}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: C.ink, flex: 1, marginRight: 10 }} numberOfLines={1}>
               {title || ''}
             </Text>
-            <TouchableOpacity onPress={onClose} style={{ padding: 6, backgroundColor: '#F1F5F9', borderRadius: 999 }}>
+            <TouchableOpacity onPress={onClose} style={{ padding: 6, backgroundColor: C.sunken, borderRadius: 999 }}>
               <Ionicons name="close" size={18} color="#64748B" />
             </TouchableOpacity>
           </View>
@@ -608,6 +613,7 @@ export const CertificateModal = ({
   onClose: () => void;
   onRetake?: () => void;
 }) => {
+  const C = useColors();
   if (!certificate) return null;
 
   return (
@@ -615,11 +621,11 @@ export const CertificateModal = ({
       <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.75)', justifyContent: 'center', padding: 16 }}>
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: C.paper,
             borderRadius: 20,
             padding: 20,
             borderWidth: 2,
-            borderColor: '#D97706',
+            borderColor: C.amber,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.25,
@@ -634,50 +640,50 @@ export const CertificateModal = ({
                 width: 56,
                 height: 56,
                 borderRadius: 28,
-                backgroundColor: '#FEF3C7',
+                backgroundColor: C.amberSoft,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 2,
-                borderColor: '#F59E0B',
+                borderColor: C.amber,
               }}
             >
               <Ionicons name="ribbon" size={32} color="#D97706" />
             </View>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#D97706', letterSpacing: 1, marginTop: 6, textTransform: 'uppercase' }}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: C.amber, letterSpacing: 1, marginTop: 6, textTransform: 'uppercase' }}>
               MM Mega Market Vietnam &middot; L&OD Academy
             </Text>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: '#1E293B', marginTop: 2, textAlign: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.ink, marginTop: 2, textAlign: 'center' }}>
               CHỨNG NHẬN HOÀN THÀNH
             </Text>
           </View>
 
           {/* Certificate Body */}
-          <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}>
-            <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', marginBottom: 4 }}>Chứng nhận trao cho học viên:</Text>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F766E', textAlign: 'center', marginBottom: 10 }}>
+          <View style={{ backgroundColor: C.bg, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.line, marginBottom: 16 }}>
+            <Text style={{ fontSize: 11, color: C.inkSoft, textAlign: 'center', marginBottom: 4 }}>Chứng nhận trao cho học viên:</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: C.rail, textAlign: 'center', marginBottom: 10 }}>
               {certificate.recipientName || 'Minh Tran'}
             </Text>
 
-            <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', marginBottom: 4 }}>Đã hoàn thành xuất sắc khóa đào tạo chuyên môn:</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E293B', textAlign: 'center', marginBottom: 12, lineHeight: 20 }}>
+            <Text style={{ fontSize: 11, color: C.inkSoft, textAlign: 'center', marginBottom: 4 }}>Đã hoàn thành xuất sắc khóa đào tạo chuyên môn:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: C.ink, textAlign: 'center', marginBottom: 12, lineHeight: 20 }}>
               {certificate.courseName}
             </Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderColor: '#E2E8F0', paddingTop: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderColor: C.line, paddingTop: 8 }}>
               <View>
-                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Mã Chứng Chỉ:</Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#334155' }}>{certificate.id}</Text>
+                <Text style={{ fontSize: 10, color: C.inkFaint }}>Mã Chứng Chỉ:</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: C.inkSoft }}>{certificate.id}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Ngày Cấp:</Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#334155' }}>{certificate.issueDate || '2026-08-20'}</Text>
+                <Text style={{ fontSize: 10, color: C.inkFaint }}>Ngày Cấp:</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: C.inkSoft }}>{certificate.issueDate || '2026-08-20'}</Text>
               </View>
             </View>
 
             {certificate.score && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Điểm Sát Hạch:</Text>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#009E49' }}>{certificate.score}%</Text>
+                <Text style={{ fontSize: 10, color: C.inkFaint }}>Điểm Sát Hạch:</Text>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: C.green }}>{certificate.score}%</Text>
               </View>
             )}
           </View>
@@ -715,6 +721,7 @@ export const PostTrainingSurveyModal = ({
   onClose: () => void;
   onSubmit: (rating: number, comment: string) => void;
 }) => {
+  const C = useColors();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
@@ -723,11 +730,11 @@ export const PostTrainingSurveyModal = ({
   return (
     <RNModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.65)', justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
+        <View style={{ backgroundColor: C.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="star" size={20} color="#F59E0B" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B' }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: C.ink }}>
                 {type === 'L1' ? 'Đánh Giá Chất Lượng Bài Học (L1 CSAT)' : 'Khảo Sát Khóa Học & Giảng Viên'}
               </Text>
             </View>
@@ -736,12 +743,12 @@ export const PostTrainingSurveyModal = ({
             </TouchableOpacity>
           </View>
 
-          <Text style={{ fontSize: 13, color: '#475569', marginBottom: 16 }}>
+          <Text style={{ fontSize: 13, color: C.inkSoft, marginBottom: 16 }}>
             Ý kiến đóng góp của bạn giúp Ban Đào tạo L&OD MM Mega Market liên tục nâng cao chất lượng bài giảng.
           </Text>
 
           {/* Star rating */}
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E293B', marginBottom: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: C.ink, marginBottom: 8 }}>
             Mức độ hài lòng của bạn ({rating}/5 sao):
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
@@ -782,6 +789,7 @@ export const QrScannerModal = ({
   onClose: () => void;
   onSuccess: () => void;
 }) => {
+  const C = useColors();
   const [scanning, setScanning] = useState(true);
   const [verifying, setVerifying] = useState(false);
 
@@ -811,7 +819,7 @@ export const QrScannerModal = ({
           <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '800' }}>Quét QR Điểm Danh</Text>
+          <Text style={{ color: C.paper, fontSize: 16, fontWeight: '800' }}>Quét QR Điểm Danh</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -822,7 +830,7 @@ export const QrScannerModal = ({
               width: 260,
               height: 260,
               borderWidth: 2,
-              borderColor: verifying ? '#009E49' : '#38BDF8',
+              borderColor: verifying ? C.green : '#38BDF8',
               borderRadius: 24,
               alignItems: 'center',
               justifyContent: 'center',
@@ -832,12 +840,12 @@ export const QrScannerModal = ({
             {verifying ? (
               <View style={{ alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#009E49" />
-                <Text style={{ color: '#009E49', fontWeight: '700', fontSize: 13, marginTop: 10 }}>Đang xác thực điểm danh...</Text>
+                <Text style={{ color: C.green, fontWeight: '700', fontSize: 13, marginTop: 10 }}>Đang xác thực điểm danh...</Text>
               </View>
             ) : (
               <View style={{ alignItems: 'center' }}>
                 <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.7)" />
-                <Text style={{ color: '#E2E8F0', fontSize: 12, marginTop: 12, textAlign: 'center' }}>
+                <Text style={{ color: C.line, fontSize: 12, marginTop: 12, textAlign: 'center' }}>
                   Hướng camera về mã QR Giảng viên
                 </Text>
               </View>
@@ -846,10 +854,10 @@ export const QrScannerModal = ({
 
           {session && (
             <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 12, borderRadius: 12, marginTop: 20, maxWidth: 300 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={1}>
+              <Text style={{ color: C.paper, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={1}>
                 {session.title}
               </Text>
-              <Text style={{ color: '#94A3B8', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
+              <Text style={{ color: C.inkFaint, fontSize: 11, textAlign: 'center', marginTop: 2 }}>
                 GV: {session.trainerName || 'Nguyen Van Hung'}
               </Text>
             </View>

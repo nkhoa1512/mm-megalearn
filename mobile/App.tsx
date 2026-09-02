@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { store } from './src/store';
-import { CourseStoreProvider } from './src/store/CourseStore';
+import { CourseStoreProvider, useCourseStore } from './src/store/CourseStore';
 import { hydrateCache } from './src/store/persistentCache';
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -34,11 +34,24 @@ export default function App() {
     <SafeAreaProvider>
       <Provider store={store}>
         <CourseStoreProvider>
-          <StatusBar style="dark" />
-          <AppNavigator />
+          <ThemedRoot />
         </CourseStoreProvider>
       </Provider>
     </SafeAreaProvider>
+  );
+}
+
+/**
+ * Nằm bên trong CourseStoreProvider để đọc được chế độ sáng/tối: thanh trạng
+ * thái phải đảo màu chữ, nếu không ở nền tối sẽ là chữ đen trên nền đen.
+ */
+function ThemedRoot() {
+  const { theme } = useCourseStore();
+  return (
+    <>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <AppNavigator />
+    </>
   );
 }
 

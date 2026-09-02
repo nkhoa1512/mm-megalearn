@@ -3,29 +3,17 @@ import { ScrollView, Text, TouchableOpacity, View, ViewStyle } from 'react-nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { LIGHT, useColors } from './theme';
 
-export const COLORS = {
-  green: '#009E49',
-  greenDark: '#047857',
-  greenSoft: '#ECFDF5',
-  rail: '#0F766E',
-  railSoft: '#F0FDFA',
-  ink: '#0F172A',
-  inkSoft: '#475569',
-  inkFaint: '#94A3B8',
-  line: '#E2E8F0',
-  paper: '#FFFFFF',
-  bg: '#F8FAFC',
-  sunken: '#F1F5F9',
-  amber: '#D97706',
-  amberSoft: '#FFFBEB',
-  red: '#DC2626',
-  redSoft: '#FEF2F2',
-  blue: '#2563EB',
-  blueSoft: '#EFF6FF',
-  purple: '#7C3AED',
-  purpleSoft: '#F5F3FF',
-};
+export { useColors } from './theme';
+export type { Palette } from './theme';
+
+/**
+ * Bảng màu chế độ sáng, giữ lại để các hằng khai báo ở phạm vi module (bản đồ
+ * màu theo loại sự kiện, theo loại bản ghi...) vẫn tham chiếu được. Trong thân
+ * component hãy dùng `useColors()` để theo đúng chế độ sáng/tối người dùng chọn.
+ */
+export const COLORS = LIGHT;
 
 /**
  * Khung màn hình chuẩn: safe area + nền + thanh tiêu đề dính trên cùng.
@@ -50,6 +38,7 @@ export function Screen({
   contentStyle?: ViewStyle;
   refreshControl?: React.ReactElement<any>;
 }) {
+  const COLORS = useColors();
   const insets = useSafeAreaInsets();
   const body = scroll ? (
     <ScrollView
@@ -82,6 +71,7 @@ export function ScreenHeader({
   back?: boolean;
   right?: React.ReactNode;
 }) {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   return (
     <View
@@ -138,6 +128,7 @@ export function Card({
   onPress?: () => void;
   padded?: boolean;
 }) {
+  const COLORS = useColors();
   const base: ViewStyle = {
     backgroundColor: COLORS.paper,
     borderRadius: 14,
@@ -167,6 +158,7 @@ export function SectionTitle({
   action?: string;
   onAction?: () => void;
 }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -202,6 +194,7 @@ export function EmptyState({
   title: string;
   hint?: string;
 }) {
+  const COLORS = useColors();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 34, paddingHorizontal: 20 }}>
       <View
@@ -239,6 +232,7 @@ export function ChipRow({
   onChange: (value: string) => void;
   style?: ViewStyle;
 }) {
+  const COLORS = useColors();
   return (
     <ScrollView
       horizontal
@@ -286,6 +280,7 @@ export function Segmented({
   onChange: (value: string) => void;
   style?: ViewStyle;
 }) {
+  const COLORS = useColors();
   return (
     <View
       style={[
@@ -344,6 +339,7 @@ export function InfoRow({
   icon?: string;
   valueColor?: string;
 }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -387,6 +383,7 @@ export function HeaderIconButton({
   badge?: number;
   tone?: 'slate' | 'ai' | 'green';
 }) {
+  const COLORS = useColors();
   const bg = tone === 'ai' ? COLORS.purpleSoft : tone === 'green' ? COLORS.greenSoft : COLORS.sunken;
   const fg = tone === 'ai' ? COLORS.purple : tone === 'green' ? COLORS.greenDark : COLORS.inkSoft;
   return (

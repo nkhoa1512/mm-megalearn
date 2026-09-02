@@ -6,16 +6,17 @@ import { useCourseStore } from '../store/CourseStore';
 // @ts-ignore
 import { currentUser as fallbackUser, deriveCertificates, totalLearningHours, orgPathLabel } from '../data/mockData';
 // @ts-ignore
-import { levelDefinition, levelShortLabel } from '../data/levelSystem';
+import { levelShortLabel } from '../data/levelSystem';
 // @ts-ignore
 import { roleDefinition, normalizeRole } from '../data/roles';
 // @ts-ignore
 import { costCenterForUser } from '../utils/costCenter';
 import { Badge } from '../components/ui';
-import { Screen, Card, COLORS, SectionTitle, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, SectionTitle, InfoRow, useColors } from '../components/layout';
 import { clearCache } from '../store/persistentCache';
 
 export default function ProfileScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const {
     currentUser: authUser,
@@ -41,7 +42,6 @@ export default function ProfileScreen() {
   );
   const hours = totalLearningHours(courses, user, enrollments);
   const completed = myList.filter((c: any) => c.enrollment?.status === 'COMPLETED').length;
-  const levelDef = levelDefinition(user.level);
   const roleDef = roleDefinition(user.role);
 
   const costCenter = useMemo(() => {
@@ -113,8 +113,10 @@ export default function ProfileScreen() {
           <Badge tone={roleDef.tone as any} size="sm">
             {roleDef.shortVi}
           </Badge>
+          {/* levelShortLabel đã gồm sẵn emoji + "Level N: <chức danh>", nên
+              không ghép thêm emoji/shortVi nữa kẻo lặp hai lần. */}
           <Badge tone="rail" size="sm">
-            {levelDef.emoji} {levelShortLabel(user.level)} · {levelDef.shortVi}
+            {levelShortLabel(user.level)}
           </Badge>
           <Badge tone="slate" size="sm">
             {user.divisionCode}
@@ -216,6 +218,7 @@ export default function ProfileScreen() {
 }
 
 function SummaryTile({ label, value, color }: { label: string; value: string; color: string }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -250,6 +253,7 @@ function MenuRow({
   hint: string;
   onPress: () => void;
 }) {
+  const COLORS = useColors();
   return (
     <Card onPress={onPress} style={{ padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -293,6 +297,7 @@ function ToggleRow({
   onToggle: () => void;
   last?: boolean;
 }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -311,7 +316,7 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: COLORS.line, true: '#A7F3D0' }}
+        trackColor={{ false: COLORS.line, true: COLORS.greenBorder }}
         thumbColor={value ? COLORS.green : '#FFFFFF'}
       />
     </View>

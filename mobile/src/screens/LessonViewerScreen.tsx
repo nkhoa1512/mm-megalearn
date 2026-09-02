@@ -15,7 +15,7 @@ import { levelShortLabel } from '../data/levelSystem';
 // @ts-ignore
 import { computeLifecycleStatus } from '../utils/courseCatalog';
 import { Badge, Button, ProgressBar, PostTrainingSurveyModal } from '../components/ui';
-import { Screen, Card, COLORS, EmptyState, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, EmptyState, InfoRow, useColors } from '../components/layout';
 
 const TYPE_LABEL: Record<string, string> = {
   SCORM: 'Gói tương tác SCORM 2004',
@@ -26,6 +26,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function LessonViewerScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { courseId, lessonId } = route.params || {};
@@ -242,6 +243,7 @@ const SCORM_SLIDES = [
 ];
 
 function ScormPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: any) => void }) {
+  const COLORS = useColors();
   const [slide, setSlide] = useState(1);
   const [answered, setAnswered] = useState<number | null>(null);
   const current = SCORM_SLIDES[slide - 1];
@@ -272,17 +274,17 @@ function ScormPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
         <View style={{ backgroundColor: COLORS.green, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4 }}>
           <Text style={{ color: '#FFFFFF', fontSize: 9.5, fontWeight: '800' }}>SCORM 2004</Text>
         </View>
-        <Text style={{ color: '#94A3B8', fontSize: 11 }}>
+        <Text style={{ color: COLORS.inkFaint, fontSize: 11 }}>
           Slide {slide}/{total}
         </Text>
       </View>
 
-      <Text style={{ fontSize: 15, fontWeight: '800', color: '#F8FAFC', marginBottom: 10, lineHeight: 21 }}>
+      <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.bg, marginBottom: 10, lineHeight: 21 }}>
         {current.title}
       </Text>
 
       {!!current.content && (
-        <Text style={{ fontSize: 13, color: '#CBD5E1', lineHeight: 20, marginBottom: 12 }}>{current.content}</Text>
+        <Text style={{ fontSize: 13, color: COLORS.lineStrong, lineHeight: 20, marginBottom: 12 }}>{current.content}</Text>
       )}
 
       {!!current.tip && (
@@ -296,13 +298,13 @@ function ScormPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
             marginBottom: 12,
           }}
         >
-          <Text style={{ fontSize: 12, color: '#E2E8F0', lineHeight: 18 }}>💡 {current.tip}</Text>
+          <Text style={{ fontSize: 12, color: COLORS.line, lineHeight: 18 }}>💡 {current.tip}</Text>
         </View>
       )}
 
       {current.interactive && (
         <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#F8FAFC', marginBottom: 10, lineHeight: 19 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.bg, marginBottom: 10, lineHeight: 19 }}>
             {current.question}
           </Text>
           {current.options?.map((opt: any, i: number) => {
@@ -334,11 +336,11 @@ function ScormPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
                     <Ionicons
                       name={opt.correct ? 'checkmark-circle' : picked ? 'close-circle' : 'ellipse-outline'}
                       size={15}
-                      color={opt.correct ? '#4ADE80' : picked ? '#F87171' : '#64748B'}
+                      color={opt.correct ? '#4ADE80' : picked ? '#F87171' : COLORS.inkSoft}
                       style={{ marginRight: 7, marginTop: 1 }}
                     />
                   )}
-                  <Text style={{ fontSize: 12.5, color: '#E2E8F0', flex: 1, lineHeight: 18 }}>{opt.text}</Text>
+                  <Text style={{ fontSize: 12.5, color: COLORS.line, flex: 1, lineHeight: 18 }}>{opt.text}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -363,6 +365,7 @@ function ScormPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
 // PPT — trình chiếu từng trang.
 // ---------------------------------------------------------------------------
 function SlidePlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: any) => void }) {
+  const COLORS = useColors();
   const total = lesson.slideCount || 12;
   const [slide, setSlide] = useState(1);
 
@@ -431,6 +434,7 @@ function SlidePlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
 // VIDEO — mô phỏng phát video, tự đánh dấu hoàn thành khi đạt ngưỡng xem.
 // ---------------------------------------------------------------------------
 function VideoPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: any) => void }) {
+  const COLORS = useColors();
   const [playing, setPlaying] = useState(false);
   const [percent, setPercent] = useState(lesson.progressPercent || 0);
   const required = lesson.requiredWatchPercent || 90;
@@ -478,7 +482,7 @@ function VideoPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
             <Ionicons name={playing ? 'pause' : 'play'} size={27} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
-        <Text style={{ color: '#94A3B8', fontSize: 11.5, marginTop: 11 }}>
+        <Text style={{ color: COLORS.inkFaint, fontSize: 11.5, marginTop: 11 }}>
           {playing ? 'Đang phát…' : percent > 0 ? 'Tạm dừng' : 'Nhấn để phát bài giảng'}
         </Text>
       </View>
@@ -503,6 +507,7 @@ function VideoPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?:
 // PDF — tài liệu quy trình chuẩn.
 // ---------------------------------------------------------------------------
 function PdfPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: any) => void }) {
+  const COLORS = useColors();
   return (
     <Card>
       <View
@@ -541,6 +546,7 @@ function PdfPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: a
 // EXTERNAL_LINK — nền tảng học bên ngoài.
 // ---------------------------------------------------------------------------
 function ExternalPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extra?: any) => void }) {
+  const COLORS = useColors();
   const url = lesson.contentUrl || lesson.externalUrl || 'https://www.linkedin.com/learning/';
   const platform = lesson.platform || detectPlatform(url);
 
@@ -551,7 +557,7 @@ function ExternalPlayer({ lesson, onComplete }: { lesson: any; onComplete: (extr
           backgroundColor: COLORS.blueSoft,
           borderRadius: 10,
           borderWidth: 1,
-          borderColor: '#BFDBFE',
+          borderColor: COLORS.blueBorder,
           padding: 20,
           alignItems: 'center',
           marginBottom: 12,

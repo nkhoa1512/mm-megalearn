@@ -23,7 +23,7 @@ import { computeCourseRecertification } from '../utils/recertification';
 // @ts-ignore
 import { pricingOf, formatVnd } from '../utils/costCenter';
 import { Badge, ProgressBar, Button, Modal as Sheet, CertificateModal } from '../components/ui';
-import { Screen, Card, COLORS, SectionTitle, InfoRow, EmptyState } from '../components/layout';
+import { Screen, Card, COLORS, SectionTitle, InfoRow, EmptyState, useColors } from '../components/layout';
 
 const LESSON_ICON: Record<string, string> = {
   SCORM: 'cube-outline',
@@ -51,6 +51,7 @@ const LESSON_STATUS_META: Record<string, { tone: string; label: string }> = {
 };
 
 export default function CourseOverviewScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const courseId = route.params?.courseId;
@@ -219,10 +220,10 @@ export default function CourseOverviewScreen() {
       </Card>
 
       {!!notice && (
-        <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0', padding: 12 }}>
+        <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: COLORS.greenBorder, padding: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <Ionicons name="information-circle" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
-            <Text style={{ fontSize: 12, color: '#166534', flex: 1, lineHeight: 17 }}>{notice}</Text>
+            <Text style={{ fontSize: 12, color: COLORS.greenText, flex: 1, lineHeight: 17 }}>{notice}</Text>
           </View>
         </Card>
       )}
@@ -232,7 +233,7 @@ export default function CourseOverviewScreen() {
         <Card
           style={{
             backgroundColor: recert.isExpired ? COLORS.redSoft : COLORS.amberSoft,
-            borderColor: recert.isExpired ? '#FECACA' : '#FDE68A',
+            borderColor: recert.isExpired ? COLORS.redBorder : COLORS.amberBorder,
             borderLeftWidth: 4,
             borderLeftColor: recert.isExpired ? COLORS.red : COLORS.amber,
           }}
@@ -245,7 +246,7 @@ export default function CourseOverviewScreen() {
               style={{ marginRight: 10 }}
             />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: recert.isExpired ? '#B91C1C' : '#B45309' }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: recert.isExpired ? COLORS.redText : COLORS.amberText }}>
                 {recert.statusLabel}
               </Text>
               {!!recert.alertMessage && (
@@ -275,7 +276,7 @@ export default function CourseOverviewScreen() {
         <Card
           style={{
             backgroundColor: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? COLORS.redSoft : COLORS.blueSoft,
-            borderColor: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? '#FECACA' : '#BFDBFE',
+            borderColor: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? COLORS.redBorder : COLORS.blueBorder,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 11 }}>
@@ -290,7 +291,7 @@ export default function CourseOverviewScreen() {
                 style={{
                   fontSize: 13.5,
                   fontWeight: '800',
-                  color: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? '#991B1B' : '#1E40AF',
+                  color: access.state === ACCESS_STATE.LOCKED_LEVEL_GAP ? COLORS.redText : '#1E40AF',
                 }}
               >
                 {access.state === ACCESS_STATE.LOCKED_LEVEL_GAP
@@ -322,11 +323,11 @@ export default function CourseOverviewScreen() {
           )}
         </Card>
       ) : isPrereqLocked ? (
-        <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
+        <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: COLORS.amberBorder }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <Ionicons name="git-network" size={19} color={COLORS.amber} style={{ marginRight: 10 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#B45309' }}>Chưa đủ điều kiện tiên quyết</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.amberText }}>Chưa đủ điều kiện tiên quyết</Text>
               <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 5, lineHeight: 17 }}>
                 Cần hoàn thành trước:{' '}
                 {unmetPrerequisites
@@ -337,8 +338,8 @@ export default function CourseOverviewScreen() {
           </View>
         </Card>
       ) : !course.enrollment ? (
-        <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0' }}>
-          <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#166534', marginBottom: 5 }}>
+        <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: COLORS.greenBorder }}>
+          <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.greenText, marginBottom: 5 }}>
             {access.state === ACCESS_STATE.APPROVED ? 'Đã được duyệt học vượt cấp' : 'Bạn đủ điều kiện tham gia'}
           </Text>
           <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginBottom: 11, lineHeight: 17 }}>
@@ -396,7 +397,7 @@ export default function CourseOverviewScreen() {
 
       {/* In-person workshop pointer */}
       {isInPerson && (
-        <Card onPress={() => navigation.navigate('Classrooms')} style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+        <Card onPress={() => navigation.navigate('Classrooms')} style={{ backgroundColor: COLORS.railSoft, borderColor: COLORS.railBorder }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="easel" size={19} color={COLORS.rail} style={{ marginRight: 10 }} />
             <View style={{ flex: 1 }}>
@@ -567,8 +568,8 @@ export default function CourseOverviewScreen() {
       {/* Paid-enrollment confirmation */}
       <Sheet visible={payConfirmOpen} onClose={() => setPayConfirmOpen(false)} title="Xác nhận ghi danh khóa có phí">
         <View style={{ paddingBottom: 16 }}>
-          <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#B45309', marginBottom: 6 }}>
+          <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: COLORS.amberBorder }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.amberText, marginBottom: 6 }}>
               Học phí {formatVnd(pricing.price)}
             </Text>
             <Text style={{ fontSize: 12, color: COLORS.inkSoft, lineHeight: 17 }}>

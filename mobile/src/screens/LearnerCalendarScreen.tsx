@@ -27,7 +27,7 @@ import {
   generateIcsFile,
 } from '../utils/calendarDate';
 import { Badge } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, EmptyState, HeaderIconButton, Segmented } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, EmptyState, HeaderIconButton, Segmented, useColors } from '../components/layout';
 
 // getMonthGridWeeks() dựng lưới bắt đầu từ Chủ Nhật (dayIdx 0), nên thứ tự
 // tiêu đề cột phải khớp — nếu để T2 trước sẽ lệch nhãn cả tháng.
@@ -52,6 +52,7 @@ const CATEGORY_ICON: Record<string, string> = {
 };
 
 export default function LearnerCalendarScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const { courses, myEnrollments, classrooms, assessments, currentUser: authUser, users } = useCourseStore();
   const user = authUser || fallbackUser;
@@ -279,6 +280,7 @@ export default function LearnerCalendarScreen() {
 }
 
 function EventCard({ event, navigation }: { event: any; navigation: any }) {
+  const COLORS = useColors();
   const color = CATEGORY_COLOR[event.category] || COLORS.rail;
   const icon = CATEGORY_ICON[event.category] || 'calendar-outline';
 

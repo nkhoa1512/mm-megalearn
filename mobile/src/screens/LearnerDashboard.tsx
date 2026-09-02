@@ -18,10 +18,12 @@ import { levelDefinition } from '../data/levelSystem';
 // @ts-ignore
 import { computeCourseRecertification } from '../utils/recertification';
 import { Badge, ProgressBar, Button, BarChart, DonutChart, LineChart } from '../components/ui';
-import { Screen, Card, SectionTitle, COLORS, HeaderIconButton, Segmented } from '../components/layout';
+import { Screen, Card, SectionTitle, COLORS, HeaderIconButton, Segmented, useColors } from '../components/layout';
+import { LIGHT, type Palette } from '../components/theme';
 import NotificationsSheet from '../components/NotificationsSheet';
 
 export default function LearnerDashboard() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const {
     courses: allCourses,
@@ -110,7 +112,7 @@ export default function LearnerDashboard() {
       }
     >
       {/* Hero */}
-      <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0' }}>
+      <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: COLORS.greenBorder }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View
             style={{
@@ -156,7 +158,7 @@ export default function LearnerDashboard() {
           <Card
             style={{
               backgroundColor: hasExpired ? COLORS.redSoft : COLORS.amberSoft,
-              borderColor: hasExpired ? '#FECACA' : '#FDE68A',
+              borderColor: hasExpired ? COLORS.redBorder : COLORS.amberBorder,
               borderLeftWidth: 4,
               borderLeftColor: hasExpired ? COLORS.red : COLORS.amber,
             }}
@@ -169,7 +171,7 @@ export default function LearnerDashboard() {
                 style={{ marginRight: 10, marginTop: 1 }}
               />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: hasExpired ? '#B91C1C' : '#B45309' }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: hasExpired ? COLORS.redText : COLORS.amberText }}>
                   {recertAlerts.length} khóa cần thi tái cấp chứng chỉ
                 </Text>
                 <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 3, lineHeight: 16 }} numberOfLines={3}>
@@ -305,7 +307,7 @@ export default function LearnerDashboard() {
           <View key={idx} style={{ marginBottom: idx === categoryStats.length - 1 ? 0 : 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
-                <Ionicons name={cat.icon as any} size={14} color={toneColor(cat.tone)} style={{ marginRight: 6 }} />
+                <Ionicons name={cat.icon as any} size={14} color={toneColor(cat.tone, COLORS)} style={{ marginRight: 6 }} />
                 <Text style={{ fontSize: 11.5, fontWeight: '700', color: COLORS.ink, flex: 1 }} numberOfLines={1}>
                   {cat.name}
                 </Text>
@@ -403,7 +405,8 @@ function MetricTile({
   icon: string;
   onPress?: () => void;
 }) {
-  const color = toneColor(tone);
+  const COLORS = useColors();
+  const color = toneColor(tone, COLORS);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -448,7 +451,8 @@ function ShortcutRow({
   value: string;
   onPress: () => void;
 }) {
-  const color = toneColor(tone);
+  const COLORS = useColors();
+  const color = toneColor(tone, COLORS);
   return (
     <Card onPress={onPress} style={{ padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -457,7 +461,7 @@ function ShortcutRow({
             width: 38,
             height: 38,
             borderRadius: 10,
-            backgroundColor: toneSoft(tone),
+            backgroundColor: toneSoft(tone, COLORS),
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 11,
@@ -479,7 +483,7 @@ function ShortcutRow({
   );
 }
 
-export function toneColor(tone: string) {
+export function toneColor(tone: string, COLORS: Palette = LIGHT) {
   switch (tone) {
     case 'sage':
       return COLORS.green;
@@ -497,7 +501,7 @@ export function toneColor(tone: string) {
   }
 }
 
-export function toneSoft(tone: string) {
+export function toneSoft(tone: string, COLORS: Palette = LIGHT) {
   switch (tone) {
     case 'sage':
       return COLORS.greenSoft;

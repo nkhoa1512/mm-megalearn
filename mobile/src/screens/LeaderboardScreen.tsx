@@ -3,16 +3,18 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
 import { Badge, ProgressBar } from '../components/ui';
-import { Screen, Card, COLORS, SectionTitle, Segmented, EmptyState } from '../components/layout';
+import { Screen, Card, COLORS, SectionTitle, Segmented, EmptyState, useColors } from '../components/layout';
+import { LIGHT, type Palette } from '../components/theme';
 
 const TIER_COLOR: Record<string, string> = {
   Gold: '#D97706',
-  Silver: '#64748B',
-  Bronze: '#B45309',
+  Silver: COLORS.inkSoft,
+  Bronze: COLORS.amberText,
   Platinum: '#0F766E',
 };
 
 export default function LeaderboardScreen() {
+  const COLORS = useColors();
   const { gamification } = useCourseStore();
   const { userStats, badges = [], leaderboard = [] } = gamification || {};
   const [tab, setTab] = useState<'RANK' | 'BADGES'>('RANK');
@@ -93,7 +95,7 @@ export default function LeaderboardScreen() {
               style={{
                 padding: 12,
                 backgroundColor: row.isCurrent ? COLORS.greenSoft : COLORS.paper,
-                borderColor: row.isCurrent ? '#A7F3D0' : COLORS.line,
+                borderColor: row.isCurrent ? COLORS.greenBorder : COLORS.line,
                 borderWidth: row.isCurrent ? 1.5 : 1,
               }}
             >
@@ -103,7 +105,7 @@ export default function LeaderboardScreen() {
                     width: 30,
                     height: 30,
                     borderRadius: 15,
-                    backgroundColor: rankColor(row.rank),
+                    backgroundColor: rankColor(row.rank, COLORS),
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 10,
@@ -121,7 +123,7 @@ export default function LeaderboardScreen() {
                     borderRadius: 18,
                     backgroundColor: COLORS.railSoft,
                     borderWidth: 1,
-                    borderColor: '#99F6E4',
+                    borderColor: COLORS.railBorder,
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 10,
@@ -220,6 +222,7 @@ export default function LeaderboardScreen() {
 }
 
 function StatBox({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  const COLORS = useColors();
   return (
     <View
       style={{
@@ -244,9 +247,9 @@ function StatBox({ icon, label, value, color }: { icon: string; label: string; v
   );
 }
 
-function rankColor(rank: number) {
+function rankColor(rank: number, COLORS: Palette = LIGHT) {
   if (rank === 1) return '#D97706';
-  if (rank === 2) return '#94A3B8';
-  if (rank === 3) return '#B45309';
+  if (rank === 2) return COLORS.inkFaint;
+  if (rank === 3) return COLORS.amberText;
   return COLORS.sunken;
 }

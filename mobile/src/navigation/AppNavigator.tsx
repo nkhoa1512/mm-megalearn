@@ -2,9 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCourseStore } from '../store/CourseStore';
+import { useColors } from '../components/theme';
 
 import LoginScreen from '../screens/LoginScreen';
 import LearnerDashboard from '../screens/LearnerDashboard';
@@ -25,6 +27,14 @@ import AiLearningHubScreen from '../screens/AiLearningHubScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const TAB_LABELS: Record<string, string> = {
+  DashboardTab: 'Tổng Quan',
+  CoursesTab: 'Khóa Học',
+  CalendarTab: 'Lịch Học',
+  RoadmapTab: 'Lộ Trình',
+  ProfileTab: 'Cá Nhân',
+};
+
 const TAB_ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
   DashboardTab: ['grid', 'grid-outline'],
   CoursesTab: ['book', 'book-outline'],
@@ -35,33 +45,51 @@ const TAB_ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Io
 
 function BottomTabs() {
   const insets = useSafeAreaInsets();
+  const C = useColors();
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#009E49',
-        tabBarInactiveTintColor: '#64748B',
+        tabBarActiveTintColor: C.green,
+        tabBarInactiveTintColor: C.inkFaint,
         tabBarStyle: {
-          height: 58 + insets.bottom,
-          paddingBottom: insets.bottom + 6,
+          height: 62 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
           paddingTop: 6,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: C.paper,
           borderTopWidth: 1,
-          borderColor: '#E2E8F0',
+          borderColor: C.line,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        // Nhãn mặc định của React Navigation bị kẹp chiều cao (đo được 7px, rồi
+        // 11px cho cỡ chữ 10px) nên dấu nặng dưới chân chữ "Học"/"Lịch" bị cắt.
+        // Tự render Text để kiểm soát hẳn lineHeight và vùng hiển thị.
+        tabBarLabel: ({ color }) => (
+          <View style={{ height: 17, justifyContent: 'center', overflow: 'visible' }}>
+            <Text
+              style={{
+                fontSize: 10,
+                lineHeight: 15,
+                fontWeight: '700',
+                color,
+                textAlign: 'center',
+              }}
+            >
+              {TAB_LABELS[route.name] || route.name}
+            </Text>
+          </View>
+        ),
         tabBarIcon: ({ focused, color }) => {
           const [active, inactive] = TAB_ICONS[route.name] || ['help', 'help-outline'];
           return <Ionicons name={focused ? active : inactive} size={22} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="DashboardTab" component={LearnerDashboard} options={{ tabBarLabel: 'Tổng Quan' }} />
-      <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Khóa Học' }} />
-      <Tab.Screen name="CalendarTab" component={LearnerCalendarScreen} options={{ tabBarLabel: 'Lịch Học' }} />
-      <Tab.Screen name="RoadmapTab" component={RoadmapScreen} options={{ tabBarLabel: 'Lộ Trình' }} />
-      <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Cá Nhân' }} />
+      <Tab.Screen name="DashboardTab" component={LearnerDashboard} />
+      <Tab.Screen name="CoursesTab" component={CoursesScreen} />
+      <Tab.Screen name="CalendarTab" component={LearnerCalendarScreen} />
+      <Tab.Screen name="RoadmapTab" component={RoadmapScreen} />
+      <Tab.Screen name="ProfileTab" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

@@ -8,7 +8,7 @@ import { levelDefinition } from '../data/levelSystem';
 // @ts-ignore
 import { getCourseImage } from '../data/courseImages';
 import { Badge, Button, ProgressBar } from '../components/ui';
-import { Screen, Card, COLORS, EmptyState } from '../components/layout';
+import { Screen, Card, COLORS, EmptyState, useColors } from '../components/layout';
 
 const TABS = [
   { id: 'CURRENT', label: 'Hiện tại', icon: 'location-outline' },
@@ -18,6 +18,7 @@ const TABS = [
 ];
 
 export default function RoadmapScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const {
     currentUser: user,
@@ -118,7 +119,7 @@ export default function RoadmapScreen() {
             <Card
               style={{
                 backgroundColor: roadmap.succession.locked ? COLORS.redSoft : COLORS.greenSoft,
-                borderColor: roadmap.succession.locked ? '#FECACA' : '#A7F3D0',
+                borderColor: roadmap.succession.locked ? COLORS.redBorder : COLORS.greenBorder,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
@@ -131,7 +132,7 @@ export default function RoadmapScreen() {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: roadmap.succession.locked ? '#991B1B' : '#166534',
+                    color: roadmap.succession.locked ? COLORS.redText : COLORS.greenText,
                     flex: 1,
                     lineHeight: 17,
                     fontWeight: '600',
@@ -190,7 +191,7 @@ export default function RoadmapScreen() {
 
       {activeTab === 'SELF_PROPOSED' && (
         <>
-          <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+          <Card style={{ backgroundColor: COLORS.railSoft, borderColor: COLORS.railBorder }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
               <Ionicons name="git-branch" size={18} color={COLORS.rail} style={{ marginRight: 9 }} />
               <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
@@ -260,7 +261,7 @@ export default function RoadmapScreen() {
                         ? COLORS.amberSoft
                         : COLORS.sunken,
                       borderWidth: 1,
-                      borderColor: completed ? '#BBF7D0' : status === 'IN_PROGRESS' ? '#FDE68A' : COLORS.line,
+                      borderColor: completed ? '#BBF7D0' : status === 'IN_PROGRESS' ? COLORS.amberBorder : COLORS.line,
                       borderRadius: 8,
                       padding: 9,
                       marginBottom: 6,
@@ -285,10 +286,10 @@ export default function RoadmapScreen() {
 
       {activeTab === 'RECOMMENDED' && (
         <>
-          <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
+          <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: COLORS.amberBorder }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
               <Ionicons name="sparkles" size={18} color={COLORS.amber} style={{ marginRight: 9 }} />
-              <Text style={{ fontSize: 11.5, color: '#B45309', flex: 1, lineHeight: 17 }}>
+              <Text style={{ fontSize: 11.5, color: COLORS.amberText, flex: 1, lineHeight: 17 }}>
                 Gợi ý dựa trên cấp bậc, khối công tác hiện tại và các khóa học bạn chưa hoàn thành.
               </Text>
             </View>
@@ -337,6 +338,7 @@ function Timeline({
   locked?: boolean;
   onOpen: (course: any) => void;
 }) {
+  const COLORS = useColors();
   if (!milestones.length) {
     return <EmptyState icon="map-outline" title="Lộ trình chưa có khóa học nào" />;
   }

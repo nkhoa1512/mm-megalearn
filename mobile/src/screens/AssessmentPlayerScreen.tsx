@@ -17,9 +17,10 @@ import {
 // @ts-ignore
 import { computeValidUntilDate } from '../utils/recertification';
 import { Badge, Button, ProgressBar } from '../components/ui';
-import { Screen, Card, COLORS, EmptyState, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, EmptyState, InfoRow, useColors } from '../components/layout';
 
 export default function AssessmentPlayerScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { courseId, assessmentId } = route.params || {};
@@ -333,11 +334,11 @@ export default function AssessmentPlayerScreen() {
           <InfoRow label="Số câu mỗi lượt" value={`${activeAssessment.questionsPerAttempt || '—'} câu`} icon="list-outline" />
         </Card>
 
-        <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: '#FDE68A' }}>
+        <Card style={{ backgroundColor: COLORS.amberSoft, borderColor: COLORS.amberBorder }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <Ionicons name="shield-checkmark" size={19} color={COLORS.amber} style={{ marginRight: 10 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#B45309' }}>Quy chế chống gian lận</Text>
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.amberText }}>Quy chế chống gian lận</Text>
               <Text style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 5, lineHeight: 17 }}>
                 Hệ thống ghi nhận mỗi lần bạn thoát khỏi ứng dụng trong lúc thi. Rời màn hình quá{' '}
                 {activeAssessment.antiCheatSettings?.maxTabSwitches || 3} lần, bài thi sẽ tự động bị thu.
@@ -362,7 +363,7 @@ export default function AssessmentPlayerScreen() {
             alignItems: 'center',
             paddingVertical: 24,
             backgroundColor: result.passed ? COLORS.greenSoft : COLORS.redSoft,
-            borderColor: result.passed ? '#A7F3D0' : '#FECACA',
+            borderColor: result.passed ? COLORS.greenBorder : COLORS.redBorder,
           }}
         >
           <View
@@ -378,7 +379,7 @@ export default function AssessmentPlayerScreen() {
           >
             <Ionicons name={result.passed ? 'checkmark' : 'close'} size={38} color="#FFFFFF" />
           </View>
-          <Text style={{ fontSize: 32, fontWeight: '900', color: result.passed ? COLORS.greenDark : '#B91C1C' }}>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: result.passed ? COLORS.greenDark : COLORS.redText }}>
             {result.score}%
           </Text>
           <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.ink, marginTop: 4 }}>
@@ -414,8 +415,8 @@ export default function AssessmentPlayerScreen() {
         )}
 
         {violations > 0 && (
-          <Card style={{ backgroundColor: COLORS.redSoft, borderColor: '#FECACA' }}>
-            <Text style={{ fontSize: 12, color: '#B91C1C', fontWeight: '700' }}>
+          <Card style={{ backgroundColor: COLORS.redSoft, borderColor: COLORS.redBorder }}>
+            <Text style={{ fontSize: 12, color: COLORS.redText, fontWeight: '700' }}>
               Ghi nhận {violations} lần rời màn hình thi.
             </Text>
           </Card>
@@ -555,7 +556,7 @@ export default function AssessmentPlayerScreen() {
                 justifyContent: 'center',
                 backgroundColor: isCurrent ? COLORS.rail : isDone ? COLORS.greenSoft : COLORS.paper,
                 borderWidth: 1,
-                borderColor: isCurrent ? COLORS.rail : isDone ? '#A7F3D0' : COLORS.line,
+                borderColor: isCurrent ? COLORS.rail : isDone ? COLORS.greenBorder : COLORS.line,
               }}
             >
               <Text
@@ -620,6 +621,7 @@ export default function AssessmentPlayerScreen() {
 // Hiển thị một câu hỏi theo đúng kiểu của nó.
 // ---------------------------------------------------------------------------
 function QuestionCard({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const COLORS = useColors();
   const type = question.questionType || question.type;
   const options = question.options || question.sequenceItems || [];
 
@@ -725,6 +727,7 @@ function QuestionCard({ question, value, onChange }: { question: any; value: any
 
 /** Sắp xếp thứ tự: mobile không kéo-thả được nên dùng nút lên/xuống. */
 function OrderingInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const COLORS = useColors();
   const items = question.options || question.sequenceItems || [];
   const order: string[] = Array.isArray(value) ? value : items.map((x: any) => x.id);
 
@@ -785,6 +788,7 @@ function OrderingInput({ question, value, onChange }: { question: any; value: an
 
 /** Ghép cặp: mỗi vế trái là một hàng chip chọn vế phải. */
 function MatchingInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
+  const COLORS = useColors();
   const pairs = question.options || question.pairs || [];
   const rights: string[] = [...new Set(pairs.map((p: any) => p.right).filter(Boolean))] as string[];
   const current = value || {};

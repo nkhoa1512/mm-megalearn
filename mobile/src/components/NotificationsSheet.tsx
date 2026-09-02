@@ -1,15 +1,17 @@
 import React from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from './layout';
+import { useColors } from './layout';
 import { useCourseStore } from '../store/CourseStore';
 
-const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
-  COURSE_ASSIGNED: { icon: 'add-circle', color: COLORS.blue, bg: COLORS.blueSoft },
-  DEADLINE_REMINDER: { icon: 'alarm', color: COLORS.amber, bg: COLORS.amberSoft },
-  APPROVAL_RESULT: { icon: 'checkmark-circle', color: COLORS.green, bg: COLORS.greenSoft },
-  CERTIFICATE_ISSUED: { icon: 'ribbon', color: COLORS.green, bg: COLORS.greenSoft },
-  CLASSROOM_REMINDER: { icon: 'easel', color: COLORS.rail, bg: COLORS.railSoft },
+// Chỉ lưu *tên tông màu*, không lưu mã màu — màu thật được tra theo bảng màu
+// sáng/tối lúc render, nếu không nền chip sẽ kẹt ở tông sáng khi bật chế độ tối.
+const TYPE_META: Record<string, { icon: string; tone: 'blue' | 'amber' | 'green' | 'rail' }> = {
+  COURSE_ASSIGNED: { icon: 'add-circle', tone: 'blue' },
+  DEADLINE_REMINDER: { icon: 'alarm', tone: 'amber' },
+  APPROVAL_RESULT: { icon: 'checkmark-circle', tone: 'green' },
+  CERTIFICATE_ISSUED: { icon: 'ribbon', tone: 'green' },
+  CLASSROOM_REMINDER: { icon: 'easel', tone: 'rail' },
 };
 
 /**
@@ -25,8 +27,13 @@ export default function NotificationsSheet({
   onClose: () => void;
   items: any[];
 }) {
+  const COLORS = useColors();
   const { language } = useCourseStore();
   const isEn = language === 'en';
+  const toneColorOf = (tone: string) =>
+    tone === 'blue' ? COLORS.blue : tone === 'amber' ? COLORS.amber : tone === 'rail' ? COLORS.rail : COLORS.green;
+  const toneSoftOf = (tone: string) =>
+    tone === 'blue' ? COLORS.blueSoft : tone === 'amber' ? COLORS.amberSoft : tone === 'rail' ? COLORS.railSoft : COLORS.greenSoft;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -71,7 +78,7 @@ export default function NotificationsSheet({
               </Text>
             ) : (
               items.map((n: any) => {
-                const meta = TYPE_META[n.type] || { icon: 'information-circle', color: COLORS.rail, bg: COLORS.railSoft };
+                const meta = TYPE_META[n.type] || { icon: 'information-circle', tone: 'rail' as const };
                 return (
                   <View
                     key={n.id}
@@ -90,13 +97,13 @@ export default function NotificationsSheet({
                         width: 34,
                         height: 34,
                         borderRadius: 17,
-                        backgroundColor: meta.bg,
+                        backgroundColor: toneSoftOf(meta.tone),
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginRight: 11,
                       }}
                     >
-                      <Ionicons name={meta.icon as any} size={16} color={meta.color} />
+                      <Ionicons name={meta.icon as any} size={16} color={toneColorOf(meta.tone)} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

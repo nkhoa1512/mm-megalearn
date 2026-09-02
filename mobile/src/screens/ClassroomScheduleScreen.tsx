@@ -4,9 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCourseStore } from '../store/CourseStore';
 import { Badge, Button, ProgressBar, Modal as Sheet, QrScannerModal, PostTrainingSurveyModal } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, EmptyState, InfoRow, useColors } from '../components/layout';
 
 export default function ClassroomScheduleScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const { classrooms = [], checkInClassroom, enrollClassroom } = useCourseStore();
 
@@ -85,10 +86,10 @@ export default function ClassroomScheduleScreen() {
         ListHeaderComponent={
           <View>
             {!!toast && (
-              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0', padding: 12 }}>
+              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: COLORS.greenBorder, padding: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                   <Ionicons name="checkmark-circle" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 12, color: '#166534', fontWeight: '600', flex: 1, lineHeight: 17 }}>{toast}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.greenText, fontWeight: '600', flex: 1, lineHeight: 17 }}>{toast}</Text>
                 </View>
               </Card>
             )}
@@ -259,6 +260,7 @@ function SessionCard({
   onMaterials: () => void;
   onSurvey: () => void;
 }) {
+  const COLORS = useColors();
   const isStore = session.modality === 'OFFLINE_STORE';
   const isCheckedIn = session.attendanceStatus === 'CHECKED_IN';
   const isCompleted = session.status === 'COMPLETED';

@@ -10,7 +10,7 @@ import {
   totalLearningHours,
 } from '../data/mockData';
 import { Badge } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, EmptyState } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, EmptyState, useColors } from '../components/layout';
 
 const TYPE_META: Record<string, { label: string; tone: string; icon: string; color: string }> = {
   ASSESSMENT: { label: 'Bài sát hạch', tone: 'amber', icon: 'create-outline', color: COLORS.amber },
@@ -19,6 +19,7 @@ const TYPE_META: Record<string, { label: string; tone: string; icon: string; col
 };
 
 export default function LearningHistoryScreen() {
+  const COLORS = useColors();
   const { currentUser: authUser, courses: allCourses, enrollments } = useCourseStore();
   const user = authUser || fallbackUser;
 
@@ -54,7 +55,7 @@ export default function LearningHistoryScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            <Card style={{ backgroundColor: COLORS.railSoft, borderColor: '#99F6E4' }}>
+            <Card style={{ backgroundColor: COLORS.railSoft, borderColor: COLORS.railBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                 <Ionicons name="finger-print" size={19} color={COLORS.rail} style={{ marginRight: 10 }} />
                 <Text style={{ fontSize: 11.5, color: COLORS.rail, flex: 1, lineHeight: 17 }}>
@@ -188,6 +189,7 @@ export default function LearningHistoryScreen() {
 }
 
 function MiniStat({ label, value, color }: { label: string; value: string; color: string }) {
+  const COLORS = useColors();
   return (
     <View
       style={{

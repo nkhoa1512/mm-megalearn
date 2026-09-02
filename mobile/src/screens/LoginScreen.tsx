@@ -19,6 +19,7 @@ import { normalizeRole, roleDefinition } from '../data/roles';
 // @ts-ignore
 import { levelShortLabel } from '../data/levelSystem';
 import { Badge, Button } from '../components/ui';
+import { useColors } from '../components/theme';
 
 const ROLE_EMOJI: Record<string, string> = {
   learner: '👤',
@@ -35,6 +36,7 @@ const ROLE_EMOJI: Record<string, string> = {
  * để demo bất kỳ nhân sự nào.
  */
 export default function LoginScreen() {
+  const C = useColors();
   const { login } = useCourseStore();
 
   const roster = useMemo(() => (typeof allUsers === 'function' ? allUsers() : demoUsers), []);
@@ -98,7 +100,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {/* Brand */}
         <View style={{ alignItems: 'center', marginBottom: 22, marginTop: 8 }}>
@@ -107,23 +109,23 @@ export default function LoginScreen() {
               width: 62,
               height: 62,
               borderRadius: 16,
-              backgroundColor: '#009E49',
+              backgroundColor: C.green,
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 12,
-              shadowColor: '#009E49',
+              shadowColor: C.green,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 10,
               elevation: 5,
             }}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 23, fontWeight: '900' }}>MM</Text>
+            <Text style={{ color: C.paper, fontSize: 23, fontWeight: '900' }}>MM</Text>
           </View>
-          <Text style={{ fontSize: 19, fontWeight: '900', color: '#0F172A', letterSpacing: -0.4 }}>
+          <Text style={{ fontSize: 19, fontWeight: '900', color: C.ink, letterSpacing: -0.4 }}>
             MM MegaLearn
           </Text>
-          <Text style={{ fontSize: 12, color: '#64748B', marginTop: 3, textAlign: 'center' }}>
+          <Text style={{ fontSize: 12, color: C.inkSoft, marginTop: 3, textAlign: 'center' }}>
             Cổng học tập dành cho nhân viên · MM Mega Market Vietnam
           </Text>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
@@ -139,15 +141,15 @@ export default function LoginScreen() {
         {/* Selected profile card */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: C.paper,
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#E2E8F0',
+            borderColor: C.line,
             padding: 16,
             marginBottom: 16,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 10 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: C.inkSoft, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 10 }}>
             Tài khoản đang chọn
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -156,23 +158,23 @@ export default function LoginScreen() {
                 width: 46,
                 height: 46,
                 borderRadius: 23,
-                backgroundColor: '#ECFDF5',
+                backgroundColor: C.greenSoft,
                 borderWidth: 1.5,
-                borderColor: '#A7F3D0',
+                borderColor: C.greenBorder,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: 12,
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#047857' }}>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: C.greenDark }}>
                 {selected.avatar || initialsOf(selected.fullName)}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: C.ink }} numberOfLines={1}>
                 {selected.fullName}
               </Text>
-              <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: 11.5, color: C.inkSoft, marginTop: 1 }} numberOfLines={1}>
                 {selected.position}
               </Text>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
@@ -196,9 +198,9 @@ export default function LoginScreen() {
           disabled={ssoLoading}
           activeOpacity={0.85}
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: C.paper,
             borderWidth: 1.5,
-            borderColor: '#CBD5E1',
+            borderColor: C.lineStrong,
             borderRadius: 12,
             paddingVertical: 13,
             flexDirection: 'row',
@@ -218,11 +220,11 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
-          <Text style={{ marginHorizontal: 10, fontSize: 11, color: '#94A3B8', fontWeight: '700' }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: C.line }} />
+          <Text style={{ marginHorizontal: 10, fontSize: 11, color: C.inkFaint, fontWeight: '700' }}>
             HOẶC NHẬP MÃ NHÂN VIÊN
           </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: C.line }} />
         </View>
 
         {/* Credentials */}
@@ -234,7 +236,7 @@ export default function LoginScreen() {
             placeholderTextColor="#94A3B8"
             autoCapitalize="characters"
             autoCorrect={false}
-            style={inputStyle}
+            style={[inputStyle, { color: C.ink }]}
           />
         </Field>
 
@@ -245,7 +247,7 @@ export default function LoginScreen() {
             secureTextEntry
             placeholder="••••••••"
             placeholderTextColor="#94A3B8"
-            style={inputStyle}
+            style={[inputStyle, { color: C.ink }]}
           />
         </Field>
 
@@ -256,9 +258,9 @@ export default function LoginScreen() {
         {/* Quick personas */}
         <View style={{ marginTop: 26 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#0F172A' }}>Chọn nhanh học viên</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.ink }}>Chọn nhanh học viên</Text>
             <TouchableOpacity onPress={() => setRosterOpen(true)} style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#009E49', marginRight: 3 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.green, marginRight: 3 }}>
                 Toàn bộ {roster.length} nhân sự
               </Text>
               <Ionicons name="chevron-forward" size={13} color="#009E49" />
@@ -275,22 +277,22 @@ export default function LoginScreen() {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  backgroundColor: isSelected ? '#F0FDFA' : '#FFFFFF',
+                  backgroundColor: isSelected ? C.railSoft : C.paper,
                   borderWidth: 1.5,
-                  borderColor: isSelected ? '#0F766E' : '#E2E8F0',
+                  borderColor: isSelected ? C.rail : C.line,
                   borderRadius: 12,
                   padding: 12,
                   marginBottom: 8,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: C.ink }} numberOfLines={1}>
                     {user.fullName}
                   </Text>
-                  <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 1 }} numberOfLines={1}>
+                  <Text style={{ fontSize: 11.5, color: C.inkSoft, marginTop: 1 }} numberOfLines={1}>
                     {user.position}
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }} numberOfLines={1}>
+                  <Text style={{ fontSize: 11, color: C.inkFaint, marginTop: 3 }} numberOfLines={1}>
                     {user.employeeCode} · {user.divisionCode} · {levelShortLabel(user.level)}
                   </Text>
                 </View>
@@ -302,7 +304,7 @@ export default function LoginScreen() {
           })}
         </View>
 
-        <Text style={{ fontSize: 10.5, color: '#94A3B8', textAlign: 'center', marginTop: 20, lineHeight: 16 }}>
+        <Text style={{ fontSize: 10.5, color: C.inkFaint, textAlign: 'center', marginTop: 20, lineHeight: 16 }}>
           © 2026 MM Mega Market Vietnam · Learning & Organizational Development{'\n'}
           Bảo vệ bởi RBAC & watermark động · ISO-27001
         </Text>
@@ -310,18 +312,18 @@ export default function LoginScreen() {
 
       {/* Full roster browser */}
       <Modal visible={rosterOpen} animationType="slide" onRequestClose={() => setRosterOpen(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
           <View
             style={{
               paddingHorizontal: 16,
               paddingVertical: 12,
               borderBottomWidth: 1,
-              borderColor: '#E2E8F0',
-              backgroundColor: '#FFFFFF',
+              borderColor: C.line,
+              backgroundColor: C.paper,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#0F172A' }}>Danh bạ nhân sự MMVN</Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: C.ink }}>Danh bạ nhân sự MMVN</Text>
               <TouchableOpacity onPress={() => setRosterOpen(false)} style={{ padding: 6 }}>
                 <Ionicons name="close" size={20} color="#64748B" />
               </TouchableOpacity>
@@ -331,7 +333,7 @@ export default function LoginScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: '#F1F5F9',
+                backgroundColor: C.sunken,
                 borderRadius: 10,
                 paddingHorizontal: 10,
                 marginBottom: 10,
@@ -343,7 +345,7 @@ export default function LoginScreen() {
                 onChangeText={setSearch}
                 placeholder="Tìm theo tên, mã NV, chức danh…"
                 placeholderTextColor="#94A3B8"
-                style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 13, color: '#0F172A' }}
+                style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 13, color: C.ink }}
               />
               {!!search && (
                 <TouchableOpacity onPress={() => setSearch('')}>
@@ -371,7 +373,7 @@ export default function LoginScreen() {
             initialNumToRender={15}
             contentContainerStyle={{ padding: 12 }}
             ListEmptyComponent={
-              <Text style={{ textAlign: 'center', color: '#94A3B8', fontSize: 13, marginTop: 40 }}>
+              <Text style={{ textAlign: 'center', color: C.inkFaint, fontSize: 13, marginTop: 40 }}>
                 Không tìm thấy nhân sự phù hợp.
               </Text>
             }
@@ -382,22 +384,22 @@ export default function LoginScreen() {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: C.paper,
                   borderWidth: 1,
-                  borderColor: '#E2E8F0',
+                  borderColor: C.line,
                   borderRadius: 12,
                   padding: 12,
                   marginBottom: 8,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: C.ink }} numberOfLines={1}>
                     {item.fullName}
                   </Text>
-                  <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 1 }} numberOfLines={1}>
+                  <Text style={{ fontSize: 11.5, color: C.inkSoft, marginTop: 1 }} numberOfLines={1}>
                     {item.position}
                   </Text>
-                  <Text style={{ fontSize: 10.5, color: '#94A3B8', marginTop: 3 }} numberOfLines={1}>
+                  <Text style={{ fontSize: 10.5, color: C.inkFaint, marginTop: 3 }} numberOfLines={1}>
                     {item.employeeCode} · {item.divisionCode}/{item.departmentCode} · {levelShortLabel(item.level)}
                   </Text>
                 </View>
@@ -418,25 +420,25 @@ const inputStyle = {
   paddingVertical: 11,
   paddingHorizontal: 10,
   fontSize: 13.5,
-  color: '#0F172A',
 } as const;
 
 function Field({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
+  const C = useColors();
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#475569', marginBottom: 6 }}>{label}</Text>
+      <Text style={{ fontSize: 11.5, fontWeight: '700', color: C.inkSoft, marginBottom: 6 }}>{label}</Text>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: C.paper,
           borderWidth: 1,
-          borderColor: '#CBD5E1',
+          borderColor: C.lineStrong,
           borderRadius: 10,
           paddingHorizontal: 10,
         }}
       >
-        <Ionicons name={icon as any} size={16} color="#94A3B8" />
+        <Ionicons name={icon as any} size={16} color={C.inkFaint} />
         {children}
       </View>
     </View>
@@ -444,6 +446,7 @@ function Field({ label, icon, children }: { label: string; icon: string; childre
 }
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const C = useColors();
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -453,12 +456,12 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
         paddingHorizontal: 12,
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: active ? '#009E49' : '#E2E8F0',
-        backgroundColor: active ? '#ECFDF5' : '#FFFFFF',
+        borderColor: active ? C.green : C.line,
+        backgroundColor: active ? C.greenSoft : C.paper,
         marginRight: 6,
       }}
     >
-      <Text style={{ fontSize: 11.5, fontWeight: '700', color: active ? '#047857' : '#64748B' }}>{label}</Text>
+      <Text style={{ fontSize: 11.5, fontWeight: '700', color: active ? C.greenDark : C.inkSoft }}>{label}</Text>
     </TouchableOpacity>
   );
 }

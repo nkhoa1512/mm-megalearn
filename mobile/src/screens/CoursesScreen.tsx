@@ -16,7 +16,7 @@ import { computeCourseRecertification } from '../utils/recertification';
 // @ts-ignore
 import { getAssignedCurriculaForUser, getCurriculumProgress } from '../utils/curriculumAssignment';
 import { Badge, ProgressBar, Button, Modal as Sheet } from '../components/ui';
-import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState, SectionTitle, InfoRow } from '../components/layout';
+import { Screen, Card, COLORS, ChipRow, Segmented, EmptyState, SectionTitle, InfoRow, useColors } from '../components/layout';
 
 const STATUS_META: Record<string, { tone: string; label: string }> = {
   IN_PROGRESS: { tone: 'amber', label: 'Đang Học' },
@@ -27,6 +27,7 @@ const STATUS_META: Record<string, { tone: string; label: string }> = {
 };
 
 export default function CoursesScreen() {
+  const COLORS = useColors();
   const navigation = useNavigation<any>();
   const {
     courses: allCourses,
@@ -220,10 +221,10 @@ export default function CoursesScreen() {
             />
 
             {!!toast && (
-              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: '#A7F3D0', padding: 12 }}>
+              <Card style={{ backgroundColor: COLORS.greenSoft, borderColor: COLORS.greenBorder, padding: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                   <Ionicons name="checkmark-circle" size={17} color={COLORS.green} style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 12, color: '#166534', fontWeight: '600', flex: 1, lineHeight: 17 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.greenText, fontWeight: '600', flex: 1, lineHeight: 17 }}>
                     {toast}
                   </Text>
                 </View>
@@ -240,11 +241,19 @@ export default function CoursesScreen() {
                 <Ionicons name={gateOpen ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.inkFaint} />
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9 }}>
+              {/* levelShortLabel trả về chuỗi dài ("🟢 Level 6: Chuyên viên /
+                  Nhân viên nghiệp vụ"). Hai badge nằm cùng hàng sẽ vượt mép
+                  phải, nên xếp dọc: cấp hiện tại -> mũi tên -> cấp kế tiếp. */}
+              <View style={{ marginTop: 9 }}>
                 <Badge tone="rail" size="sm">
                   {levelShortLabel(userLevel)}
                 </Badge>
-                <Ionicons name="arrow-forward" size={13} color={COLORS.inkFaint} />
+                <Ionicons
+                  name="arrow-down"
+                  size={13}
+                  color={COLORS.inkFaint}
+                  style={{ marginVertical: 3, marginLeft: 9 }}
+                />
                 {oneLevelUp ? (
                   <Badge tone="blue" size="sm">
                     {levelShortLabel(oneLevelUp)}
@@ -450,6 +459,7 @@ function CourseRow({
   onRequest: () => void;
   onClassroom: () => void;
 }) {
+  const COLORS = useColors();
   const enr = course.enrollment;
   const status = STATUS_META[enr?.status] || null;
   const format = courseFormatBadge(course);
@@ -467,7 +477,9 @@ function CourseRow({
             {course.title}
           </Text>
           <Text style={{ fontSize: 10.5, color: COLORS.inkFaint, marginTop: 3 }} numberOfLines={1}>
-            {course.code} · {course.category || course.domain} · {course.durationHours || course.duration || '—'}h
+            {/* Không phải khóa nào cũng có số giờ — tránh hiển thị "—h" vô nghĩa. */}
+            {course.code} · {course.category || course.domain}
+            {course.durationHours || course.duration ? ` · ${course.durationHours || course.duration}h` : ''}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
             <Badge tone={format.tone as any} size="sm">
