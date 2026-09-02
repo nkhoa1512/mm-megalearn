@@ -11,7 +11,8 @@
     "verify": "esbuild scripts/verify-role-level-model.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-role-level-model.mjs && node node_modules/.cache/verify-role-level-model.mjs",
     "verify:cost": "esbuild scripts/verify-cost-center.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-cost-center.mjs && node node_modules/.cache/verify-cost-center.mjs",
     "check:tables": "esbuild scripts/check-table-widths.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/check-table-widths.mjs && node node_modules/.cache/check-table-widths.mjs",
-    "verify:hrbp": "esbuild scripts/verify-hrbp.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-hrbp.mjs && node node_modules/.cache/verify-hrbp.mjs"
+    "verify:hrbp": "esbuild scripts/verify-hrbp.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-hrbp.mjs && node node_modules/.cache/verify-hrbp.mjs",
+    "verify:manager": "esbuild scripts/verify-manager.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-manager.mjs && node node_modules/.cache/verify-manager.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

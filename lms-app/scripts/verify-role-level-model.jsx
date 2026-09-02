@@ -45,7 +45,6 @@ const AiLearningHub = (await import('../src/pages/learner/AiLearningHub')).defau
 const ManagerDashboard = (await import('../src/pages/manager/ManagerDashboard')).default;
 const ManagerTeam = (await import('../src/pages/manager/ManagerTeam')).default;
 const ManagerCourses = (await import('../src/pages/manager/ManagerCourses')).default;
-const ManagerReports = (await import('../src/pages/manager/ManagerReports')).default;
 const ManagerApprovals = (await import('../src/pages/manager/ManagerApprovals')).default;
 const MyLearning = (await import('../src/pages/shared/MyLearning')).default;
 const MyCertificates = (await import('../src/pages/shared/MyCertificates')).default;
@@ -242,7 +241,6 @@ const PAGES = [
   ['ManagerDashboard', <ManagerDashboard />, '/manager', '/manager'],
   ['ManagerTeam', <ManagerTeam />, '/manager/team', '/manager/team'],
   ['ManagerCourses', <ManagerCourses />, '/manager/courses', '/manager/courses'],
-  ['ManagerReports', <ManagerReports />, '/manager/reports', '/manager/reports'],
   ['ManagerApprovals', <ManagerApprovals />, '/manager/approvals', '/manager/approvals'],
   ['MyLearning', <MyLearning />, '/my-learning', '/my-learning'],
   ['MyCertificates', <MyCertificates />, '/my-certificates', '/my-certificates'],

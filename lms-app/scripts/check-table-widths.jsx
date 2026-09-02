@@ -28,7 +28,6 @@ const LearnerCourses = (await import('../src/pages/learner/LearnerCourses')).def
 const LearnerHistory = (await import('../src/pages/learner/LearnerHistory')).default;
 const ManagerTeam = (await import('../src/pages/manager/ManagerTeam')).default;
 const ManagerCourses = (await import('../src/pages/manager/ManagerCourses')).default;
-const ManagerReports = (await import('../src/pages/manager/ManagerReports')).default;
 const ManagerApprovals = (await import('../src/pages/manager/ManagerApprovals')).default;
 const MyLearning = (await import('../src/pages/shared/MyLearning')).default;
 const AdminDashboard = (await import('../src/pages/admin/AdminDashboard')).default;
@@ -212,7 +211,6 @@ const PAGES = [
   ['Learning History', <LearnerHistory />, '/learner/history'],
   ['Manager · Team', <ManagerTeam />, '/manager/team'],
   ['Manager · Department courses', <ManagerCourses />, '/manager/courses'],
-  ['Manager · Reports', <ManagerReports />, '/manager/reports'],
   ['Level skip approvals', <ManagerApprovals />, '/manager/approvals'],
   ['Trainer · Classes', <TrainerHub initialTab="CLASSES" />, '/trainer'],
   ['Trainer · Attendance', <TrainerHub initialTab="ATTENDANCE" />, '/trainer/attendance'],

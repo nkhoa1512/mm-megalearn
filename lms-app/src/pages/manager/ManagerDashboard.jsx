@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTeamMembersForManager, managerUser as defaultManager, notifications } from '../../data/mockData';
+import { managerUser as defaultManager, notifications, allUsers, enrollmentsForUser } from '../../data/mockData';
+import {
+  buildTeam,
+  teamSummary,
+  teamAssignments,
+  attentionByMember,
+  INACTIVITY_THRESHOLD_DAYS,
+} from '../../utils/managerRules';
 import { useCourseStore } from '../../store/CourseStore';
 import { canManage } from '../../data/roles';
 import {
@@ -16,9 +23,52 @@ import {
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
-  const { approvals, currentUser: authUser, approveRequest, rejectRequest, levelAdvanceRequestsFor } = useCourseStore();
+  const {
+    approvals, currentUser: authUser, approveRequest, rejectRequest, levelAdvanceRequestsFor,
+    users, enrollments, courses,
+  } = useCourseStore();
   const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
-  const teamMembers = getTeamMembersForManager(activeManager);
+
+  // The team, and every figure derived from it, comes from src/utils/managerRules.js —
+  // the real roster joined to the real enrollment matrix (BR-MGR-001, BR-MGR-010).
+  const today = React.useMemo(() => new Date(), []);
+  const roster = React.useMemo(() => (users && users.length > 0 ? users : allUsers()), [users]);
+  const effectiveEnrollments = React.useMemo(() => {
+    const map = {};
+    roster.forEach((u) => { map[u.userId] = enrollmentsForUser(u, enrollments); });
+    return map;
+  }, [roster, enrollments]);
+
+  const team = React.useMemo(
+    () => buildTeam(activeManager, roster, effectiveEnrollments, today),
+    [activeManager, roster, effectiveEnrollments, today]
+  );
+  const summary = React.useMemo(() => teamSummary(team), [team]);
+  const attentionItems = React.useMemo(() => attentionByMember(team, courses, today), [team, courses, today]);
+
+  const teamMembers = React.useMemo(
+    () => team.members.map(({ user, relationshipLabel, state }) => ({
+      userId: user.userId,
+      employeeId: user.employeeCode,
+      name: user.fullName,
+      position: user.position,
+      level: user.level,
+      relationshipLabel,
+      status: state.status,
+      progress: state.completionPercent,
+      score: state.averageScore,
+      assigned: state.assigned,
+      completedCount: state.completed,
+      inactiveDays: state.inactiveDays === null ? 0 : state.inactiveDays,
+      overdue: state.overdue > 0,
+      dueDate: state.nextDueDate,
+      lastActivity: state.lastActivity,
+      reason: attentionItems.find((a) => a.userId === user.userId)?.reason || null,
+      actionRequired: attentionItems.find((a) => a.userId === user.userId)?.kind || null,
+      recommendedAction: attentionItems.find((a) => a.userId === user.userId)?.action || null,
+    })),
+    [team, attentionItems]
+  );
 
   const [activeChartTab, setActiveChartTab] = useState('BAR'); // 'BAR' | 'LINE'
   const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'OVERDUE' | 'FAILED' | 'INACTIVE'
@@ -26,21 +76,28 @@ export default function ManagerDashboard() {
   const [isBatchRemind, setIsBatchRemind] = useState(false);
   const [remindSent, setRemindSent] = useState(false);
 
-  const pendingApprovals = approvals.filter((a) => a.status === 'PENDING');
+  // BR-MGR-031 / BR-MGR-040 — a manager only handles requests from their own team.
+  const pendingApprovals = React.useMemo(() => {
+    const ids = new Set(team.members.map((m) => m.user.userId));
+    const codes = new Set(team.members.map((m) => m.user.employeeCode));
+    return approvals.filter(
+      (a) => a.status === 'PENDING' && (ids.has(a.userId) || codes.has(a.employeeCode) || codes.has(a.userId))
+    );
+  }, [approvals, team]);
   const total = teamMembers.length;
   const completed = teamMembers.filter((m) => m.status === 'COMPLETED').length;
   const inProgress = teamMembers.filter((m) => m.status === 'IN_PROGRESS').length;
   const notStarted = teamMembers.filter((m) => m.status === 'NOT_STARTED').length;
   const overdue = teamMembers.filter((m) => m.status === 'OVERDUE').length;
   const failed = teamMembers.filter((m) => m.status === 'FAILED').length;
-  const needsAttention = teamMembers.filter((m) => m.status === 'OVERDUE' || m.status === 'FAILED' || m.inactiveDays >= 3);
-  const avgCompletion = total > 0 ? Math.round(teamMembers.reduce((s, m) => s + m.progress, 0) / total) : 0;
+  const needsAttention = teamMembers.filter((m) => m.status === 'OVERDUE' || m.status === 'FAILED' || m.inactiveDays >= INACTIVITY_THRESHOLD_DAYS);
+  const avgCompletion = summary.completionPercent;
 
   // Filter the intervention list by tab
   const filteredAttentionList = needsAttention.filter((m) => {
     if (filterType === 'OVERDUE') return m.status === 'OVERDUE';
     if (filterType === 'FAILED') return m.status === 'FAILED';
-    if (filterType === 'INACTIVE') return m.inactiveDays >= 3 && m.status !== 'OVERDUE' && m.status !== 'FAILED';
+    if (filterType === 'INACTIVE') return m.inactiveDays >= INACTIVITY_THRESHOLD_DAYS && m.status !== 'OVERDUE' && m.status !== 'FAILED';
     return true;
   });
 
@@ -53,14 +110,26 @@ export default function ManagerDashboard() {
     { label: 'Failed', value: failed, tone: 'amber' },
   ].filter((d) => d.value > 0);
 
-  // Bar chart data: progress across the team's core training topics
-  const teamTopicProgress = [
-    { label: 'Food Safety & HACCP', value: 85, tone: 'sage' },
-    { label: 'Fire Safety & Emergency Evacuation', value: 90, tone: 'sage' },
-    { label: 'Fresh Counter Standards', value: 65, tone: 'rail' },
-    { label: 'Security & Phishing Prevention', value: 55, tone: 'amber' },
-    { label: 'MMVN Culture & Onboarding', value: 45, tone: 'rust' },
-  ];
+  // Bar chart data: real completion per course across the team, weakest first.
+  const teamTopicProgress = React.useMemo(() => {
+    const rows = teamAssignments(team, effectiveEnrollments, courses);
+    const map = new Map();
+    rows.forEach((r) => {
+      const slot = map.get(r.courseId) || { label: r.course, assigned: 0, completed: 0, mandatory: r.mandatory };
+      slot.assigned += 1;
+      if (r.status === 'COMPLETED') slot.completed += 1;
+      map.set(r.courseId, slot);
+    });
+    return Array.from(map.values())
+      .map((c) => ({
+        label: c.label,
+        value: c.assigned > 0 ? Math.round((c.completed / c.assigned) * 100) : 0,
+        tone: c.assigned > 0 && c.completed / c.assigned >= 0.8 ? 'sage' : c.completed / c.assigned >= 0.5 ? 'rail' : 'rust',
+        mandatory: c.mandatory,
+      }))
+      .sort((a, b) => (b.mandatory ? 1 : 0) - (a.mandatory ? 1 : 0) || a.value - b.value)
+      .slice(0, 6);
+  }, [team, effectiveEnrollments, courses]);
 
   // Line chart data: the team's average completion trend over 4 weeks
   const teamWeeklyTrend = [
@@ -124,7 +193,7 @@ export default function ManagerDashboard() {
                   {activeManager.divisionCode} &middot; {activeManager.departmentName || activeManager.departmentCode}
                 </Badge>
                 <Badge tone="sage" icon="ti-users">
-                  {total} Direct Reports
+                  {summary.directReports} direct &middot; {summary.departmentMembers} department
                 </Badge>
               </div>
               <p style={{ marginTop: 4, marginBottom: 0, color: 'var(--ink-soft)', fontSize: 13 }}>
@@ -162,15 +231,15 @@ export default function ManagerDashboard() {
         <StatTile
           label="Total Employees Reporting"
           value={`${total} Employees`}
-          subtext="100% assigned the standard roadmap"
+          subtext={`${summary.assigned} assigned enrollment(s) across the team`}
           tone="blue"
           icon="ti-users"
           onClick={() => navigate('/manager/team')}
         />
         <StatTile
-          label="Courses Completed"
-          value={`${completed} / ${total} Courses`}
-          subtext={`${Math.round((completed / Math.max(1, total)) * 100)}% completion rate`}
+          label="Course Enrollments Completed"
+          value={`${summary.completed} / ${summary.assigned}`}
+          subtext={`${summary.completionPercent}% of assigned courses across the team`}
           tone="sage"
           icon="ti-circle-check"
           onClick={() => navigate('/manager/courses')}
@@ -299,15 +368,17 @@ export default function ManagerDashboard() {
             )}
           </div>
 
-          <div style={{ background: 'var(--amber-soft)', borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="ti ti-info-circle" style={{ color: 'var(--amber)', fontSize: 18 }} />
-              <div style={{ fontSize: 12, color: 'var(--ink)' }}>
-                Topic <strong>MMVN Culture &amp; Onboarding</strong> currently has a low completion rate (45%).
+          {teamTopicProgress.length > 0 && teamTopicProgress[0].value < 80 && (
+            <div style={{ background: 'var(--amber-soft)', borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="ti ti-info-circle" style={{ color: 'var(--amber-soft-text)', fontSize: 18 }} />
+                <div style={{ fontSize: 12, color: 'var(--amber-soft-text)' }}>
+                  Weakest coverage: <strong>{teamTopicProgress[0].label}</strong> at {teamTopicProgress[0].value}% across the team.
+                </div>
               </div>
+              <Badge tone="amber">Needs a nudge</Badge>
             </div>
-            <Badge tone="amber">Needs A Nudge</Badge>
-          </div>
+          )}
         </div>
       </div>
 
@@ -376,7 +447,7 @@ export default function ManagerDashboard() {
                 border: '1px solid var(--line)',
               }}
             >
-              🟡 Inactive &gt;3 Days ({needsAttention.length - overdue - failed})
+              🟡 Inactive &gt;{INACTIVITY_THRESHOLD_DAYS} Days ({needsAttention.length - overdue - failed})
             </button>
           </div>
         </div>

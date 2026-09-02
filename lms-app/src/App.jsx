@@ -20,7 +20,6 @@ import ManagerTeam from './pages/manager/ManagerTeam';
 import ManagerLearning from './pages/manager/ManagerLearning';
 import ManagerCertificates from './pages/manager/ManagerCertificates';
 import ManagerCourses from './pages/manager/ManagerCourses';
-import ManagerReports from './pages/manager/ManagerReports';
 
 import LessonPlayer from './pages/player/LessonPlayer';
 import AssessmentPlayer from './pages/player/AssessmentPlayer';
@@ -203,7 +202,7 @@ function Shell({ role, setRole }) {
         <Route path="/manager/team" element={<ManagerTeam />} />
         <Route path="/manager/approvals" element={<ManagerApprovals />} />
         <Route path="/manager/courses" element={<ManagerCourses />} />
-        <Route path="/manager/reports" element={<ManagerTeam />} />
+        <Route path="/manager/reports" element={<Navigate to="/manager/team" replace />} />
         <Route path="/manager/learning" element={<ManagerLearning />} />
         <Route path="/manager/learning/:courseId" element={<LearnerCourseDetail basePath="/manager/learning" />} />
         <Route path="/manager/learning/:courseId/lessons/:lessonId" element={<LessonPlayer basePath="/manager/learning" />} />
