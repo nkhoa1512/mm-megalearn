@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useCourseStore } from '../../store/CourseStore';
 import { Badge, Button, Modal, JobLevelBadge, CourseTypeBadge } from '../../features/common/ui';
-import { roleDefinition } from '../../data/roles';
+import { roleDefinition, hasCapability } from '../../data/roles';
 import { nextLevelUp, normalizeLevel, levelTitle } from '../../data/levelSystem';
 
 export default function ManagerApprovals() {
@@ -15,7 +15,7 @@ export default function ManagerApprovals() {
   const [showFilters, setShowFilters] = useState(false);
 
   const roleDef = roleDefinition(currentUser.role);
-  const canApprove = roleDef.canApproveLevelSkip;
+  const canApprove = hasCapability(currentUser?.role, 'canApproveLevelSkip');
   const myScopeRequests = approvals || [];
 
   const activeFiltersCount = useMemo(() => {
@@ -86,7 +86,7 @@ export default function ManagerApprovals() {
         <i className="ti ti-lock" style={{ fontSize: 44, color: 'var(--rust)' }} />
         <h2 style={{ fontSize: 18, marginTop: 10 }}>You do not have permission to approve level skips</h2>
         <p style={{ color: 'var(--ink-soft)' }}>
-          Only roles from line manager upward can act on an employee's level skip request.
+          Only User Admin and System Admin can approve level skip requests and curriculum proposals.
         </p>
       </div>
     );
