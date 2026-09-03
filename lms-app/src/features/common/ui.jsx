@@ -311,12 +311,17 @@ export function CourseTypeBadge({ courseType }) {
 
 
 // Modal Component
-export function Modal({ isOpen = true, onClose, title, subtitle, children, footer, size = 'md' }) {
+// maxWidth overrides the size class in pixels, for the few dialogs that hold a wide table.
+export function Modal({ isOpen = true, onClose, title, subtitle, children, footer, size = 'md', maxWidth }) {
   if (!isOpen) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className={`modal-box modal-${size}`} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal-box modal-${size}`}
+        style={maxWidth ? { maxWidth } : undefined}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <div>
             <h3 className="modal-title">{title}</h3>

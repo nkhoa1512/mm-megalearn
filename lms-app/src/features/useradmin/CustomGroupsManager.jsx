@@ -1171,7 +1171,7 @@ export default function CustomGroupsManager() {
             setMemberViewSearch('');
           }}
           title={`👥 Member List: ${viewMembersGroup.title || viewMembersGroup.name}`}
-          maxWidth={850}
+          maxWidth={1040}
         >
           <div>
             <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -1194,8 +1194,8 @@ export default function CustomGroupsManager() {
               />
             </div>
 
-            <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 8 }}>
-              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ maxHeight: 420, overflowY: 'auto', overflowX: 'auto', border: '1px solid var(--line)', borderRadius: 8 }}>
+              <table className="table" style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'var(--paper-sunken)', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-soft)' }}>
                     <th style={{ padding: '8px 12px', textAlign: 'left' }}>FULL NAME</th>
