@@ -63,6 +63,7 @@ const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal'))
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
 const UserTranscriptModal = (await import('../src/features/common/UserTranscriptModal')).default;
 const TrainerRatingsDirectory = (await import('../src/features/ratings/TrainerRatingsDirectory')).default;
+const AssessmentDetailModal = (await import('../src/features/assessment/AssessmentDetailModal')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
@@ -1460,6 +1461,61 @@ console.log('\n=== 33: Assessment Player — registration gate, promotion passco
   check('the RESULT screen branches on SURVEY/EES to the thank-you screen with EES-specific copy',
     playerSource.includes("activeAssessment.evaluationMode === ASSESSMENT_MODES.SURVEY || activeAssessment.evaluationMode === ASSESSMENT_MODES.EES") &&
     playerSource.includes('recorded anonymously'));
+}
+
+console.log('\n=== 34: Confidentiality masking — ASM-PROMO-001 hidden from roles lacking canViewConfidentialAssessments ===');
+{
+  const { INITIAL_ASSESSMENTS } = await import('../src/data/assessmentData');
+  const promoExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-PROMO-001');
+  check('fixture: ASM-PROMO-001 seed object found and is confidential', Boolean(promoExam) && promoExam.isConfidential === true);
+
+  // AssessmentDetailModal: the access-denied panel replaces the real detail content.
+  actAs('useradmin');
+  const maskedModalHtml = render(
+    'AssessmentDetailModal ASM-PROMO-001 as useradmin',
+    <AssessmentDetailModal assessment={promoExam} isOpen onClose={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('useradmin opening ASM-PROMO-001 sees the "Examination Board Only" access-denied panel',
+    Boolean(maskedModalHtml) && maskedModalHtml.includes('Examination Board Only'));
+  check('useradmin opening ASM-PROMO-001 does NOT see the real description text',
+    Boolean(maskedModalHtml) && !maskedModalHtml.includes(promoExam.description));
+
+  actAs('sysadmin');
+  const fullModalHtml = render(
+    'AssessmentDetailModal ASM-PROMO-001 as sysadmin',
+    <AssessmentDetailModal assessment={promoExam} isOpen onClose={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('sysadmin opening ASM-PROMO-001 sees the real description text (not masked)',
+    Boolean(fullModalHtml) && fullModalHtml.includes(promoExam.description));
+  check('sysadmin opening ASM-PROMO-001 does NOT see the access-denied panel copy',
+    Boolean(fullModalHtml) && !fullModalHtml.includes('Examination Board Only'));
+
+  // AdminCourses assessment list: the row itself must be masked down to title + lock badge.
+  actAs('useradmin');
+  const maskedListHtml = render(
+    'AdminCourses assessment tab as useradmin',
+    <AdminCourses />,
+    '/admin/courses?tab=assessment',
+    '/admin/courses'
+  );
+  check('useradmin\'s assessment list shows the confidential lock badge for ASM-PROMO-001',
+    Boolean(maskedListHtml) && maskedListHtml.includes('Confidential') && maskedListHtml.includes('Examination Board Only'));
+  check('useradmin\'s assessment list does NOT leak ASM-PROMO-001\'s real description',
+    Boolean(maskedListHtml) && !maskedListHtml.includes(promoExam.description));
+
+  actAs('sysadmin');
+  const fullListHtml = render(
+    'AdminCourses assessment tab as sysadmin',
+    <AdminCourses />,
+    '/admin/courses?tab=assessment',
+    '/admin/courses'
+  );
+  check('sysadmin\'s assessment list shows the real ASM-PROMO-001 description (not masked)',
+    Boolean(fullListHtml) && fullListHtml.includes(promoExam.description));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
