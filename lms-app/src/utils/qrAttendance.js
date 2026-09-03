@@ -36,8 +36,13 @@ export function isQrTokenValid(token, sessionId, qrSecret, phase, now = Date.now
 function combineDateTime(dateStr, timeStr, offsetMinutes = 0) {
   if (!dateStr) return null;
   const [y, m, d] = dateStr.split('-').map(Number);
-  const [hh, mm] = (timeStr || '09:00').split(':').map(Number);
-  const dt = new Date(y, (m || 1) - 1, d || 1, hh || 9, mm || 0);
+  // Real seeded session.time values are range strings like '08:30 - 11:30 (3.0 hours)',
+  // not bare 'HH:MM' — take only the leading HH:MM before parsing, otherwise the
+  // minutes component silently becomes NaN and every derived window is truncated
+  // to the top of the hour.
+  const leadingTime = (timeStr || '09:00').trim().split(/[\s-]/)[0];
+  const [hh, mm] = leadingTime.split(':').map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1, Number.isFinite(hh) ? hh : 9, Number.isFinite(mm) ? mm : 0);
   dt.setMinutes(dt.getMinutes() + offsetMinutes);
   return dt.toISOString();
 }
