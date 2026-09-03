@@ -8,13 +8,18 @@ import {
   jobLevels,
   courses,
 } from '../../data/mockData';
-import { ROLE_DEFINITIONS, managedScopeLabel } from '../../data/roles';
+import { ROLE_DEFINITIONS, managedScopeLabel, normalizeRole, hasCapability } from '../../data/roles';
 import { ASSIGNMENT_TYPES, targetOptionsFor, assignmentTypeLabel } from '../../data/assignmentTargets';
 import OrgHierarchyBrowser from '../../features/common/OrgHierarchyBrowser';
 import { Button, Badge, Tabs } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
 
 export default function AdminConfig() {
+  const { currentUser } = useCourseStore();
+  // HRIS & Governance carries the org configuration and the RBAC matrix, so it is
+  // reserved for the roles that hold canConfigureOrg (User Admin, System Admin).
+  const canConfigure = hasCapability(normalizeRole(currentUser?.role), 'canConfigureOrg');
+
   const [activeTab, setActiveTab] = useState('auto-rules');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -237,6 +242,27 @@ export default function AdminConfig() {
 
   function handleSendTestPing(gatewayName) {
     showToast(`[TEST DISPATCH SUCCESS] Verification ping sent via ${gatewayName} gateway!`);
+  }
+
+  if (!canConfigure) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 540, textAlign: 'center', padding: '48px 24px' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--rust-soft)', color: 'var(--rust)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
+          <i className="ti ti-lock" aria-hidden="true" />
+        </div>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>
+          Access Restricted
+        </h2>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+          HRIS &amp; Governance configures the org hierarchy, auto-assignment rules and the RBAC
+          matrix. It is reserved for <strong>People Administration (User Admin)</strong> and{' '}
+          <strong>System Administration (System Admin)</strong>.
+        </p>
+        <Button variant="primary" icon="ti-arrow-left" onClick={() => window.history.back()}>
+          Back To Previous Page
+        </Button>
+      </div>
+    );
   }
 
   return (

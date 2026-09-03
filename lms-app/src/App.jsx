@@ -29,7 +29,6 @@ const ManagerCourses = lazy(() => import('./pages/manager/ManagerCourses'));
 const LessonPlayer = lazy(() => import('./pages/player/LessonPlayer'));
 const AssessmentPlayer = lazy(() => import('./pages/player/AssessmentPlayer'));
 
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminCourses = lazy(() => import('./pages/admin/AdminCourses'));
 const AdminCourseBuilder = lazy(() => import('./pages/admin/AdminCourseBuilder'));
 const AdminConfig = lazy(() => import('./pages/admin/AdminConfig'));
@@ -86,8 +85,8 @@ const PAGE_META = {
   '/trainer/feedback': { title: 'Learner CSAT Feedback Report', crumb: 'Trainer / L&D (Level 3)' },
   '/trainer/courses': { title: 'Create & Manage Courses (SCORM, ILT, Lab)', crumb: 'Trainer / L&D (Level 3)' },
   '/trainer/training-ops': { title: 'Teaching Schedule, Practice Workshops & Labs', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/dashboard': { title: 'L&D Dashboard & Strategic AI Assistant', crumb: 'Trainer / L&D (Level 3)' },
-  '/trainer/reports': { title: 'Kirkpatrick ROI, Heatmap & Training Budget', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/dashboard': { title: 'My Teaching Command Center', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/reports': { title: 'My Teaching Command Center', crumb: 'Trainer / L&D (Level 3)' },
 
   '/hrbp': { title: 'Competency Gap Matrix (Skill Gap Matrix)', crumb: 'HRBP (Level 2)' },
   '/hrbp/succession': { title: '70-20-10 Succession Roadmap & Thanh Giong Pipeline', crumb: 'HRBP (Level 2)' },
@@ -114,7 +113,7 @@ const PAGE_META = {
   '/manager/reports': { title: 'Team Training & Competency Management', crumb: 'Manager (Level 4)' },
   '/manager/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'Manager (Level 4)' },
 
-  '/admin': { title: 'Executive L&D Command & Strategic AI Hub', crumb: 'L&D Faculty' },
+  '/admin': { title: 'Executive L&D Command & Reports Center', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
   '/admin/training-ops': { title: 'Lab Room Booking & Participant List Upload', crumb: 'L&D Faculty' },
   '/admin/roadmaps': { title: 'Level Roadmap Management (Level Roadmaps)', crumb: 'L&D Faculty' },
@@ -122,7 +121,7 @@ const PAGE_META = {
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
   '/admin/certifications': { title: 'Certificate Management (Certificate Templates)', crumb: 'System Administration' },
   '/admin/categories': { title: 'Category Management (Category Taxonomy)', crumb: 'System Administration' },
-  '/admin/reports': { title: 'Kirkpatrick ROI, Dual-Branch Heatmap & Budget', crumb: 'L&D Faculty' },
+  '/admin/reports': { title: 'Executive L&D Command & Reports Center', crumb: 'L&D Faculty' },
 };
 
 class ErrorBoundary extends React.Component {
@@ -263,11 +262,12 @@ function Shell({ role, setRole }) {
         <Route path="/trainer/courses/new" element={<AdminCourseBuilder />} />
         <Route path="/trainer/courses/:courseId" element={<AdminCourseBuilder />} />
         <Route path="/trainer/training-ops" element={<AdminTrainingOps />} />
-        <Route path="/trainer/dashboard" element={<AdminDashboard />} />
+        <Route path="/trainer/dashboard" element={<AdminReports />} />
         <Route path="/trainer/reports" element={<AdminReports />} />
 
         {/* Legacy /admin/* paths (the former admin role is now trainer) */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        {/* One page: the command overview and the five reports are tabs of AdminReports. */}
+        <Route path="/admin" element={<AdminReports />} />
         <Route path="/admin/courses" element={<AdminCourses />} />
         <Route path="/admin/courses/new" element={<AdminCourseBuilder />} />
         <Route path="/admin/courses/:courseId" element={<AdminCourseBuilder />} />

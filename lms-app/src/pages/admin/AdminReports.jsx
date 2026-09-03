@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   kirkpatrickROI,
   costTrackingData,
@@ -10,6 +11,7 @@ import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadWorkbook } from '../../lib/exportExcel';
 import { useCourseStore } from '../../store/CourseStore';
 import { normalizeRole, hasCapability } from '../../data/roles';
+import LdCommandOverview from './AdminDashboard';
 import { PASS_MARK } from '../../utils/managerRules';
 import {
   buildComplianceLeague,
@@ -21,7 +23,10 @@ import {
 const VND = new Intl.NumberFormat('vi-VN');
 const formatVnd = (n) => `${VND.format(Math.round(Number(n) || 0))} ₫`;
 
+// The single L&D command page: the compliance / governance overview and the five
+// strategic reports are tabs of one screen, not two look-alike pages.
 export default function AdminReports() {
+  const { pathname } = useLocation();
   const {
     currentUser,
     actionPlans,
@@ -138,13 +143,18 @@ export default function AdminReports() {
   const [selectedInspectionPackage, setSelectedInspectionPackage] = useState('HACCP');
   const [isExporting, setIsExporting] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
-  const [activeReportTab, setActiveReportTab] = useState(isTrainer ? 'TRAINER_CSAT' : 'ROI_KIRKPATRICK'); // TRAINER_CSAT, ROI_KIRKPATRICK, HEATMAP, COST_BUDGET, COMPLIANCE_LEAGUE
+  // The command overview and the reports are one page now. Landing on /admin opens the
+  // overview; the older /admin/reports and /trainer/reports links open the first report
+  // tab of the strip (CSAT), never the middle one.
+  const openedOnReports = /reports\/?$/.test(pathname);
+  const [activeReportTab, setActiveReportTab] = useState(openedOnReports ? 'TRAINER_CSAT' : 'OVERVIEW'); // OVERVIEW, TRAINER_CSAT, ROI_KIRKPATRICK, HEATMAP, COST_BUDGET, COMPLIANCE_LEAGUE
 
   // A Trainer cannot be on an org-wide tab even if state was set before a role
   // switch — every render re-derives the tab actually shown from capability.
-  const effectiveTab = canViewOrgWide ? activeReportTab : 'TRAINER_CSAT';
+  const effectiveTab = canViewOrgWide || activeReportTab === 'OVERVIEW' ? activeReportTab : 'TRAINER_CSAT';
 
   const ALL_REPORT_TABS = [
+    { id: 'OVERVIEW', label: 'Command Overview', icon: 'ti-crown' },
     { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Faculty Performance)', icon: 'ti-star' },
     { id: 'ROI_KIRKPATRICK', label: 'Kirkpatrick 4-Level ROI Framework', icon: 'ti-chart-arrows' },
     { id: 'HEATMAP', label: 'Competency Gap Heatmap (Operations vs Head Office)', icon: 'ti-layout-grid' },
@@ -152,7 +162,9 @@ export default function AdminReports() {
     { id: 'COMPLIANCE_LEAGUE', label: 'Compliance League Table (16 Divisions & Stores)', icon: 'ti-trophy' },
   ];
   // BR-RPT-02 — a Trainer only ever sees the one tab their capability covers.
-  const visibleReportTabs = canViewOrgWide ? ALL_REPORT_TABS : ALL_REPORT_TABS.filter((t) => t.id === 'TRAINER_CSAT');
+  const visibleReportTabs = canViewOrgWide
+    ? ALL_REPORT_TABS
+    : ALL_REPORT_TABS.filter((t) => t.id === 'OVERVIEW' || t.id === 'TRAINER_CSAT');
 
   const csatSheetRows = trainerSessions.map((s) => ({
     Class: s.title,
@@ -263,16 +275,16 @@ export default function AdminReports() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h1>
-              {isTrainer ? 'CSAT & Teaching Effectiveness Report' : 'Strategic ROI, L&D Budget & Audit Command Center'}
+              {isTrainer ? 'My Teaching Command Center' : 'Executive L&D Command & Reports Center'}
             </h1>
             <Badge tone="ai" icon="ti-calculator">
-              {isTrainer ? 'Faculty CSAT & Teaching Analytics' : 'Kirkpatrick 4-Level ROI & Heatmaps'}
+              {isTrainer ? 'Teaching & CSAT' : 'Compliance · Kirkpatrick ROI · Audit'}
             </Badge>
           </div>
           <p>
             {isTrainer
-              ? 'A consolidated view of teaching quality (CSAT Level 1), seat fill rate and learner satisfaction across the classes you personally teach — other trainers\' classes are not shown here.'
-              : 'Measure training business impact and financial return (ROI), track L&D expenditure vs budget, analyze cross-branch competency gap heatmaps, and export signed inspection dossiers. The CSAT tab covers every trainer, not just one.'}
+              ? 'Your teaching workload, seat fill and learner satisfaction across the classes you personally teach — other trainers\' classes and the enterprise reports are not shown here.'
+              : 'Compliance monitoring and course governance in the overview tab, plus Kirkpatrick ROI, competency heatmaps, L&D budget and signed audit dossiers in the report tabs — one place instead of two look-alike pages.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -319,7 +331,10 @@ export default function AdminReports() {
         ))}
       </div>
 
-      {/* TAB 0: TRAINER FACULTY CSAT & TEACHING PERFORMANCE */}
+      {/* TAB 0: COMMAND OVERVIEW (the former Executive L&D Command Hub page) */}
+      {effectiveTab === 'OVERVIEW' && <LdCommandOverview onOpenReportTab={setActiveReportTab} />}
+
+      {/* TAB 1: TRAINER FACULTY CSAT & TEACHING PERFORMANCE */}
       {effectiveTab === 'TRAINER_CSAT' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* 4 SUMMARY METRIC CARDS */}
