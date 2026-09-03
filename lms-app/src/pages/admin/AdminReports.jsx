@@ -5,6 +5,7 @@ import {
   companyHeatmapData,
   costTrackingData,
   divisionComplianceLeague,
+  classroomSessions,
 } from '../../data/mockData';
 import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
@@ -16,6 +17,28 @@ export default function AdminReports() {
   const userRole = normalizeRole(currentUser?.role);
   const isTrainer = userRole === 'trainer';
 
+  // BR-RPT-01 — a Trainer sees only the classes they personally teach; User Admin
+  // and System Admin see every trainer's classes, since they own faculty oversight.
+  const trainerSessions = isTrainer
+    ? classroomSessions.filter(
+        (s) => s.trainerId === currentUser?.userId || s.trainerName === currentUser?.fullName
+      )
+    : classroomSessions;
+
+  const sessionsTaught = trainerSessions.length;
+  const learnersTaught = trainerSessions.reduce((a, s) => a + (s.enrolledCount || 0), 0);
+  const capacityOffered = trainerSessions.reduce((a, s) => a + (s.maxCapacity || 0), 0);
+  const avgCsat = sessionsTaught > 0
+    ? Math.round((trainerSessions.reduce((a, s) => a + (s.trainerRating || 0), 0) / sessionsTaught) * 100) / 100
+    : null;
+  const seatFillRate = capacityOffered > 0 ? Math.round((learnersTaught / capacityOffered) * 1000) / 10 : 0;
+
+  function qualityGrade(rating) {
+    if (rating >= 4.9) return 'Outstanding (Gold)';
+    if (rating >= 4.85) return 'Very Good';
+    return 'Good';
+  }
+
   const [selectedInspectionPackage, setSelectedInspectionPackage] = useState('HACCP');
   const [isExporting, setIsExporting] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
@@ -23,12 +46,13 @@ export default function AdminReports() {
 
   function activeReportRows() {
     if (activeReportTab === 'TRAINER_CSAT') {
-      return [
-        { classTitle: 'Deck Oven Bread Baking Operation & HACCP', csat: 4.95, learners: 52, passRate: '98%' },
-        { classTitle: 'Fresh Counter Food Hygiene & Safety Standards', csat: 4.88, learners: 45, passRate: '95%' },
-        { classTitle: 'High-Speed POS Skills & Incident Handling', csat: 4.85, learners: 60, passRate: '96%' },
-        { classTitle: 'Live Fire Drill & Store Evacuation', csat: 4.92, learners: 68, passRate: '100%' },
-      ];
+      return trainerSessions.map((s) => ({
+        classTitle: s.title,
+        trainer: s.trainerName,
+        csat: s.trainerRating,
+        learners: s.enrolledCount,
+        seatFillRate: s.maxCapacity ? `${Math.round((s.enrolledCount / s.maxCapacity) * 100)}%` : '—',
+      }));
     }
     if (activeReportTab === 'HEATMAP') {
       return [...companyHeatmapData.operations, ...companyHeatmapData.supportingOffice];
@@ -77,8 +101,8 @@ export default function AdminReports() {
           </div>
           <p>
             {isTrainer
-              ? 'A consolidated view of teaching quality (CSAT Level 1), attendance rate and learner satisfaction after hands-on training sessions.'
-              : 'Measure training business impact and financial return (ROI), track L&D expenditure vs budget, analyze cross-branch competency gap heatmaps, and export signed inspection dossiers.'}
+              ? 'A consolidated view of teaching quality (CSAT Level 1), seat fill rate and learner satisfaction across the classes you personally teach — other trainers\' classes are not shown here.'
+              : 'Measure training business impact and financial return (ROI), track L&D expenditure vs budget, analyze cross-branch competency gap heatmaps, and export signed inspection dossiers. The CSAT tab covers every trainer, not just one.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -136,33 +160,35 @@ export default function AdminReports() {
           <div className="grid grid-4" style={{ gap: 16 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Average CSAT Score</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>★ 4.88 / 5.0</div>
-              <div style={{ fontSize: 11, color: 'var(--sage)', marginTop: 4 }}>
-                <i className="ti ti-arrow-up-right" /> 97.0% of learners were highly satisfied
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>
+                {avgCsat !== null ? `★ ${avgCsat} / 5.0` : '—'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
+                {isTrainer ? 'Across the classes you teach' : `Across ${sessionsTaught} classes, every trainer`}
               </div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Class Attendance Rate</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--sage)', marginTop: 4 }}>94.2%</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Sessions Delivered</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--sage)', marginTop: 4 }}>{sessionsTaught}</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                512 learners attended in full
+                {isTrainer ? 'Sessions you have led' : 'Sessions across all trainers'}
               </div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Examination Pass Rate</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>96.5%</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Total Learners Trained</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>{learnersTaught}</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                Passed on the very first attempt
+                Enrolled across those sessions
               </div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Teaching Competency Ranking</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>Master Trainer</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Seat Fill Rate</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>{seatFillRate}%</div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>
-                Top 5% of trainers across the chain
+                Enrolled vs. capacity offered
               </div>
             </div>
           </div>
@@ -226,39 +252,49 @@ export default function AdminReports() {
               <thead>
                 <tr>
                   <th>Practical / Online Course</th>
-                  <th>Learners Taught</th>
+                  {!isTrainer && <th>Trainer</th>}
+                  <th>Learners Enrolled</th>
                   <th>CSAT Rating Score</th>
-                  <th>Examination Pass Rate</th>
+                  <th>Seat Fill Rate</th>
                   <th>Quality Rating</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { title: 'Deck Oven Bread Baking Operation & HACCP', learners: 52, csat: 4.95, pass: '98.1%', grade: 'Outstanding (Gold)' },
-                  { title: 'Fresh Counter Food Hygiene & Safety Standards', learners: 45, csat: 4.88, pass: '95.6%', grade: 'Very Good' },
-                  { title: 'High-Speed POS Skills & Customer Incident Handling', learners: 60, csat: 4.85, pass: '96.7%', grade: 'Very Good' },
-                  { title: 'Live Fire Drill & Store Evacuation', learners: 68, csat: 4.92, pass: '100%', grade: 'Outstanding (Gold)' },
-                  { title: 'Cold-Chain Supply Temperature Control', learners: 38, csat: 4.80, pass: '94.7%', grade: 'Good' },
-                ].map((row, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{row.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>In-person training at the MMVN store workshop</div>
-                    </td>
-                    <td><Badge tone="blue">{row.learners} Learner</Badge></td>
-                    <td>
-                      <span style={{ fontWeight: 800, color: 'var(--amber)', fontSize: 14 }}>★ {row.csat}</span>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 700, color: 'var(--sage)' }}>{row.pass}</span>
-                    </td>
-                    <td>
-                      <Badge tone={row.grade.includes('Outstanding') ? 'sage' : 'rail'}>
-                        {row.grade}
-                      </Badge>
+                {trainerSessions.length === 0 ? (
+                  <tr>
+                    <td colSpan={isTrainer ? 4 : 5} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--ink-soft)' }}>
+                      {isTrainer ? 'You are not leading any classroom sessions yet.' : 'No classroom sessions recorded yet.'}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  trainerSessions.map((s) => {
+                    const grade = qualityGrade(s.trainerRating || 0);
+                    const fillPct = s.maxCapacity ? Math.round((s.enrolledCount / s.maxCapacity) * 100) : null;
+                    return (
+                      <tr key={s.id}>
+                        <td>
+                          <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{s.title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{s.venue || 'In-person training at the MMVN store workshop'}</div>
+                        </td>
+                        {!isTrainer && (
+                          <td style={{ fontSize: 13, color: 'var(--ink)' }}>{s.trainerName}</td>
+                        )}
+                        <td><Badge tone="blue">{s.enrolledCount} Learner</Badge></td>
+                        <td>
+                          <span style={{ fontWeight: 800, color: 'var(--amber)', fontSize: 14 }}>★ {s.trainerRating}</span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 700, color: 'var(--sage)' }}>{fillPct !== null ? `${fillPct}%` : '—'}</span>
+                        </td>
+                        <td>
+                          <Badge tone={grade.includes('Outstanding') ? 'sage' : 'rail'}>
+                            {grade}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

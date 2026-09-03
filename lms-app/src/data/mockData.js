@@ -2821,7 +2821,7 @@ export const companyHeatmapData = {
 };
 
 // ---------------------------------------------------------------------------
-// Gamification & Engagement Data (XP, Streak, Leaderboard)
+// Gamification & Engagement Data (Streak) — XP and the leaderboard were removed
 // ---------------------------------------------------------------------------
 
 export const gamificationData = {
