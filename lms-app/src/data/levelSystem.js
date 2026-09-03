@@ -7,6 +7,8 @@
 // repeating the old scale's "bigger number = higher grade" mistake.
 // ===========================================================================
 
+import { matchesCriteriaValue } from './customGroupsData';
+
 export const ENTRY_LEVEL = '7';
 export const TOP_LEVEL = '1';
 
@@ -335,11 +337,11 @@ export function evaluateGroupEligibilityForCourse(group, course, allUsers = []) 
     const { divisionId, departmentId, subDepartmentId, level, role } = criteria;
     members = allUsers.filter((u) => {
       if (explicitIds.has(u.userId) || explicitIds.has(u.employeeCode)) return true;
-      if (divisionId && divisionId !== 'ALL' && u.divisionId !== divisionId && u.divisionCode !== divisionId) return false;
-      if (departmentId && departmentId !== 'ALL' && u.departmentId !== departmentId && u.departmentCode !== departmentId) return false;
-      if (subDepartmentId && subDepartmentId !== 'ALL' && u.subDepartmentId !== subDepartmentId && u.subDepartmentCode !== subDepartmentId) return false;
-      if (level && level !== 'ALL' && String(u.level) !== String(level)) return false;
-      if (role && role !== 'ALL' && (u.role || '').toLowerCase() !== role.toLowerCase()) return false;
+      if (!matchesCriteriaValue(divisionId, [u.divisionId, u.divisionCode])) return false;
+      if (!matchesCriteriaValue(departmentId, [u.departmentId, u.departmentCode])) return false;
+      if (!matchesCriteriaValue(subDepartmentId, [u.subDepartmentId, u.subDepartmentCode])) return false;
+      if (!matchesCriteriaValue(level, [u.level])) return false;
+      if (!matchesCriteriaValue(role, [u.role], { caseInsensitive: true })) return false;
       return true;
     });
   }

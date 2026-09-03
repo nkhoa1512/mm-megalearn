@@ -84,8 +84,10 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Bulk User Import Modal
-  const [importModal, setImportModal] = useState(false);
+  // "Add Employees" modal: manual entry (one or a handful at a time) or bulk import
+  const [addTab, setAddTab] = useState('MANUAL');
+  const [stagedUsers, setStagedUsers] = useState([]);
+  const [addError, setAddError] = useState(null);
   const [importText, setImportText] = useState('');
   const [parsedPreview, setParsedPreview] = useState([]);
   const [importFeedback, setImportFeedback] = useState(null);
@@ -216,9 +218,9 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   }, [filteredUsers, userGroupBy]);
 
   // User Handlers
-  function handleOpenAddUser() {
+  function blankUserForm() {
     const rawNum = Math.floor(1000 + Math.random() * 9000);
-    setUserForm({
+    return {
       userId: `USR-${rawNum}`,
       employeeCode: `MMVN-${rawNum}`,
       fullName: '',
@@ -229,12 +231,28 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       role: 'learner',
       branch: 'SUPPORTING',
       businessUnitId: businessUnits[0]?.id || 'bu-mmvn',
-      divisionId: divisions[0]?.id || '',
-      departmentId: departments[0]?.id || '',
+      // The org fields start empty: they are picked top-down, Division first.
+      divisionId: '',
+      departmentId: '',
       subDepartmentId: '',
       yearsOfService: 1.0,
-    });
+    };
+  }
+
+  function handleOpenAddUser(tab = 'MANUAL') {
+    setUserForm(blankUserForm());
+    setStagedUsers([]);
+    setAddError(null);
+    setAddTab(tab);
     setUserModal({ isOpen: true, mode: 'ADD' });
+  }
+
+  function handleCloseUserModal() {
+    setUserModal({ isOpen: false, mode: 'ADD' });
+    setStagedUsers([]);
+    setAddError(null);
+    setImportText('');
+    setParsedPreview([]);
   }
 
   function handleOpenEditUser(user) {
@@ -246,41 +264,117 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
       role: normalizeRole(user.role || 'learner'),
       branch: user.branch || 'SUPPORTING',
     });
+    setStagedUsers([]);
+    setAddError(null);
     setUserModal({ isOpen: true, mode: 'EDIT' });
   }
 
-  function handleSaveUserSubmit(e) {
-    e.preventDefault();
-    if (!userForm.fullName.trim() || !userForm.email.trim()) return;
+  // Fills in the names / codes of the org units the form only stores ids for.
+  function buildUserPayload(formData) {
+    const deptObj = departments.find((d) => d.id === formData.departmentId);
+    const subObj = subDepartments.find((sub) => sub.id === formData.subDepartmentId);
+    const divObj = divisions.find((div) => div.id === formData.divisionId || div.id === deptObj?.divisionId);
 
-    const deptObj = departments.find((d) => d.id === userForm.departmentId);
-    const subObj = subDepartments.find((s) => s.id === userForm.subDepartmentId);
-    const divObj = divisions.find((div) => div.id === userForm.divisionId || div.id === deptObj?.divisionId);
-
-    const payload = {
-      ...userForm,
-      departmentName: deptObj ? deptObj.name : userForm.departmentName,
-      departmentCode: deptObj ? deptObj.code : userForm.departmentCode,
+    return {
+      ...formData,
+      departmentName: deptObj ? deptObj.name : formData.departmentName,
+      departmentCode: deptObj ? deptObj.code : formData.departmentCode,
       subDepartmentName: subObj ? subObj.name : null,
       subDepartmentCode: subObj ? subObj.code : null,
-      divisionId: divObj ? divObj.id : userForm.divisionId,
+      divisionId: divObj ? divObj.id : formData.divisionId,
       divisionCode: divObj ? divObj.code : null,
       divisionName: divObj ? divObj.name : null,
       businessUnitId: 'bu-mmvn',
       businessUnitCode: 'MMVN',
       businessUnitName: 'MM Mega Market Vietnam',
     };
+  }
 
-    if (userModal.mode === 'ADD') {
-      addUser(payload);
-    } else {
-      updateUser(userForm.userId, payload);
+  const manualFormFilled = Boolean(userForm.fullName?.trim() || userForm.email?.trim());
+  const availableSubDepartments = subDepartments.filter((sub) => sub.departmentId === userForm.departmentId);
+  // The row on screen counts as one more employee as soon as it has something in it.
+  const pendingUserCount = Math.max(1, stagedUsers.length + (manualFormFilled ? 1 : 0));
+
+  // Returns the first problem with the row being typed, or null when it can be created.
+  function validateNewUser(formData, alreadyQueued = []) {
+    const code = (formData.employeeCode || formData.userId || '').trim();
+    const email = (formData.email || '').trim().toLowerCase();
+    if (!code) return 'Employee ID is required.';
+    if (!formData.fullName?.trim()) return 'Full name is required.';
+    if (!email) return 'Business email is required.';
+    if (!formData.divisionId) return 'Pick the Parent Division.';
+    if (!formData.departmentId) return 'Pick the Parent Department.';
+
+    const takenCode = users.some((u) => u.employeeCode === code || u.userId === code)
+      || alreadyQueued.some((u) => u.employeeCode === code || u.userId === code);
+    if (takenCode) return `Employee ID ${code} already exists.`;
+
+    const takenEmail = users.some((u) => (u.email || '').toLowerCase() === email)
+      || alreadyQueued.some((u) => (u.email || '').toLowerCase() === email);
+    if (takenEmail) return `The email ${email} is already used by another employee.`;
+
+    return null;
+  }
+
+  // Queues the row on screen and clears it for the next person, keeping the org unit,
+  // level and role so a whole team can be typed in without re-picking them.
+  function handleStageUser() {
+    const problem = validateNewUser(userForm, stagedUsers);
+    if (problem) {
+      setAddError(problem);
+      return;
+    }
+    setStagedUsers((prev) => [...prev, buildUserPayload(userForm)]);
+    setAddError(null);
+    const rawNum = Math.floor(1000 + Math.random() * 9000);
+    setUserForm((p) => ({
+      ...p,
+      userId: `USR-${rawNum}`,
+      employeeCode: `MMVN-${rawNum}`,
+      fullName: '',
+      email: '',
+    }));
+  }
+
+  function handleRemoveStagedUser(code) {
+    setStagedUsers((prev) => prev.filter((u) => u.employeeCode !== code));
+  }
+
+  function handleSaveUserSubmit(e) {
+    e.preventDefault();
+
+    if (userModal.mode === 'EDIT') {
+      if (!userForm.fullName.trim() || !userForm.email.trim()) return;
+      updateUser(userForm.userId, buildUserPayload(userForm));
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        setUserModal({ isOpen: false, mode: 'ADD' });
+      }, 900);
+      return;
     }
 
+    const toCreate = [...stagedUsers];
+    if (manualFormFilled) {
+      const problem = validateNewUser(userForm, toCreate);
+      if (problem) {
+        setAddError(problem);
+        return;
+      }
+      toCreate.push(buildUserPayload(userForm));
+    }
+    if (toCreate.length === 0) {
+      setAddError('Fill in the employee details first.');
+      return;
+    }
+
+    toCreate.forEach((u) => addUser(u));
+    setAddError(null);
+    setStagedUsers([]);
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
-      setUserModal({ isOpen: false, mode: 'ADD' });
+      handleCloseUserModal();
     }, 900);
   }
 
@@ -443,9 +537,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     setImportFeedback(`Successfully loaded ${parsedPreview.length} employees into the system!`);
     setTimeout(() => {
       setImportFeedback(null);
-      setImportModal(false);
-      setImportText('');
-      setParsedPreview([]);
+      handleCloseUserModal();
     }, 1500);
   }
 
@@ -928,11 +1020,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
 
                   {/* Action Buttons */}
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => setImportModal(true)} style={{ height: 38 }}>
+                    <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => handleOpenAddUser('IMPORT')} style={{ height: 38 }}>
                       Bulk Import
                     </Button>
-                    <Button size="sm" variant="primary" icon="ti-user-plus" onClick={handleOpenAddUser} style={{ height: 38 }}>
-                      Add An Employee
+                    <Button size="sm" variant="primary" icon="ti-user-plus" onClick={() => handleOpenAddUser('MANUAL')} style={{ height: 38 }}>
+                      Add Employees
                     </Button>
                   </div>
                 </div>
@@ -1334,299 +1426,389 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
         </div>
       )}
 
-      {/* MODAL: ADD / EDIT USER */}
+      {/* MODAL: ADD EMPLOYEES (manual entry + bulk import) / EDIT USER */}
       {userModal.isOpen && (
         <Modal
-          title={userModal.mode === 'ADD' ? 'Add A New Employee' : `Employee Profile — ${userForm.fullName || userForm.employeeCode}`}
-          onClose={() => setUserModal({ isOpen: false, mode: 'ADD' })}
-          size="md"
+          title={userModal.mode === 'ADD' ? 'Add Employees' : `Employee Profile — ${userForm.fullName || userForm.employeeCode}`}
+          onClose={handleCloseUserModal}
+          size={userModal.mode === 'ADD' && addTab === 'IMPORT' ? 'lg' : 'md'}
         >
-          <form onSubmit={handleSaveUserSubmit}>
-            <div className="grid grid-2" style={{ marginBottom: 12 }}>
-              <div>
-                <label className="field-label">Employee ID *</label>
-                <input
-                  className="field-input"
-                  value={userForm.employeeCode || userForm.userId}
-                  onChange={(e) => setUserForm((p) => ({ ...p, employeeCode: e.target.value, userId: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="field-label">Full Name *</label>
-                <input
-                  className="field-input"
-                  value={userForm.fullName}
-                  onChange={(e) => setUserForm((p) => ({ ...p, fullName: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-2" style={{ marginBottom: 12 }}>
-              <div>
-                <label className="field-label">Business Email *</label>
-                <input
-                  className="field-input"
-                  type="email"
-                  value={userForm.email}
-                  onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="field-label">Job Title</label>
-                <input
-                  className="field-input"
-                  value={userForm.title || userForm.position || ''}
-                  onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value, position: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-2" style={{ marginBottom: 16 }}>
-              <div>
-                <label className="field-label">Job Level</label>
-                <select
-                  className="field-select"
-                  value={normalizeLevel(userForm.level)}
-                  onChange={(e) => setUserForm((p) => ({ ...p, level: e.target.value }))}
-                >
-                  {jobLevels.map((lvl) => (
-                    <option key={lvl.level} value={lvl.level}>
-                      Level {lvl.level} — {lvl.viTitle || lvl.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label">System Authority Role</label>
-                <select
-                  className="field-select"
-                  value={normalizeRole(userForm.role)}
-                  onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}
-                >
-                  {ROLE_DEFINITIONS.map((def) => (
-                    <option key={def.id} value={def.id}>
-                      {def.rank}. {def.labelVi}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-2" style={{ marginBottom: 12 }}>
-              <div>
-                <label className="field-label">Parent Division</label>
-                <select
-                  className="field-select"
-                  value={userForm.divisionId || ''}
-                  onChange={(e) => {
-                    const divId = e.target.value;
-                    const d = divisions.find((div) => div.id === divId);
-                    const deptList = departments.filter((dept) => dept.divisionId === divId);
-                    const defaultDept = deptList[0] || null;
-                    const subList = defaultDept ? subDepartments.filter((s) => s.departmentId === defaultDept.id) : [];
-                    const defaultSub = subList[0] || null;
-                    setUserForm((p) => ({
-                      ...p,
-                      divisionId: divId,
-                      divisionCode: d ? d.code : null,
-                      divisionName: d ? d.name : null,
-                      departmentId: defaultDept ? defaultDept.id : '',
-                      departmentCode: defaultDept ? defaultDept.code : null,
-                      departmentName: defaultDept ? defaultDept.name : null,
-                      subDepartmentId: defaultSub ? defaultSub.id : '',
-                      subDepartmentCode: defaultSub ? defaultSub.code : null,
-                      subDepartmentName: defaultSub ? defaultSub.name : null,
-                    }));
+          {/* Two ways in: type a handful by hand, or load a file */}
+          {userModal.mode === 'ADD' && (
+            <div style={{ display: 'flex', gap: 6, padding: 4, marginBottom: 14, background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8 }}>
+              {[
+                { id: 'MANUAL', icon: 'ti-user-plus', label: '✍️ Add Manually', hint: 'One or a few employees' },
+                { id: 'IMPORT', icon: 'ti-file-import', label: '📥 Bulk Import File', hint: 'Hundreds of rows at once' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => { setAddTab(tab.id); setAddError(null); }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    border: addTab === tab.id ? '1px solid var(--line-strong)' : '1px solid transparent',
+                    background: addTab === tab.id ? 'var(--paper-raised)' : 'transparent',
+                    color: addTab === tab.id ? 'var(--ink)' : 'var(--ink-soft)',
+                    fontWeight: addTab === tab.id ? 700 : 600,
+                    fontSize: 13,
+                    boxShadow: addTab === tab.id ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
-                  <option value="">-- Choose A Division --</option>
-                  {divisions.map((d) => (
-                    <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
-                  ))}
-                </select>
+                  <span><i className={`ti ${tab.icon}`} style={{ marginRight: 6 }} />{tab.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-faint)' }}>{tab.hint}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {userModal.mode === 'ADD' && addTab === 'IMPORT' ? (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-sunken)', padding: '12px 16px', borderRadius: 8, marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Download the standard MMVN template file</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Supports CSV or JSON files with the full BU &gt; Div &gt; Dept &gt; Sub-Dept hierarchy</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('csv')}>
+                    Download The CSV Template
+                  </Button>
+                  <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('json')}>
+                    Download The JSON Template
+                  </Button>
+                </div>
               </div>
-              <div>
-                <label className="field-label">Parent Department</label>
-                <select
-                  className="field-select"
-                  value={userForm.departmentId || ''}
+
+              <div style={{ marginBottom: 14 }}>
+                <label className="field-label">Choose A File From Your Computer (.csv, .json)</label>
+                <input
+                  type="file"
+                  accept=".csv,.json,.txt"
+                  className="field-input"
+                  onChange={handleFileUpload}
+                  style={{ padding: '6px 10px' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label className="field-label">Or Paste The CSV / JSON Data Directly</label>
+                <textarea
+                  className="field-input"
+                  rows={4}
+                  placeholder="Paste CSV content (employee code, full name, email, job title, level, role, division, dept, sub-dept) or JSON..."
+                  value={importText}
                   onChange={(e) => {
-                    const deptId = e.target.value;
-                    const d = departments.find((dept) => dept.id === deptId);
-                    const subList = subDepartments.filter((s) => s.departmentId === deptId);
-                    const defaultSub = subList[0] || null;
-                    setUserForm((p) => ({
-                      ...p,
-                      departmentId: deptId,
-                      department: deptId,
-                      departmentName: d ? d.name : p.departmentName,
-                      departmentCode: d ? d.code : p.departmentCode,
-                      divisionId: d ? d.divisionId : p.divisionId,
-                      subDepartmentId: defaultSub ? defaultSub.id : '',
-                      subDepartmentCode: defaultSub ? defaultSub.code : null,
-                      subDepartmentName: defaultSub ? defaultSub.name : null,
-                    }));
+                    setImportText(e.target.value);
+                    parseImportContent(e.target.value);
                   }}
-                >
-                  <option value="">-- Choose a department --</option>
-                  {(userForm.divisionId
-                    ? departments.filter((d) => d.divisionId === userForm.divisionId)
-                    : departments
-                  ).map((d) => (
-                    <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
-                  ))}
-                </select>
+                  style={{ fontFamily: 'monospace', fontSize: 12 }}
+                />
               </div>
-            </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label className="field-label">Position / Child Sub-Department</label>
-              <select
-                className="field-select"
-                value={userForm.subDepartmentId || ''}
-                onChange={(e) => {
-                  const subId = e.target.value;
-                  const s = subDepartments.find((sub) => sub.id === subId);
-                  setUserForm((p) => ({
-                    ...p,
-                    subDepartmentId: subId || null,
-                    subDepartmentCode: s ? s.code : null,
-                    subDepartmentName: s ? s.name : null,
-                  }));
-                }}
-              >
-                <option value="">-- Choose A Sub-Department --</option>
-                {(userForm.departmentId
-                  ? subDepartments.filter((s) => s.departmentId === userForm.departmentId)
-                  : subDepartments
-                ).map((s) => (
-                  <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setUserModal({ isOpen: false, mode: 'ADD' })}>Cancel</Button>
-              <Button variant="primary" icon="ti-check" type="submit">
-                {saveSuccess ? 'Saved Successfully!' : userModal.mode === 'ADD' ? 'Create Employee' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* MODAL: BULK USER IMPORT */}
-      {importModal && (
-        <Modal
-          title="📥 Bulk Import The Employee List"
-          onClose={() => setImportModal(false)}
-          size="lg"
-        >
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-sunken)', padding: '12px 16px', borderRadius: 8, marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Download the standard MMVN template file</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Supports CSV or JSON files with the full BU &gt; Div &gt; Dept &gt; Sub-Dept hierarchy</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('csv')}>
-                  Download The CSV Template
-                </Button>
-                <Button size="sm" variant="outline" icon="ti-download" onClick={() => handleDownloadTemplate('json')}>
-                  Download The JSON Template
-                </Button>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Choose A File From Your Computer (.csv, .json)</label>
-              <input
-                type="file"
-                accept=".csv,.json,.txt"
-                className="field-input"
-                onChange={handleFileUpload}
-                style={{ padding: '6px 10px' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label className="field-label">Or Paste The CSV / JSON Data Directly</label>
-              <textarea
-                className="field-input"
-                rows={4}
-                placeholder="Paste CSV content (employee code, full name, email, job title, level, role, division, dept, sub-dept) or JSON..."
-                value={importText}
-                onChange={(e) => {
-                  setImportText(e.target.value);
-                  parseImportContent(e.target.value);
-                }}
-                style={{ fontFamily: 'monospace', fontSize: 12 }}
-              />
-            </div>
-
-            {/* PREVIEW TABLE */}
-            {parsedPreview.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
-                    🔍 Preview {parsedPreview.length} valid employees
+              {/* PREVIEW TABLE */}
+              {parsedPreview.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+                      🔍 Preview {parsedPreview.length} valid employees
+                    </div>
+                    <Badge tone="green" size="sm">Ready To Load</Badge>
                   </div>
-                  <Badge tone="green" size="sm">Ready To Load</Badge>
-                </div>
-                <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6 }}>
-                  <table className="table" style={{ width: '100%', fontSize: 12 }}>
-                    <thead>
-                      <tr>
-                        <th>Employee Code</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Job Level</th>
-                        <th>Role</th>
-                        <th>Division</th>
-                        <th>Department</th>
-                        <th>Sub-Dept</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {parsedPreview.slice(0, 50).map((u, i) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.employeeCode}</td>
-                          <td style={{ fontWeight: 600 }}>{u.fullName}</td>
-                          <td>{u.email}</td>
-                          <td>Level {u.level}</td>
-                          <td><Badge tone={roleDefinition(u.role).tone} size="sm">{u.role}</Badge></td>
-                          <td>{u.divisionCode || '—'}</td>
-                          <td>{u.departmentCode || '—'}</td>
-                          <td>{u.subDepartmentCode || '—'}</td>
+                  <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6 }}>
+                    <table className="table" style={{ width: '100%', fontSize: 12 }}>
+                      <thead>
+                        <tr>
+                          <th>Employee Code</th>
+                          <th>Full Name</th>
+                          <th>Email</th>
+                          <th>Job Level</th>
+                          <th>Role</th>
+                          <th>Division</th>
+                          <th>Department</th>
+                          <th>Sub-Dept</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {parsedPreview.slice(0, 50).map((u, i) => (
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.employeeCode}</td>
+                            <td style={{ fontWeight: 600 }}>{u.fullName}</td>
+                            <td>{u.email}</td>
+                            <td>Level {u.level}</td>
+                            <td><Badge tone={roleDefinition(u.role).tone} size="sm">{u.role}</Badge></td>
+                            <td>{u.divisionCode || '—'}</td>
+                            <td>{u.departmentCode || '—'}</td>
+                            <td>{u.subDepartmentCode || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {importFeedback && (
+                <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--sage-soft)', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                  <i className="ti ti-check" style={{ marginRight: 6 }} />{importFeedback}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { setAddTab('MANUAL'); setAddError(null); }}
+                  style={{ border: 'none', background: 'transparent', color: 'var(--rail)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Only a few people? Type them in by hand →
+                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button variant="ghost" type="button" onClick={handleCloseUserModal}>Cancel</Button>
+                  <Button
+                    variant="primary"
+                    icon="ti-bolt"
+                    disabled={parsedPreview.length === 0}
+                    onClick={handleExecuteImport}
+                  >
+                    Confirm Loading {parsedPreview.length} Employees
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {importFeedback && (
-              <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--sage-soft)', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
-                <i className="ti ti-check" style={{ marginRight: 6 }} />{importFeedback}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <Button variant="ghost" type="button" onClick={() => setImportModal(false)}>Cancel</Button>
-              <Button
-                variant="primary"
-                icon="ti-bolt"
-                disabled={parsedPreview.length === 0}
-                onClick={handleExecuteImport}
-              >
-                Confirm Loading {parsedPreview.length} Employees
-              </Button>
             </div>
-          </div>
+          ) : (
+            <form onSubmit={handleSaveUserSubmit}>
+              <div className="grid grid-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label className="field-label">Employee ID *</label>
+                  <input
+                    className="field-input"
+                    value={userForm.employeeCode || userForm.userId}
+                    onChange={(e) => setUserForm((p) => ({ ...p, employeeCode: e.target.value, userId: e.target.value }))}
+                    required={stagedUsers.length === 0}
+                  />
+                </div>
+                <div>
+                  <label className="field-label">Full Name *</label>
+                  <input
+                    className="field-input"
+                    value={userForm.fullName}
+                    onChange={(e) => setUserForm((p) => ({ ...p, fullName: e.target.value }))}
+                    required={stagedUsers.length === 0}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label className="field-label">Business Email *</label>
+                  <input
+                    className="field-input"
+                    type="email"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
+                    required={stagedUsers.length === 0}
+                  />
+                </div>
+                <div>
+                  <label className="field-label">Job Title</label>
+                  <input
+                    className="field-input"
+                    value={userForm.title || userForm.position || ''}
+                    onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value, position: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-2" style={{ marginBottom: 16 }}>
+                <div>
+                  <label className="field-label">Job Level</label>
+                  <select
+                    className="field-select"
+                    value={normalizeLevel(userForm.level)}
+                    onChange={(e) => setUserForm((p) => ({ ...p, level: e.target.value }))}
+                  >
+                    {jobLevels.map((lvl) => (
+                      <option key={lvl.level} value={lvl.level}>
+                        Level {lvl.level} — {lvl.viTitle || lvl.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">System Authority Role</label>
+                  <select
+                    className="field-select"
+                    value={normalizeRole(userForm.role)}
+                    onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}
+                  >
+                    {ROLE_DEFINITIONS.map((def) => (
+                      <option key={def.id} value={def.id}>
+                        {def.rank}. {def.labelVi}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* The org unit is picked top-down: Division -> Department -> Sub-Department */}
+              <div className="grid grid-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label className="field-label">Parent Division *</label>
+                  <select
+                    className="field-select"
+                    value={userForm.divisionId || ''}
+                    onChange={(e) => {
+                      const divId = e.target.value;
+                      const d = divisions.find((div) => div.id === divId);
+                      setUserForm((p) => ({
+                        ...p,
+                        divisionId: divId,
+                        divisionCode: d ? d.code : null,
+                        divisionName: d ? d.name : null,
+                        departmentId: '',
+                        departmentCode: null,
+                        departmentName: null,
+                        subDepartmentId: '',
+                        subDepartmentCode: null,
+                        subDepartmentName: null,
+                      }));
+                    }}
+                  >
+                    <option value="">-- Choose A Division --</option>
+                    {divisions.map((d) => (
+                      <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">Parent Department *</label>
+                  <select
+                    className="field-select"
+                    value={userForm.departmentId || ''}
+                    disabled={!userForm.divisionId}
+                    onChange={(e) => {
+                      const deptId = e.target.value;
+                      const d = departments.find((dept) => dept.id === deptId);
+                      setUserForm((p) => ({
+                        ...p,
+                        departmentId: deptId,
+                        department: deptId,
+                        departmentName: d ? d.name : null,
+                        departmentCode: d ? d.code : null,
+                        subDepartmentId: '',
+                        subDepartmentCode: null,
+                        subDepartmentName: null,
+                      }));
+                    }}
+                  >
+                    <option value="">
+                      {userForm.divisionId ? '-- Choose A Department --' : '-- Choose A Division first --'}
+                    </option>
+                    {departments
+                      .filter((d) => d.divisionId === userForm.divisionId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="field-label">Position / Child Sub-Department</label>
+                <select
+                  className="field-select"
+                  value={userForm.subDepartmentId || ''}
+                  disabled={!userForm.departmentId || availableSubDepartments.length === 0}
+                  onChange={(e) => {
+                    const subId = e.target.value;
+                    const sub = subDepartments.find((item) => item.id === subId);
+                    setUserForm((p) => ({
+                      ...p,
+                      subDepartmentId: subId || null,
+                      subDepartmentCode: sub ? sub.code : null,
+                      subDepartmentName: sub ? sub.name : null,
+                    }));
+                  }}
+                >
+                  <option value="">
+                    {!userForm.departmentId
+                      ? '-- Choose A Department first --'
+                      : availableSubDepartments.length === 0
+                        ? '-- No sub-department --'
+                        : '-- Choose A Sub-Department (optional) --'}
+                  </option>
+                  {availableSubDepartments.map((sub) => (
+                    <option key={sub.id} value={sub.id}>{sub.code} — {sub.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Queue: several employees can be typed in before saving them together */}
+              {userModal.mode === 'ADD' && stagedUsers.length > 0 && (
+                <div style={{ marginBottom: 14, border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--paper-sunken)', fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+                    <span>Queued to create: {stagedUsers.length}</span>
+                    <button
+                      type="button"
+                      onClick={() => setStagedUsers([])}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--rail)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Clear list
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+                    {stagedUsers.map((u) => (
+                      <div key={u.employeeCode} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderTop: '1px solid var(--line)', fontSize: 12 }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue)' }}>{u.employeeCode}</span>
+                        <span style={{ fontWeight: 600 }}>{u.fullName}</span>
+                        <span style={{ color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</span>
+                        <span style={{ marginLeft: 'auto', color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>
+                          Lvl {u.level} · {u.departmentCode || '—'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStagedUser(u.employeeCode)}
+                          aria-label={`Remove ${u.fullName}`}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {addError && (
+                <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--rust-soft)', color: 'var(--rust-soft-text)', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                  <i className="ti ti-alert-triangle" style={{ marginRight: 6 }} />{addError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                <Button variant="ghost" type="button" onClick={handleCloseUserModal}>Cancel</Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {userModal.mode === 'ADD' && (
+                    <Button variant="outline" type="button" icon="ti-plus" onClick={handleStageUser}>
+                      Save &amp; add another
+                    </Button>
+                  )}
+                  <Button variant="primary" icon="ti-check" type="submit">
+                    {saveSuccess
+                      ? 'Saved Successfully!'
+                      : userModal.mode === 'EDIT'
+                        ? 'Save Changes'
+                        : `Create ${pendingUserCount} employee${pendingUserCount > 1 ? 's' : ''}`}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
         </Modal>
       )}
 

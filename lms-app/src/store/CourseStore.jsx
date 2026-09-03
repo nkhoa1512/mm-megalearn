@@ -34,7 +34,7 @@ import {
   courseMatchesCategory,
 } from '../utils/courseCatalog';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
-import { DEFAULT_CUSTOM_GROUPS, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
+import { DEFAULT_CUSTOM_GROUPS, DEFAULT_GROUP_CATEGORIES, groupCategoryId, resolveGroupMembers, isUserInCustomGroup } from '../data/customGroupsData';
 import {
   buildCostCenters,
   buildEnrollmentTransaction,
@@ -149,6 +149,7 @@ const DEPT_KEY = 'mm-megalearn-dept-v4';
 const SUBDEPT_KEY = 'mm-megalearn-subdept-v3';
 const JOBLEVELS_KEY = 'mm-megalearn-joblevels-v4';
 const GROUP_KEY = 'mm-megalearn-groups-v1';
+const GROUP_CATEGORY_KEY = 'mm-megalearn-group-categories-v1';
 // Cost Center: stores only the entries CREATED in this session. The opening ledger (annual
 // budget + historical HRIS enrollments) is re-derived at every start-up from static
 // data — the same overlay model as `enrollments`, avoiding stuffing thousands of
@@ -455,6 +456,15 @@ export function CourseStoreProvider({ children }) {
   const [subDepartments, setSubDepartments] = useState(() => loadItem(SUBDEPT_KEY, initialSubDepartments));
   const [jobLevels, setJobLevels] = useState(() => loadItem(JOBLEVELS_KEY, initialJobLevels));
   const [customGroups, setCustomGroups] = useState(() => loadItem(GROUP_KEY, DEFAULT_CUSTOM_GROUPS));
+  // Area / Category catalog for the custom groups — editable, because the group list is
+  // filtered and grouped by it.
+  const [customGroupCategories, setCustomGroupCategories] = useState(() => {
+    const loaded = loadItem(GROUP_CATEGORY_KEY, DEFAULT_GROUP_CATEGORIES);
+    if (!Array.isArray(loaded) || loaded.length === 0) return DEFAULT_GROUP_CATEGORIES;
+    return loaded
+      .map((cat) => (typeof cat === 'string' ? { id: groupCategoryId(cat), label: cat } : cat))
+      .filter((cat) => cat && cat.id && cat.label);
+  });
 
   // HRBP Strategic Operations states (Interventions, Succession, 1-on-1 Alignments, Compliance Nudges)
   const [interventions, setInterventions] = useState(() => loadItem(INTERVENTION_KEY, DEFAULT_INTERVENTIONS));
@@ -515,6 +525,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(SUBDEPT_KEY, JSON.stringify(subDepartments));
       localStorage.setItem(JOBLEVELS_KEY, JSON.stringify(jobLevels));
       localStorage.setItem(GROUP_KEY, JSON.stringify(customGroups));
+      localStorage.setItem(GROUP_CATEGORY_KEY, JSON.stringify(customGroupCategories));
       localStorage.setItem(INTERVENTION_KEY, JSON.stringify(interventions));
       localStorage.setItem(SUCCESSION_KEY, JSON.stringify(successionTalents));
       localStorage.setItem(ALIGNMENT_KEY, JSON.stringify(successionAlignments));
@@ -530,7 +541,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, certificateTemplates, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, certificateTemplates, customGroups, customGroupCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -2017,6 +2028,51 @@ export function CourseStoreProvider({ children }) {
     return dup;
   }, [customGroups, currentUser]);
 
+  /** Adds an Area / Category to the custom-group catalog */
+  const addCustomGroupCategory = useCallback((label) => {
+    const clean = String(label || '').trim();
+    if (!clean) return { ok: false, reason: 'EMPTY' };
+    const nameTaken = customGroupCategories.some(
+      (c) => c.label.trim().toLowerCase() === clean.toLowerCase()
+    );
+    if (nameTaken) return { ok: false, reason: 'DUPLICATE' };
+    // Two different names can fold to the same slug (or to none at all), so the id is
+    // only a starting point — it gets a suffix until it is free.
+    const base = groupCategoryId(clean) || `CATEGORY_${Date.now()}`;
+    let id = base;
+    let suffix = 2;
+    while (customGroupCategories.some((c) => c.id === id)) {
+      id = `${base}_${suffix}`;
+      suffix += 1;
+    }
+    const created = { id, label: clean };
+    setCustomGroupCategories((prev) => [...prev, created]);
+    return { ok: true, category: created };
+  }, [customGroupCategories]);
+
+  /** Renames a category — groups keep pointing at the same id */
+  const updateCustomGroupCategory = useCallback((categoryId, label) => {
+    const clean = String(label || '').trim();
+    if (!clean) return { ok: false, reason: 'EMPTY' };
+    const clash = customGroupCategories.some(
+      (c) => c.id !== categoryId && c.label.trim().toLowerCase() === clean.toLowerCase()
+    );
+    if (clash) return { ok: false, reason: 'DUPLICATE' };
+    setCustomGroupCategories((prev) => prev.map((c) => (c.id === categoryId ? { ...c, label: clean } : c)));
+    return { ok: true };
+  }, [customGroupCategories]);
+
+  /** Removes a category and moves the groups that used it to the first remaining one */
+  const deleteCustomGroupCategory = useCallback((categoryId) => {
+    const next = customGroupCategories.filter((c) => c.id !== categoryId);
+    if (next.length === customGroupCategories.length) return { ok: false, reason: 'NOT_FOUND' };
+    if (next.length === 0) return { ok: false, reason: 'LAST_ONE' };
+    const fallbackId = next[0].id;
+    setCustomGroupCategories(next);
+    setCustomGroups((prev) => prev.map((g) => (g.category === categoryId ? { ...g, category: fallbackId } : g)));
+    return { ok: true, movedTo: fallbackId };
+  }, [customGroupCategories]);
+
   const getGroupMembers = useCallback((groupId) => {
     const group = customGroups.find((g) => g.id === groupId);
     if (!group) return [];
@@ -2102,6 +2158,10 @@ export function CourseStoreProvider({ children }) {
         deleteJobLevel,
         customGroups,
         setCustomGroups,
+        customGroupCategories,
+        addCustomGroupCategory,
+        updateCustomGroupCategory,
+        deleteCustomGroupCategory,
         addCustomGroup,
         updateCustomGroup,
         deleteCustomGroup,

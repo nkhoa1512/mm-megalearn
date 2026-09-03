@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useCourseStore } from '../../store/CourseStore';
 import { Badge, Button, Modal, JobLevelBadge } from '../common/ui';
 import { ROLE_DEFINITIONS, roleDefinition, normalizeRole } from '../../data/roles';
 import { normalizeLevel } from '../../data/levelSystem';
-import { resolveGroupMembers } from '../../data/customGroupsData';
+import { resolveGroupMembers, criteriaValues, DEFAULT_GROUP_CATEGORIES } from '../../data/customGroupsData';
 
 const COLOR_OPTIONS = [
   { label: 'Blue', value: '#0EA5E9' },
@@ -16,26 +16,144 @@ const COLOR_OPTIONS = [
   { label: 'Xanh Lam Cyan', value: '#06B6D4' },
 ];
 
-const CATEGORY_OPTIONS = [
-  { id: 'SPECIAL_COHORT', label: 'Specialized / Dedicated Group' },
-  { id: 'DEMOGRAPHIC', label: 'Demographics / Nationality' },
-  { id: 'STRATEGIC_INITIATIVE', label: 'Strategic Projects & Initiatives' },
-  { id: 'ONBOARDING', label: 'Onboarding & New Hires' },
-  { id: 'LEADERSHIP', label: 'Managers & Leadership' },
-  { id: 'TALENT_POOL', label: 'Succession Talent & Fast-Track' },
-  { id: 'OPERATIONS', label: 'Operations & Supply Chain' },
-  { id: 'CUSTOMER_SERVICE', label: 'Customer Service & Cashier' },
-  { id: 'SAFETY_COMPLIANCE', label: 'Safety, Fire Prevention & Compliance' },
-  { id: 'CULTURE_ENGAGEMENT', label: 'Culture & Employee Engagement' },
-  { id: 'QUALITY_ASSURANCE', label: 'Quality Assurance & Inspection' },
-];
+const CHIP_PREVIEW_LIMIT = 12;
 
-// The org hierarchy is chosen top-down, so a child selection without its parent is dropped.
-function normaliseCriteria(criteria = {}) {
-  const divisionId = criteria.divisionId || 'ALL';
-  const departmentId = divisionId === 'ALL' ? 'ALL' : (criteria.departmentId || 'ALL');
-  const subDepartmentId = departmentId === 'ALL' ? 'ALL' : (criteria.subDepartmentId || 'ALL');
-  return { ...criteria, divisionId, departmentId, subDepartmentId };
+function optionLabel(options, id) {
+  const found = options.find((o) => String(o.id) === String(id));
+  return found ? found.label : String(id);
+}
+
+function emptyCriteria() {
+  return {
+    businessUnitId: 'bu-mmvn',
+    divisionId: [],
+    departmentId: [],
+    subDepartmentId: [],
+    level: [],
+    role: [],
+  };
+}
+
+// Dropdown that accepts several values at once - same footprint as a .field-select.
+// Long lists can be searched, and everything on screen can be picked in one click.
+function MultiSelectField({ label, options, selectedIds, onChange, disabled = false, allLabel, lockedLabel, align = 'left' }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handleClickOutside(e) {
+      if (boxRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+    if (!open) setQuery('');
+  }, [disabled, open]);
+
+  const selectedSet = new Set(selectedIds.map(String));
+  const chosen = options.filter((o) => selectedSet.has(String(o.id)));
+  const chosenLabels = chosen.map((o) => o.label).join(', ');
+  const q = query.trim().toLowerCase();
+  const visibleOptions = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  const allVisibleSelected = visibleOptions.length > 0 && visibleOptions.every((o) => selectedSet.has(String(o.id)));
+  const summary = disabled
+    ? lockedLabel
+    : chosen.length === 0
+      ? allLabel
+      : chosen.length === options.length
+        ? `All ${options.length} selected`
+        : `(${chosen.length}) ${chosenLabels}`;
+
+  function toggleOption(id) {
+    const key = String(id);
+    onChange(selectedSet.has(key) ? selectedIds.filter((v) => String(v) !== key) : [...selectedIds, key]);
+  }
+
+  // Acts on what the search box currently shows, so it doubles as "select all".
+  function toggleVisible() {
+    const visibleIds = visibleOptions.map((o) => String(o.id));
+    if (allVisibleSelected) {
+      const visibleSet = new Set(visibleIds);
+      onChange(selectedIds.filter((v) => !visibleSet.has(String(v))));
+      return;
+    }
+    onChange(Array.from(new Set([...selectedIds.map(String), ...visibleIds])));
+  }
+
+  return (
+    <div ref={boxRef} style={{ position: 'relative' }}>
+      <label className="field-label" style={{ fontSize: 12 }}>{label}</label>
+      <button
+        type="button"
+        className="field-select"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title={chosen.length > 0 ? chosenLabels : undefined}
+        style={{ fontSize: 12, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: disabled ? 'not-allowed' : 'pointer' }}
+      >
+        {summary}
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          style={{ position: 'absolute', zIndex: 40, top: '100%', [align]: 0, minWidth: '100%', maxWidth: 320, marginTop: 4, background: 'var(--paper-raised)', border: '1px solid var(--line-strong)', borderRadius: 8, boxShadow: '0 10px 24px rgba(15,23,42,0.16)', overflow: 'hidden' }}
+        >
+          <div style={{ padding: 8, borderBottom: '1px solid var(--line)', background: 'var(--paper-sunken)' }}>
+            {options.length > 6 && (
+              <input
+                className="field-input"
+                style={{ fontSize: 12, padding: '6px 10px', marginBottom: 6 }}
+                placeholder="Search..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+              />
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <button
+                type="button"
+                onClick={toggleVisible}
+                disabled={visibleOptions.length === 0}
+                style={{ border: 'none', background: 'transparent', padding: 0, fontSize: 12, fontWeight: 600, color: 'var(--rail)', cursor: visibleOptions.length === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                {allVisibleSelected
+                  ? `Clear these ${visibleOptions.length}`
+                  : q
+                    ? `Select ${visibleOptions.length} matching`
+                    : `Select all (${options.length})`}
+              </button>
+              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                {chosen.length > 0 ? `${chosen.length} selected` : 'No filter'}
+              </span>
+            </div>
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto', padding: 6 }}>
+            {visibleOptions.length === 0 && (
+              <div style={{ padding: '6px 8px', fontSize: 12, color: 'var(--ink-faint)' }}>No matching option</div>
+            )}
+            {visibleOptions.map((o) => (
+              <label
+                key={o.id}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px', borderRadius: 6, fontSize: 12, color: 'var(--ink)', cursor: 'pointer' }}
+              >
+                <input type="checkbox" checked={selectedSet.has(String(o.id))} onChange={() => toggleOption(o.id)} />
+                <span>{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function CustomGroupsManager() {
@@ -45,6 +163,10 @@ export default function CustomGroupsManager() {
     updateCustomGroup,
     deleteCustomGroup,
     duplicateCustomGroup,
+    customGroupCategories = [],
+    addCustomGroupCategory,
+    updateCustomGroupCategory,
+    deleteCustomGroupCategory,
     users = [],
     divisions = [],
     departments = [],
@@ -54,8 +176,15 @@ export default function CustomGroupsManager() {
     language,
   } = useCourseStore();
 
+  // The catalog is admin-managed; the defaults are only a fallback for an empty store.
+  const CATEGORY_OPTIONS = customGroupCategories.length > 0 ? customGroupCategories : DEFAULT_GROUP_CATEGORIES;
+
   // Search & Filter State
   const [search, setSearch] = useState('');
+  const [categoryModal, setCategoryModal] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState('');
+  const [categoryDrafts, setCategoryDrafts] = useState({});
+  const [categoryError, setCategoryError] = useState(null);
   const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, DYNAMIC, MANUAL, FILE_IMPORT
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [customGroupGroupBy, setCustomGroupGroupBy] = useState('NONE');
@@ -82,14 +211,7 @@ export default function CustomGroupsManager() {
     type: 'DYNAMIC',
     category: 'SPECIAL_COHORT',
     badgeColor: '#0EA5E9',
-    criteria: {
-      businessUnitId: 'bu-mmvn',
-      divisionId: 'ALL',
-      departmentId: 'ALL',
-      subDepartmentId: 'ALL',
-      level: 'ALL',
-      role: 'ALL',
-    },
+    criteria: emptyCriteria(),
     memberUserIds: [],
   });
 
@@ -142,6 +264,48 @@ export default function CustomGroupsManager() {
     setCategoryFilter('ALL');
   }
 
+  function commitCategoryRename(cat) {
+    const draft = categoryDrafts[cat.id];
+    setCategoryDrafts((prev) => {
+      const next = { ...prev };
+      delete next[cat.id];
+      return next;
+    });
+    if (draft === undefined || draft.trim() === cat.label) {
+      setCategoryError(null);
+      return;
+    }
+    const result = updateCustomGroupCategory(cat.id, draft);
+    if (result?.ok) {
+      setCategoryError(null);
+      return;
+    }
+    setCategoryError(result?.reason === 'DUPLICATE'
+      ? 'Another category already uses that name.'
+      : 'The category name cannot be empty.');
+  }
+
+  function handleDeleteCategory(cat) {
+    const result = deleteCustomGroupCategory(cat.id);
+    if (!result?.ok) {
+      setCategoryError('At least one category has to stay.');
+      return;
+    }
+    setCategoryError(null);
+    // The list would otherwise keep filtering on an id nobody can pick any more.
+    if (categoryFilter === cat.id) setCategoryFilter('ALL');
+  }
+
+  function handleAddCategory() {
+    const result = addCustomGroupCategory(newCategoryLabel);
+    if (result?.ok) {
+      setNewCategoryLabel('');
+      setCategoryError(null);
+      return;
+    }
+    setCategoryError(result?.reason === 'DUPLICATE' ? 'That category already exists.' : 'Type a category name first.');
+  }
+
   function toggleGroupSectionCollapse(secId) {
     setCollapsedGroupSections((prev) => ({ ...prev, [secId]: !prev[secId] }));
   }
@@ -180,7 +344,7 @@ export default function CustomGroupsManager() {
     });
 
     return Object.values(map);
-  }, [filteredGroups, customGroupGroupBy]);
+  }, [filteredGroups, customGroupGroupBy, CATEGORY_OPTIONS]);
 
   // Members resolved for the currently viewed group
   const currentGroupMembers = useMemo(() => {
@@ -212,17 +376,144 @@ export default function CustomGroupsManager() {
     return resolveGroupMembers(tempGroup, users);
   }, [formTab, form.criteria, users]);
 
-  // Org hierarchy is picked top-down: Division -> Department -> Sub-Department
-  const selectedDivisionId = form.criteria?.divisionId || 'ALL';
-  const selectedDepartmentId = form.criteria?.departmentId || 'ALL';
-  const departmentOptions = useMemo(
-    () => (selectedDivisionId === 'ALL' ? [] : departments.filter((dept) => dept.divisionId === selectedDivisionId)),
-    [departments, selectedDivisionId]
+  // Org hierarchy is picked top-down: Division -> Department -> Sub-Department,
+  // and every level accepts several values at once.
+  const selectedDivisionIds = useMemo(() => criteriaValues(form.criteria?.divisionId), [form.criteria]);
+  const selectedDepartmentIds = useMemo(() => criteriaValues(form.criteria?.departmentId), [form.criteria]);
+  const selectedSubDepartmentIds = useMemo(() => criteriaValues(form.criteria?.subDepartmentId), [form.criteria]);
+  const selectedLevels = useMemo(() => criteriaValues(form.criteria?.level), [form.criteria]);
+  const selectedRoles = useMemo(() => criteriaValues(form.criteria?.role), [form.criteria]);
+
+  const divisionOptions = useMemo(
+    () => divisions.map((d) => ({ id: d.id, label: `${d.code} — ${d.name}` })),
+    [divisions]
   );
-  const subDepartmentOptions = useMemo(
-    () => (selectedDepartmentId === 'ALL' ? [] : subDepartments.filter((s) => s.departmentId === selectedDepartmentId)),
-    [subDepartments, selectedDepartmentId]
+  const departmentOptions = useMemo(() => {
+    const divisionById = new Map(divisions.map((d) => [String(d.id), d]));
+    const showParent = selectedDivisionIds.length > 1;
+    return departments
+      .filter((dept) => selectedDivisionIds.includes(String(dept.divisionId)))
+      .map((dept) => {
+        const parent = divisionById.get(String(dept.divisionId));
+        return {
+          id: dept.id,
+          label: showParent && parent ? `${parent.code} · ${dept.code} — ${dept.name}` : `${dept.code} — ${dept.name}`,
+        };
+      });
+  }, [divisions, departments, selectedDivisionIds]);
+  const subDepartmentOptions = useMemo(() => {
+    const departmentById = new Map(departments.map((d) => [String(d.id), d]));
+    const showParent = selectedDepartmentIds.length > 1;
+    return subDepartments
+      .filter((sub) => selectedDepartmentIds.includes(String(sub.departmentId)))
+      .map((sub) => {
+        const parent = departmentById.get(String(sub.departmentId));
+        return {
+          id: sub.id,
+          label: showParent && parent ? `${parent.code} · 🌿 ${sub.name}` : `🌿 ${sub.name}`,
+        };
+      });
+  }, [departments, subDepartments, selectedDepartmentIds]);
+  const levelOptions = useMemo(
+    () => jobLevels.map((lvl) => ({ id: String(lvl.level), label: `Level ${lvl.level} - ${lvl.viTitle || lvl.title}` })),
+    [jobLevels]
   );
+  const roleOptions = useMemo(
+    () => ROLE_DEFINITIONS.map((r) => ({ id: r.id, label: r.labelVi })),
+    []
+  );
+
+  // Every criteria field holds an array of ids, so several divisions / departments / levels
+  // can be picked at once; legacy groups storing a single id or 'ALL' are converted here.
+  // The hierarchy is chosen top-down, so a saved child selection pulls its parent in rather
+  // than being dropped, and anything left dangling is removed.
+  function hydrateCriteria(rawCriteria = {}) {
+    let divisionIds = criteriaValues(rawCriteria.divisionId);
+    let departmentIds = criteriaValues(rawCriteria.departmentId);
+    const subIds = criteriaValues(rawCriteria.subDepartmentId);
+
+    departmentIds = Array.from(new Set([
+      ...departmentIds,
+      ...subDepartments.filter((sub) => subIds.includes(String(sub.id))).map((sub) => String(sub.departmentId)),
+    ]));
+    divisionIds = Array.from(new Set([
+      ...divisionIds,
+      ...departments.filter((dept) => departmentIds.includes(String(dept.id))).map((dept) => String(dept.divisionId)),
+    ]));
+
+    const keptDepartments = departments
+      .filter((dept) => divisionIds.includes(String(dept.divisionId)) && departmentIds.includes(String(dept.id)))
+      .map((dept) => String(dept.id));
+    const keptSubs = subDepartments
+      .filter((sub) => keptDepartments.includes(String(sub.departmentId)) && subIds.includes(String(sub.id)))
+      .map((sub) => String(sub.id));
+
+    return {
+      ...rawCriteria,
+      divisionId: divisionIds,
+      departmentId: keptDepartments,
+      subDepartmentId: keptSubs,
+      level: criteriaValues(rawCriteria.level),
+      role: criteriaValues(rawCriteria.role),
+    };
+  }
+
+  // One removable chip per picked value, so the whole filter is readable without
+  // opening the five dropdowns again.
+  const criteriaChips = [
+    ...selectedDivisionIds.map((id) => ({
+      key: `division:${id}`,
+      field: 'Division',
+      label: optionLabel(divisionOptions, id),
+      onRemove: () => handleDivisionsChange(selectedDivisionIds.filter((v) => v !== id)),
+    })),
+    ...selectedDepartmentIds.map((id) => ({
+      key: `department:${id}`,
+      field: 'Department',
+      label: optionLabel(departmentOptions, id),
+      onRemove: () => handleDepartmentsChange(selectedDepartmentIds.filter((v) => v !== id)),
+    })),
+    ...selectedSubDepartmentIds.map((id) => ({
+      key: `sub:${id}`,
+      field: 'Sub-Dept',
+      label: optionLabel(subDepartmentOptions, id),
+      onRemove: () => updateCriteria({ subDepartmentId: selectedSubDepartmentIds.filter((v) => v !== id) }),
+    })),
+    ...selectedLevels.map((id) => ({
+      key: `level:${id}`,
+      field: 'Level',
+      label: optionLabel(levelOptions, id),
+      onRemove: () => updateCriteria({ level: selectedLevels.filter((v) => v !== id) }),
+    })),
+    ...selectedRoles.map((id) => ({
+      key: `role:${id}`,
+      field: 'Role',
+      label: optionLabel(roleOptions, id),
+      onRemove: () => updateCriteria({ role: selectedRoles.filter((v) => v !== id) }),
+    })),
+  ];
+
+  function updateCriteria(patch) {
+    setForm((prev) => ({ ...prev, criteria: { ...prev.criteria, ...patch } }));
+  }
+
+  // Dropping a parent also drops the children that no longer hang under it.
+  function handleDivisionsChange(ids) {
+    const keptDepartments = departments
+      .filter((dept) => ids.includes(String(dept.divisionId)) && selectedDepartmentIds.includes(String(dept.id)))
+      .map((dept) => String(dept.id));
+    const keptSubs = subDepartments
+      .filter((sub) => keptDepartments.includes(String(sub.departmentId)) && selectedSubDepartmentIds.includes(String(sub.id)))
+      .map((sub) => String(sub.id));
+    updateCriteria({ divisionId: ids, departmentId: keptDepartments, subDepartmentId: keptSubs });
+  }
+
+  function handleDepartmentsChange(ids) {
+    const keptSubs = subDepartments
+      .filter((sub) => ids.includes(String(sub.departmentId)) && selectedSubDepartmentIds.includes(String(sub.id)))
+      .map((sub) => String(sub.id));
+    updateCriteria({ departmentId: ids, subDepartmentId: keptSubs });
+  }
 
   // Filtered list for Manual Picker Tab
   const manualAvailableUsers = useMemo(() => {
@@ -253,14 +544,7 @@ export default function CustomGroupsManager() {
       type: 'DYNAMIC',
       category: 'SPECIAL_COHORT',
       badgeColor: '#0EA5E9',
-      criteria: {
-        businessUnitId: 'bu-mmvn',
-        divisionId: 'ALL',
-        departmentId: 'ALL',
-        subDepartmentId: 'ALL',
-        level: 'ALL',
-        role: 'ALL',
-      },
+      criteria: emptyCriteria(),
       memberUserIds: [],
     });
     setFormTab('DYNAMIC');
@@ -279,14 +563,7 @@ export default function CustomGroupsManager() {
       type: grp.type || 'DYNAMIC',
       category: grp.category || 'SPECIAL_COHORT',
       badgeColor: grp.badgeColor || '#0EA5E9',
-      criteria: normaliseCriteria(grp.criteria || {
-        businessUnitId: 'bu-mmvn',
-        divisionId: 'ALL',
-        departmentId: 'ALL',
-        subDepartmentId: 'ALL',
-        level: 'ALL',
-        role: 'ALL',
-      }),
+      criteria: hydrateCriteria(grp.criteria || emptyCriteria()),
       memberUserIds: grp.memberUserIds || [],
     });
     setFormTab(grp.type || 'DYNAMIC');
@@ -552,6 +829,9 @@ export default function CustomGroupsManager() {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Button variant="outline" size="sm" icon="ti-settings" onClick={() => { setCategoryModal(true); setCategoryError(null); setNewCategoryLabel(''); setCategoryDrafts({}); }} style={{ height: 38 }}>
+                Manage Categories
+              </Button>
               <Button variant="outline" size="sm" icon="ti-download" onClick={handleDownloadTemplate} style={{ height: 38 }}>
                 Download The Template (CSV)
               </Button>
@@ -1006,7 +1286,7 @@ export default function CustomGroupsManager() {
                 <label className="field-label">Group Category</label>
                 <select
                   className="field-select"
-                  value={form.category}
+                  value={CATEGORY_OPTIONS.some((c) => c.id === form.category) ? form.category : (CATEGORY_OPTIONS[0]?.id || '')}
                   onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                 >
                   {CATEGORY_OPTIONS.map((c) => (
@@ -1119,121 +1399,104 @@ export default function CustomGroupsManager() {
                   Configure The Automatic Filter Criteria (Org Hierarchy Criteria):
                 </div>
 
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10 }}>
+                  Each field takes several values — pick them one by one, or use
+                  <strong> Select all</strong> inside the dropdown. A member matches when they
+                  hit one of the values of every field that has a selection.
+                </div>
+
+                <div className="grid grid-3" style={{ gap: 10, marginBottom: 10 }}>
+                  <MultiSelectField
+                    label="Division"
+                    options={divisionOptions}
+                    selectedIds={selectedDivisionIds}
+                    onChange={handleDivisionsChange}
+                    allLabel="-- All Divisions --"
+                  />
+
+                  <MultiSelectField
+                    label="Department"
+                    options={departmentOptions}
+                    selectedIds={selectedDepartmentIds}
+                    onChange={handleDepartmentsChange}
+                    disabled={selectedDivisionIds.length === 0}
+                    allLabel="-- All Departments of the selected Divisions --"
+                    lockedLabel="-- Select a Division first --"
+                  />
+
+                  <MultiSelectField
+                    label="Parent Sub-Department"
+                    options={subDepartmentOptions}
+                    selectedIds={selectedSubDepartmentIds}
+                    onChange={(ids) => updateCriteria({ subDepartmentId: ids })}
+                    disabled={selectedDepartmentIds.length === 0 || subDepartmentOptions.length === 0}
+                    allLabel="-- All Sub-Departments of the selected Departments --"
+                    lockedLabel={selectedDepartmentIds.length === 0 ? '-- Select a Department first --' : '-- No sub-department --'}
+                    align="right"
+                  />
+                </div>
+
                 <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
-                  <div>
-                    <label className="field-label" style={{ fontSize: 12 }}>Division</label>
-                    <select
-                      className="field-select"
-                      style={{ fontSize: 12 }}
-                      value={form.criteria?.divisionId || 'ALL'}
-                      onChange={(e) => {
-                        const divId = e.target.value;
-                        setForm((p) => ({
-                          ...p,
-                          criteria: {
-                            ...p.criteria,
-                            divisionId: divId,
-                            departmentId: 'ALL',
-                            subDepartmentId: 'ALL',
-                          },
-                        }));
-                      }}
-                    >
-                      <option value="ALL">-- All Divisions --</option>
-                      {divisions.map((d) => (
-                        <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <MultiSelectField
+                    label="Job Level"
+                    options={levelOptions}
+                    selectedIds={selectedLevels}
+                    onChange={(ids) => updateCriteria({ level: ids })}
+                    allLabel="-- Any level (1-7) --"
+                  />
 
-                  <div>
-                    <label className="field-label" style={{ fontSize: 12 }}>Department</label>
-                    <select
-                      className="field-select"
-                      style={{ fontSize: 12 }}
-                      value={form.criteria?.departmentId || 'ALL'}
-                      disabled={selectedDivisionId === 'ALL'}
-                      onChange={(e) => {
-                        const deptId = e.target.value;
-                        setForm((p) => ({
-                          ...p,
-                          criteria: {
-                            ...p.criteria,
-                            departmentId: deptId,
-                            subDepartmentId: 'ALL',
-                          },
-                        }));
-                      }}
-                    >
-                      <option value="ALL">
-                        {selectedDivisionId === 'ALL' ? '-- Select a Division first --' : '-- All Departments --'}
-                      </option>
-                      {departmentOptions.map((dept) => (
-                        <option key={dept.id} value={dept.id}>{dept.code} — {dept.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <MultiSelectField
+                    label="Role"
+                    options={roleOptions}
+                    selectedIds={selectedRoles}
+                    onChange={(ids) => updateCriteria({ role: ids })}
+                    allLabel="-- Any role --"
+                    align="right"
+                  />
                 </div>
 
-                <div className="grid grid-3" style={{ gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <label className="field-label" style={{ fontSize: 12 }}>Parent Sub-Department</label>
-                    <select
-                      className="field-select"
-                      style={{ fontSize: 12 }}
-                      value={form.criteria?.subDepartmentId || 'ALL'}
-                      disabled={selectedDepartmentId === 'ALL' || subDepartmentOptions.length === 0}
-                      onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, subDepartmentId: e.target.value } }))}
+                {criteriaChips.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 10, paddingTop: 10, borderTop: '1px dashed var(--line)' }}>
+                    {criteriaChips.slice(0, CHIP_PREVIEW_LIMIT).map((chip) => (
+                      <span
+                        key={chip.key}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--paper-raised)', border: '1px solid var(--line-strong)', borderRadius: 999, padding: '3px 6px 3px 10px', fontSize: 11, color: 'var(--ink)' }}
+                        title={`${chip.field}: ${chip.label}`}
+                      >
+                        <span style={{ color: 'var(--ink-faint)' }}>{chip.field}</span>
+                        {chip.label}
+                        <button
+                          type="button"
+                          onClick={chip.onRemove}
+                          aria-label={`Remove ${chip.label}`}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--ink-faint)', cursor: 'pointer', lineHeight: 1, padding: 0, fontSize: 13 }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                    {criteriaChips.length > CHIP_PREVIEW_LIMIT && (
+                      <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                        +{criteriaChips.length - CHIP_PREVIEW_LIMIT} more
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, criteria: emptyCriteria() }))}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--rail)', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginLeft: 'auto' }}
                     >
-                      <option value="ALL">
-                        {selectedDepartmentId === 'ALL'
-                          ? '-- Select a Division & Department first --'
-                          : subDepartmentOptions.length === 0
-                            ? '-- No sub-department --'
-                            : '-- All Sub-Departments --'}
-                      </option>
-                      {subDepartmentOptions.map((s) => (
-                        <option key={s.id} value={s.id}>🌿 {s.name}</option>
-                      ))}
-                    </select>
+                      Clear all criteria
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="field-label" style={{ fontSize: 12 }}>Job Level</label>
-                    <select
-                      className="field-select"
-                      style={{ fontSize: 12 }}
-                      value={form.criteria?.level || 'ALL'}
-                      onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, level: e.target.value } }))}
-                    >
-                      <option value="ALL">-- Any level (1-7) --</option>
-                      {jobLevels.map((lvl) => (
-                        <option key={lvl.level} value={lvl.level}>Level {lvl.level} - {lvl.viTitle || lvl.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="field-label" style={{ fontSize: 12 }}>Role</label>
-                    <select
-                      className="field-select"
-                      style={{ fontSize: 12 }}
-                      value={form.criteria?.role || 'ALL'}
-                      onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, role: e.target.value } }))}
-                    >
-                      <option value="ALL">-- Any role --</option>
-                      {ROLE_DEFINITIONS.map((r) => (
-                        <option key={r.id} value={r.id}>{r.labelVi}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                )}
 
                 {/* Live Match Preview */}
                 <div style={{ background: 'var(--blue-soft)', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: 12, color: 'var(--blue-soft-text)' }}>
                     <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
-                    The system scanned and matched: <strong>{liveDynamicMembers.length} employees</strong>
+                    {criteriaChips.length === 0
+                      ? 'No criteria picked yet — the group stays empty until at least one value is selected.'
+                      : <>The system scanned and matched: <strong>{liveDynamicMembers.length} employees</strong></>}
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--blue-soft-text)', fontStyle: 'italic' }}>
                     Updates automatically when a matching new employee joins
@@ -1411,6 +1674,88 @@ export default function CustomGroupsManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL: MANAGE THE AREA / CATEGORY CATALOG */}
+      {categoryModal && (
+        <Modal
+          title="⚙️ Manage Group Categories"
+          onClose={() => setCategoryModal(false)}
+          size="md"
+        >
+          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12 }}>
+            These are the areas the group list is filtered and grouped by. Renaming one keeps the
+            groups that use it; deleting one moves its groups to the first category in the list.
+          </div>
+
+          <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden', marginBottom: 14 }}>
+            {CATEGORY_OPTIONS.map((cat, index) => {
+              const usage = customGroups.filter((g) => (g.category || 'SPECIAL_COHORT') === cat.id).length;
+              return (
+                <div
+                  key={cat.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderTop: index === 0 ? 'none' : '1px solid var(--line)' }}
+                >
+                  <input
+                    className="field-input"
+                    style={{ fontSize: 13, flex: 1 }}
+                    value={categoryDrafts[cat.id] ?? cat.label}
+                    onChange={(e) => setCategoryDrafts((prev) => ({ ...prev, [cat.id]: e.target.value }))}
+                    onBlur={() => commitCategoryRename(cat)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>
+                    {usage} group{usage === 1 ? '' : 's'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(cat)}
+                    disabled={CATEGORY_OPTIONS.length <= 1}
+                    aria-label={`Delete ${cat.label}`}
+                    title={CATEGORY_OPTIONS.length <= 1 ? 'At least one category has to stay' : `Delete ${cat.label}`}
+                    style={{ border: 'none', background: 'transparent', color: CATEGORY_OPTIONS.length <= 1 ? 'var(--ink-faint)' : '#E11D48', cursor: CATEGORY_OPTIONS.length <= 1 ? 'not-allowed' : 'pointer', fontSize: 15 }}
+                  >
+                    <i className="ti ti-trash" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <label className="field-label" style={{ fontSize: 12 }}>Add a new category</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input
+              className="field-input"
+              style={{ fontSize: 13, flex: 1 }}
+              placeholder="e.g. Sustainability & ESG"
+              value={newCategoryLabel}
+              onChange={(e) => setNewCategoryLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                handleAddCategory();
+              }}
+            />
+            <Button variant="primary" size="sm" icon="ti-plus" type="button" onClick={handleAddCategory}>
+              Add
+            </Button>
+          </div>
+
+          {categoryError && (
+            <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--rust-soft)', color: 'var(--rust-soft-text)', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+              <i className="ti ti-alert-triangle" style={{ marginRight: 6 }} />{categoryError}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button variant="primary" type="button" onClick={() => setCategoryModal(false)}>Done</Button>
+          </div>
+        </Modal>
       )}
     </div>
   );

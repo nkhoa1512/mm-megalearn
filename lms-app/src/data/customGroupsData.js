@@ -4,6 +4,38 @@
 // across Curriculum, Courses, Assessments, and Targeted Learning Tracks.
 // ===========================================================================
 
+// The Area / Category catalog behind the group filter. It seeds the store, where the
+// User Admin can rename, add or remove entries — a group stores the category id.
+export const DEFAULT_GROUP_CATEGORIES = [
+  { id: 'SPECIAL_COHORT', label: 'Specialized / Dedicated Group' },
+  { id: 'DEMOGRAPHIC', label: 'Demographics / Nationality' },
+  { id: 'STRATEGIC_INITIATIVE', label: 'Strategic Projects & Initiatives' },
+  { id: 'ONBOARDING', label: 'Onboarding & New Hires' },
+  { id: 'LEADERSHIP', label: 'Managers & Leadership' },
+  { id: 'TALENT_POOL', label: 'Succession Talent & Fast-Track' },
+  { id: 'OPERATIONS', label: 'Operations & Supply Chain' },
+  { id: 'CUSTOMER_SERVICE', label: 'Customer Service & Cashier' },
+  { id: 'SAFETY_COMPLIANCE', label: 'Safety, Fire Prevention & Compliance' },
+  { id: 'CULTURE_ENGAGEMENT', label: 'Culture & Employee Engagement' },
+  { id: 'QUALITY_ASSURANCE', label: 'Quality Assurance & Inspection' },
+];
+
+// Turns a typed category name into a stable id (groups keep the id, not the label).
+// Vietnamese accents are folded so "Chào" and "Chao" read as the same word; the caller
+// still has to make the result unique.
+export function groupCategoryId(label) {
+  return String(label || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+}
+
 export const DEFAULT_CUSTOM_GROUPS = [
   {
     id: 'grp-expat',
@@ -290,6 +322,25 @@ export const DEFAULT_CUSTOM_GROUPS = [
  * 2. MANUAL (chosen via the memberUserIds list)
  * 3. FILE_IMPORT (imported list of employee codes / user IDs)
  */
+// A criteria field may hold a single id, 'ALL'/null (no restriction at all), or an
+// array of ids when the admin picks several divisions / departments / levels at once.
+export function criteriaValues(value) {
+  const list = Array.isArray(value) ? value : [value];
+  return list
+    .filter((v) => v !== null && v !== undefined && v !== '' && v !== 'ALL')
+    .map((v) => String(v));
+}
+
+// True when nothing is selected for this field, or the user matches at least one selection.
+export function matchesCriteriaValue(value, userValues = [], { caseInsensitive = false } = {}) {
+  const wanted = criteriaValues(value);
+  if (wanted.length === 0) return true;
+  const owned = userValues
+    .filter((v) => v !== null && v !== undefined && v !== '')
+    .map((v) => (caseInsensitive ? String(v).toLowerCase() : String(v)));
+  return wanted.some((w) => owned.includes(caseInsensitive ? w.toLowerCase() : w));
+}
+
 export function resolveGroupMembers(group, allUsersList = []) {
   if (!group || !Array.isArray(allUsersList)) return [];
 
@@ -318,7 +369,8 @@ export function resolveGroupMembers(group, allUsersList = []) {
     if (explicitIds.has(u.userId) || explicitIds.has(u.employeeCode)) return true;
 
     // If no criteria are selected and there is no explicit ID, there is no match
-    const hasAnyCriteria = Boolean(divisionId || departmentId || subDepartmentId || level || role);
+    const hasAnyCriteria = [divisionId, departmentId, subDepartmentId, level, role]
+      .some((v) => criteriaValues(v).length > 0);
     if (!hasAnyCriteria && explicitIds.size === 0) {
       // Special group ALL_VIETNAMESE_EMPLOYEES_ONLY (all staff except expats)
       if (group.id === 'grp-vn-all' || group.code === 'ALL_VIETNAMESE_EMPLOYEES_ONLY') {
@@ -332,19 +384,19 @@ export function resolveGroupMembers(group, allUsersList = []) {
     if (businessUnitId && businessUnitId !== 'ALL' && businessUnitId !== 'bu-mmvn' && u.businessUnitId !== businessUnitId) {
       return false;
     }
-    if (divisionId && divisionId !== 'ALL' && u.divisionId !== divisionId && u.divisionCode !== divisionId) {
+    if (!matchesCriteriaValue(divisionId, [u.divisionId, u.divisionCode])) {
       return false;
     }
-    if (departmentId && departmentId !== 'ALL' && u.departmentId !== departmentId && u.departmentCode !== departmentId) {
+    if (!matchesCriteriaValue(departmentId, [u.departmentId, u.departmentCode])) {
       return false;
     }
-    if (subDepartmentId && subDepartmentId !== 'ALL' && u.subDepartmentId !== subDepartmentId && u.subDepartmentCode !== subDepartmentId) {
+    if (!matchesCriteriaValue(subDepartmentId, [u.subDepartmentId, u.subDepartmentCode])) {
       return false;
     }
-    if (level && level !== 'ALL' && String(u.level) !== String(level)) {
+    if (!matchesCriteriaValue(level, [u.level])) {
       return false;
     }
-    if (role && role !== 'ALL' && (u.role || '').toLowerCase() !== role.toLowerCase()) {
+    if (!matchesCriteriaValue(role, [u.role], { caseInsensitive: true })) {
       return false;
     }
 
