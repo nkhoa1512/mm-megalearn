@@ -12,7 +12,7 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { CourseStoreProvider } = await import('../src/store/CourseStore');
+const { CourseStoreProvider, useCourseStore } = await import('../src/store/CourseStore');
 const { personaForRole, pendingApprovalRequests, courses: mockCourses } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
@@ -1371,6 +1371,95 @@ console.log('\n=== 32: Assessment evaluation modes (PROMOTION/SURVEY/TEST/EES) a
     hasCapability('useradmin', 'canViewConfidentialAssessments') === false);
   check('hasCapability(hrbp, canViewConfidentialAssessments) === false',
     hasCapability('hrbp', 'canViewConfidentialAssessments') === false);
+}
+
+console.log('\n=== 33: Assessment Player — registration gate, promotion passcode gate, mode-specific results ===');
+{
+  // AssessmentPlayer's `assessmentRegistrations` is intentionally session-only
+  // (useState({}) with no localStorage persistence — see the comment above its
+  // declaration in CourseStore.jsx), unlike `enrollments`, so it cannot be
+  // pre-seeded via the localStorage shim the way other sections seed
+  // ENROLLMENT_KEY. Instead, this thin wrapper reads the *same* live
+  // `assessmentRegistrations` object reference out of context and mutates it
+  // in place before its child (AssessmentPlayer) renders — since React passes
+  // context values by reference and both components render within the same
+  // synchronous renderToStaticMarkup pass, the mutation is visible to
+  // `isAssessmentRegistered`'s closure without needing a second render pass.
+  function PreRegistered({ assessmentId, children }) {
+    const { assessmentRegistrations: regs, currentUser: cu } = useCourseStore();
+    const userId = cu?.userId;
+    if (userId) {
+      regs[userId] = { ...(regs[userId] || {}), [assessmentId]: { registeredAt: '2026-01-01T00:00:00.000Z' } };
+    }
+    return children;
+  }
+
+  // ASM-PROMO-001 is assigned only to LEVEL 5 (`assignments: [{ assignmentType:
+  // 'LEVEL', targetId: '5', ... }]`), and the learner persona (Minh Tran) is
+  // Level 7, so `getAssessmentAccess` would lock it out before the registration
+  // gate is ever reached. sysadmin bypasses that assignment-scope check
+  // unconditionally (see `isSysOrUserAdmin` in assessmentCatalog.js), while the
+  // registration/passcode gate itself is role-agnostic — it depends only on
+  // `assessmentRegistrations[userId]`, not on role — so this still exercises the
+  // real gate this task is about.
+  actAs('sysadmin');
+
+  const unregisteredHtml = render(
+    'AssessmentPlayer ASM-PROMO-001 unregistered',
+    <AssessmentPlayer />,
+    '/learner/assessment/ASM-PROMO-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('unregistered learner sees "Enroll / Register for Examination" instead of a start button',
+    Boolean(unregisteredHtml) && unregisteredHtml.includes('Enroll / Register for Examination'));
+  check('unregistered learner does NOT see the passcode gate or start button',
+    Boolean(unregisteredHtml) && !unregisteredHtml.includes('Exam Room / Proctor Passcode') && !unregisteredHtml.includes('Start The Exam Now'));
+
+  const registeredPromoHtml = render(
+    'AssessmentPlayer ASM-PROMO-001 registered',
+    <PreRegistered assessmentId="ASM-PROMO-001">
+      <AssessmentPlayer />
+    </PreRegistered>,
+    '/learner/assessment/ASM-PROMO-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('registered PROMOTION learner sees the Exam Room / Proctor Passcode gate',
+    Boolean(registeredPromoHtml) && registeredPromoHtml.includes('Exam Room / Proctor Passcode'));
+  check('registered PROMOTION learner (not yet passcode-verified) does NOT see "Start The Exam Now"',
+    Boolean(registeredPromoHtml) && !registeredPromoHtml.includes('Start The Exam Now') && !registeredPromoHtml.includes('Enroll / Register for Examination'));
+
+  // ASM-TEST-001 is assigned to ALL, so the ordinary learner persona has access —
+  // switch back to it here to also cover the non-admin path.
+  actAs('learner');
+  const registeredTestHtml = render(
+    'AssessmentPlayer ASM-TEST-001 registered',
+    <PreRegistered assessmentId="ASM-TEST-001">
+      <AssessmentPlayer />
+    </PreRegistered>,
+    '/learner/assessment/ASM-TEST-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('registered TEST-mode learner goes straight to "Start The Exam Now" (no passcode gate)',
+    Boolean(registeredTestHtml) && registeredTestHtml.includes('Start The Exam Now') && !registeredTestHtml.includes('Exam Room / Proctor Passcode'));
+
+  // Static source checks for behavior not reachable via a single-pass SSR render
+  // (the in-progress watermark and result screens require client-side phase
+  // transitions triggered by button clicks, which renderToStaticMarkup cannot
+  // simulate).
+  const fs = await import('node:fs');
+  const playerSource = fs.readFileSync('src/pages/player/AssessmentPlayer.jsx', 'utf8');
+  check('the "SAI" mistranslation no longer appears anywhere in AssessmentPlayer.jsx',
+    !playerSource.includes('SAI'));
+  check('the per-question review badge now renders INCORRECT for wrong answers',
+    playerSource.includes("isCorrect ? 'CORRECT' : 'INCORRECT'"));
+  check('the anti-cheat watermark guard excludes ONLY EES (anonymous) mode',
+    playerSource.includes("activeAssessment.antiCheatSettings?.showWatermark && activeAssessment.evaluationMode !== ASSESSMENT_MODES.EES"));
+  check('the RESULT screen branches on PROMOTION before falling through to the TEST-mode score card',
+    playerSource.includes("activeAssessment.evaluationMode === ASSESSMENT_MODES.PROMOTION") &&
+    playerSource.includes('Submission Recorded'));
+  check('the RESULT screen branches on SURVEY/EES to the thank-you screen with EES-specific copy',
+    playerSource.includes("activeAssessment.evaluationMode === ASSESSMENT_MODES.SURVEY || activeAssessment.evaluationMode === ASSESSMENT_MODES.EES") &&
+    playerSource.includes('recorded anonymously'));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
