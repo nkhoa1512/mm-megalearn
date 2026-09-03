@@ -436,6 +436,55 @@ function buildOperationalEventsByRole(role, { courses = [], classrooms = [], use
 }
 
 /**
+ * Organization-wide monthly course events (consumed by Task 3's UniversalCalendar)
+ */
+export function buildOrganizationMonthlyEvents({ courses = [], myEnrollments = {}, viewMonth, currentUser }) {
+  if (!viewMonth) return [];
+  const [viewYear, viewMonthNum] = viewMonth.split('-').map(Number);
+
+  return (courses || [])
+    .filter((course) => course.published !== false && (course.courseType === 'MANDATORY' || course.courseType === 'OPTIONAL'))
+    .map((course) => {
+      const isEnrolled = Boolean(myEnrollments[course.id]);
+      const dueDate = course.assignment?.dueDate || null;
+
+      let eventDate;
+      if (dueDate) {
+        const [dy, dm] = dueDate.split('-').map(Number);
+        if (dy !== viewYear || dm !== viewMonthNum) return null; // due date falls outside the viewed month
+        eventDate = dueDate;
+      } else {
+        // No due date (typically an optional elective) — represent it on the 1st of the viewed month
+        // so every month's overview always lists it, per the spec's "org-wide overview" requirement.
+        eventDate = `${viewYear}-${String(viewMonthNum).padStart(2, '0')}-01`;
+      }
+
+      const isMandatory = course.courseType === 'MANDATORY';
+      return {
+        id: `org-${course.id}`,
+        scope: 'ORGANIZATION',
+        date: eventDate,
+        courseId: course.id,
+        courseCode: course.code,
+        title: course.title,
+        courseType: course.courseType,
+        isEnrolled,
+        tone: isMandatory ? 'rust' : 'sage',
+        color: isMandatory ? '#DC2626' : 'var(--bigc-green)',
+        icon: isMandatory ? 'ti-alert-circle' : 'ti-sparkles',
+        subtitle: isMandatory
+          ? (isEnrolled ? 'Mandatory · Enrolled (In Progress / Completed)' : 'Mandatory · Action Required (Not Enrolled)')
+          : (isEnrolled ? 'Optional · Enrolled' : 'Optional · Available to Join'),
+        actionType: isEnrolled ? 'START_COURSE' : 'ENROLL_COURSE',
+        actionLabel: isEnrolled
+          ? (isMandatory ? 'Continue Learning' : 'Open Course')
+          : 'Enroll in Course',
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
  * Aggregates every event by user and context
  */
 export function buildCalendarEvents({

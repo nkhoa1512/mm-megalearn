@@ -1501,6 +1501,23 @@ export default function AdminCourses() {
                   {!isCollapsed && (
                     <div className="grid grid-3" style={{ gap: 14 }}>
                       {grp.items.map((asm) => {
+                        const isMasked = asm.isConfidential && !hasCapability(role, 'canViewConfidentialAssessments');
+
+                        if (isMasked) {
+                          return (
+                            <div
+                              key={asm.id}
+                              className="card card-pad"
+                              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 8 }}
+                            >
+                              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
+                                {asm.title}
+                              </div>
+                              <Badge tone="rust" icon="ti-lock">🔒 Confidential — Examination Board Only</Badge>
+                            </div>
+                          );
+                        }
+
                         const access = getAssessmentAccess(asm, currentUser, courses);
                         const isOwner = isFullAdmin || (role === 'trainer' && asm.createdBy === currentUser?.userId);
                         const asgCount = (asm.assignments || []).length;

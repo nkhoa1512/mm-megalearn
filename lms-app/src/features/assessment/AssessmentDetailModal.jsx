@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, Button, Badge, ProgressBar } from '../common/ui';
 import { DELIVERY_FORMATS, ASSESSMENT_TYPES } from '../../data/assessmentData';
+import { hasCapability, normalizeRole } from '../../data/roles.js';
+import { useCourseStore } from '../../store/CourseStore';
 
 export default function AssessmentDetailModal({
   assessment,
@@ -13,8 +15,24 @@ export default function AssessmentDetailModal({
   canTake = true,
   accessReason = '',
 }) {
+  const { currentUser } = useCourseStore();
+  const role = normalizeRole(currentUser?.role);
   const [detailTab, setDetailTab] = useState('INFO'); // INFO | QUESTIONS | SUBMISSIONS | COMPETENCY_GAP
   if (!isOpen || !assessment) return null;
+
+  if (assessment?.isConfidential && !hasCapability(role, 'canViewConfidentialAssessments')) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="Access Restricted" size="sm">
+        <div style={{ textAlign: 'center', padding: '20px 10px' }}>
+          <i className="ti ti-lock" style={{ fontSize: 44, color: 'var(--rust)' }} />
+          <h3 style={{ marginTop: 12, fontSize: 16 }}>Confidential — Examination Board Only</h3>
+          <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginTop: 6 }}>
+            This is a Promotion Examination. Its content, questions, and results are restricted to the Examination Board.
+          </p>
+        </div>
+      </Modal>
+    );
+  }
 
   const relevantAttempts = attempts.filter((a) => a.assessmentId === assessment.id);
   const questions = (assessment.questions && assessment.questions.length > 0)

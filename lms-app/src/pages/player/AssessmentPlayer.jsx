@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge, Button, JobLevelBadge } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
-import { QUESTION_TYPES, DELIVERY_FORMATS } from '../../data/assessmentData';
+import { QUESTION_TYPES, DELIVERY_FORMATS, ASSESSMENT_MODES } from '../../data/assessmentData';
 import { getAssessmentAccess } from '../../utils/assessmentCatalog';
 import { applyAssessmentAttempt, drawAssessmentQuestions, resolveCourseView, deriveLessonStatuses, deriveAssessmentAttempts } from '../../data/mockData';
 import { computeValidUntilDate } from '../../utils/recertification';
@@ -65,6 +65,9 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
     currentUser,
     accessFor,
     myEnrollments,
+    assessmentRegistrations,
+    enrollAssessment,
+    isAssessmentRegistered,
   } = useCourseStore();
 
   const user = currentUser;
@@ -116,7 +119,15 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   const [result, setResult] = useState(null);
   const [learnerFeedback, setLearnerFeedback] = useState('');
   const [csatRating, setCsatRating] = useState(5);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+  const [passcodeVerified, setPasscodeVerified] = useState(false);
   const submittedRef = useRef(false);
+
+  // Registration gate: standalone assessments require the learner to register/enroll
+  // first (course-linked exams have no registration concept — always treated as
+  // registered, matching the pre-existing behavior).
+  const isRegistered = standaloneAssessment ? isAssessmentRegistered(activeAssessment?.id) : true;
 
   // Verify access rights
   const access = useMemo(() => {
@@ -418,9 +429,43 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-            <Button variant="primary" icon="ti-player-play" size="lg" onClick={start}>
-              Start The Exam Now
-            </Button>
+            {!isRegistered ? (
+              <Button variant="primary" icon="ti-clipboard-check" size="lg" onClick={() => enrollAssessment(activeAssessment.id)}>
+                Enroll / Register for Examination
+              </Button>
+            ) : activeAssessment.evaluationMode === ASSESSMENT_MODES.PROMOTION && !passcodeVerified ? (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                  <i className="ti ti-lock" style={{ marginRight: 6, color: 'var(--rust)' }} />
+                  Enter The Exam Room / Proctor Passcode To Continue
+                </div>
+                <input
+                  type="password"
+                  className="field-input"
+                  value={passcodeInput}
+                  onChange={(e) => { setPasscodeInput(e.target.value); setPasscodeError(''); }}
+                  placeholder="Exam Room Passcode"
+                  style={{ maxWidth: 260 }}
+                />
+                {passcodeError && <div style={{ fontSize: 12, color: 'var(--rust)' }}>{passcodeError}</div>}
+                <div>
+                  <Button
+                    variant="primary"
+                    icon="ti-key"
+                    onClick={() => {
+                      if (passcodeInput === activeAssessment.passcode) { setPasscodeVerified(true); }
+                      else { setPasscodeError('Incorrect passcode. Please contact your Proctor / Examination Board.'); }
+                    }}
+                  >
+                    Unlock Exam Paper
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="primary" icon="ti-player-play" size="lg" onClick={start}>
+                {activeAssessment.evaluationMode === ASSESSMENT_MODES.PROMOTION ? 'Enter Exam Room' : 'Start The Exam Now'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -434,8 +479,8 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
 
     return (
       <div style={{ maxWidth: 840, margin: '16px auto', position: 'relative' }}>
-        {/* Anti-cheat Watermark */}
-        {activeAssessment.antiCheatSettings?.showWatermark && (
+        {/* Anti-cheat Watermark (suppressed for anonymous EES surveys — no name/employee-code) */}
+        {activeAssessment.antiCheatSettings?.showWatermark && activeAssessment.evaluationMode !== ASSESSMENT_MODES.EES && (
           <div style={{
             position: 'fixed',
             inset: 0,
@@ -830,6 +875,42 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
   }
 
   // --- RESULT SCREEN (RESULT) ---
+  if (activeAssessment.evaluationMode === ASSESSMENT_MODES.PROMOTION) {
+    return (
+      <div style={{ maxWidth: 640, margin: '60px auto', textAlign: 'center' }}>
+        <div className="card card-pad" style={{ padding: 32 }}>
+          <i className="ti ti-shield-check" style={{ fontSize: 56, color: 'var(--rail)' }} />
+          <h2 style={{ marginTop: 16, fontSize: 20 }}>Submission Recorded</h2>
+          <p style={{ color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.6 }}>
+            Your promotion examination submission has been securely recorded. Official results will be validated and published by the Evaluation Committee &amp; HR Department.
+          </p>
+          <Button variant="primary" style={{ marginTop: 16 }} onClick={() => navigate(basePath)}>
+            Finish &amp; Return To The Course Catalog
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (activeAssessment.evaluationMode === ASSESSMENT_MODES.SURVEY || activeAssessment.evaluationMode === ASSESSMENT_MODES.EES) {
+    const isEes = activeAssessment.evaluationMode === ASSESSMENT_MODES.EES;
+    return (
+      <div style={{ maxWidth: 640, margin: '60px auto', textAlign: 'center' }}>
+        <div className="card card-pad" style={{ padding: 32 }}>
+          <i className="ti ti-heart-handshake" style={{ fontSize: 56, color: 'var(--sage)' }} />
+          <h2 style={{ marginTop: 16, fontSize: 20 }}>Thank You For Your Feedback!</h2>
+          <p style={{ color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.6 }}>
+            {isEes
+              ? 'Your response has been recorded anonymously and will be included in the company-wide engagement analysis.'
+              : 'Your feedback has been recorded and helps us improve future training.'}
+          </p>
+          <Button variant="primary" style={{ marginTop: 16 }} onClick={() => navigate(basePath)}>
+            Finish &amp; Return To The Course Catalog
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  // existing RESULT screen JSX (TEST / undefined mode) continues unchanged below this line
   return (
     <div style={{ maxWidth: 760, margin: '20px auto' }}>
       <div className="page-header" style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -903,7 +984,7 @@ export default function AssessmentPlayer({ basePath = '/learner/courses' }) {
                 <div key={q.id} style={{ padding: '10px 12px', borderRadius: 6, background: 'var(--paper-sunken)', border: '1px solid var(--line)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>Question {i + 1}: {q.question}</div>
-                    <Badge tone={isCorrect ? 'sage' : 'rust'}>{isCorrect ? 'CORRECT' : 'SAI'}</Badge>
+                    <Badge tone={isCorrect ? 'sage' : 'rust'}>{isCorrect ? 'CORRECT' : 'INCORRECT'}</Badge>
                   </div>
                   {q.explanation && (
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontStyle: 'italic', marginTop: 4 }}>

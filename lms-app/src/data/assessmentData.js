@@ -237,6 +237,18 @@ export const ASSESSMENT_TYPES = {
   SURVEY: 'SURVEY',
 };
 
+/** Evaluation mode: what an assessment is FOR — a formal promotion-gate exam,
+ *  an anonymous pulse/CSAT survey, a routine scored knowledge test, or the
+ *  annual company-wide Employee Engagement Survey (EES). Drives confidentiality,
+ *  passcode gating and result-visibility defaults (see the 4 new seed
+ *  assessments below and AssessmentPlayer/AssessmentDetailModal in Tasks 5-6). */
+export const ASSESSMENT_MODES = {
+  PROMOTION: 'PROMOTION',
+  SURVEY: 'SURVEY',
+  TEST: 'TEST',
+  EES: 'EES',
+};
+
 export const DELIVERY_FORMATS = {
   STANDALONE: 'STANDALONE',
   COURSE_LINKED: 'COURSE_LINKED',
@@ -576,7 +588,7 @@ export const QUESTION_BANK = [
   },
 ];
 
-export const INITIAL_ASSESSMENTS = [
+const RAW_INITIAL_ASSESSMENTS = [
   // 1. Standalone Assessment - Public Quiz for Food Safety
   {
     id: 'ASM-STANDALONE-001',
@@ -883,7 +895,168 @@ export const INITIAL_ASSESSMENTS = [
     createdAt: '2026-08-05',
     updatedAt: '2026-08-18',
   },
+
+  // 7. Promotion-gate examination (evaluationMode: PROMOTION) - confidential, passcode-gated
+  {
+    id: 'ASM-PROMO-001',
+    title: 'Level 5 to Level 4 Promotion Examination',
+    code: 'ASM-PROMO-001',
+    description: 'Official promotion-gate examination for candidates nominated for Level 4 advancement. Requires an Exam Room Passcode issued by the Examination Board.',
+    type: 'QUIZ',
+    types: ['QUIZ'],
+    contentFormat: 'INTERACTIVE_BANK',
+    deliveryFormat: 'STANDALONE',
+    category: 'Leadership Development',
+    categories: ['Leadership Development'],
+    status: 'PUBLISHED',
+    timeLimitMinutes: 60,
+    passingScorePercent: 80,
+    maxAttempts: 1,
+    questionsPerAttempt: 10,
+    questionTypesList: ['SINGLE_CHOICE', 'SCENARIO_BASED', 'ESSAY'],
+    antiCheatSettings: { enforceFullscreen: true, detectTabSwitch: true, maxTabSwitches: 2, randomizeQuestions: true, randomizeOptions: true, showWatermark: true, webcamProctoringSimulation: false, preventCopyPaste: true },
+    feedbackSettings: { showAnswersAfterSubmit: false, showExplanations: false, allowReview: false },
+    // SINGLE_CHOICE: QB-FSH-001, QB-CS-001, QB-LEAD-001; SCENARIO_BASED: QB-ADV-001; ESSAY: QB-FSH-004, QB-LEAD-002
+    questionIds: ['QB-FSH-001', 'QB-CS-001', 'QB-LEAD-001', 'QB-ADV-001', 'QB-FSH-004', 'QB-LEAD-002'],
+    assignments: [{ assignmentType: 'LEVEL', targetId: '5', targetName: 'Level 5', dueDate: null, isMandatory: false }],
+    evaluationMode: ASSESSMENT_MODES.PROMOTION,
+    isConfidential: true,
+    requiresPasscode: true,
+    passcode: 'GATE2026',
+    hideImmediateResult: true,
+    hideAnswers: true,
+    isAnonymous: false,
+    createdBy: 'USR-ADMIN-01',
+    createdByName: 'System Administrator',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  },
+
+  // 8. Standard CSAT-style survey (evaluationMode: SURVEY)
+  {
+    id: 'ASM-SURVEY-001',
+    title: 'Onboarding Training Satisfaction Survey',
+    code: 'ASM-SURVEY-001',
+    description: 'Post-onboarding CSAT survey measuring satisfaction with the new-hire training program.',
+    type: 'SURVEY',
+    types: ['SURVEY'],
+    contentFormat: 'INTERACTIVE_BANK',
+    deliveryFormat: 'STANDALONE',
+    category: 'Onboarding',
+    categories: ['Onboarding'],
+    status: 'PUBLISHED',
+    timeLimitMinutes: 10,
+    passingScorePercent: 0,
+    maxAttempts: 1,
+    questionsPerAttempt: 5,
+    questionTypesList: ['RATING_SCALE', 'SHORT_ANSWER'],
+    antiCheatSettings: { enforceFullscreen: false, detectTabSwitch: false, maxTabSwitches: 99, randomizeQuestions: false, randomizeOptions: false, showWatermark: false, webcamProctoringSimulation: false, preventCopyPaste: false },
+    feedbackSettings: { showAnswersAfterSubmit: false, showExplanations: false, allowReview: false },
+    // RATING_SCALE: QB-SURV-001, QB-SURV-002; SHORT_ANSWER: QB-INT-003 (all 3 matching ids in the bank)
+    questionIds: ['QB-SURV-001', 'QB-SURV-002', 'QB-INT-003'],
+    assignments: [{ assignmentType: 'ALL', targetId: 'ALL', targetName: 'All Employees', dueDate: null, isMandatory: false }],
+    evaluationMode: ASSESSMENT_MODES.SURVEY,
+    isConfidential: false,
+    requiresPasscode: false,
+    passcode: null,
+    hideImmediateResult: false,
+    hideAnswers: false,
+    isAnonymous: false,
+    createdBy: 'USR-ADMIN-01',
+    createdByName: 'System Administrator',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  },
+
+  // 9. Routine scored knowledge test (evaluationMode: TEST) - instant scoring & answer review
+  {
+    id: 'ASM-TEST-001',
+    title: 'Food Safety & Hygiene Standards Knowledge Test',
+    code: 'ASM-TEST-001',
+    description: 'Standard scored knowledge quiz on HACCP food safety compliance, with instant scoring and answer review.',
+    type: 'QUIZ',
+    types: ['QUIZ'],
+    contentFormat: 'INTERACTIVE_BANK',
+    deliveryFormat: 'STANDALONE',
+    category: 'Compliance',
+    categories: ['Compliance'],
+    status: 'PUBLISHED',
+    timeLimitMinutes: 20,
+    passingScorePercent: 70,
+    maxAttempts: 3,
+    questionsPerAttempt: 8,
+    questionTypesList: ['SINGLE_CHOICE', 'TRUE_FALSE'],
+    antiCheatSettings: { enforceFullscreen: false, detectTabSwitch: true, maxTabSwitches: 3, randomizeQuestions: true, randomizeOptions: true, showWatermark: true, webcamProctoringSimulation: false, preventCopyPaste: false },
+    feedbackSettings: { showAnswersAfterSubmit: true, showExplanations: true, allowReview: true },
+    // SINGLE_CHOICE: QB-FSH-001, QB-CS-001, QB-LEAD-001; TRUE_FALSE: QB-FSH-003
+    questionIds: ['QB-FSH-001', 'QB-CS-001', 'QB-LEAD-001', 'QB-FSH-003'],
+    assignments: [{ assignmentType: 'ALL', targetId: 'ALL', targetName: 'All Employees', dueDate: null, isMandatory: true }],
+    evaluationMode: ASSESSMENT_MODES.TEST,
+    isConfidential: false,
+    requiresPasscode: false,
+    passcode: null,
+    hideImmediateResult: false,
+    hideAnswers: false,
+    isAnonymous: false,
+    createdBy: 'USR-ADMIN-01',
+    createdByName: 'System Administrator',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  },
+
+  // 10. Annual company-wide anonymous engagement survey (evaluationMode: EES)
+  {
+    id: 'ASM-EES-001',
+    title: '2026 Employee Engagement Survey (EES)',
+    code: 'ASM-EES-001',
+    description: 'Annual company-wide anonymous engagement and eNPS survey.',
+    type: 'SURVEY',
+    types: ['SURVEY'],
+    contentFormat: 'INTERACTIVE_BANK',
+    deliveryFormat: 'STANDALONE',
+    category: 'Organizational Climate',
+    categories: ['Organizational Climate'],
+    status: 'PUBLISHED',
+    timeLimitMinutes: 15,
+    passingScorePercent: 0,
+    maxAttempts: 1,
+    questionsPerAttempt: 10,
+    questionTypesList: ['RATING_SCALE', 'SHORT_ANSWER'],
+    antiCheatSettings: { enforceFullscreen: false, detectTabSwitch: false, maxTabSwitches: 99, randomizeQuestions: false, randomizeOptions: false, showWatermark: false, webcamProctoringSimulation: false, preventCopyPaste: false },
+    feedbackSettings: { showAnswersAfterSubmit: false, showExplanations: false, allowReview: false },
+    // RATING_SCALE: QB-SURV-001, QB-SURV-002; SHORT_ANSWER: QB-INT-003 (all 3 matching ids in the bank)
+    questionIds: ['QB-SURV-001', 'QB-SURV-002', 'QB-INT-003'],
+    assignments: [{ assignmentType: 'ALL', targetId: 'ALL', targetName: 'All Employees', dueDate: null, isMandatory: false }],
+    evaluationMode: ASSESSMENT_MODES.EES,
+    isConfidential: false,
+    requiresPasscode: false,
+    passcode: null,
+    hideImmediateResult: false,
+    hideAnswers: false,
+    isAnonymous: true,
+    createdBy: 'USR-ADMIN-01',
+    createdByName: 'System Administrator',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  },
 ];
+
+/** Every assessment carries the 6 evaluation-mode fields (evaluationMode,
+ *  isConfidential, requiresPasscode, passcode, hideImmediateResult, hideAnswers,
+ *  isAnonymous). Pre-existing assessments authored before these fields existed
+ *  get safe TEST-mode defaults here (bulk merge) instead of by hand-editing every
+ *  object; the 4 new seed assessments above already set their own real values,
+ *  which override these defaults via the spread order below. */
+export const INITIAL_ASSESSMENTS = RAW_INITIAL_ASSESSMENTS.map((a) => ({
+  evaluationMode: ASSESSMENT_MODES.TEST,
+  isConfidential: false,
+  requiresPasscode: false,
+  passcode: null,
+  hideImmediateResult: false,
+  hideAnswers: false,
+  isAnonymous: false,
+  ...a,
+}));
 
 export const INITIAL_ASSESSMENT_ATTEMPTS = [
   {

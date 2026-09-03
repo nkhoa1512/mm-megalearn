@@ -12,7 +12,7 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 
-const { CourseStoreProvider } = await import('../src/store/CourseStore');
+const { CourseStoreProvider, useCourseStore } = await import('../src/store/CourseStore');
 const { personaForRole, pendingApprovalRequests, courses: mockCourses } = await import('../src/data/mockData');
 const { ROLE_ORDER, roleDefinition } = await import('../src/data/roles');
 
@@ -63,6 +63,7 @@ const UserAdminPortal = (await import('../src/pages/useradmin/UserAdminPortal'))
 const SysAdminPortal = (await import('../src/pages/sysadmin/SysAdminPortal')).default;
 const UserTranscriptModal = (await import('../src/features/common/UserTranscriptModal')).default;
 const TrainerRatingsDirectory = (await import('../src/features/ratings/TrainerRatingsDirectory')).default;
+const AssessmentDetailModal = (await import('../src/features/assessment/AssessmentDetailModal')).default;
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
@@ -1231,6 +1232,290 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
     resolveTargetLabel('DIVISION', 'div-omd').includes('Merchandise') && resolveTargetLabel('DIVISION', 'div-omd').includes('OMD'));
   check('resolveTargetLabel formats BUSINESS_UNIT target bu-mmvn to human-friendly label',
     resolveTargetLabel('BUSINESS_UNIT', 'bu-mmvn').includes('MM Mega Market'));
+}
+
+console.log('\n=== 29: Course Enrollment Gate — LessonPlayer blocks lesson content until the learner has enrolled ===');
+{
+  // Course/lesson titles in this dataset can contain "&" (e.g. "Food Safety & Hygiene
+  // Standards"), which renderToStaticMarkup escapes to "&amp;" — escape the same way
+  // before substring-matching the rendered HTML.
+  const esc = (t) => t.replace(/&/g, '&amp;');
+  actAs('learner');
+  // CRS-ISA-013 is a Level 7 course (matches Minh Tran/USR-1042's own level, so the
+  // sequential level gate does not interfere) that is OPEN for registration but is NOT
+  // one of the 12 courses in generated100EnrollmentMatrix['USR-1042'] — i.e. Minh Tran
+  // has never enrolled in it. CRS-FSH-001 IS one of those 12 (already used as the
+  // "enrolled" fixture in Section 3 above) — reused here as the enrolled fixture.
+  const notEnrolledCourse = generated100Courses.find((c) => c.id === 'CRS-ISA-013');
+  const notEnrolledLesson = notEnrolledCourse.modules[0].lessons[0];
+  const notEnrolledHtml = render(
+    'LessonPlayer not-enrolled',
+    <LessonPlayer />,
+    `/learner/courses/${notEnrolledCourse.id}/lessons/${notEnrolledLesson.id}`,
+    '/learner/courses/:courseId/lessons/:lessonId'
+  );
+  check('unenrolled learner sees the "have not enrolled" gate instead of the lesson',
+    notEnrolledHtml.includes('You Have Not Enrolled In This Course Yet'));
+  check('unenrolled learner does NOT see the real course/lesson title',
+    !notEnrolledHtml.includes(esc(notEnrolledCourse.title)) && !notEnrolledHtml.includes(esc(notEnrolledLesson.title)));
+
+  const enrolledCourse = generated100Courses.find((c) => c.id === 'CRS-FSH-001');
+  const enrolledLesson = enrolledCourse.modules[0].lessons[0];
+  const enrolledHtml = render(
+    'LessonPlayer enrolled',
+    <LessonPlayer />,
+    `/learner/courses/${enrolledCourse.id}/lessons/${enrolledLesson.id}`,
+    '/learner/courses/:courseId/lessons/:lessonId'
+  );
+  check('enrolled learner does NOT see the "have not enrolled" gate',
+    !enrolledHtml.includes('You Have Not Enrolled In This Course Yet'));
+  check('enrolled learner sees the real course/lesson content',
+    enrolledHtml.includes(esc(enrolledCourse.title)) && enrolledHtml.includes(esc(enrolledLesson.title)));
+
+  // Also cover the module list on the course detail page: an unenrolled learner's
+  // lesson links must be locked (no href), the same as the other three lock reasons.
+  const detailHtml = render(
+    'CourseDetail not-enrolled module list',
+    <LearnerCourseDetail />,
+    `/learner/courses/${notEnrolledCourse.id}`,
+    '/learner/courses/:courseId'
+  );
+  check('unenrolled learner\'s course detail page has no clickable link to the lesson',
+    !detailHtml.includes(`/learner/courses/${notEnrolledCourse.id}/lessons/${notEnrolledLesson.id}`));
+}
+
+console.log('\n=== 30: Organization-wide monthly calendar events ===');
+{
+  const { buildOrganizationMonthlyEvents } = await import('../src/utils/calendarEvents');
+
+  const orgEventsTest = buildOrganizationMonthlyEvents({
+    courses: generated100Courses,
+    myEnrollments: generated100EnrollmentMatrix['USR-1042'],
+    viewMonth: '2026-09',
+    currentUser: { userId: 'USR-1042' },
+  });
+
+  check('buildOrganizationMonthlyEvents returns array', Array.isArray(orgEventsTest));
+
+  const mandatoryTestEvents = orgEventsTest.filter((e) => e.courseType === 'MANDATORY');
+  const optionalTestEvents = orgEventsTest.filter((e) => e.courseType === 'OPTIONAL');
+
+  check('at least one MANDATORY event has tone=rust & color=#DC2626',
+    mandatoryTestEvents.some((e) => e.tone === 'rust' && e.color === '#DC2626'));
+
+  check('at least one OPTIONAL event has tone=sage',
+    optionalTestEvents.some((e) => e.tone === 'sage'));
+
+  const enrolledTestEvents = orgEventsTest.filter((e) => e.isEnrolled);
+  check('enrolled event has actionType=START_COURSE',
+    enrolledTestEvents.length > 0 && enrolledTestEvents.some((e) => e.actionType === 'START_COURSE'));
+
+  const unenrolledTestEvents = orgEventsTest.filter((e) => !e.isEnrolled);
+  check('unenrolled event has actionType=ENROLL_COURSE',
+    unenrolledTestEvents.length > 0 && unenrolledTestEvents.some((e) => e.actionType === 'ENROLL_COURSE'));
+}
+
+console.log('\n=== 31: UniversalCalendar — organization-wide monthly overview (metric bar, filters, pills) ===');
+{
+  const { default: UniversalCalendar } = await import('../src/features/calendar/UniversalCalendar');
+
+  actAs('learner');
+  const orgCalHtml = render(
+    'UniversalCalendar learner org overview',
+    <UniversalCalendar basePath="/learner/courses" />,
+    '/learner/calendar',
+    '/learner/calendar'
+  );
+  check('UniversalCalendar (learner) renders the metric-bar label "Total Monthly Events"',
+    Boolean(orgCalHtml && orgCalHtml.includes('Total Monthly Events')));
+  check('UniversalCalendar (learner) renders at least one organization event subtitle',
+    Boolean(orgCalHtml && (orgCalHtml.includes('Mandatory · Action Required') || orgCalHtml.includes('Optional · Available to Join'))));
+}
+
+console.log('\n=== 32: Assessment evaluation modes (PROMOTION/SURVEY/TEST/EES) and canViewConfidentialAssessments RBAC ===');
+{
+  const { ASSESSMENT_MODES, INITIAL_ASSESSMENTS } = await import('../src/data/assessmentData');
+  const { hasCapability } = await import('../src/data/roles');
+
+  check('ASSESSMENT_MODES has exactly the 4 expected keys/values',
+    ASSESSMENT_MODES.PROMOTION === 'PROMOTION' && ASSESSMENT_MODES.SURVEY === 'SURVEY' &&
+    ASSESSMENT_MODES.TEST === 'TEST' && ASSESSMENT_MODES.EES === 'EES' &&
+    Object.keys(ASSESSMENT_MODES).length === 4);
+
+  check('at least one seed assessment has evaluationMode=PROMOTION',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'PROMOTION'));
+  check('at least one seed assessment has evaluationMode=SURVEY',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'SURVEY'));
+  check('at least one seed assessment has evaluationMode=TEST',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'TEST'));
+  check('at least one seed assessment has evaluationMode=EES',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'EES'));
+
+  check('every seed assessment carries all 6 evaluation-mode fields (no undefined)',
+    INITIAL_ASSESSMENTS.every((a) =>
+      a.evaluationMode !== undefined && a.isConfidential !== undefined &&
+      a.requiresPasscode !== undefined && 'passcode' in a &&
+      a.hideImmediateResult !== undefined && a.hideAnswers !== undefined &&
+      a.isAnonymous !== undefined));
+
+  const promoExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-PROMO-001');
+  check('ASM-PROMO-001 is confidential and passcode-gated',
+    Boolean(promoExam) && promoExam.isConfidential === true && promoExam.requiresPasscode === true &&
+    promoExam.passcode === 'GATE2026' && promoExam.hideImmediateResult === true && promoExam.hideAnswers === true);
+
+  const eesSurvey = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-EES-001');
+  check('ASM-EES-001 is anonymous', Boolean(eesSurvey) && eesSurvey.isAnonymous === true);
+
+  check('hasCapability(sysadmin, canViewConfidentialAssessments) === true',
+    hasCapability('sysadmin', 'canViewConfidentialAssessments') === true);
+  check('hasCapability(useradmin, canViewConfidentialAssessments) === false',
+    hasCapability('useradmin', 'canViewConfidentialAssessments') === false);
+  check('hasCapability(hrbp, canViewConfidentialAssessments) === false',
+    hasCapability('hrbp', 'canViewConfidentialAssessments') === false);
+}
+
+console.log('\n=== 33: Assessment Player — registration gate, promotion passcode gate, mode-specific results ===');
+{
+  // AssessmentPlayer's `assessmentRegistrations` is intentionally session-only
+  // (useState({}) with no localStorage persistence — see the comment above its
+  // declaration in CourseStore.jsx), unlike `enrollments`, so it cannot be
+  // pre-seeded via the localStorage shim the way other sections seed
+  // ENROLLMENT_KEY. Instead, this thin wrapper reads the *same* live
+  // `assessmentRegistrations` object reference out of context and mutates it
+  // in place before its child (AssessmentPlayer) renders — since React passes
+  // context values by reference and both components render within the same
+  // synchronous renderToStaticMarkup pass, the mutation is visible to
+  // `isAssessmentRegistered`'s closure without needing a second render pass.
+  function PreRegistered({ assessmentId, children }) {
+    const { assessmentRegistrations: regs, currentUser: cu } = useCourseStore();
+    const userId = cu?.userId;
+    if (userId) {
+      regs[userId] = { ...(regs[userId] || {}), [assessmentId]: { registeredAt: '2026-01-01T00:00:00.000Z' } };
+    }
+    return children;
+  }
+
+  // ASM-PROMO-001 is assigned only to LEVEL 5 (`assignments: [{ assignmentType:
+  // 'LEVEL', targetId: '5', ... }]`), and the learner persona (Minh Tran) is
+  // Level 7, so `getAssessmentAccess` would lock it out before the registration
+  // gate is ever reached. sysadmin bypasses that assignment-scope check
+  // unconditionally (see `isSysOrUserAdmin` in assessmentCatalog.js), while the
+  // registration/passcode gate itself is role-agnostic — it depends only on
+  // `assessmentRegistrations[userId]`, not on role — so this still exercises the
+  // real gate this task is about.
+  actAs('sysadmin');
+
+  const unregisteredHtml = render(
+    'AssessmentPlayer ASM-PROMO-001 unregistered',
+    <AssessmentPlayer />,
+    '/learner/assessment/ASM-PROMO-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('unregistered learner sees "Enroll / Register for Examination" instead of a start button',
+    Boolean(unregisteredHtml) && unregisteredHtml.includes('Enroll / Register for Examination'));
+  check('unregistered learner does NOT see the passcode gate or start button',
+    Boolean(unregisteredHtml) && !unregisteredHtml.includes('Exam Room / Proctor Passcode') && !unregisteredHtml.includes('Start The Exam Now'));
+
+  const registeredPromoHtml = render(
+    'AssessmentPlayer ASM-PROMO-001 registered',
+    <PreRegistered assessmentId="ASM-PROMO-001">
+      <AssessmentPlayer />
+    </PreRegistered>,
+    '/learner/assessment/ASM-PROMO-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('registered PROMOTION learner sees the Exam Room / Proctor Passcode gate',
+    Boolean(registeredPromoHtml) && registeredPromoHtml.includes('Exam Room / Proctor Passcode'));
+  check('registered PROMOTION learner (not yet passcode-verified) does NOT see "Start The Exam Now"',
+    Boolean(registeredPromoHtml) && !registeredPromoHtml.includes('Start The Exam Now') && !registeredPromoHtml.includes('Enroll / Register for Examination'));
+
+  // ASM-TEST-001 is assigned to ALL, so the ordinary learner persona has access —
+  // switch back to it here to also cover the non-admin path.
+  actAs('learner');
+  const registeredTestHtml = render(
+    'AssessmentPlayer ASM-TEST-001 registered',
+    <PreRegistered assessmentId="ASM-TEST-001">
+      <AssessmentPlayer />
+    </PreRegistered>,
+    '/learner/assessment/ASM-TEST-001',
+    '/learner/assessment/:assessmentId'
+  );
+  check('registered TEST-mode learner goes straight to "Start The Exam Now" (no passcode gate)',
+    Boolean(registeredTestHtml) && registeredTestHtml.includes('Start The Exam Now') && !registeredTestHtml.includes('Exam Room / Proctor Passcode'));
+
+  // Static source checks for behavior not reachable via a single-pass SSR render
+  // (the in-progress watermark and result screens require client-side phase
+  // transitions triggered by button clicks, which renderToStaticMarkup cannot
+  // simulate).
+  const fs = await import('node:fs');
+  const playerSource = fs.readFileSync('src/pages/player/AssessmentPlayer.jsx', 'utf8');
+  check('the "SAI" mistranslation no longer appears anywhere in AssessmentPlayer.jsx',
+    !playerSource.includes('SAI'));
+  check('the per-question review badge now renders INCORRECT for wrong answers',
+    playerSource.includes("isCorrect ? 'CORRECT' : 'INCORRECT'"));
+  check('the anti-cheat watermark guard excludes ONLY EES (anonymous) mode',
+    playerSource.includes("activeAssessment.antiCheatSettings?.showWatermark && activeAssessment.evaluationMode !== ASSESSMENT_MODES.EES"));
+  check('the RESULT screen branches on PROMOTION before falling through to the TEST-mode score card',
+    playerSource.includes("activeAssessment.evaluationMode === ASSESSMENT_MODES.PROMOTION") &&
+    playerSource.includes('Submission Recorded'));
+  check('the RESULT screen branches on SURVEY/EES to the thank-you screen with EES-specific copy',
+    playerSource.includes("activeAssessment.evaluationMode === ASSESSMENT_MODES.SURVEY || activeAssessment.evaluationMode === ASSESSMENT_MODES.EES") &&
+    playerSource.includes('recorded anonymously'));
+}
+
+console.log('\n=== 34: Confidentiality masking — ASM-PROMO-001 hidden from roles lacking canViewConfidentialAssessments ===');
+{
+  const { INITIAL_ASSESSMENTS } = await import('../src/data/assessmentData');
+  const promoExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-PROMO-001');
+  check('fixture: ASM-PROMO-001 seed object found and is confidential', Boolean(promoExam) && promoExam.isConfidential === true);
+
+  // AssessmentDetailModal: the access-denied panel replaces the real detail content.
+  actAs('useradmin');
+  const maskedModalHtml = render(
+    'AssessmentDetailModal ASM-PROMO-001 as useradmin',
+    <AssessmentDetailModal assessment={promoExam} isOpen onClose={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('useradmin opening ASM-PROMO-001 sees the "Examination Board Only" access-denied panel',
+    Boolean(maskedModalHtml) && maskedModalHtml.includes('Examination Board Only'));
+  check('useradmin opening ASM-PROMO-001 does NOT see the real description text',
+    Boolean(maskedModalHtml) && !maskedModalHtml.includes(promoExam.description));
+
+  actAs('sysadmin');
+  const fullModalHtml = render(
+    'AssessmentDetailModal ASM-PROMO-001 as sysadmin',
+    <AssessmentDetailModal assessment={promoExam} isOpen onClose={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('sysadmin opening ASM-PROMO-001 sees the real description text (not masked)',
+    Boolean(fullModalHtml) && fullModalHtml.includes(promoExam.description));
+  check('sysadmin opening ASM-PROMO-001 does NOT see the access-denied panel copy',
+    Boolean(fullModalHtml) && !fullModalHtml.includes('Examination Board Only'));
+
+  // AdminCourses assessment list: the row itself must be masked down to title + lock badge.
+  actAs('useradmin');
+  const maskedListHtml = render(
+    'AdminCourses assessment tab as useradmin',
+    <AdminCourses />,
+    '/admin/courses?tab=assessment',
+    '/admin/courses'
+  );
+  check('useradmin\'s assessment list shows the confidential lock badge for ASM-PROMO-001',
+    Boolean(maskedListHtml) && maskedListHtml.includes('Confidential') && maskedListHtml.includes('Examination Board Only'));
+  check('useradmin\'s assessment list does NOT leak ASM-PROMO-001\'s real description',
+    Boolean(maskedListHtml) && !maskedListHtml.includes(promoExam.description));
+
+  actAs('sysadmin');
+  const fullListHtml = render(
+    'AdminCourses assessment tab as sysadmin',
+    <AdminCourses />,
+    '/admin/courses?tab=assessment',
+    '/admin/courses'
+  );
+  check('sysadmin\'s assessment list shows the real ASM-PROMO-001 description (not masked)',
+    Boolean(fullListHtml) && fullListHtml.includes(promoExam.description));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
