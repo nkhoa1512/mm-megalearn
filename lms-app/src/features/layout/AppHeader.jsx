@@ -21,7 +21,6 @@ const LEARNER_SELF_NAV = [
 // (Certificate Template & Category), not day-to-day course management
 // daily.
 const SYSTEM_ADMIN_NAV = [
-  { to: '/admin/config', label: 'HRIS & Governance', labelVi: 'HRIS & Governance', labelEn: 'HRIS & Governance', icon: 'ti-settings' },
   { to: '/admin/certifications', label: 'Certificate Management', labelVi: 'Certificate Management', labelEn: 'Manage Certification', icon: 'ti-certificate' },
   { to: '/admin/categories', label: 'Category Management', labelVi: 'Category Management', labelEn: 'Manage Category', icon: 'ti-tags' },
 ];
