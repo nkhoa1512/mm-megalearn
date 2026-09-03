@@ -12,6 +12,7 @@ import { useCourseStore } from '../../store/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
 import {
   courseFormatBadge, courseGroupOf, courseOrgUnitGroups, buildCourseGroups, courseMatchesCategory,
+  catalogSectionOf, CATALOG_SECTIONS,
 } from '../../utils/courseCatalog';
 import { isAssessmentAssignedToUser } from '../../utils/assessmentCatalog';
 import { DELIVERY_FORMATS } from '../../data/assessmentData';
@@ -160,7 +161,10 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       (statusFilter === 'MANDATORY' && c.courseType === 'MANDATORY') ||
       (statusFilter === 'CURRICULUM' && (c.isCurriculum || Boolean(c.curriculumTitle))) ||
       (statusFilter === 'IN_PERSON' && (c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB')) ||
-      (statusFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS') ||
+      // "Online Class" means every course you take online — self-paced E-Learning and a
+      // live Zoom/Teams webinar alike — as opposed to In-Person; same grouping AdminCourses
+      // already uses for its own "Online Class" catalog tab.
+      (statusFilter === 'VIRTUAL_CLASS' && catalogSectionOf(c) !== CATALOG_SECTIONS.CLASSROOM) ||
       (statusFilter === 'LEVEL_UP' && access.state === ACCESS_STATE.REQUESTABLE) ||
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
       s === statusFilter;
@@ -569,7 +573,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             { id: 'MANDATORY', label: 'Compliance Mandatory', count: mandatoryCount },
             { id: 'CURRICULUM', label: '📚 By Curriculum', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
             { id: 'IN_PERSON', label: '🏢 In-Person Training', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
-            { id: 'VIRTUAL_CLASS', label: '💻 Online Class (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
+            { id: 'VIRTUAL_CLASS', label: '💻 Online Class (E-Learning & Live)', count: enrolledCourses.filter((c) => catalogSectionOf(c) !== CATALOG_SECTIONS.CLASSROOM).length },
             { id: 'ASSESSMENT', label: '🎯 Assessment', count: standaloneAssessments.length },
           ].map((tab) => (
             <button
@@ -773,7 +777,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                   <option value="PPT">Interactive PPT</option>
                   <option value="CLASSROOM_LAB">Workshop Practice (ILT)</option>
                   <option value="EXTERNAL_PLATFORM">LinkedIn / Coursera</option>
-                  <option value="VIRTUAL_CLASS">💻 Online Class (Webinar/Live Class)</option>
+                  <option value="VIRTUAL_CLASS">💻 Live Online Class (Webinar)</option>
                 </select>
               </div>
             </div>
