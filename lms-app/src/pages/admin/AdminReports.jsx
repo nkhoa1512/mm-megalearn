@@ -10,12 +10,17 @@ import {
 import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
 import { useCourseStore } from '../../store/CourseStore';
-import { normalizeRole } from '../../data/roles';
+import { normalizeRole, hasCapability } from '../../data/roles';
 
 export default function AdminReports() {
   const { currentUser } = useCourseStore();
   const userRole = normalizeRole(currentUser?.role);
   const isTrainer = userRole === 'trainer';
+  // BR-RPT-02 — a Trainer has canViewCsat only, never canViewOrgProgress: they
+  // manage the CSAT report for their own classes and nothing enterprise-wide.
+  // User Admin and System Admin both carry canViewOrgProgress, so they keep the
+  // full strategic report (ROI, heatmap, budget, compliance league).
+  const canViewOrgWide = hasCapability(userRole, 'canViewOrgProgress');
 
   // BR-RPT-01 — a Trainer sees only the classes they personally teach; User Admin
   // and System Admin see every trainer's classes, since they own faculty oversight.
@@ -44,8 +49,22 @@ export default function AdminReports() {
   const [exportComplete, setExportComplete] = useState(false);
   const [activeReportTab, setActiveReportTab] = useState(isTrainer ? 'TRAINER_CSAT' : 'ROI_KIRKPATRICK'); // TRAINER_CSAT, ROI_KIRKPATRICK, HEATMAP, COST_BUDGET, COMPLIANCE_LEAGUE
 
+  // A Trainer cannot be on an org-wide tab even if state was set before a role
+  // switch — every render re-derives the tab actually shown from capability.
+  const effectiveTab = canViewOrgWide ? activeReportTab : 'TRAINER_CSAT';
+
+  const ALL_REPORT_TABS = [
+    { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Faculty Performance)', icon: 'ti-star' },
+    { id: 'ROI_KIRKPATRICK', label: 'Kirkpatrick 4-Level ROI Framework', icon: 'ti-chart-arrows' },
+    { id: 'HEATMAP', label: 'Competency Gap Heatmap (Operations vs Head Office)', icon: 'ti-layout-grid' },
+    { id: 'COST_BUDGET', label: 'Training Cost Tracking & L&D Budget', icon: 'ti-coin' },
+    { id: 'COMPLIANCE_LEAGUE', label: 'Compliance League Table (16 Divisions & Stores)', icon: 'ti-trophy' },
+  ];
+  // BR-RPT-02 — a Trainer only ever sees the one tab their capability covers.
+  const visibleReportTabs = canViewOrgWide ? ALL_REPORT_TABS : ALL_REPORT_TABS.filter((t) => t.id === 'TRAINER_CSAT');
+
   function activeReportRows() {
-    if (activeReportTab === 'TRAINER_CSAT') {
+    if (effectiveTab === 'TRAINER_CSAT') {
       return trainerSessions.map((s) => ({
         classTitle: s.title,
         trainer: s.trainerName,
@@ -54,13 +73,13 @@ export default function AdminReports() {
         seatFillRate: s.maxCapacity ? `${Math.round((s.enrolledCount / s.maxCapacity) * 100)}%` : '—',
       }));
     }
-    if (activeReportTab === 'HEATMAP') {
+    if (effectiveTab === 'HEATMAP') {
       return [...companyHeatmapData.operations, ...companyHeatmapData.supportingOffice];
     }
-    if (activeReportTab === 'COST_BUDGET') {
+    if (effectiveTab === 'COST_BUDGET') {
       return costTrackingData.departmentSpend;
     }
-    if (activeReportTab === 'COMPLIANCE_LEAGUE') {
+    if (effectiveTab === 'COMPLIANCE_LEAGUE') {
       return divisionComplianceLeague;
     }
     return [
@@ -72,7 +91,7 @@ export default function AdminReports() {
   function handleExportExcel() {
     setIsExporting(true);
     setTimeout(() => {
-      downloadCsv(`mmvn-lms-${activeReportTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, activeReportRows());
+      downloadCsv(`mmvn-lms-${effectiveTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, activeReportRows());
       setIsExporting(false);
       setExportComplete(true);
       setTimeout(() => setExportComplete(false), 3000);
@@ -127,21 +146,15 @@ export default function AdminReports() {
 
       {/* REPORT SECTION TABS */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
-        {[
-          { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Faculty Performance)', icon: 'ti-star' },
-          { id: 'ROI_KIRKPATRICK', label: 'Kirkpatrick 4-Level ROI Framework', icon: 'ti-chart-arrows' },
-          { id: 'HEATMAP', label: 'Competency Gap Heatmap (Operations vs Head Office)', icon: 'ti-layout-grid' },
-          { id: 'COST_BUDGET', label: 'Training Cost Tracking & L&D Budget', icon: 'ti-coin' },
-          { id: 'COMPLIANCE_LEAGUE', label: 'Compliance League Table (16 Divisions & Stores)', icon: 'ti-trophy' },
-        ].map((tab) => (
+        {visibleReportTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveReportTab(tab.id)}
             className="btn btn-sm"
             style={{
-              background: activeReportTab === tab.id ? 'var(--rail)' : 'var(--paper-raised)',
-              color: activeReportTab === tab.id ? '#fff' : 'var(--ink)',
-              borderColor: activeReportTab === tab.id ? 'var(--rail)' : 'var(--line-strong)',
+              background: effectiveTab === tab.id ? 'var(--rail)' : 'var(--paper-raised)',
+              color: effectiveTab === tab.id ? '#fff' : 'var(--ink)',
+              borderColor: effectiveTab === tab.id ? 'var(--rail)' : 'var(--line-strong)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -154,7 +167,7 @@ export default function AdminReports() {
       </div>
 
       {/* TAB 0: TRAINER FACULTY CSAT & TEACHING PERFORMANCE */}
-      {activeReportTab === 'TRAINER_CSAT' && (
+      {effectiveTab === 'TRAINER_CSAT' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* 4 SUMMARY METRIC CARDS */}
           <div className="grid grid-4" style={{ gap: 16 }}>
@@ -302,7 +315,7 @@ export default function AdminReports() {
       )}
 
       {/* TAB 1: KIRKPATRICK 4-LEVEL ROI */}
-      {activeReportTab === 'ROI_KIRKPATRICK' && (
+      {effectiveTab === 'ROI_KIRKPATRICK' && (
         <>
           <div className="section-label">Enterprise Training Impact Framework &middot; Kirkpatrick 4-Level Architecture</div>
           <div className="grid grid-2" style={{ marginBottom: 28, gap: 16 }}>
@@ -400,7 +413,7 @@ export default function AdminReports() {
       )}
 
       {/* TAB 2: DUAL-HIERARCHY COMPETENCY GAP HEATMAP */}
-      {activeReportTab === 'HEATMAP' && (
+      {effectiveTab === 'HEATMAP' && (
         <div style={{ marginBottom: 28 }}>
           {/* Operations Heatmap */}
           <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -499,7 +512,7 @@ export default function AdminReports() {
       )}
 
       {/* TAB 3: COST TRACKING & L&D TRAINING BUDGET */}
-      {activeReportTab === 'COST_BUDGET' && (
+      {effectiveTab === 'COST_BUDGET' && (
         <div style={{ marginBottom: 28 }}>
           <div className="grid grid-4" style={{ gap: 14, marginBottom: 20 }}>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
@@ -582,7 +595,7 @@ export default function AdminReports() {
       )}
 
       {/* TAB 4: COMPLIANCE LEAGUE TABLE */}
-      {activeReportTab === 'COMPLIANCE_LEAGUE' && (
+      {effectiveTab === 'COMPLIANCE_LEAGUE' && (
         <div style={{ marginBottom: 28 }}>
           <div className="section-label">Enterprise Mandatory Compliance League Table (16 Divisions &amp; Stores)</div>
           <div className="card" style={{ overflowX: 'auto' }}>
