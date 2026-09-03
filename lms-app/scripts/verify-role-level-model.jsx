@@ -218,35 +218,6 @@ check('manager manages only learners', scopes.manager === 'learner', scopes.mana
 check('sysadmin manages useradmin too', scopes.sysadmin.includes('useradmin'), scopes.sysadmin);
 check('useradmin does not manage sysadmin', !scopes.useradmin.includes('sysadmin'), scopes.useradmin);
 
-// --- Organization-wide monthly calendar events (Task 2) ----------
-console.log(String.fromCharCode(10) + '=== 29. Organization-wide monthly calendar events ===');
-const { buildOrganizationMonthlyEvents } = await import('../src/utils/calendarEvents');
-
-const orgEventsTest = buildOrganizationMonthlyEvents({
-  courses: generated100Courses,
-  myEnrollments: generated100EnrollmentMatrix['USR-1042'],
-  viewMonth: '2026-09',
-  currentUser: { userId: 'USR-1042' },
-});
-
-check('buildOrganizationMonthlyEvents returns array', Array.isArray(orgEventsTest));
-
-const mandatoryTestEvents = orgEventsTest.filter((e) => e.courseType === 'MANDATORY');
-const optionalTestEvents = orgEventsTest.filter((e) => e.courseType === 'OPTIONAL');
-
-check('at least one MANDATORY event has tone=rust & color=#DC2626',
-  mandatoryTestEvents.some((e) => e.tone === 'rust' && e.color === '#DC2626'));
-
-check('at least one OPTIONAL event has tone=sage',
-  optionalTestEvents.some((e) => e.tone === 'sage'));
-
-const enrolledTestEvents = orgEventsTest.filter((e) => e.isEnrolled);
-check('enrolled event has actionType=START_COURSE',
-  enrolledTestEvents.length > 0 && enrolledTestEvents.some((e) => e.actionType === 'START_COURSE'));
-
-const unenrolledTestEvents = orgEventsTest.filter((e) => !e.isEnrolled);
-check('unenrolled event has actionType=ENROLL_COURSE',
-  unenrolledTestEvents.length > 0 && unenrolledTestEvents.some((e) => e.actionType === 'ENROLL_COURSE'));
 
 const PAGES = [
   ['LearnerDashboard', <LearnerDashboard />, '/learner', '/learner'],
@@ -1310,6 +1281,37 @@ console.log('\n=== 29: Course Enrollment Gate — LessonPlayer blocks lesson con
   );
   check('unenrolled learner\'s course detail page has no clickable link to the lesson',
     !detailHtml.includes(`/learner/courses/${notEnrolledCourse.id}/lessons/${notEnrolledLesson.id}`));
+}
+
+console.log('\n=== 30: Organization-wide monthly calendar events ===');
+{
+  const { buildOrganizationMonthlyEvents } = await import('../src/utils/calendarEvents');
+
+  const orgEventsTest = buildOrganizationMonthlyEvents({
+    courses: generated100Courses,
+    myEnrollments: generated100EnrollmentMatrix['USR-1042'],
+    viewMonth: '2026-09',
+    currentUser: { userId: 'USR-1042' },
+  });
+
+  check('buildOrganizationMonthlyEvents returns array', Array.isArray(orgEventsTest));
+
+  const mandatoryTestEvents = orgEventsTest.filter((e) => e.courseType === 'MANDATORY');
+  const optionalTestEvents = orgEventsTest.filter((e) => e.courseType === 'OPTIONAL');
+
+  check('at least one MANDATORY event has tone=rust & color=#DC2626',
+    mandatoryTestEvents.some((e) => e.tone === 'rust' && e.color === '#DC2626'));
+
+  check('at least one OPTIONAL event has tone=sage',
+    optionalTestEvents.some((e) => e.tone === 'sage'));
+
+  const enrolledTestEvents = orgEventsTest.filter((e) => e.isEnrolled);
+  check('enrolled event has actionType=START_COURSE',
+    enrolledTestEvents.length > 0 && enrolledTestEvents.some((e) => e.actionType === 'START_COURSE'));
+
+  const unenrolledTestEvents = orgEventsTest.filter((e) => !e.isEnrolled);
+  check('unenrolled event has actionType=ENROLL_COURSE',
+    unenrolledTestEvents.length > 0 && unenrolledTestEvents.some((e) => e.actionType === 'ENROLL_COURSE'));
 }
 
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
