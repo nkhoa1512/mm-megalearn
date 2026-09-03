@@ -476,6 +476,10 @@ export function CourseStoreProvider({ children }) {
   const [assessments, setAssessments] = useState(() => loadItem(ASSESSMENT_KEY, INITIAL_ASSESSMENTS));
   const [questionBanks, setQuestionBanks] = useState(() => loadItem(QUESTION_BANK_KEY, QUESTION_BANK));
   const [assessmentAttempts, setAssessmentAttempts] = useState(() => loadItem(ATTEMPT_KEY, INITIAL_ASSESSMENT_ATTEMPTS));
+  // Assessment registrations created in the session: { [userId]: { [assessmentId]: { registeredAt } } }.
+  // Mirrors the `enrollments` overlay pattern above, but for standalone assessments
+  // (no Cost Center transaction — that is specific to paid course enrollment).
+  const [assessmentRegistrations, setAssessmentRegistrations] = useState({});
 
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
@@ -1230,6 +1234,33 @@ export function CourseStoreProvider({ children }) {
     setQuestionBanks((prev) => [...prev, newQ]);
     return newQ;
   }, []);
+
+  /** Registers the signed-in user for a standalone assessment (no course-level
+   *  access rule, no Cost Center transaction — assessments are not paid). */
+  const enrollAssessment = useCallback(
+    (assessmentId, user = currentUser) => {
+      const userId = user?.userId;
+      if (!userId) return;
+      setAssessmentRegistrations((prev) => ({
+        ...prev,
+        [userId]: {
+          ...(prev[userId] || {}),
+          [assessmentId]: { registeredAt: new Date().toISOString() },
+        },
+      }));
+    },
+    [currentUser]
+  );
+
+  /** Has `user` already registered for this assessment? */
+  const isAssessmentRegistered = useCallback(
+    (assessmentId, user = currentUser) => {
+      const userId = user?.userId;
+      if (!userId) return false;
+      return Boolean(assessmentRegistrations[userId]?.[assessmentId]);
+    },
+    [assessmentRegistrations, currentUser]
+  );
 
   // -------------------------------------------------------------------------
   // Sequential Level Gate: level skip requests & course access status
@@ -2216,6 +2247,9 @@ export function CourseStoreProvider({ children }) {
         addQuestionToBank,
         assessmentAttempts,
         recordAssessmentAttempt,
+        assessmentRegistrations,
+        enrollAssessment,
+        isAssessmentRegistered,
         companyCategories,
         companyCategoryObjects,
         addCompanyCategory,

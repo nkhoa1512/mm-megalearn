@@ -1331,6 +1331,48 @@ console.log('\n=== 31: UniversalCalendar — organization-wide monthly overview 
     Boolean(orgCalHtml && (orgCalHtml.includes('Mandatory · Action Required') || orgCalHtml.includes('Optional · Available to Join'))));
 }
 
+console.log('\n=== 32: Assessment evaluation modes (PROMOTION/SURVEY/TEST/EES) and canViewConfidentialAssessments RBAC ===');
+{
+  const { ASSESSMENT_MODES, INITIAL_ASSESSMENTS } = await import('../src/data/assessmentData');
+  const { hasCapability } = await import('../src/data/roles');
+
+  check('ASSESSMENT_MODES has exactly the 4 expected keys/values',
+    ASSESSMENT_MODES.PROMOTION === 'PROMOTION' && ASSESSMENT_MODES.SURVEY === 'SURVEY' &&
+    ASSESSMENT_MODES.TEST === 'TEST' && ASSESSMENT_MODES.EES === 'EES' &&
+    Object.keys(ASSESSMENT_MODES).length === 4);
+
+  check('at least one seed assessment has evaluationMode=PROMOTION',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'PROMOTION'));
+  check('at least one seed assessment has evaluationMode=SURVEY',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'SURVEY'));
+  check('at least one seed assessment has evaluationMode=TEST',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'TEST'));
+  check('at least one seed assessment has evaluationMode=EES',
+    INITIAL_ASSESSMENTS.some((a) => a.evaluationMode === 'EES'));
+
+  check('every seed assessment carries all 6 evaluation-mode fields (no undefined)',
+    INITIAL_ASSESSMENTS.every((a) =>
+      a.evaluationMode !== undefined && a.isConfidential !== undefined &&
+      a.requiresPasscode !== undefined && 'passcode' in a &&
+      a.hideImmediateResult !== undefined && a.hideAnswers !== undefined &&
+      a.isAnonymous !== undefined));
+
+  const promoExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-PROMO-001');
+  check('ASM-PROMO-001 is confidential and passcode-gated',
+    Boolean(promoExam) && promoExam.isConfidential === true && promoExam.requiresPasscode === true &&
+    promoExam.passcode === 'GATE2026' && promoExam.hideImmediateResult === true && promoExam.hideAnswers === true);
+
+  const eesSurvey = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-EES-001');
+  check('ASM-EES-001 is anonymous', Boolean(eesSurvey) && eesSurvey.isAnonymous === true);
+
+  check('hasCapability(sysadmin, canViewConfidentialAssessments) === true',
+    hasCapability('sysadmin', 'canViewConfidentialAssessments') === true);
+  check('hasCapability(useradmin, canViewConfidentialAssessments) === false',
+    hasCapability('useradmin', 'canViewConfidentialAssessments') === false);
+  check('hasCapability(hrbp, canViewConfidentialAssessments) === false',
+    hasCapability('hrbp', 'canViewConfidentialAssessments') === false);
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 console.log('FAILURES LIST:', JSON.stringify(failureLog, null, 2));
 process.exit(failures === 0 ? 0 : 1);

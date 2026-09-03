@@ -132,6 +132,8 @@ export const ROLE_DEFINITIONS = [
       // Full authority to create all 3 course formats (E-Learning, Virtual Class
       // Zoom/Teams, In-Person ILT) and names the hosting trainer — same as User Admin.
       'canCreateVirtualClass',
+      // canViewConfidentialAssessments is the ONE capability sysadmin has that useradmin does not — Promotion Exam confidentiality (Examination Board access) is deliberately narrower than the rest of admin access.
+      'canViewConfidentialAssessments',
     ],
   },
 ];
