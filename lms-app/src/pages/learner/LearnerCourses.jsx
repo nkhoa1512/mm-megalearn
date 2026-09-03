@@ -229,8 +229,9 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     .filter(Boolean);
 
   // Assessments only take part in the 4 generic status pills (All / Completed / Overdue —
-  // there is no "in progress" concept for a one-shot exam attempt); the course-specific
-  // pills (Mandatory, By Curriculum, In-Person, Virtual Class...) don't apply to them.
+  // there is no "in progress" concept for a one-shot exam attempt), plus their own
+  // dedicated "Assessment" pill; the course-specific pills (Mandatory, By Curriculum,
+  // In-Person, Virtual Class...) don't apply to them, so no course ever matches ASSESSMENT.
   const filteredAssessmentItems = standaloneAssessments.filter((a) => {
     const matchSearch =
       !search ||
@@ -238,6 +239,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       a.code.toLowerCase().includes(search.toLowerCase());
     const matchStatus =
       statusFilter === 'ALL' ||
+      statusFilter === 'ASSESSMENT' ||
       (statusFilter === 'COMPLETED' && a.status === 'COMPLETED') ||
       (statusFilter === 'OVERDUE' && a.status === 'OVERDUE');
     return matchSearch && matchStatus;
@@ -568,6 +570,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
             { id: 'CURRICULUM', label: '📚 By Curriculum', count: enrolledCourses.filter((c) => c.isCurriculum || Boolean(c.curriculumTitle)).length },
             { id: 'IN_PERSON', label: '🏢 In-Person Training', count: enrolledCourses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB').length },
             { id: 'VIRTUAL_CLASS', label: '💻 Online Class (Webinar/Live Class)', count: enrolledCourses.filter((c) => c.onlineClassType === 'VIRTUAL_CLASS').length },
+            { id: 'ASSESSMENT', label: '🎯 Assessment', count: standaloneAssessments.length },
           ].map((tab) => (
             <button
               key={tab.id}
