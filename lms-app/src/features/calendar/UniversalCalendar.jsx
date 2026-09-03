@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useCourseStore } from '../../store/CourseStore';
@@ -62,6 +62,53 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   const [extensionFeedback, setExtensionFeedback] = useState('');
   const [assigningCourse, setAssigningCourse] = useState(null);
   const [assignFeedback, setAssignFeedback] = useState('');
+  const [dayEventsModalDate, setDayEventsModalDate] = useState(null);
+  const [dayEventsFilterQuery, setDayEventsFilterQuery] = useState('');
+  const hoverTimerRef = useRef(null);
+
+  const handleCellMouseEnter = (date, allDayItems, targetElement) => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    if (allDayItems.length > 0) {
+      const rect = targetElement.getBoundingClientRect();
+      const popoverHeight = 360;
+      const popoverWidth = 320;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < popoverHeight && rect.top > popoverHeight
+        ? rect.top - popoverHeight - 6
+        : Math.max(10, Math.min(rect.bottom + 4, window.innerHeight - popoverHeight - 10));
+      const left = Math.max(10, Math.min(rect.left, window.innerWidth - popoverWidth - 10));
+      setHoverCell({
+        date,
+        top,
+        left,
+        events: allDayItems,
+      });
+    }
+  };
+
+  const handleCellMouseLeave = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setHoverCell(null);
+    }, 280);
+  };
+
+  const handlePopoverMouseEnter = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
+
+  const handlePopoverMouseLeave = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setHoverCell(null);
+    }, 200);
+  };
 
   // Build calendar events for the user
   const { allEvents, personalEvents, operationalEvents, byDate } = useMemo(() => {
@@ -164,6 +211,23 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
     return Array.from(map.values());
   }, [eventsByDate, filteredOrgEventsByDate, selectedDate]);
 
+  // Events on the day opened in Full Day Modal
+  const dayModalEvents = useMemo(() => {
+    if (!dayEventsModalDate) return [];
+    const personalAndOps = eventsByDate.get(dayEventsModalDate) || [];
+    const orgItems = filteredOrgEventsByDate[dayEventsModalDate] || [];
+    const map = new Map();
+    personalAndOps.forEach((e) => map.set(e.courseId ? `course-${e.courseId}` : e.id, e));
+    orgItems.forEach((e) => {
+      const key = `course-${e.courseId}`;
+      if (!map.has(key)) map.set(key, e);
+    });
+    const list = Array.from(map.values());
+    if (!dayEventsFilterQuery.trim()) return list;
+    const q = dayEventsFilterQuery.toLowerCase();
+    return list.filter((e) => (e.title || '').toLowerCase().includes(q) || (e.courseCode || '').toLowerCase().includes(q));
+  }, [dayEventsModalDate, eventsByDate, filteredOrgEventsByDate, dayEventsFilterQuery]);
+
   // Month event count
   const monthEventCount = useMemo(() => {
     const monthPrefix = viewMonth.slice(0, 7);
@@ -248,6 +312,11 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         break;
       case 'START_ASSESSMENT':
         navigate(event.actionUrl || '/learner/catalog?tab=assessment');
+        break;
+      case 'ENROLL_COURSE':
+        if (event.courseId) {
+          enrollCourse(event.courseId, currentUser);
+        }
         break;
       case 'SYNC_HRIS':
         navigate('/sysadmin');
@@ -545,18 +614,8 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                           key={cell.date}
                           className={cellCls}
                           onClick={() => handleSelectDate(cell.date)}
-                          onMouseEnter={(e) => {
-                            if (allDayItems.length > 0) {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setHoverCell({
-                                date: cell.date,
-                                top: rect.bottom + 6,
-                                left: Math.min(rect.left, window.innerWidth - 300),
-                                events: allDayItems,
-                              });
-                            }
-                          }}
-                          onMouseLeave={() => setHoverCell(null)}
+                          onMouseEnter={(e) => handleCellMouseEnter(cell.date, allDayItems, e.currentTarget)}
+                          onMouseLeave={handleCellMouseLeave}
                         >
                           <div className="cal-cell-header">
                             <span className={`cal-day-number ${isToday ? 'today-pill' : ''}`}>
@@ -589,8 +648,10 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSelectDate(cell.date);
+                                  setDayEventsModalDate(cell.date);
+                                  setDayEventsFilterQuery('');
                                 }}
-                                title="Click to view all events on this day"
+                                title={language === 'en' ? 'Click to view and scroll all courses on this day' : 'Nhấp để xem và cuộn toàn bộ khóa học trong ngày này'}
                               >
                                 +{overflowCount} {language === 'en' ? 'more' : 'khóa khác'}
                               </button>
@@ -900,23 +961,51 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         <div
           className="cal-day-popover"
           style={{ top: hoverCell.top, left: hoverCell.left }}
+          onMouseEnter={handlePopoverMouseEnter}
+          onMouseLeave={handlePopoverMouseLeave}
         >
           <div className="cal-popover-header">
             <strong>{formatFullDateLabel(hoverCell.date, language)}</strong>
-            <span>{hoverCell.events.length} {language === 'en' ? 'events' : 'events'}</span>
+            <span style={{ fontWeight: 700, color: 'var(--mm-blue)' }}>{hoverCell.events.length} {language === 'en' ? 'courses' : 'khóa học'}</span>
           </div>
           <div className="cal-popover-list">
             {hoverCell.events.map((ev) => (
-              <div key={ev.id} className="cal-popover-row">
-                <i className={`ti ${ev.icon}`} style={{ color: `var(--${ev.tone})` }} />
+              <div
+                key={ev.id}
+                className="cal-popover-row"
+                onClick={() => {
+                  setHoverCell(null);
+                  setDetailModalEvent(ev);
+                }}
+              >
+                <i className={`ti ${ev.icon}`} style={{ color: `var(--${ev.tone})`, fontSize: 14 }} />
                 <div className="cal-popover-info">
                   <div className="cal-popover-title">{ev.title}</div>
-                  <div className="cal-popover-time">{ev.time}</div>
+                  <div className="cal-popover-time">{ev.statusLabel || ev.time}</div>
                 </div>
                 <Badge tone={ev.tone} size="sm">{ev.statusLabel}</Badge>
               </div>
             ))}
           </div>
+          {hoverCell.events.length > 3 && (
+            <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                style={{ width: '100%', fontSize: 11, padding: '3px 8px' }}
+                onClick={() => {
+                  const d = hoverCell.date;
+                  setHoverCell(null);
+                  handleSelectDate(d);
+                  setDayEventsModalDate(d);
+                  setDayEventsFilterQuery('');
+                }}
+              >
+                <i className="ti ti-arrows-maximize" style={{ marginRight: 4 }} />
+                {language === 'en' ? 'View all in scrollable modal' : 'Xem & cuộn toàn bộ danh sách'}
+              </button>
+            </div>
+          )}
         </div>,
         document.body
       )}
@@ -1288,6 +1377,172 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
               saveButtonLabel={language === 'en' ? 'Confirm Assignment' : 'Xác Nhận Phân Bổ'}
             />
           )}
+        </Modal>
+      )}
+
+      {/* 12. FULL DAY COURSES / EVENTS MODAL */}
+      {dayEventsModalDate && (
+        <Modal
+          isOpen={true}
+          onClose={() => { setDayEventsModalDate(null); setDayEventsFilterQuery(''); }}
+          title={
+            language === 'en'
+              ? `Courses & Schedules — ${formatFullDateLabel(dayEventsModalDate, language)}`
+              : `Toàn Bộ Khóa Học & Lịch Trình — ${formatFullDateLabel(dayEventsModalDate, language)}`
+          }
+          subtitle={
+            language === 'en'
+              ? `${dayModalEvents.length} scheduled sessions / courses on this day`
+              : `Tổng cộng ${dayModalEvents.length} khóa học và lịch đào tạo trong ngày này`
+          }
+          size="lg"
+          footer={
+            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+              <Button variant="outline" onClick={() => { setDayEventsModalDate(null); setDayEventsFilterQuery(''); }}>
+                {language === 'en' ? 'Close' : 'Đóng'}
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="cal-search-box" style={{ maxWidth: '100%' }}>
+              <i className="ti ti-search cal-search-icon" />
+              <input
+                type="text"
+                className="cal-search-input"
+                placeholder={language === 'en' ? 'Search courses on this day...' : 'Tìm kiếm nhanh khóa học trong ngày này...'}
+                value={dayEventsFilterQuery}
+                onChange={(e) => setDayEventsFilterQuery(e.target.value)}
+              />
+              {dayEventsFilterQuery && (
+                <button className="cal-search-clear" onClick={() => setDayEventsFilterQuery('')}>
+                  <i className="ti ti-x" />
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '55vh', overflowY: 'auto', paddingRight: 6 }}>
+              {dayModalEvents.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--ink-faint)' }}>
+                  <i className="ti ti-search" style={{ fontSize: 24, display: 'block', marginBottom: 6 }} />
+                  {language === 'en' ? 'No matching courses found.' : 'Không tìm thấy khóa học phù hợp.'}
+                </div>
+              ) : (
+                dayModalEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="cal-day-modal-card"
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span className="cal-detail-badge-pill" style={{ fontSize: 11 }}>
+                          <i className={`ti ${ev.icon}`} /> {ev.categoryLabel || (ev.courseType === 'MANDATORY' ? (language === 'en' ? 'Mandatory' : 'Bắt buộc') : (language === 'en' ? 'Optional' : 'Tự chọn'))}
+                        </span>
+                        {ev.courseCode && <Badge tone="slate" size="sm">{ev.courseCode}</Badge>}
+                        <Badge tone={ev.tone} size="sm">{ev.statusLabel}</Badge>
+                      </div>
+                      {ev.time && (
+                        <div style={{ fontSize: 12, color: 'var(--ink-faint)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <i className="ti ti-clock" />
+                          <span>{ev.time}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)', cursor: 'pointer', lineHeight: 1.4 }}
+                      onClick={() => setDetailModalEvent(ev)}
+                    >
+                      {ev.title}
+                    </div>
+                    {ev.subtitle && (
+                      <div style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.4 }}>{ev.subtitle}</div>
+                    )}
+
+                    {ev.progress !== undefined && ev.progress > 0 && (
+                      <div style={{ marginTop: 2 }}>
+                        <ProgressBar value={ev.progress} max={100} size="sm" tone={ev.tone === 'sage' ? 'success' : 'primary'} />
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap', borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                        {ev.isEnrolled ? (
+                          <span style={{ color: 'var(--sage)', fontWeight: 600 }}>
+                            <i className="ti ti-check" style={{ marginRight: 4 }} />
+                            {language === 'en' ? 'Enrolled in course' : 'Đã ghi danh'}
+                          </span>
+                        ) : (
+                          <span>{language === 'en' ? 'Open for enrollment' : 'Sẵn sàng tham gia'}</span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {ev.canExtend && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            icon="ti-calendar-plus"
+                            onClick={() => handleOpenExtendModal(ev)}
+                          >
+                            {language === 'en' ? 'Extend' : 'Xin gia hạn'}
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          icon="ti-info-circle"
+                          onClick={() => setDetailModalEvent(ev)}
+                        >
+                          {language === 'en' ? 'Details' : 'Chi tiết'}
+                        </Button>
+                        {ev.scope === 'ORGANIZATION' && !ev.isEnrolled ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon="ti-circle-check"
+                            onClick={() => {
+                              enrollCourse(ev.courseId, currentUser);
+                            }}
+                          >
+                            {language === 'en' ? 'Enroll Now' : 'Ghi danh ngay'}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            tone={ev.tone === 'rust' ? 'danger' : 'primary'}
+                            onClick={(e) => handleEventAction(ev, e)}
+                          >
+                            {ev.actionLabel}
+                          </Button>
+                        )}
+                        {ev.scope === 'ORGANIZATION' && hasCapability(role, 'canAllocateCourses') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            icon="ti-users"
+                            onClick={() => {
+                              const found = courses.find((c) => c.id === ev.courseId);
+                              setAssigningCourse(
+                                found || {
+                                  id: ev.courseId,
+                                  title: ev.title,
+                                  code: ev.courseCode,
+                                }
+                              );
+                            }}
+                          >
+                            {language === 'en' ? 'Assign' : 'Gán'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </Modal>
       )}
     </div>

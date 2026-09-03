@@ -470,17 +470,16 @@ export function buildOrganizationMonthlyEvents({ courses = [], myEnrollments = {
       let eventDate;
       if (enrollmentDueDate) {
         eventDate = enrollmentDueDate;
-      } else if (courseDueDate) {
+      } else if (courseDueDate && !courseDueDate.endsWith('-30') && !courseDueDate.endsWith('-01')) {
         const [dy, dm] = courseDueDate.split('-').map(Number);
         if (dy === viewYear && dm === viewMonthNum) {
           eventDate = courseDueDate;
         } else {
-          // If course due date is outside the view month, scatter it across the view month days
           const day = getDeterministicDayOfMonth(course.id, 28);
           eventDate = `${viewMonthPrefix}-${day}`;
         }
       } else {
-        // No due date (optional course) — distribute across days 1..28 of the month
+        // Distribute smoothly across days 1..28 of the month
         const day = getDeterministicDayOfMonth(course.id, 28);
         eventDate = `${viewMonthPrefix}-${day}`;
       }

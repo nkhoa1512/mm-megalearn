@@ -69,7 +69,9 @@ export function getMonthGridWeeks(monthStr) {
         dayOfWeek: dayIdx,
       });
     }
-    weeks.push(days);
+    if (days.some((d) => d.inMonth)) {
+      weeks.push(days);
+    }
   }
   return weeks;
 }

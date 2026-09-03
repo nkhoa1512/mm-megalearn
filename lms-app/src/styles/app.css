@@ -858,7 +858,7 @@
    centred on wide displays. Without this, pages with their own inner
    max-width read as if they were at a different zoom level to full-bleed ones. */
 .content {
-  padding: var(--frame-pad-y) var(--frame-gutter) calc(var(--frame-pad-y) * 2);
+  padding: var(--frame-pad-y) var(--frame-gutter) calc(var(--frame-pad-y) * 2 + 60px);
   max-width: var(--frame-max);
   width: 100%;
   margin: 0 auto;
@@ -1283,9 +1283,11 @@
 /* Main Grid Layout (70% Canvas | 30% Right Panel) */
 .cal-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 350px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
   align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -1302,6 +1304,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  width: 100%;
 }
 
 .cal-side-panel-card {
@@ -1321,13 +1325,15 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
 }
 
 .cal-weekday-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background: var(--paper-sunken);
   border-bottom: 1px solid var(--line);
+  width: 100%;
 }
 
 .cal-weekday-cell {
@@ -1338,6 +1344,10 @@
   color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cal-weekday-cell.weekend {
@@ -1347,12 +1357,15 @@
 .cal-month-grid-body {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
 }
 
 .cal-week-row-seamless {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid var(--line);
+  width: 100%;
 }
 
 .cal-week-row-seamless:last-child {
@@ -1360,12 +1373,16 @@
 }
 
 .cal-seamless-cell {
-  min-height: 100px;
+  min-height: 84px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   border-right: 1px solid var(--line);
-  padding: 6px 8px;
+  padding: 4px 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   transition: background 100ms var(--ease);
 }
@@ -1396,6 +1413,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-width: 0;
 }
 
 .cal-day-number {
@@ -1428,13 +1446,16 @@
   flex-direction: column;
   gap: 3px;
   margin-top: 2px;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .cal-event-pill {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
@@ -1443,6 +1464,10 @@
   text-overflow: ellipsis;
   cursor: pointer;
   transition: all 100ms var(--ease);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .cal-event-pill i {
@@ -1455,6 +1480,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  min-width: 0;
+  display: block;
 }
 
 .cal-event-pill.tone-sage {
@@ -1501,12 +1528,34 @@
   text-align: left;
   transition: all 0.15s ease;
   width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cal-overflow-badge:hover {
   background: var(--mm-blue, #0284c7);
   color: #fff;
   border-color: var(--mm-blue, #0284c7);
+}
+
+.cal-day-modal-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.cal-day-modal-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Week View */
@@ -1516,7 +1565,7 @@
 
 .cal-week-columns-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2083,20 +2132,45 @@
 /* Hover Tooltip */
 .cal-day-popover {
   position: fixed;
-  width: 280px;
+  width: 320px;
+  max-height: 380px;
   background: var(--paper-raised);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
-  padding: 10px;
+  padding: 10px 12px;
   z-index: 1000;
-  pointer-events: none;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 0.12s ease;
+}
+
+/* Invisible hover bridges to prevent mouse gap drop */
+.cal-day-popover::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  pointer-events: auto;
+}
+
+.cal-day-popover::after {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  pointer-events: auto;
 }
 
 .cal-popover-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
@@ -2108,6 +2182,18 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
+  max-height: 300px;
+  padding-right: 4px;
+}
+
+.cal-popover-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cal-popover-list::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 4px;
 }
 
 .cal-popover-row {
@@ -2115,6 +2201,14 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.cal-popover-row:hover {
+  background: var(--paper-sunken);
 }
 
 .cal-popover-info {
