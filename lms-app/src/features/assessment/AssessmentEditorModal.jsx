@@ -40,9 +40,14 @@ export default function AssessmentEditorModal({
 
   const [formData, setFormData] = useState(() => {
     if (assessment) {
+      const evalMode = assessment.evaluationMode || (assessment.isConfidential ? ASSESSMENT_MODES.PROMOTION : (assessment.isAnonymous ? ASSESSMENT_MODES.EES : (assessment.type === ASSESSMENT_TYPES.SURVEY ? ASSESSMENT_MODES.SURVEY : ASSESSMENT_MODES.TEST)));
+      const defaultTypesForMode = (evalMode === ASSESSMENT_MODES.SURVEY || evalMode === ASSESSMENT_MODES.EES)
+        ? [ASSESSMENT_TYPES.SURVEY]
+        : [ASSESSMENT_TYPES.QUIZ];
+
       const initialTypes = assessment.types && assessment.types.length > 0
         ? assessment.types
-        : [assessment.type || ASSESSMENT_TYPES.QUIZ];
+        : (assessment.type ? [assessment.type] : defaultTypesForMode);
 
       const initialCategories = assessment.categories && assessment.categories.length > 0
         ? assessment.categories
@@ -68,13 +73,13 @@ export default function AssessmentEditorModal({
 
       return {
         ...assessment,
-        evaluationMode: assessment.evaluationMode || ASSESSMENT_MODES.TEST,
-        isConfidential: assessment.isConfidential ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
-        requiresPasscode: assessment.requiresPasscode ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
+        evaluationMode: evalMode,
+        isConfidential: assessment.isConfidential ?? (evalMode === ASSESSMENT_MODES.PROMOTION),
+        requiresPasscode: assessment.requiresPasscode ?? (evalMode === ASSESSMENT_MODES.PROMOTION),
         passcode: assessment.passcode || '',
-        hideImmediateResult: assessment.hideImmediateResult ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
-        hideAnswers: assessment.hideAnswers ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
-        isAnonymous: assessment.isAnonymous ?? (assessment.evaluationMode === ASSESSMENT_MODES.EES),
+        hideImmediateResult: assessment.hideImmediateResult ?? (evalMode === ASSESSMENT_MODES.PROMOTION),
+        hideAnswers: assessment.hideAnswers ?? (evalMode === ASSESSMENT_MODES.PROMOTION),
+        isAnonymous: assessment.isAnonymous ?? (evalMode === ASSESSMENT_MODES.EES),
         types: initialTypes,
         type: initialTypes[0] || ASSESSMENT_TYPES.QUIZ,
         categories: initialCategories,
@@ -930,38 +935,56 @@ export default function AssessmentEditorModal({
 
             <div className="field-group">
               <label className="field-label">Evaluation Mode</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10 }}>
                 {[
-                  { mode: ASSESSMENT_MODES.PROMOTION, label: '🏆 Promotion / Level Gate', icon: 'ti-trophy' },
-                  { mode: ASSESSMENT_MODES.SURVEY, label: '📋 Survey / CSAT', icon: 'ti-clipboard-list' },
-                  { mode: ASSESSMENT_MODES.TEST, label: '📝 Standard Test', icon: 'ti-file-text' },
-                  { mode: ASSESSMENT_MODES.EES, label: '📊 EES (Engagement Survey)', icon: 'ti-chart-bar' },
-                ].map((opt) => (
-                  <button
-                    key={opt.mode}
-                    type="button"
-                    className="filter-chip"
-                    style={{
-                      border: formData.evaluationMode === opt.mode ? '2px solid var(--rail)' : '1px solid var(--line)',
-                      background: formData.evaluationMode === opt.mode ? 'var(--rail-soft)' : 'var(--paper-raised)',
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => setFormData((prev) => ({
-                      ...prev,
-                      evaluationMode: opt.mode,
-                      isConfidential: opt.mode === ASSESSMENT_MODES.PROMOTION,
-                      requiresPasscode: opt.mode === ASSESSMENT_MODES.PROMOTION,
-                      hideImmediateResult: opt.mode === ASSESSMENT_MODES.PROMOTION,
-                      hideAnswers: opt.mode === ASSESSMENT_MODES.PROMOTION,
-                      isAnonymous: opt.mode === ASSESSMENT_MODES.EES,
-                    }))}
-                  >
-                    <i className={`ti ${opt.icon}`} style={{ marginRight: 6 }} />
-                    {opt.label}
-                  </button>
-                ))}
+                  { mode: ASSESSMENT_MODES.PROMOTION, label: 'Promotion / Level Gate', icon: 'ti-trophy', desc: 'High-security exam for candidate level promotion' },
+                  { mode: ASSESSMENT_MODES.SURVEY, label: 'Survey / CSAT', icon: 'ti-clipboard-list', desc: 'Feedback & post-training quality evaluation' },
+                  { mode: ASSESSMENT_MODES.TEST, label: 'Standard Test', icon: 'ti-file-text', desc: 'Regular knowledge, compliance & skills test' },
+                  { mode: ASSESSMENT_MODES.EES, label: 'EES (Engagement Survey)', icon: 'ti-chart-bar', desc: 'Anonymous employee engagement survey' },
+                ].map((opt) => {
+                  const isSelected = formData.evaluationMode === opt.mode;
+                  return (
+                    <button
+                      key={opt.mode}
+                      type="button"
+                      style={{
+                        textAlign: 'left',
+                        border: isSelected ? '2px solid var(--rail)' : '1px solid var(--line)',
+                        background: isSelected ? 'var(--rail-soft)' : 'var(--paper-raised)',
+                        padding: '12px 14px',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onClick={() => setFormData((prev) => {
+                        const isPromo = opt.mode === ASSESSMENT_MODES.PROMOTION;
+                        const isSurveyOrEes = opt.mode === ASSESSMENT_MODES.SURVEY || opt.mode === ASSESSMENT_MODES.EES;
+                        const targetTypes = isSurveyOrEes
+                          ? [ASSESSMENT_TYPES.SURVEY]
+                          : (prev.types?.includes(ASSESSMENT_TYPES.ASSIGNMENT) ? [ASSESSMENT_TYPES.QUIZ, ASSESSMENT_TYPES.ASSIGNMENT] : [ASSESSMENT_TYPES.QUIZ]);
+                        return {
+                          ...prev,
+                          evaluationMode: opt.mode,
+                          types: targetTypes,
+                          type: targetTypes[0],
+                          isConfidential: isPromo,
+                          requiresPasscode: isPromo,
+                          hideImmediateResult: isPromo,
+                          hideAnswers: isPromo,
+                          isAnonymous: opt.mode === ASSESSMENT_MODES.EES,
+                        };
+                      })}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, color: isSelected ? 'var(--rail)' : 'var(--ink)', marginBottom: 2 }}>
+                        <i className={`ti ${opt.icon}`} style={{ fontSize: 16 }} />
+                        <span>{opt.label}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', lineHeight: 1.3 }}>
+                        {opt.desc}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {formData.evaluationMode === ASSESSMENT_MODES.PROMOTION && (
@@ -986,40 +1009,23 @@ export default function AssessmentEditorModal({
               )}
             </div>
 
-            {/* Assessment type (multi-select) */}
-            <div className="card card-pad" style={{ background: 'var(--paper-sunken)' }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--ink)' }}>
-                Assessment Type (you may combine several — the format in Step 2 follows this choice):
-              </div>
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes(ASSESSMENT_TYPES.QUIZ)}
-                    onChange={() => toggleType(ASSESSMENT_TYPES.QUIZ)}
-                  />
-                  <span>📝 Quiz</span>
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+            {/* Optional format enhancement for TEST / PROMOTION */}
+            {(formData.evaluationMode === ASSESSMENT_MODES.TEST || formData.evaluationMode === ASSESSMENT_MODES.PROMOTION) && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)', fontSize: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
+                  <i className="ti ti-checklist" style={{ color: 'var(--rail)', fontSize: 15 }} />
+                  <span>Exam Paper Format (configured in <strong>Step 2</strong>): Multiple Choice Exam</span>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--ink)', fontWeight: 600 }}>
                   <input
                     type="checkbox"
                     checked={selectedTypes.includes(ASSESSMENT_TYPES.ASSIGNMENT)}
                     onChange={() => toggleType(ASSESSMENT_TYPES.ASSIGNMENT)}
                   />
-                  <span>📂 Essay Assignment</span>
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes(ASSESSMENT_TYPES.SURVEY)}
-                    onChange={() => toggleType(ASSESSMENT_TYPES.SURVEY)}
-                  />
-                  <span>📊 Survey / CSAT</span>
+                  <span>+ Include Essay / Practical Assignment Section</span>
                 </label>
               </div>
-            </div>
+            )}
 
             {/* Delivery Format & Status */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1183,7 +1189,13 @@ export default function AssessmentEditorModal({
             )}
 
             {/* Metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: (formData.evaluationMode === ASSESSMENT_MODES.SURVEY || formData.evaluationMode === ASSESSMENT_MODES.EES) ? '1fr 1fr' : 'repeat(4, 1fr)',
+              gap: 12,
+              borderTop: '1px solid var(--line)',
+              paddingTop: 12,
+            }}>
               <div className="field-group">
                 <label className="field-label">Duration (Minutes)</label>
                 <input
@@ -1196,18 +1208,19 @@ export default function AssessmentEditorModal({
                 />
               </div>
 
-              <div className="field-group">
-                <label className="field-label">Pass Score (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="field-input"
-                  value={formData.passingScorePercent}
-                  onChange={(e) => patchForm({ passingScorePercent: Number(e.target.value) })}
-                  disabled={selectedTypes.length === 1 && selectedTypes[0] === ASSESSMENT_TYPES.SURVEY}
-                />
-              </div>
+              {(formData.evaluationMode !== ASSESSMENT_MODES.SURVEY && formData.evaluationMode !== ASSESSMENT_MODES.EES) && (
+                <div className="field-group">
+                  <label className="field-label">Pass Score (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className="field-input"
+                    value={formData.passingScorePercent}
+                    onChange={(e) => patchForm({ passingScorePercent: Number(e.target.value) })}
+                  />
+                </div>
+              )}
 
               <div className="field-group">
                 <label className="field-label">Maximum Attempts</label>
@@ -1221,17 +1234,19 @@ export default function AssessmentEditorModal({
                 />
               </div>
 
-              <div className="field-group">
-                <label className="field-label">Questions Drawn / Paper</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  className="field-input"
-                  value={formData.questionsPerAttempt}
-                  onChange={(e) => patchForm({ questionsPerAttempt: Number(e.target.value) })}
-                />
-              </div>
+              {(formData.evaluationMode !== ASSESSMENT_MODES.SURVEY && formData.evaluationMode !== ASSESSMENT_MODES.EES) && (
+                <div className="field-group">
+                  <label className="field-label">Questions Drawn / Paper</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    className="field-input"
+                    value={formData.questionsPerAttempt}
+                    onChange={(e) => patchForm({ questionsPerAttempt: Number(e.target.value) })}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
