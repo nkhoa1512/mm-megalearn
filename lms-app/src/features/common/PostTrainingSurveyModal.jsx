@@ -3,7 +3,7 @@ import { useCourseStore } from '../../store/CourseStore';
 import { Modal, Button, Badge } from './ui';
 
 export default function PostTrainingSurveyModal() {
-  const { surveyModalConfig, closeSurveyModal, createActionPlan, currentUser } = useCourseStore();
+  const { surveyModalConfig, closeSurveyModal, createActionPlan, updateActionPlan, currentUser } = useCourseStore();
   const { isOpen, course, type, learner } = surveyModalConfig;
 
   // L1 Form state
@@ -55,6 +55,19 @@ export default function PostTrainingSurveyModal() {
         surveyL1Completed: true,
         surveyL1Score: (trainerRating + contentRating + usabilityRating) / 3,
         managerReviewL3: null,
+      });
+    } else if (!isL1 && !isClassroomCsat && learner?.planId) {
+      // Level 3 review (manager): sign off the existing action plan with the
+      // behavioural evidence the Level 4 ROI report is later built from.
+      updateActionPlan(learner.planId, {
+        status: 'EVALUATED_L3',
+        managerReviewL3: {
+          score: l3BehaviorRating,
+          behaviorChange: l3ManagerNote.trim() || 'Behaviour change confirmed by line manager.',
+          productivityGain: l3ProductivityGain,
+          status: l3BehaviorRating >= 4 ? 'VERIFIED_GOOD' : l3BehaviorRating >= 3 ? 'VERIFIED_PARTIAL' : 'NEEDS_FOLLOWUP',
+          signOffDate: new Date().toISOString().slice(0, 10),
+        },
       });
     }
 

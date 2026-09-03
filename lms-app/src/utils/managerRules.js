@@ -666,7 +666,13 @@ export const L3_STATE_LABELS = {
 
 /** BR-MGR-041 — where an action plan sits in its review window. */
 export function l3ReviewState(plan, today = new Date()) {
-  if (plan?.managerSignedOff || plan?.status === 'REVIEWED' || plan?.l3Rating) {
+  const signedOff =
+    plan?.managerSignedOff ||
+    plan?.status === 'REVIEWED' ||
+    plan?.status === 'EVALUATED_L3' ||
+    Boolean(plan?.l3Rating) ||
+    Boolean(plan?.managerReviewL3);
+  if (signedOff) {
     return { state: L3_STATE.SIGNED_OFF, label: L3_STATE_LABELS.SIGNED_OFF, ageDays: null };
   }
   const committed = parseDate(plan?.committedAt || plan?.createdAt || plan?.startDate);
@@ -687,7 +693,12 @@ export function teamActionPlans(team, actionPlans = [], today = new Date()) {
   });
 
   return (actionPlans || [])
-    .filter((p) => ids.has(p.userId) || codes.has(p.employeeCode) || codes.has(p.userId))
+    // Action plans are keyed by learnerId (the learner who made the commitment),
+    // with userId kept as a fallback for any record authored the other way.
+    .filter((p) => {
+      const learnerRef = p.learnerId || p.userId;
+      return ids.has(learnerRef) || codes.has(p.employeeCode) || codes.has(learnerRef);
+    })
     .map((p) => ({ ...p, review: l3ReviewState(p, today) }));
 }
 

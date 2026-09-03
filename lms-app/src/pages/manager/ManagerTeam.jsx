@@ -401,8 +401,18 @@ export default function ManagerTeam({ initialTab = 'ATTENTION' }) {
                       <span style={{ color: 'var(--rail)' }}>{plan.courseName || plan.courseId}</span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 3 }}>
-                      {plan.commitment || plan.description || 'Behaviour change commitment made after the course.'}
+                      {plan.commitment || plan.description || plan.targetCommitment || 'Behaviour change commitment made after the course.'}
                     </div>
+                    {plan.kpiTarget && (
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>
+                        <strong>KPI target:</strong> {plan.kpiTarget}
+                      </div>
+                    )}
+                    {plan.managerReviewL3 && (
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>
+                        <strong>Manager review:</strong> {plan.managerReviewL3.behaviorChange}
+                      </div>
+                    )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <Badge tone={L3_TONE[plan.review.state] || 'slate'} size="sm">{plan.review.label}</Badge>
@@ -420,7 +430,7 @@ export default function ManagerTeam({ initialTab = 'ATTENTION' }) {
                           onClick={() => openSurveyModal(
                             { title: plan.courseName || plan.courseId },
                             'L3',
-                            { name: plan.learnerName, fullName: plan.learnerName }
+                            { name: plan.learnerName, fullName: plan.learnerName, planId: plan.id }
                           )}
                         >
                           Record L3 review
