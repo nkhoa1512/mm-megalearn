@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import {
-  orgReport,
   kirkpatrickROI,
   companyHeatmapData,
   costTrackingData,
   divisionComplianceLeague,
   classroomSessions,
+  allUsers,
+  enrollmentsForUser,
 } from '../../data/mockData';
 import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
 import { useCourseStore } from '../../store/CourseStore';
 import { normalizeRole, hasCapability } from '../../data/roles';
+import { PASS_MARK } from '../../utils/managerRules';
 
 export default function AdminReports() {
-  const { currentUser } = useCourseStore();
+  const { currentUser, actionPlans, users: storeUsers, enrollments: storeEnrollments } = useCourseStore();
   const userRole = normalizeRole(currentUser?.role);
   const isTrainer = userRole === 'trainer';
   // BR-RPT-02 — a Trainer has canViewCsat only, never canViewOrgProgress: they
@@ -37,6 +39,64 @@ export default function AdminReports() {
     ? Math.round((trainerSessions.reduce((a, s) => a + (s.trainerRating || 0), 0) / sessionsTaught) * 100) / 100
     : null;
   const seatFillRate = capacityOffered > 0 ? Math.round((learnersTaught / capacityOffered) * 1000) / 10 : 0;
+
+  // ---------------------------------------------------------------------
+  // BR-RPT-03 — Kirkpatrick L1-L3, computed live from the real HRIS enrollment
+  // matrix, classroom ratings and action-plan sign-offs (not hand-authored
+  // copy). L4 stays an authored estimate: nothing in this data model ties a
+  // completed course to an actual cost-savings or shrinkage figure.
+  // ---------------------------------------------------------------------
+
+  // Level 1 — every recorded satisfaction rating company-wide: in-person
+  // class ratings plus the L1 CSAT survey score a learner submits after a
+  // course (see PostTrainingSurveyModal).
+  const csatRatings = [
+    ...classroomSessions.map((s) => s.trainerRating).filter((n) => typeof n === 'number'),
+    ...(actionPlans || []).map((p) => p.surveyL1Score).filter((n) => typeof n === 'number'),
+  ];
+  const companyAvgCsat = csatRatings.length > 0
+    ? Math.round((csatRatings.reduce((a, b) => a + b, 0) / csatRatings.length) * 100) / 100
+    : null;
+
+  // Level 2 — every enrollment record across every employee (the same HRIS
+  // matrix the manager and HRBP screens are built from), not one sampled course.
+  const roster = storeUsers && storeUsers.length > 0 ? storeUsers : allUsers();
+  const allEnrollments = [];
+  roster.forEach((u) => {
+    Object.values(enrollmentsForUser(u, storeEnrollments)).forEach((e) => allEnrollments.push(e));
+  });
+  const scoredEnrollments = allEnrollments.filter((e) => typeof e.score === 'number');
+  const companyAvgScore = scoredEnrollments.length > 0
+    ? Math.round((scoredEnrollments.reduce((a, e) => a + e.score, 0) / scoredEnrollments.length) * 10) / 10
+    : null;
+  const firstAttemptPasses = scoredEnrollments.filter(
+    (e) => (Number(e.attemptsCount) || 0) <= 1 && e.score >= PASS_MARK
+  );
+  const companyFirstAttemptPassRate = scoredEnrollments.length > 0
+    ? Math.round((firstAttemptPasses.length / scoredEnrollments.length) * 1000) / 10
+    : null;
+  const completedAssessments = allEnrollments.filter(
+    (e) => e.status === 'COMPLETED' && typeof e.score === 'number'
+  ).length;
+
+  // Level 3 — every action plan's manager sign-off, company-wide (not one
+  // manager's team — see BR-MGR-040 for the team-scoped version on the
+  // manager's own page).
+  const signedOffPlans = (actionPlans || []).filter((p) => p.managerReviewL3);
+  const l3SignOffRate = actionPlans && actionPlans.length > 0
+    ? Math.round((signedOffPlans.length / actionPlans.length) * 1000) / 10
+    : null;
+  const companyAvgL3Score = signedOffPlans.length > 0
+    ? Math.round((signedOffPlans.reduce((a, p) => a + (p.managerReviewL3.score || 0), 0) / signedOffPlans.length) * 100) / 100
+    : null;
+  const l3BehaviorHighlights = signedOffPlans
+    .map((p) => p.managerReviewL3.behaviorChange)
+    .filter(Boolean)
+    .slice(0, 2);
+  const l3ProductivityHighlights = signedOffPlans
+    .map((p) => p.managerReviewL3.productivityGain)
+    .filter(Boolean)
+    .slice(0, 2);
 
   function qualityGrade(rating) {
     if (rating >= 4.9) return 'Outstanding (Gold)';
@@ -83,8 +143,10 @@ export default function AdminReports() {
       return divisionComplianceLeague;
     }
     return [
-      { level: 'Level 1 - Reaction', ...kirkpatrickROI.level1 },
-      { level: 'Level 2 - Learning', ...kirkpatrickROI.level2 },
+      { level: 'Level 1 - Reaction (live)', avgCsat: companyAvgCsat, ratingsCounted: csatRatings.length },
+      { level: 'Level 2 - Learning (live)', avgScore: companyAvgScore, firstAttemptPassRate: companyFirstAttemptPassRate, completedAssessments },
+      { level: 'Level 3 - Behavior (live)', signOffRate: l3SignOffRate, avgL3Score: companyAvgL3Score, plansSignedOff: signedOffPlans.length, plansTotal: (actionPlans || []).length },
+      { level: 'Level 4 - Financial ROI (illustrative estimate, not computed)', ...kirkpatrickROI.level4 },
     ];
   }
 
@@ -318,6 +380,12 @@ export default function AdminReports() {
       {effectiveTab === 'ROI_KIRKPATRICK' && (
         <>
           <div className="section-label">Enterprise Training Impact Framework &middot; Kirkpatrick 4-Level Architecture</div>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '-8px 0 16px', maxWidth: 900 }}>
+            Levels 1-3 below are computed live from the same enrollment matrix, classroom ratings and action-plan
+            sign-offs used elsewhere in the app. Level 4 is shown separately because no cost-savings or shrinkage
+            figure exists anywhere in this data model to compute it from — it is an authored illustrative estimate,
+            not a live number.
+          </p>
           <div className="grid grid-2" style={{ marginBottom: 28, gap: 16 }}>
             {/* Level 1 */}
             <div className="card card-pad" style={{ borderLeft: '4px solid #3B82F6' }}>
@@ -325,20 +393,22 @@ export default function AdminReports() {
                 <span style={{ fontWeight: 800, fontSize: 13, color: '#1D4ED8', textTransform: 'uppercase' }}>
                   Level 1: Learner Reaction &amp; CSAT Satisfaction
                 </span>
-                <Badge tone="blue">{kirkpatrickROI.level1.netPromoter}</Badge>
+                <Badge tone="sage" icon="ti-bolt">Live data</Badge>
               </div>
               <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Average CSAT Rating</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>{kirkpatrickROI.level1.csatScore}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>
+                    {companyAvgCsat !== null ? `★ ${companyAvgCsat} / 5.0` : '—'}
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Workplace Applicability</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sage)' }}>{kirkpatrickROI.level1.usefulRate}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Ratings Counted</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sage)' }}>{csatRatings.length}</div>
                 </div>
               </div>
               <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                {kirkpatrickROI.level1.summary}
+                From every classroom session rating plus every learner's post-course L1 survey score recorded so far.
               </p>
             </div>
 
@@ -348,20 +418,25 @@ export default function AdminReports() {
                 <span style={{ fontWeight: 800, fontSize: 13, color: '#006830', textTransform: 'uppercase' }}>
                   Level 2: Knowledge Retention &amp; Assessment Mastery
                 </span>
-                <Badge tone="sage">{kirkpatrickROI.level2.assessmentsCompleted} Passed Exams</Badge>
+                <Badge tone="sage" icon="ti-bolt">Live data</Badge>
               </div>
               <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Average Assessment Score</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sage)' }}>{kirkpatrickROI.level2.avgScore}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--sage)' }}>
+                    {companyAvgScore !== null ? `${companyAvgScore}%` : '—'}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>First-Attempt Pass Rate</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>{kirkpatrickROI.level2.firstAttemptPass}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>
+                    {companyFirstAttemptPassRate !== null ? `${companyFirstAttemptPassRate}%` : '—'}
+                  </div>
                 </div>
               </div>
               <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                {kirkpatrickROI.level2.summary}
+                From {completedAssessments.toLocaleString()} completed, scored enrollments across the full employee
+                roster — the same HRIS enrollment matrix the manager and HRBP screens read from, not one sampled course.
               </p>
             </div>
 
@@ -371,19 +446,34 @@ export default function AdminReports() {
                 <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--amber-soft-text)', textTransform: 'uppercase' }}>
                   Level 3: 3-6 Month Behavioral Change on the Floor
                 </span>
-                <Badge tone="amber">Internal Audit Verified</Badge>
+                <Badge tone="sage" icon="ti-bolt">Live data</Badge>
               </div>
-              <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
-                  &bull; {kirkpatrickROI.level3.metric1}
+              <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Reviews Signed Off</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)' }}>
+                    {signedOffPlans.length} of {(actionPlans || []).length}
+                    {l3SignOffRate !== null && ` (${l3SignOffRate}%)`}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
-                  &bull; {kirkpatrickROI.level3.metric2}
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Average L3 Rating</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--amber)' }}>
+                    {companyAvgL3Score !== null ? `★ ${companyAvgL3Score} / 5.0` : '—'}
+                  </div>
                 </div>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                {kirkpatrickROI.level3.summary}
-              </p>
+              {(l3BehaviorHighlights.length > 0 || l3ProductivityHighlights.length > 0) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {[...l3BehaviorHighlights, ...l3ProductivityHighlights].map((line, i) => (
+                    <div key={i} style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>&bull; {line}</div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0 }}>
+                  No manager has signed off a behavioral review yet.
+                </p>
+              )}
             </div>
 
             {/* Level 4 */}
@@ -392,7 +482,7 @@ export default function AdminReports() {
                 <span style={{ fontWeight: 800, fontSize: 13, color: '#003E73', textTransform: 'uppercase' }}>
                   Level 4: Financial Business Results &amp; ROI
                 </span>
-                <Badge tone="blue">{kirkpatrickROI.level4.roiRatio}</Badge>
+                <Badge tone="amber" icon="ti-flask">Illustrative estimate</Badge>
               </div>
               <div style={{ display: 'flex', gap: 20, marginBottom: 10 }}>
                 <div>
@@ -405,7 +495,8 @@ export default function AdminReports() {
                 </div>
               </div>
               <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: 0, lineHeight: 1.5 }}>
-                {kirkpatrickROI.level4.summary}
+                {kirkpatrickROI.level4.summary} No cost-savings or shrinkage dataset exists in this system yet to
+                compute this figure from — treat it as a directional planning estimate, not a measured result.
               </p>
             </div>
           </div>
