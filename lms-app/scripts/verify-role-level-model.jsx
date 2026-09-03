@@ -1233,6 +1233,56 @@ console.log('\n=== Section 28: Master Plan Verification — Mandatory vs Optiona
     resolveTargetLabel('BUSINESS_UNIT', 'bu-mmvn').includes('MM Mega Market'));
 }
 
+console.log('\n=== 29: Course Enrollment Gate — LessonPlayer blocks lesson content until the learner has enrolled ===');
+{
+  // Course/lesson titles in this dataset can contain "&" (e.g. "Food Safety & Hygiene
+  // Standards"), which renderToStaticMarkup escapes to "&amp;" — escape the same way
+  // before substring-matching the rendered HTML.
+  const esc = (t) => t.replace(/&/g, '&amp;');
+  actAs('learner');
+  // CRS-ISA-013 is a Level 7 course (matches Minh Tran/USR-1042's own level, so the
+  // sequential level gate does not interfere) that is OPEN for registration but is NOT
+  // one of the 12 courses in generated100EnrollmentMatrix['USR-1042'] — i.e. Minh Tran
+  // has never enrolled in it. CRS-FSH-001 IS one of those 12 (already used as the
+  // "enrolled" fixture in Section 3 above) — reused here as the enrolled fixture.
+  const notEnrolledCourse = generated100Courses.find((c) => c.id === 'CRS-ISA-013');
+  const notEnrolledLesson = notEnrolledCourse.modules[0].lessons[0];
+  const notEnrolledHtml = render(
+    'LessonPlayer not-enrolled',
+    <LessonPlayer />,
+    `/learner/courses/${notEnrolledCourse.id}/lessons/${notEnrolledLesson.id}`,
+    '/learner/courses/:courseId/lessons/:lessonId'
+  );
+  check('unenrolled learner sees the "have not enrolled" gate instead of the lesson',
+    notEnrolledHtml.includes('You Have Not Enrolled In This Course Yet'));
+  check('unenrolled learner does NOT see the real course/lesson title',
+    !notEnrolledHtml.includes(esc(notEnrolledCourse.title)) && !notEnrolledHtml.includes(esc(notEnrolledLesson.title)));
+
+  const enrolledCourse = generated100Courses.find((c) => c.id === 'CRS-FSH-001');
+  const enrolledLesson = enrolledCourse.modules[0].lessons[0];
+  const enrolledHtml = render(
+    'LessonPlayer enrolled',
+    <LessonPlayer />,
+    `/learner/courses/${enrolledCourse.id}/lessons/${enrolledLesson.id}`,
+    '/learner/courses/:courseId/lessons/:lessonId'
+  );
+  check('enrolled learner does NOT see the "have not enrolled" gate',
+    !enrolledHtml.includes('You Have Not Enrolled In This Course Yet'));
+  check('enrolled learner sees the real course/lesson content',
+    enrolledHtml.includes(esc(enrolledCourse.title)) && enrolledHtml.includes(esc(enrolledLesson.title)));
+
+  // Also cover the module list on the course detail page: an unenrolled learner's
+  // lesson links must be locked (no href), the same as the other three lock reasons.
+  const detailHtml = render(
+    'CourseDetail not-enrolled module list',
+    <LearnerCourseDetail />,
+    `/learner/courses/${notEnrolledCourse.id}`,
+    '/learner/courses/:courseId'
+  );
+  check('unenrolled learner\'s course detail page has no clickable link to the lesson',
+    !detailHtml.includes(`/learner/courses/${notEnrolledCourse.id}/lessons/${notEnrolledLesson.id}`));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 console.log('FAILURES LIST:', JSON.stringify(failureLog, null, 2));
 process.exit(failures === 0 ? 0 : 1);

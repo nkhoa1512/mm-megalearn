@@ -444,12 +444,16 @@ export default function LearnerCourseDetail({ basePath = '/learner/courses' }) {
                 </Badge>
               )}
             </div>
-            <div className="card-pad" style={{ paddingTop: 4 }}>
+            <div
+              className="card-pad"
+              style={{ paddingTop: 4 }}
+              title={!course.enrollment && !isPrereqLocked && !isLevelLocked && !isRegistrationClosed ? 'Enroll in this course to unlock lessons' : undefined}
+            >
               <ModuleList
                 modules={course.modules || []}
-                disabled={isLevelLocked || isRegistrationClosed}
+                disabled={isLevelLocked || isRegistrationClosed || !course.enrollment}
                 getLessonHref={(l) => {
-                  if (isPrereqLocked || isLevelLocked || isRegistrationClosed) return null;
+                  if (isPrereqLocked || isLevelLocked || isRegistrationClosed || !course.enrollment) return null;
                   return l.lessonType === 'ASSESSMENT' ? null : `${basePath}/${course.id}/lessons/${l.id}`;
                 }}
               />

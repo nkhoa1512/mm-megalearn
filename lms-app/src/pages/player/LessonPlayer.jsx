@@ -106,6 +106,21 @@ export default function LessonPlayer({ basePath = '/learner/courses' }) {
     );
   }
 
+  // Not enrolled: a learner who bookmarks or types a lesson URL directly must not
+  // see lesson content until they actually enroll from the course detail page.
+  if (!enrollment) {
+    return (
+      <div className="card card-pad empty-state" style={{ margin: '40px auto', maxWidth: 560 }}>
+        <i className="ti ti-lock" style={{ fontSize: 48, color: 'var(--rust)' }} />
+        <h2 style={{ fontSize: 18, marginTop: 10 }}>You Have Not Enrolled In This Course Yet</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>Please enroll to start learning and track your progress.</p>
+        <Link to={`${basePath}/${course.id}`}>
+          <Button variant="primary" icon="ti-arrow-right">Go To Course Detail &amp; Enroll</Button>
+        </Link>
+      </div>
+    );
+  }
+
   function complete(extra) {
     const updated = applyLessonProgress(course, lesson.id, { status: 'COMPLETED', progressPercent: 100, ...extra });
     saveCourseProgress(course.id, updated, user, enrollment?.enrolledVersion);
