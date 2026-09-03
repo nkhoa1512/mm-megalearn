@@ -15,9 +15,9 @@ import {
   formatRelativeDay,
   generateIcsFile,
 } from '../../utils/calendarDate';
-import { buildCalendarEvents, EVENT_CATEGORIES } from '../../utils/calendarEvents';
+import { buildCalendarEvents, buildOrganizationMonthlyEvents, EVENT_CATEGORIES } from '../../utils/calendarEvents';
 import { Badge, Button, Modal, ProgressBar } from '../common/ui';
-import { normalizeRole, roleDefinition } from '../../data/roles';
+import { normalizeRole, roleDefinition, hasCapability } from '../../data/roles';
 
 export default function UniversalCalendar({ basePath = '/my-learning' }) {
   const navigate = useNavigate();
@@ -31,6 +31,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
     language = 'vi',
     checkInClassroom,
     openSurveyModal,
+    enrollCourse,
   } = useCourseStore();
 
   const role = normalizeRole(currentUser?.role || 'learner');
@@ -44,6 +45,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   const [viewMonth, setViewMonth] = useState(() => firstOfMonth(today));
   const [scope, setScope] = useState(isLearnerOnly ? 'PERSONAL' : 'ALL'); // ALL | PERSONAL | OPERATIONAL
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [orgFilter, setOrgFilter] = useState('ALL'); // ALL | MANDATORY | OPTIONAL | ENROLLED | ACTION_REQUIRED
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals & Tooltips
@@ -65,6 +67,30 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
       users,
     });
   }, [courses, myEnrollments, classrooms, assessments, role, currentUser, users]);
+
+  // Organization-wide monthly course events (mandatory/optional courses across the whole org)
+  const orgEvents = useMemo(
+    () => buildOrganizationMonthlyEvents({ courses, myEnrollments, viewMonth, currentUser }),
+    [courses, myEnrollments, viewMonth, currentUser]
+  );
+  // Org events narrowed by the quick filter chips (Mandatory / Optional / Enrolled / Action Required)
+  const filteredOrgEvents = useMemo(() => {
+    return orgEvents.filter((ev) => {
+      if (orgFilter === 'MANDATORY') return ev.courseType === 'MANDATORY';
+      if (orgFilter === 'OPTIONAL') return ev.courseType === 'OPTIONAL';
+      if (orgFilter === 'ENROLLED') return ev.isEnrolled;
+      if (orgFilter === 'ACTION_REQUIRED') return !ev.isEnrolled;
+      return true;
+    });
+  }, [orgEvents, orgFilter]);
+  const filteredOrgEventsByDate = useMemo(() => {
+    const map = {};
+    filteredOrgEvents.forEach((ev) => {
+      if (!map[ev.date]) map[ev.date] = [];
+      map[ev.date].push(ev);
+    });
+    return map;
+  }, [filteredOrgEvents]);
 
   // Operational tab label based on role
   const operationalScopeLabel = useMemo(() => {
@@ -369,6 +395,22 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
         </div>
       </div>
 
+      {/* 3B. ORGANIZATION-WIDE MONTHLY METRIC BAR */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+        {[
+          { label: 'Total Monthly Events', value: orgEvents.length, tone: 'slate' },
+          { label: 'Mandatory', value: orgEvents.filter((e) => e.courseType === 'MANDATORY').length, tone: 'rust' },
+          { label: 'Optional', value: orgEvents.filter((e) => e.courseType === 'OPTIONAL').length, tone: 'sage' },
+          { label: 'Enrolled', value: orgEvents.filter((e) => e.isEnrolled).length, tone: 'blue' },
+          { label: 'Action Required', value: orgEvents.filter((e) => !e.isEnrolled).length, tone: 'amber' },
+        ].map((m) => (
+          <div key={m.label} className="card card-pad" style={{ flex: '1 1 140px', textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: `var(--${m.tone})` }}>{m.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{m.label}</div>
+          </div>
+        ))}
+      </div>
+
       {/* 4. CATEGORY FILTER CHIPS ROW */}
       <div className="cal-filter-chips">
         {Object.values(EVENT_CATEGORIES).map((cat) => {
@@ -381,6 +423,28 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
             >
               <i className={`ti ${cat.icon}`} style={{ color: isActive ? 'inherit' : cat.color }} />
               <span>{language === 'en' ? cat.labelEn : cat.labelVi}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4B. ORGANIZATION EVENT QUICK FILTER CHIPS */}
+      <div className="cal-filter-chips">
+        {[
+          { id: 'ALL', label: 'All' },
+          { id: 'MANDATORY', label: '🔴 Mandatory' },
+          { id: 'OPTIONAL', label: '🟢 Optional' },
+          { id: 'ENROLLED', label: '✅ Enrolled' },
+          { id: 'ACTION_REQUIRED', label: '⏳ Action Required' },
+        ].map((chip) => {
+          const isActive = orgFilter === chip.id;
+          return (
+            <button
+              key={chip.id}
+              className={`cal-filter-chip ${isActive ? 'active' : ''}`}
+              onClick={() => setOrgFilter(chip.id)}
+            >
+              <span>{chip.label}</span>
             </button>
           );
         })}
@@ -408,6 +472,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                       const dayEvents = eventsByDate.get(cell.date) || [];
                       const visibleEvents = dayEvents.slice(0, 2);
                       const overflowCount = dayEvents.length - visibleEvents.length;
+                      const dayOrgEvents = filteredOrgEventsByDate[cell.date] || [];
                       const isToday = cell.date === today;
                       const isSelected = cell.date === selectedDate;
 
@@ -464,6 +529,20 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                                 +{overflowCount} {language === 'en' ? 'more' : 'more'}
                               </div>
                             )}
+                            {dayOrgEvents.map((ev) => (
+                              <div
+                                key={ev.id}
+                                className={`cal-event-pill tone-${ev.tone}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDetailModalEvent(ev);
+                                }}
+                                title={ev.subtitle || ev.title}
+                              >
+                                <i className={`ti ${ev.icon}`} />
+                                <span className="cal-pill-text">{ev.title}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -763,7 +842,11 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           isOpen={true}
           onClose={() => setDetailModalEvent(null)}
           title={detailModalEvent.title}
-          subtitle={`${detailModalEvent.categoryLabel} · ${detailModalEvent.venue}`}
+          subtitle={
+            detailModalEvent.scope === 'ORGANIZATION'
+              ? (detailModalEvent.courseType === 'MANDATORY' ? 'Mandatory Course' : 'Optional Course')
+              : `${detailModalEvent.categoryLabel} · ${detailModalEvent.venue}`
+          }
           size="lg"
           footer={
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
@@ -778,16 +861,39 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                 >
                   {language === 'en' ? 'Export Event (.ics)' : 'Export Event'}
                 </Button>
-                <Button
-                  variant="primary"
-                  tone={detailModalEvent.tone === 'rust' ? 'danger' : 'primary'}
-                  onClick={(e) => {
-                    setDetailModalEvent(null);
-                    handleEventAction(detailModalEvent, e);
-                  }}
-                >
-                  {detailModalEvent.actionLabel}
-                </Button>
+                {detailModalEvent.actionType !== 'ENROLL_COURSE' && (
+                  <Button
+                    variant="primary"
+                    tone={detailModalEvent.tone === 'rust' ? 'danger' : 'primary'}
+                    onClick={(e) => {
+                      setDetailModalEvent(null);
+                      handleEventAction(detailModalEvent, e);
+                    }}
+                  >
+                    {detailModalEvent.actionLabel}
+                  </Button>
+                )}
+                {detailModalEvent.scope === 'ORGANIZATION' && !detailModalEvent.isEnrolled && (
+                  <Button
+                    variant="primary"
+                    icon="ti-circle-check"
+                    onClick={() => {
+                      enrollCourse(detailModalEvent.courseId, currentUser);
+                      setDetailModalEvent(null);
+                    }}
+                  >
+                    {language === 'en' ? 'Enroll Now' : 'Enroll Now'}
+                  </Button>
+                )}
+                {detailModalEvent.scope === 'ORGANIZATION' && hasCapability(role, 'canAllocateCourses') && (
+                  <Button
+                    variant="outline"
+                    icon="ti-users"
+                    onClick={() => navigate(`/admin/courses/${detailModalEvent.courseId}`)}
+                  >
+                    {language === 'en' ? 'Assign to Team' : 'Assign to Team'}
+                  </Button>
+                )}
               </div>
             </div>
           }
@@ -795,11 +901,13 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
               <Badge tone={detailModalEvent.tone} icon={detailModalEvent.icon}>
-                {detailModalEvent.statusLabel}
+                {detailModalEvent.statusLabel || (detailModalEvent.isEnrolled ? 'Enrolled' : 'Action Required')}
               </Badge>
               <Badge tone="slate" icon="ti-barcode">{detailModalEvent.courseCode || detailModalEvent.id}</Badge>
               <Badge tone="blue" icon="ti-calendar-event">{detailModalEvent.date}</Badge>
-              <Badge tone="amber" icon="ti-clock">{detailModalEvent.time}</Badge>
+              {detailModalEvent.time && (
+                <Badge tone="amber" icon="ti-clock">{detailModalEvent.time}</Badge>
+              )}
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-sunken)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>

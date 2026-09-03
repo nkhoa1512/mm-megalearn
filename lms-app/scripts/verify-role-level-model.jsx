@@ -1314,6 +1314,23 @@ console.log('\n=== 30: Organization-wide monthly calendar events ===');
     unenrolledTestEvents.length > 0 && unenrolledTestEvents.some((e) => e.actionType === 'ENROLL_COURSE'));
 }
 
+console.log('\n=== 31: UniversalCalendar — organization-wide monthly overview (metric bar, filters, pills) ===');
+{
+  const { default: UniversalCalendar } = await import('../src/features/calendar/UniversalCalendar');
+
+  actAs('learner');
+  const orgCalHtml = render(
+    'UniversalCalendar learner org overview',
+    <UniversalCalendar basePath="/learner/courses" />,
+    '/learner/calendar',
+    '/learner/calendar'
+  );
+  check('UniversalCalendar (learner) renders the metric-bar label "Total Monthly Events"',
+    Boolean(orgCalHtml && orgCalHtml.includes('Total Monthly Events')));
+  check('UniversalCalendar (learner) renders at least one organization event subtitle',
+    Boolean(orgCalHtml && (orgCalHtml.includes('Mandatory · Action Required') || orgCalHtml.includes('Optional · Available to Join'))));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 console.log('FAILURES LIST:', JSON.stringify(failureLog, null, 2));
 process.exit(failures === 0 ? 0 : 1);
