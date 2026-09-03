@@ -6,7 +6,6 @@ import {
   ACCESS_STATE,
   levelDefinition,
   levelShortLabel,
-  nextLevelUp,
   normalizeLevel,
 } from '../../data/levelSystem';
 import { useCourseStore } from '../../store/CourseStore';
@@ -14,8 +13,8 @@ import { getCourseImage } from '../../data/courseImages';
 import {
   courseFormatBadge, courseGroupOf, courseOrgUnitGroups, buildCourseGroups, courseMatchesCategory,
 } from '../../utils/courseCatalog';
-import CurriculumTree from '../../features/catalog/CurriculumTree';
-import { getAssignedCurriculaForUser, getCurriculumProgress } from '../../utils/curriculumAssignment';
+import { isAssessmentAssignedToUser } from '../../utils/assessmentCatalog';
+import { DELIVERY_FORMATS } from '../../data/assessmentData';
 
 // Group By feature: collects "My Courses" into sections/accordions by
 // 5 criteria — Department & Division (the assigning source), Job Level & Roadmap, Learning
@@ -59,19 +58,22 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     myEnrollments,
     language,
     t,
-    curricula,
     companyCategories,
     certificateTemplates,
+    assessments,
+    assessmentAttempts,
   } = useCourseStore();
-  const [viewingCurriculum, setViewingCurriculum] = useState(null);
 
   const user = propUser || authUser || currentUser;
   const userLevel = normalizeLevel(user.level);
   const userLevelDef = levelDefinition(userLevel);
-  const oneLevelUp = nextLevelUp(userLevel);
 
   const enrolledCourses = myCourses(allCourses, user);
-  const assignedCurricula = getAssignedCurriculaForUser(curricula, user);
+
+  // "Course" (assigned/enrolled courses + standalone assessments) vs "Course Suggestion"
+  // (courses not yet enrolled that match the user's level/department) — every role sees
+  // the same 2 sections.
+  const [activeSection, setActiveSection] = useState('COURSES');
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -189,24 +191,91 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const groups = buildCourseGroups(filtered, groupBy);
 
-  const completedCount = enrolledCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length;
+  // Standalone assessments (not tied to any course) assigned to this user — merged into
+  // the same "Course" list, alongside courses, tagged with an Assessment badge.
+  const standaloneAssessments = assessments
+    .filter((asm) => asm.deliveryFormat === DELIVERY_FORMATS.STANDALONE)
+    .map((asm) => {
+      const { isAssigned, isPublic, assignment } = isAssessmentAssignedToUser(asm, user);
+      if (!isAssigned && !isPublic) return null;
+
+      const myAttempts = assessmentAttempts.filter(
+        (a) => a.assessmentId === asm.id && (a.userId === user.userId || a.userName === user.fullName)
+      );
+      const passedAttempt = myAttempts.find((a) => a.scoring?.passed);
+      const bestAttempt = myAttempts.reduce(
+        (best, a) => (!best || (a.scoring?.percentage || 0) > (best.scoring?.percentage || 0) ? a : best),
+        null
+      );
+      const rawStatus = passedAttempt ? 'COMPLETED' : myAttempts.length > 0 ? 'FAILED' : 'NOT_STARTED';
+      const dueDate = assignment?.dueDate || null;
+      const isOverdue = rawStatus !== 'COMPLETED' && Boolean(dueDate) && new Date(dueDate) < new Date();
+
+      return {
+        kind: 'ASSESSMENT',
+        id: asm.id,
+        title: asm.title,
+        code: asm.code,
+        category: (asm.categories && asm.categories[0]) || asm.category || 'Assessment',
+        timeLimitMinutes: asm.timeLimitMinutes,
+        passingScorePercent: asm.passingScorePercent,
+        maxAttempts: asm.maxAttempts,
+        attemptsUsed: myAttempts.length,
+        status: isOverdue ? 'OVERDUE' : rawStatus,
+        bestScore: bestAttempt?.scoring?.percentage ?? null,
+        isPublic,
+      };
+    })
+    .filter(Boolean);
+
+  // Assessments only take part in the 4 generic status pills (All / Completed / Overdue —
+  // there is no "in progress" concept for a one-shot exam attempt); the course-specific
+  // pills (Mandatory, By Curriculum, In-Person, Virtual Class...) don't apply to them.
+  const filteredAssessmentItems = standaloneAssessments.filter((a) => {
+    const matchSearch =
+      !search ||
+      a.title.toLowerCase().includes(search.toLowerCase()) ||
+      a.code.toLowerCase().includes(search.toLowerCase());
+    const matchStatus =
+      statusFilter === 'ALL' ||
+      (statusFilter === 'COMPLETED' && a.status === 'COMPLETED') ||
+      (statusFilter === 'OVERDUE' && a.status === 'OVERDUE');
+    return matchSearch && matchStatus;
+  });
+
+  const completedCount = enrolledCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length
+    + standaloneAssessments.filter((a) => a.status === 'COMPLETED').length;
   const inProgressCount = enrolledCourses.filter((c) => c.enrollment?.status === 'IN_PROGRESS').length;
-  const overdueCount = enrolledCourses.filter((c) => c.enrollment?.status === 'OVERDUE').length;
+  const overdueCount = enrolledCourses.filter((c) => c.enrollment?.status === 'OVERDUE').length
+    + standaloneAssessments.filter((a) => a.status === 'OVERDUE').length;
   const mandatoryCount = enrolledCourses.filter((c) => c.courseType === 'MANDATORY').length;
   const recertCount = enrolledCourses.filter((c) => recertByCourseId[c.id]?.needsRecertification).length;
 
+  // Courses not yet enrolled, open to start right away (no level-skip request needed),
+  // and matching the user's own job level or their department/division. Independent of
+  // the AI Learning Hub / Learning Roadmap "suggested courses" — a simpler rule on purpose.
+  const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));
+  const suggestedCourses = allCourses
+    .filter((c) => !enrolledCourseIds.has(c.id))
+    .map((c) => {
+      const access = accessFor(c, user);
+      if (access.state !== ACCESS_STATE.OPEN && access.state !== ACCESS_STATE.APPROVED) return null;
 
-  // Whole-library statistics under the level rules
-  const catalogAccess = allCourses.map((c) => accessFor(c, user));
-  const requestableCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.REQUESTABLE).length;
-  const pendingCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.PENDING_APPROVAL).length;
-  const approvedCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.APPROVED).length;
-  const hardLockedCount = catalogAccess.filter((a) => a.state === ACCESS_STATE.LOCKED_LEVEL_GAP).length;
+      const matchesLevel = normalizeLevel(c.targetLevel) === userLevel;
+      const matchesOrgUnit = courseOrgUnitGroups(c).some(
+        (g) => g.key === `DIV-${user.divisionId}` || g.key === `DEPT-${user.departmentId}`
+      );
+      if (!matchesLevel && !matchesOrgUnit) return null;
 
-  // Progress on the current level program (the real condition for climbing to the next level)
-  const myLevelCourses = enrolledCourses.filter((c) => normalizeLevel(c.targetLevel) === userLevel);
-  const myLevelDone = myLevelCourses.filter((c) => c.enrollment?.status === 'COMPLETED').length;
-  const myLevelPct = myLevelCourses.length ? Math.round((myLevelDone / myLevelCourses.length) * 100) : 0;
+      const suggestionReason = matchesOrgUnit && matchesLevel
+        ? `Matches your department and Level ${userLevel}`
+        : matchesOrgUnit
+          ? 'Assigned to your department'
+          : `Matches your Level ${userLevel} program`;
+      return { ...c, suggestionReason };
+    })
+    .filter(Boolean)
+    .slice(0, 12);
 
   /** A course's action button, decided entirely by `access.state`. */
   function renderAction(c, access, size = 'sm') {
@@ -287,6 +356,112 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     );
   }
 
+  const assessmentStatusMap = {
+    NOT_STARTED: { tone: 'slate', label: 'Not Started' },
+    COMPLETED: { tone: 'sage', label: 'Completed' },
+    FAILED: { tone: 'rust', label: 'Not Passed' },
+    OVERDUE: { tone: 'rust', label: 'Overdue' },
+  };
+
+  /** A standalone assessment's action button — mirrors renderAction's course logic. */
+  function renderAssessmentAction(item, size = 'sm') {
+    if (item.status !== 'COMPLETED' && item.attemptsUsed >= item.maxAttempts) {
+      return (
+        <Button size={size} variant="outline" icon="ti-ban" disabled title="No attempts left">
+          No Attempts Left
+        </Button>
+      );
+    }
+    const icon = item.status === 'COMPLETED' ? 'ti-eye' : item.status === 'FAILED' ? 'ti-reload' : 'ti-player-play';
+    const label = item.status === 'COMPLETED' ? 'View Result' : item.status === 'FAILED' ? 'Retake The Exam' : 'Start The Exam';
+    return (
+      <Button
+        size={size}
+        variant={item.status === 'COMPLETED' ? 'outline' : 'primary'}
+        icon={icon}
+        onClick={() => navigate(`${basePath}/assessment/${item.id}`)}
+      >
+        {label}
+      </Button>
+    );
+  }
+
+  /** A standalone assessment's row in the merged Course table (same 6 columns as a course row). */
+  function renderAssessmentTableRow(item) {
+    const stConfig = assessmentStatusMap[item.status] || assessmentStatusMap.NOT_STARTED;
+    return (
+      <tr key={item.id}>
+        <td>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 6, background: 'var(--rail-soft)', color: 'var(--rail)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 18 }}>
+              <i className="ti ti-writing" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{item.title}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-mono)' }}>{item.code}</span>
+                <span>&middot;</span>
+                <span>{item.category}</span>
+                <span>&middot;</span>
+                <span>{item.timeLimitMinutes} min</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td><Badge tone={item.isPublic ? 'sage' : 'blue'}>{item.isPublic ? 'Open to all' : 'Allocated to you'}</Badge></td>
+        <td>
+          <div style={{ marginBottom: 3 }}>
+            <Badge tone="sage">🎯 Assessment</Badge>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Pass score: {item.passingScorePercent}%</div>
+        </td>
+        <td>
+          {item.bestScore != null ? (
+            <span style={{ fontSize: 12, fontWeight: 700 }}>{item.bestScore}%</span>
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Not attempted</span>
+          )}
+        </td>
+        <td><Badge tone={stConfig.tone}>{stConfig.label}</Badge></td>
+        <td style={{ textAlign: 'right' }}>{renderAssessmentAction(item)}</td>
+      </tr>
+    );
+  }
+
+  /** A standalone assessment's card in the merged Course grid. */
+  function renderAssessmentGridCard(item) {
+    const stConfig = assessmentStatusMap[item.status] || assessmentStatusMap.NOT_STARTED;
+    return (
+      <div key={item.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--rail)', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', width: '100%', height: 130, background: 'var(--rail-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <i className="ti ti-writing" style={{ fontSize: 40, color: 'var(--rail)' }} />
+          <div style={{ position: 'absolute', top: 8, left: 8 }}>
+            <Badge tone="sage">🎯 Assessment</Badge>
+          </div>
+          <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+            {item.code}
+          </div>
+        </div>
+        <div style={{ padding: '14px 16px 8px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{item.title}</div>
+            <div style={{ marginBottom: 8 }}>
+              <Badge tone={item.isPublic ? 'sage' : 'blue'} size="sm">{item.isPublic ? 'Open to all' : 'Allocated to you'}</Badge>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, marginBottom: 12 }}>
+              {item.timeLimitMinutes} min &middot; Pass score {item.passingScorePercent}%
+              {item.bestScore != null && <> &middot; Best score {item.bestScore}%</>}
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 10, gap: 8 }}>
+            <Badge tone={stConfig.tone} size="sm">{stConfig.label}</Badge>
+            {renderAssessmentAction(item)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <>
@@ -309,117 +484,82 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
       )}
 
-      {/* SEQUENTIAL LEVEL ROADMAP DASHBOARD */}
-      <div className="card card-pad" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 14 }}>
-            <i className="ti ti-stairs-up" style={{ marginRight: 6, color: 'var(--blue)' }} />
-            Sequential Level Gate
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <JobLevelBadge level={userLevel} />
-            <i className="ti ti-arrow-right" style={{ color: 'var(--ink-faint)' }} />
-            {oneLevelUp ? <JobLevelBadge level={oneLevelUp} /> : <Badge tone="sage">Already at the highest level</Badge>}
-          </div>
-        </div>
-
-        <div className="grid grid-4" style={{ gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 4 }}>
-              My Level {userLevel} program progress
-            </div>
-            <ProgressBar value={myLevelPct} tone={myLevelPct === 100 ? 'sage' : 'blue'} size="sm" />
-            <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4 }}>
-              {myLevelDone}/{myLevelCourses.length} course &middot; {myLevelPct}%
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Level skip request allowed (Level {oneLevelUp || '—'})</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--blue)' }}>{requestableCount}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Pending / Approved</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--amber)' }}>{pendingCount} / {approvedCount}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Hidden from the catalog (2+ grades away)</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--rust)' }}>{hardLockedCount}</div>
-          </div>
-        </div>
-
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.5, background: 'var(--paper-sunken)', padding: '8px 12px', borderRadius: 6 }}>
-          Locked <strong>Level {userLevel}</strong> and below: start now. A course <strong>Level {oneLevelUp || '—'}</strong> (exactly one grade above):
-          you must submit a request and have your manager approve each course. Courses from <strong>2 or more grades</strong>: hidden entirely from the catalog —
-          you must complete the whole Level {oneLevelUp || '—'} program before they appear.
-        </div>
+      {/* SECTION TABS: Course vs Course Suggestion — the same 2 tabs for every role */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[
+          { id: 'COURSES', label: 'Course', icon: 'ti-book-2', count: enrolledCourses.length + standaloneAssessments.length },
+          { id: 'SUGGESTIONS', label: 'Course Suggestion', icon: 'ti-sparkles', count: suggestedCourses.length },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveSection(tab.id)}
+            className={`btn ${activeSection === tab.id ? 'btn-primary' : 'btn-outline'}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}
+          >
+            <i className={`ti ${tab.icon}`} />
+            {tab.label}
+            <span style={{
+              background: activeSection === tab.id ? 'rgba(255,255,255,0.3)' : 'var(--paper-sunken)',
+              color: activeSection === tab.id ? '#fff' : 'var(--ink-soft)',
+              padding: '1px 7px', borderRadius: 10, fontSize: 11, fontWeight: 700,
+            }}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* MANDATORY CURRICULA ASSIGNED TO YOU (MY ASSIGNED CURRICULA) */}
-      {assignedCurricula.length > 0 && (
-        <div className="card card-pad" style={{ marginBottom: 20, background: 'linear-gradient(135deg, var(--paper-raised) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid var(--rail-soft, #c7d2fe)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
-              <i className="ti ti-books" style={{ color: 'var(--rail)', fontSize: 18 }} />
-              <span>📚 Your Mandatory Curricula ({assignedCurricula.length})</span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-              The E-Learning roadmaps allocated to your unit or your job level
-            </div>
+      {activeSection === 'SUGGESTIONS' && (
+        <div className="card card-pad" style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
+            Courses you have not enrolled in yet, matched to your job level or your own department/division, and open for you to start right away.
           </div>
-          <div className="grid grid-2" style={{ gap: 12 }}>
-            {assignedCurricula.map((cur) => {
-              const prog = getCurriculumProgress(cur, user, myEnrollments, allCourses);
-              return (
-                <div key={cur.id} className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{cur.title}</div>
-                      <Badge tone={prog.status === 'COMPLETED' ? 'sage' : prog.status === 'IN_PROGRESS' ? 'amber' : 'rail'} size="sm">
-                        {prog.status === 'COMPLETED' ? 'Completed' : prog.status === 'IN_PROGRESS' ? 'In Progress' : 'Not Started'}
-                      </Badge>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8, lineHeight: 1.4 }}>
-                      {cur.description}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Badge tone="slate" size="sm">{cur.category || 'Curriculum'}</Badge>
-                      <span>&middot;</span>
-                      <span>{prog.totalCourses} courses E-Learning</span>
-                      {cur.assignedVia?.dueDate && (
-                        <>
-                          <span>&middot;</span>
-                          <span style={{ color: 'var(--rust)', fontWeight: 600 }}>
-                            <i className="ti ti-clock" /> Deadline: {cur.assignedVia.dueDate}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>
-                        <span>Curriculum progress:</span>
-                        <strong>{prog.completedCourses}/{prog.totalCourses} course ({prog.progressPercent}%)</strong>
+          {suggestedCourses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)', fontSize: 13 }}>
+              No suggestion for you right now — you are already enrolled in everything that matches your level and department.
+            </div>
+          ) : (
+            <div className="grid grid-3" style={{ gap: 16 }}>
+              {suggestedCourses.map((c) => {
+                const access = accessFor(c, user);
+                return (
+                  <div key={c.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', width: '100%', height: 120, background: 'var(--paper-sunken)' }}>
+                      <img src={getCourseImage(c)} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', top: 8, left: 8 }}>
+                        <Badge tone={courseFormatBadge(c).tone}>{courseFormatBadge(c).icon} {courseFormatBadge(c).label}</Badge>
                       </div>
-                      <ProgressBar value={prog.progressPercent} tone={prog.status === 'COMPLETED' ? 'sage' : 'rail'} size="sm" />
+                    </div>
+                    <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.4 }}>{c.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--rail)', marginBottom: 8 }}>
+                          <i className="ti ti-sparkles" style={{ marginRight: 4 }} />
+                          {c.suggestionReason}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 8, gap: 8 }}>
+                        <span style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{c.estimatedHours || '3h'}</span>
+                        {renderAction(c, access, 'sm')}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button size="sm" variant="outline" icon="ti-sitemap" onClick={() => setViewingCurriculum(cur)}>
-                      View The Curriculum Roadmap
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
+      {activeSection === 'COURSES' && (
+      <>
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
       <div className="card card-pad" style={{ marginBottom: 20, background: 'var(--paper-raised)', borderRadius: 10, border: '1px solid var(--line)' }}>
         {/* STATUS QUICK FILTER PILLS */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {[
-            { id: 'ALL', label: 'All Assigned Courses', count: enrolledCourses.length },
+            { id: 'ALL', label: 'All Assigned Courses', count: enrolledCourses.length + standaloneAssessments.length },
             ...(recertCount > 0 ? [{ id: 'RECERTIFICATION', label: '🔴 Recertification Required', count: recertCount, highlight: true }] : []),
             { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount },
             { id: 'COMPLETED', label: 'Completed', count: completedCount },
@@ -726,6 +866,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                     </tr>
                   ) : (
                     items.map((c) => {
+                      if (c.kind === 'ASSESSMENT') return renderAssessmentTableRow(c);
                       const enr = c.enrollment;
                   const access = accessById[c.id];
                   const status = enr?.status || 'NOT_STARTED';
@@ -829,6 +970,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           return (
             <div className="grid grid-3" style={{ gap: 16, marginBottom: 20 }}>
               {items.map((c) => {
+            if (c.kind === 'ASSESSMENT') return renderAssessmentGridCard(c);
             const enr = c.enrollment;
             const access = accessById[c.id];
             const isCompleted = enr?.status === 'COMPLETED';
@@ -915,7 +1057,9 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         const renderList = viewMode === 'TABLE' ? renderTable : renderGrid;
 
         if (groupBy === 'NONE' || !groups) {
-          return renderList(filtered);
+          // Standalone assessments only merge into the ungrouped view — they carry no
+          // org-unit/level/domain of their own to sort into a group by.
+          return renderList([...filtered, ...filteredAssessmentItems]);
         }
 
         return (
@@ -956,6 +1100,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           </div>
         );
       })()}
+      </>
+      )}
 
       {/* MODAL: SUBMIT A LEVEL SKIP REQUEST */}
       <Modal
@@ -999,12 +1145,6 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
           </div>
         )}
       </Modal>
-
-      {viewingCurriculum && (
-        <Modal isOpen title={viewingCurriculum.title} subtitle={viewingCurriculum.description} onClose={() => setViewingCurriculum(null)} size="lg">
-          <CurriculumTree curriculum={viewingCurriculum} courses={allCourses} enrollmentsMap={myEnrollments} />
-        </Modal>
-      )}
     </>
   );
 }

@@ -133,7 +133,7 @@ class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
   componentDidCatch(error, errorInfo) {
-    console.error("MM MegaLearn ErrorBoundary caught an error:", error, errorInfo);
+    console.error("MMLearn ErrorBoundary caught an error:", error, errorInfo);
   }
   handleReset() {
     try {
@@ -174,7 +174,7 @@ function Shell({ role, setRole }) {
   const location = useLocation();
   const safeRole = normalizeRole(role);
   const roleHome = ROLE_HOME[safeRole] || '/learner';
-  const meta = PAGE_META[location.pathname] || { title: 'MM MegaLearn Platform', crumb: safeRole.charAt(0).toUpperCase() + safeRole.slice(1) };
+  const meta = PAGE_META[location.pathname] || { title: 'MMLearn Platform', crumb: safeRole.charAt(0).toUpperCase() + safeRole.slice(1) };
 
   return (
     <Layout

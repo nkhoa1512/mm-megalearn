@@ -219,7 +219,7 @@ export default function AppHeader({ role, onRoleChange, title, crumb }) {
           </div>
           <div className="app-header-brand-text">
             <div className="brand-name" style={{ fontSize: 14 }}>
-              MM Mega<span style={{ color: 'var(--bigc-green)' }}>Learn</span>
+              MM<span style={{ color: 'var(--bigc-green)' }}>Learn</span>
             </div>
           </div>
           <span title={roleLabel}>

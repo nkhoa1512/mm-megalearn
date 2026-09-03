@@ -41,6 +41,12 @@ export default function OrgHierarchyBrowser() {
   const [subDeptModal, setSubDeptModal] = useState({ isOpen: false, mode: 'ADD', data: null, departmentId: null });
   const [subDeptForm, setSubDeptForm] = useState({ code: '', name: '' });
 
+  // Bulk import of the org tree (Division -> Department -> Sub-Department) from a file
+  const [importModal, setImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [parsedOrgRows, setParsedOrgRows] = useState([]);
+  const [importFeedback, setImportFeedback] = useState(null);
+
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, type: '', id: null, title: '', message: '' });
 
   // Filtered Divisions
@@ -167,6 +173,176 @@ export default function OrgHierarchyBrowser() {
       updateSubDepartment(subDeptModal.data.id, subDeptForm);
     }
     setSubDeptModal({ isOpen: false, mode: 'ADD', data: null, departmentId: null });
+  }
+
+  // Bulk Org Import Handlers
+  function handleOpenImportModal() {
+    setImportText('');
+    setParsedOrgRows([]);
+    setImportFeedback(null);
+    setImportModal(true);
+  }
+
+  function handleDownloadOrgTemplate() {
+    const header = 'Division Code,Division Name,Branch (SUPPORTING/OPERATIONS),Department Code,Department Name,Sub-Department Code,Sub-Department Name\n';
+    const sampleRows = [
+      'CDD,Corporate Development,SUPPORTING,,,,',
+      '1018_QN,MM Quy Nhon,OPERATIONS,CS_ST,Customer Service,SUB-FO,Front Office',
+      '1018_QN,MM Quy Nhon,OPERATIONS,FF_ST,Fresh Food,,',
+    ].join('\n');
+    const blob = new Blob([header + sampleRows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'template_import_org_structure.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function handleOrgFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result || '';
+      setImportText(text);
+      parseOrgImportContent(text);
+    };
+    reader.readAsText(file);
+  }
+
+  // One row = one org path (Division, optionally its Department, optionally its Sub-Department).
+  // The same Division/Department code can repeat across rows to add several children under it.
+  function parseOrgImportContent(raw) {
+    if (!raw.trim()) {
+      setParsedOrgRows([]);
+      return;
+    }
+
+    const trimmed = raw.trim();
+    let rows = [];
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        const list = Array.isArray(parsed) ? parsed : [parsed];
+        rows = list.map((r) => ({
+          divisionCode: r.divisionCode || r.divCode || '',
+          divisionName: r.divisionName || r.divName || '',
+          branch: (r.branch || 'SUPPORTING').toUpperCase(),
+          departmentCode: r.departmentCode || r.deptCode || '',
+          departmentName: r.departmentName || r.deptName || '',
+          subDepartmentCode: r.subDepartmentCode || r.subDeptCode || '',
+          subDepartmentName: r.subDepartmentName || r.subDeptName || '',
+        }));
+      } catch (err) {
+        rows = [];
+      }
+    } else {
+      const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      const firstLine = (lines[0] || '').toLowerCase();
+      const hasHeader = firstLine.includes('division') || firstLine.includes('code');
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+
+      rows = dataLines.map((line) => {
+        const cols = line.split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
+        return {
+          divisionCode: cols[0] || '',
+          divisionName: cols[1] || '',
+          branch: (cols[2] || 'SUPPORTING').toUpperCase(),
+          departmentCode: cols[3] || '',
+          departmentName: cols[4] || '',
+          subDepartmentCode: cols[5] || '',
+          subDepartmentName: cols[6] || '',
+        };
+      });
+    }
+
+    // Preview against the org tree as it stands right now, so the admin sees what is
+    // actually new before committing — the real import re-checks this at execution time,
+    // since two rows in the same file may introduce the same new Division/Department.
+    const seenDivisionCodes = new Set();
+    const seenDeptKeys = new Set();
+    const preview = rows
+      .filter((r) => r.divisionCode.trim())
+      .map((r) => {
+        const divKey = r.divisionCode.toLowerCase();
+        const deptKey = `${divKey}::${r.departmentCode.toLowerCase()}`;
+        const divisionExists = divisions.some((d) => d.code?.toLowerCase() === divKey) || seenDivisionCodes.has(divKey);
+        const departmentExists = !r.departmentCode.trim() || departments.some(
+          (d) => d.code?.toLowerCase() === r.departmentCode.toLowerCase()
+            && divisions.find((div) => div.id === d.divisionId)?.code?.toLowerCase() === divKey
+        ) || seenDeptKeys.has(deptKey);
+        seenDivisionCodes.add(divKey);
+        if (r.departmentCode.trim()) seenDeptKeys.add(deptKey);
+
+        const actions = [];
+        actions.push(divisionExists ? 'Existing Division' : 'New Division');
+        if (r.departmentCode.trim()) actions.push(departmentExists ? 'Existing Department' : 'New Department');
+        if (r.subDepartmentCode.trim()) actions.push('New Sub-Department');
+
+        return { ...r, actionSummary: actions.join(' + ') };
+      });
+
+    setParsedOrgRows(preview);
+  }
+
+  function handleExecuteOrgImport() {
+    if (parsedOrgRows.length === 0) return;
+
+    // Local working copies so 2 rows sharing the same new Division/Department in this same
+    // file resolve to the one record just created, instead of creating it twice.
+    const workingDivisions = [...divisions];
+    const workingDepartments = [...departments];
+    let createdDivisions = 0;
+    let createdDepartments = 0;
+    let createdSubDepartments = 0;
+
+    parsedOrgRows.forEach((row) => {
+      let division = workingDivisions.find((d) => d.code?.toLowerCase() === row.divisionCode.toLowerCase());
+      if (!division) {
+        division = addDivision({
+          code: row.divisionCode,
+          name: row.divisionName || row.divisionCode,
+          branch: row.branch === 'OPERATIONS' ? 'OPERATIONS' : 'SUPPORTING',
+          businessUnitId: 'bu-mmvn',
+        });
+        workingDivisions.push(division);
+        createdDivisions += 1;
+      }
+
+      if (!row.departmentCode.trim()) return;
+      let department = workingDepartments.find(
+        (d) => d.code?.toLowerCase() === row.departmentCode.toLowerCase() && d.divisionId === division.id
+      );
+      if (!department) {
+        department = addDepartment({
+          code: row.departmentCode,
+          name: row.departmentName || row.departmentCode,
+          divisionId: division.id,
+        });
+        workingDepartments.push(department);
+        createdDepartments += 1;
+      }
+
+      if (!row.subDepartmentCode.trim()) return;
+      addSubDepartment({
+        code: row.subDepartmentCode,
+        name: row.subDepartmentName || row.subDepartmentCode,
+        departmentId: department.id,
+      });
+      createdSubDepartments += 1;
+    });
+
+    setImportFeedback(
+      `Imported ${createdDivisions} division(s), ${createdDepartments} department(s) and ${createdSubDepartments} sub-department(s).`
+    );
+    setTimeout(() => {
+      setImportFeedback(null);
+      setImportModal(false);
+      setImportText('');
+      setParsedOrgRows([]);
+    }, 1800);
   }
 
   // Delete Action Confirm
@@ -636,6 +812,9 @@ export default function OrgHierarchyBrowser() {
 
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Button size="sm" variant="outline" icon="ti-file-import" onClick={handleOpenImportModal}>
+              Import File
+            </Button>
             <Button size="sm" variant="ghost" icon="ti-plus" onClick={handleOpenAddBu}>
               Add BU
             </Button>
@@ -1012,6 +1191,116 @@ export default function OrgHierarchyBrowser() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {importModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: 16,
+          }}
+          onClick={() => setImportModal(false)}
+        >
+          <div
+            className="card card-pad"
+            style={{ width: '100%', maxWidth: 820, maxHeight: '90vh', overflowY: 'auto', background: 'var(--paper-raised)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>📥 Import The Org Structure</div>
+              <button type="button" onClick={() => setImportModal(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 18 }}>
+                <i className="ti ti-x" />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--paper-sunken)', padding: '12px 16px', borderRadius: 8, marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Download the CSV template</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>One row per org path: Division, its Department (optional) and its Sub-Department (optional). Repeat a Division/Department code across rows to add several children under it.</div>
+              </div>
+              <Button size="sm" variant="outline" icon="ti-download" onClick={handleDownloadOrgTemplate}>
+                Download The CSV Template
+              </Button>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label className="field-label">Choose A File From Your Computer (.csv, .json)</label>
+              <input
+                type="file"
+                accept=".csv,.json,.txt"
+                className="field-input"
+                onChange={handleOrgFileUpload}
+                style={{ padding: '6px 10px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label className="field-label">Or Paste The CSV / JSON Data Directly</label>
+              <textarea
+                className="field-input"
+                rows={4}
+                placeholder="Division Code, Division Name, Branch, Department Code, Department Name, Sub-Department Code, Sub-Department Name..."
+                value={importText}
+                onChange={(e) => {
+                  setImportText(e.target.value);
+                  parseOrgImportContent(e.target.value);
+                }}
+                style={{ fontFamily: 'monospace', fontSize: 12 }}
+              />
+            </div>
+
+            {parsedOrgRows.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+                    🔍 Preview {parsedOrgRows.length} row(s)
+                  </div>
+                  <Badge tone="green" size="sm">Ready To Load</Badge>
+                </div>
+                <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 6 }}>
+                  <table className="table" style={{ width: '100%', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        <th>Division</th>
+                        <th>Department</th>
+                        <th>Sub-Department</th>
+                        <th>What happens</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedOrgRows.map((row, i) => (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 700 }}>{row.divisionCode} — {row.divisionName || row.divisionCode}</td>
+                          <td>{row.departmentCode ? `${row.departmentCode} — ${row.departmentName || row.departmentCode}` : '—'}</td>
+                          <td>{row.subDepartmentCode ? `${row.subDepartmentCode} — ${row.subDepartmentName || row.subDepartmentCode}` : '—'}</td>
+                          <td style={{ color: 'var(--ink-soft)' }}>{row.actionSummary}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {importFeedback && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--sage-soft)', color: '#047857', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                <i className="ti ti-check" style={{ marginRight: 6 }} />{importFeedback}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <Button variant="ghost" type="button" onClick={() => setImportModal(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                icon="ti-bolt"
+                disabled={parsedOrgRows.length === 0}
+                onClick={handleExecuteOrgImport}
+              >
+                Confirm Loading {parsedOrgRows.length} Row(s)
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -144,7 +144,7 @@ export function formatRelativeDay(dateStr, language = 'vi') {
 /**
  * Exports a standard .ics iCalendar file for Outlook, Google Calendar and Apple Calendar
  */
-export function generateIcsFile(events = [], calendarTitle = 'MM MegaLearn Calendar') {
+export function generateIcsFile(events = [], calendarTitle = 'MMLearn Calendar') {
   const cleanTitle = calendarTitle.replace(/[^a-zA-Z0-9_\- ]/g, '');
   const now = new Date();
   const dtStamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -162,8 +162,8 @@ export function generateIcsFile(events = [], calendarTitle = 'MM MegaLearn Calen
     const { y, m, d } = parseDateString(ev.date || todayDateString());
     const dateFormatted = `${y}${pad2(m)}${pad2(d)}`;
     const uid = `${ev.id || Math.random().toString(36).substr(2, 9)}@megalearn.mmvn.com`;
-    const summary = (ev.title || 'MM MegaLearn training event').replace(/,/g, '\\,');
-    const description = `${ev.subtitle || ''} [MM MegaLearn - Job Levels & Training]`.replace(/\n/g, '\\n');
+    const summary = (ev.title || 'MMLearn training event').replace(/,/g, '\\,');
+    const description = `${ev.subtitle || ''} [MMLearn - Job Levels & Training]`.replace(/\n/g, '\\n');
     const location = (ev.venue || 'MM Mega Market LMS').replace(/,/g, '\\,');
 
     icsContent.push('BEGIN:VEVENT');

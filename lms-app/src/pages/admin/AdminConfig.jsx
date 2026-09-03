@@ -157,7 +157,7 @@ export default function AdminConfig() {
   });
 
   // 6. Branding & Certificate
-  const [portalName, setPortalName] = useState('MM Mega Market Vietnam - MM MegaLearn');
+  const [portalName, setPortalName] = useState('MM Mega Market Vietnam - MMLearn');
   const [certSignerName, setCertSignerName] = useState('Sarah Nguyen');
   const [certSignerTitle, setCertSignerTitle] = useState('Head of Division - HR Director / BOM');
   const [certIssuerOrg, setCertIssuerOrg] = useState('MM Mega Market Vietnam - Learning & Organizational Development');

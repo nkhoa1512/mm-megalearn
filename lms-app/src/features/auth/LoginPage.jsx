@@ -127,7 +127,7 @@ export default function LoginPage() {
               </span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
-              Enterprise Learning &amp; Development Platform &middot; MM MegaLearn
+              Enterprise Learning &amp; Development Platform &middot; MMLearn
             </div>
           </div>
         </div>

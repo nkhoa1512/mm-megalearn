@@ -5,7 +5,7 @@
 export const TRANSLATIONS = {
   en: {
     // Brand & App
-    appName: 'MM MegaLearn',
+    appName: 'MMLearn',
     brandTagline: 'Corporate Learning & Development',
     aiTutor: 'AI Tutor',
     streak: 'streak',
@@ -157,7 +157,7 @@ export const TRANSLATIONS = {
 
   vi: {
     // Brand & App
-    appName: 'MM MegaLearn',
+    appName: 'MMLearn',
     brandTagline: 'Training & Human Resource Development',
     aiTutor: 'AI Assistant',
     streak: 'learning streak',

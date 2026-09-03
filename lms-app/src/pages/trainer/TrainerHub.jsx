@@ -1155,7 +1155,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
             </div>
 
             <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.45 }}>
-              The trainer opens this screen on the training room projector. Learners scan the code in the app <strong>MM MegaLearn</strong> to complete check-in and record course attendance.
+              The trainer opens this screen on the training room projector. Learners scan the code in the app <strong>MMLearn</strong> to complete check-in and record course attendance.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -1464,7 +1464,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
                 </div>
                 <div style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 6, padding: 20, minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                   <i className="ti ti-file-search" style={{ fontSize: 44, color: 'var(--blue)', marginBottom: 8 }} />
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>MM MegaLearn Embedded Document Viewer</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>MMLearn Embedded Document Viewer</div>
                   <div style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 440, marginTop: 4 }}>
                     Materials <strong>{previewMaterial.name}</strong> ({previewMaterial.type} - {previewMaterial.size}) loaded successfully from the MMVN SOP &amp; learning material repository.
                   </div>

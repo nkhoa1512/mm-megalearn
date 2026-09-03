@@ -238,7 +238,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   }
 
   function handleExportIcs() {
-    const calendarTitle = `MM MegaLearn - Training Calendar (${roleDef.shortVi})`;
+    const calendarTitle = `MMLearn - Training Calendar (${roleDef.shortVi})`;
     generateIcsFile(filteredEvents, calendarTitle);
   }
 
@@ -834,7 +834,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
 
             <div style={{ padding: 12, borderRadius: 8, background: 'var(--blue-soft)', border: '1px solid #BFDBFE', fontSize: 13, color: 'var(--blue-soft-text)' }}>
               <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
-              <strong>{language === 'en' ? 'Attendance Requirement:' : 'Attendance requirement:'}</strong> Please arrive on time and scan the QR code or sign in to your MM MegaLearn account so your attendance is recorded officially.
+              <strong>{language === 'en' ? 'Attendance Requirement:' : 'Attendance requirement:'}</strong> Please arrive on time and scan the QR code or sign in to your MMLearn account so your attendance is recorded officially.
             </div>
           </div>
         </Modal>

@@ -19,7 +19,7 @@ export default function AiLearningHub() {
     {
       id: 1,
       sender: 'bot',
-      text: `Hello **${user.fullName}**! I am the **MM MegaLearn AI Training Assistant**. Ask me anything about lesson content, HACCP food safety standards, or revise quiz questions before your exam.`,
+      text: `Hello **${user.fullName}**! I am the **MMLearn AI Training Assistant**. Ask me anything about lesson content, HACCP food safety standards, or revise quiz questions before your exam.`,
       time: 'Just now',
     },
   ]);
@@ -89,7 +89,7 @@ export default function AiLearningHub() {
 • Each learner gets up to **3 retakes**.
 • The standard time limit is **15 minutes**. Good luck with your revision — aim for full marks!`;
       } else {
-        reply = `💡 **Answer From The MM MegaLearn AI Tutor**:
+        reply = `💡 **Answer From The MMLearn AI Tutor**:
 Your question has been cross-checked against MM Mega Market's current courses and training standards. Click the **"Personalized Course Suggestions"** tab to see and open the related courses directly.`;
       }
 

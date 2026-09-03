@@ -2274,7 +2274,7 @@ export const classroomSessions = [
     syllabus: [
       { step: 'Part 1: Introducing The MMVN Mission, Vision & 5 Core Values (45 minutes)', detail: 'The history of MM Mega Market VN, the corporate code of ethics and HR policy.' },
       { step: 'Part 2: Labour Regulations, Employee Rights & Obligations (75 minutes)', detail: 'Insurance entitlements, working hours, occupational health and safety, and the benefits claim process.' },
-      { step: 'Part 3: Using The MM MegaLearn Training Portal & Q&A (60 minutes)', detail: 'Looking up level roadmaps, enrolling in courses and getting direct answers on benefits policy.' },
+      { step: 'Part 3: Using The MMLearn Training Portal & Q&A (60 minutes)', detail: 'Looking up level roadmaps, enrolling in courses and getting direct answers on benefits policy.' },
     ],
     materials: [
       { id: 'mat-adm-1', name: 'MM Mega Market Vietnam Employee Handbook 2026 (PDF)', type: 'PDF', size: '4.8 MB', url: '#' },

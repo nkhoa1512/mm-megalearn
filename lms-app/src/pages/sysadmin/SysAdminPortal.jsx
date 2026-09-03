@@ -381,7 +381,7 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
               Security &amp; Exam Anti-Cheating Policy Configuration (Security Policies)
             </div>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
-              Applies mandatory information security policy across the whole MM MegaLearn platform.
+              Applies mandatory information security policy across the whole MMLearn platform.
             </p>
 
             <div className="grid grid-2" style={{ marginBottom: 16 }}>
