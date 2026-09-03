@@ -218,8 +218,18 @@ check('a signed-off plan stays signed off',
 const scopedPlans = teamActionPlans(team, actionPlans, today);
 const teamIds = new Set(team.members.map((m) => m.user.userId));
 const teamCodes = new Set(team.members.map((m) => m.user.employeeCode));
+// An action plan identifies its owner with `learnerId` (that is what the survey
+// writes and what the seed data carries); `userId` is only a fallback for a
+// record authored the other way round. Asserting on `userId` alone used to pass
+// for the wrong reason — nothing matched, so `every` was vacuously true on an
+// empty list, which is exactly how the empty Action Plan tab went unnoticed.
 check('only the team\'s own action plans are surfaced (BR-MGR-040)',
-  scopedPlans.every((p) => teamIds.has(p.userId) || teamCodes.has(p.employeeCode) || teamCodes.has(p.userId)));
+  scopedPlans.every((p) => {
+    const owner = p.learnerId || p.userId;
+    return teamIds.has(owner) || teamCodes.has(p.employeeCode) || teamCodes.has(owner);
+  }));
+check('the team\'s action plans actually surface (the tab is not silently empty)',
+  scopedPlans.length > 0);
 check('every surfaced plan carries a review state', scopedPlans.every((p) => p.review && p.review.state));
 
 // ---------------------------------------------------------------------------

@@ -1,47 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './features/layout/Layout';
 import { AppProvider, useAppStore } from './store/AppProvider';
 import { normalizeRole, ROLE_HOME } from './data/roles';
-import LoginPage from './pages/auth/LoginPage';
 
-import LearnerDashboard from './pages/learner/LearnerDashboard';
-import LearnerCourses from './pages/learner/LearnerCourses';
-import LearnerCourseDetail from './pages/learner/LearnerCourseDetail';
-import LearnerCertificates from './pages/learner/LearnerCertificates';
-import LearnerHistory from './pages/learner/LearnerHistory';
-import LearnerClassrooms from './pages/learner/LearnerClassrooms';
-import LearnerLearningPaths from './pages/learner/LearnerLearningPaths';
-import AiLearningHub from './pages/learner/AiLearningHub';
-import LearnerCalendar from './pages/learner/LearnerCalendar';
+// Every screen is loaded on demand. The authoring screens alone (course builder,
+// course catalog, assessment editor) are ~480KB of source that a Learner — the
+// role most people sign in as — never opens, and shipping them in the first
+// bundle delayed every single session's first paint.
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 
-import ManagerDashboard from './pages/manager/ManagerDashboard';
-import ManagerTeam from './pages/manager/ManagerTeam';
-import ManagerLearning from './pages/manager/ManagerLearning';
-import ManagerCertificates from './pages/manager/ManagerCertificates';
-import ManagerCourses from './pages/manager/ManagerCourses';
+const LearnerDashboard = lazy(() => import('./pages/learner/LearnerDashboard'));
+const LearnerCourses = lazy(() => import('./pages/learner/LearnerCourses'));
+const LearnerCourseDetail = lazy(() => import('./pages/learner/LearnerCourseDetail'));
+const LearnerCertificates = lazy(() => import('./pages/learner/LearnerCertificates'));
+const LearnerHistory = lazy(() => import('./pages/learner/LearnerHistory'));
+const LearnerClassrooms = lazy(() => import('./pages/learner/LearnerClassrooms'));
+const LearnerLearningPaths = lazy(() => import('./pages/learner/LearnerLearningPaths'));
+const AiLearningHub = lazy(() => import('./pages/learner/AiLearningHub'));
+const LearnerCalendar = lazy(() => import('./pages/learner/LearnerCalendar'));
 
-import LessonPlayer from './pages/player/LessonPlayer';
-import AssessmentPlayer from './pages/player/AssessmentPlayer';
+const ManagerDashboard = lazy(() => import('./pages/manager/ManagerDashboard'));
+const ManagerTeam = lazy(() => import('./pages/manager/ManagerTeam'));
+const ManagerLearning = lazy(() => import('./pages/manager/ManagerLearning'));
+const ManagerCertificates = lazy(() => import('./pages/manager/ManagerCertificates'));
+const ManagerCourses = lazy(() => import('./pages/manager/ManagerCourses'));
 
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminCourses from './pages/admin/AdminCourses';
-import AdminCourseBuilder from './pages/admin/AdminCourseBuilder';
-import AdminConfig from './pages/admin/AdminConfig';
-import AdminReports from './pages/admin/AdminReports';
-import AdminTrainingOps from './pages/admin/AdminTrainingOps';
-import AdminCostCenter from './pages/admin/AdminCostCenter';
-import AdminLevelRoadmaps from './pages/admin/AdminLevelRoadmaps';
-import AdminCertifications from './pages/admin/AdminCertifications';
-import AdminCategoryManager from './pages/admin/AdminCategoryManager';
-import TrainerHub from './pages/trainer/TrainerHub';
-import MyLearning from './pages/shared/MyLearning';
-import MyCertificates from './pages/shared/MyCertificates';
-import TrainerRatingsDirectory from './features/ratings/TrainerRatingsDirectory';
-import ManagerApprovals from './pages/manager/ManagerApprovals';
-import HrbpDashboard from './pages/hrbp/HrbpDashboard';
-import UserAdminPortal from './pages/useradmin/UserAdminPortal';
-import SysAdminPortal from './pages/sysadmin/SysAdminPortal';
+const LessonPlayer = lazy(() => import('./pages/player/LessonPlayer'));
+const AssessmentPlayer = lazy(() => import('./pages/player/AssessmentPlayer'));
+
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminCourses = lazy(() => import('./pages/admin/AdminCourses'));
+const AdminCourseBuilder = lazy(() => import('./pages/admin/AdminCourseBuilder'));
+const AdminConfig = lazy(() => import('./pages/admin/AdminConfig'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const AdminTrainingOps = lazy(() => import('./pages/admin/AdminTrainingOps'));
+const AdminCostCenter = lazy(() => import('./pages/admin/AdminCostCenter'));
+const AdminLevelRoadmaps = lazy(() => import('./pages/admin/AdminLevelRoadmaps'));
+const AdminCertifications = lazy(() => import('./pages/admin/AdminCertifications'));
+const AdminCategoryManager = lazy(() => import('./pages/admin/AdminCategoryManager'));
+const TrainerHub = lazy(() => import('./pages/trainer/TrainerHub'));
+const MyLearning = lazy(() => import('./pages/shared/MyLearning'));
+const MyCertificates = lazy(() => import('./pages/shared/MyCertificates'));
+const TrainerRatingsDirectory = lazy(() => import('./features/ratings/TrainerRatingsDirectory'));
+const ManagerApprovals = lazy(() => import('./pages/manager/ManagerApprovals'));
+const HrbpDashboard = lazy(() => import('./pages/hrbp/HrbpDashboard'));
+const UserAdminPortal = lazy(() => import('./pages/useradmin/UserAdminPortal'));
+const SysAdminPortal = lazy(() => import('./pages/sysadmin/SysAdminPortal'));
+
+/**
+ * Shown while a screen's code is fetched. It sits inside the app shell, so the
+ * header and navigation stay put and only the content area changes — a full-page
+ * spinner would make every navigation look like a page reload.
+ */
+function RouteFallback() {
+  return (
+    <div className="empty-state" style={{ animation: 'fadeIn 0.2s ease' }} role="status" aria-live="polite">
+      <i className="ti ti-loader ti-spin" aria-hidden="true" />
+      <p style={{ margin: 0 }}>Loading…</p>
+    </div>
+  );
+}
 
 const PAGE_META = {
   '/learner': { title: 'Personal Learning Dashboard & Milestones', crumb: 'Learner (Store & HO)' },
@@ -165,6 +184,7 @@ function Shell({ role, setRole }) {
       title={meta.title}
       crumb={meta.crumb}
     >
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         {/* Learner Routes */}
         <Route path="/learner" element={<LearnerDashboard />} />
@@ -261,6 +281,7 @@ function Shell({ role, setRole }) {
 
         <Route path="*" element={<Navigate to={roleHome} replace />} />
       </Routes>
+      </Suspense>
     </Layout>
   );
 }
@@ -279,10 +300,12 @@ function AppRoutes() {
 
   if (!isAuthenticated) {
     return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 

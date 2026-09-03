@@ -229,6 +229,10 @@ const PAGES = [
   ['L&D · Dashboard', <AdminDashboard />, '/admin'],
   ['L&D · Course catalog', <AdminCourses />, '/admin/courses'],
   ['L&D · Configuration & RBAC', <AdminConfig />, '/admin/config'],
+  // NOTE: this reaches the CSAT tab only. The other four report tabs are gated
+  // behind canViewOrgProgress, and this harness renders as the default learner
+  // persona, so they cannot be measured here — they are checked in the browser
+  // instead. Passing an initial tab does not help; the capability gate wins.
   ['L&D · ROI report', <AdminReports />, '/admin/reports'],
   ['L&D · Training Ops', <AdminTrainingOps />, '/admin/training-ops'],
   // Modals (not routes of their own) — still measured, because they used to slip
