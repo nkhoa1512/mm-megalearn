@@ -1,21 +1,35 @@
 import React, { useState } from 'react';
 import {
   kirkpatrickROI,
-  companyHeatmapData,
   costTrackingData,
-  divisionComplianceLeague,
   classroomSessions,
   allUsers,
   enrollmentsForUser,
 } from '../../data/mockData';
 import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
-import { downloadCsv } from '../../lib/exportCsv';
+import { downloadWorkbook } from '../../lib/exportExcel';
 import { useCourseStore } from '../../store/CourseStore';
 import { normalizeRole, hasCapability } from '../../data/roles';
 import { PASS_MARK } from '../../utils/managerRules';
+import {
+  buildComplianceLeague,
+  buildCompetencyHeatmap,
+  OPERATIONS_COMPETENCIES,
+  OFFICE_COMPETENCIES,
+} from '../../utils/reportAnalytics';
+
+const VND = new Intl.NumberFormat('vi-VN');
+const formatVnd = (n) => `${VND.format(Math.round(Number(n) || 0))} ₫`;
 
 export default function AdminReports() {
-  const { currentUser, actionPlans, users: storeUsers, enrollments: storeEnrollments } = useCourseStore();
+  const {
+    currentUser,
+    actionPlans,
+    users: storeUsers,
+    enrollments: storeEnrollments,
+    courses,
+    costReport,
+  } = useCourseStore();
   const userRole = normalizeRole(currentUser?.role);
   const isTrainer = userRole === 'trainer';
   // BR-RPT-02 — a Trainer has canViewCsat only, never canViewOrgProgress: they
@@ -61,9 +75,11 @@ export default function AdminReports() {
   // Level 2 — every enrollment record across every employee (the same HRIS
   // matrix the manager and HRBP screens are built from), not one sampled course.
   const roster = storeUsers && storeUsers.length > 0 ? storeUsers : allUsers();
+  const enrollmentsByUser = {};
+  roster.forEach((u) => { enrollmentsByUser[u.userId] = enrollmentsForUser(u, storeEnrollments); });
   const allEnrollments = [];
   roster.forEach((u) => {
-    Object.values(enrollmentsForUser(u, storeEnrollments)).forEach((e) => allEnrollments.push(e));
+    Object.values(enrollmentsByUser[u.userId]).forEach((e) => allEnrollments.push(e));
   });
   const scoredEnrollments = allEnrollments.filter((e) => typeof e.score === 'number');
   const companyAvgScore = scoredEnrollments.length > 0
@@ -98,6 +114,21 @@ export default function AdminReports() {
     .filter(Boolean)
     .slice(0, 2);
 
+  // BR-RPT-04 — the compliance league and the competency heatmap are derived
+  // from the same roster and enrollment matrix, so a division that finishes its
+  // mandatory courses moves up the table on the next render.
+  const complianceLeague = buildComplianceLeague(roster, enrollmentsByUser);
+  const heatmap = buildCompetencyHeatmap(roster, enrollmentsByUser, courses);
+
+  // BR-RPT-05 — budget figures come from the live cost ledger (the same engine
+  // behind the Training Cost Center), never from a number typed into the report.
+  const costTotals = costReport?.totals || {};
+  const budgetAllocated = costTotals.income || 0;
+  const budgetSpent = costTotals.expense || 0;
+  const budgetUtilization = costTotals.utilization || 0;
+  const costPerLearner = costTotals.costPerLearner || 0;
+  const costCentersRanked = (costReport?.byCostCenter || []).filter((c) => c.budget > 0 || c.spent > 0);
+
   function qualityGrade(rating) {
     if (rating >= 4.9) return 'Outstanding (Gold)';
     if (rating >= 4.85) return 'Very Good';
@@ -123,37 +154,95 @@ export default function AdminReports() {
   // BR-RPT-02 — a Trainer only ever sees the one tab their capability covers.
   const visibleReportTabs = canViewOrgWide ? ALL_REPORT_TABS : ALL_REPORT_TABS.filter((t) => t.id === 'TRAINER_CSAT');
 
-  function activeReportRows() {
-    if (effectiveTab === 'TRAINER_CSAT') {
-      return trainerSessions.map((s) => ({
-        classTitle: s.title,
-        trainer: s.trainerName,
-        csat: s.trainerRating,
-        learners: s.enrolledCount,
-        seatFillRate: s.maxCapacity ? `${Math.round((s.enrolledCount / s.maxCapacity) * 100)}%` : '—',
-      }));
-    }
-    if (effectiveTab === 'HEATMAP') {
-      return [...companyHeatmapData.operations, ...companyHeatmapData.supportingOffice];
-    }
-    if (effectiveTab === 'COST_BUDGET') {
-      return costTrackingData.departmentSpend;
-    }
-    if (effectiveTab === 'COMPLIANCE_LEAGUE') {
-      return divisionComplianceLeague;
-    }
+  const csatSheetRows = trainerSessions.map((s) => ({
+    Class: s.title,
+    Trainer: s.trainerName,
+    'CSAT rating': s.trainerRating,
+    'Learners enrolled': s.enrolledCount,
+    Capacity: s.maxCapacity,
+    'Seat fill %': s.maxCapacity ? Math.round((s.enrolledCount / s.maxCapacity) * 100) : null,
+    'Quality rating': qualityGrade(s.trainerRating || 0),
+  }));
+
+  const kirkpatrickSheetRows = [
+    { Level: 'Level 1 - Reaction (live)', Metric: 'Average CSAT', Value: companyAvgCsat, Basis: `${csatRatings.length} recorded ratings` },
+    { Level: 'Level 2 - Learning (live)', Metric: 'Average assessment score', Value: companyAvgScore, Basis: `${completedAssessments} scored completions` },
+    { Level: 'Level 2 - Learning (live)', Metric: 'First-attempt pass rate %', Value: companyFirstAttemptPassRate, Basis: `pass mark ${PASS_MARK}` },
+    { Level: 'Level 3 - Behavior (live)', Metric: 'Reviews signed off %', Value: l3SignOffRate, Basis: `${signedOffPlans.length} of ${(actionPlans || []).length} action plans` },
+    { Level: 'Level 3 - Behavior (live)', Metric: 'Average L3 rating', Value: companyAvgL3Score, Basis: 'manager sign-offs' },
+    { Level: 'Level 4 - Financial ROI', Metric: 'Estimated cost savings', Value: kirkpatrickROI.level4.costSavingsEstimated, Basis: 'ILLUSTRATIVE ESTIMATE - not computed from live data' },
+    { Level: 'Level 4 - Financial ROI', Metric: 'ROI ratio', Value: kirkpatrickROI.level4.roiRatio, Basis: 'ILLUSTRATIVE ESTIMATE - not computed from live data' },
+  ];
+
+  const heatmapSheetRows = [
+    ...heatmap.operations.map((r) => {
+      const row = { Branch: 'Operations stores', Unit: r.entity, Region: r.area, Headcount: r.headcount };
+      OPERATIONS_COMPETENCIES.forEach((c) => { row[c.label] = r[c.key]; });
+      row['Average gap %'] = r.gapAvg;
+      row['Audit readiness'] = r.auditReady ? 'Audit ready' : 'Training required';
+      return row;
+    }),
+    ...heatmap.supportingOffice.map((r) => {
+      const row = { Branch: 'Head office', Unit: r.entity, Region: r.area, Headcount: r.headcount };
+      OFFICE_COMPETENCIES.forEach((c) => { row[c.label] = r[c.key]; });
+      row['Average gap %'] = r.gapAvg;
+      row['Audit readiness'] = r.auditReady ? 'Audit ready' : 'Training required';
+      return row;
+    }),
+  ];
+
+  const costSheetRows = costCentersRanked.map((c) => ({
+    'Cost center': c.name,
+    Code: c.code,
+    Branch: c.branchName || c.branch || '—',
+    Headcount: c.headcount,
+    'Allocated budget (VND)': c.income,
+    'Disbursed (VND)': c.spent,
+    'Remaining (VND)': c.remaining,
+    Learners: c.learners,
+    'Paid enrollments': c.paidEnrollments,
+    'Utilization %': c.utilization,
+  }));
+
+  const complianceSheetRows = complianceLeague.map((d) => ({
+    Rank: d.rank,
+    Division: d.name,
+    Code: d.code,
+    Lead: d.director,
+    Headcount: d.headcount,
+    'Fully compliant people': d.fullyCompliantCount,
+    'In progress': d.inProgressCount,
+    Overdue: d.overdueCount,
+    'Mandatory courses completed': d.coursesCompleted,
+    'Mandatory courses required': d.coursesRequired,
+    'Compliance rate %': d.completionRate,
+    'Average score': d.avgScore,
+    'Inspection status': d.status,
+  }));
+
+  /**
+   * Every report the viewer is entitled to, one sheet each — a Trainer's
+   * workbook therefore contains only their own CSAT sheet.
+   */
+  function workbookSheets() {
+    const sheets = [{ name: 'Teaching CSAT', rows: csatSheetRows }];
+    if (!canViewOrgWide) return sheets;
     return [
-      { level: 'Level 1 - Reaction (live)', avgCsat: companyAvgCsat, ratingsCounted: csatRatings.length },
-      { level: 'Level 2 - Learning (live)', avgScore: companyAvgScore, firstAttemptPassRate: companyFirstAttemptPassRate, completedAssessments },
-      { level: 'Level 3 - Behavior (live)', signOffRate: l3SignOffRate, avgL3Score: companyAvgL3Score, plansSignedOff: signedOffPlans.length, plansTotal: (actionPlans || []).length },
-      { level: 'Level 4 - Financial ROI (illustrative estimate, not computed)', ...kirkpatrickROI.level4 },
+      ...sheets,
+      { name: 'Kirkpatrick ROI', rows: kirkpatrickSheetRows },
+      { name: 'Competency Heatmap', rows: heatmapSheetRows },
+      { name: 'Cost & Budget', rows: costSheetRows },
+      { name: 'Compliance League', rows: complianceSheetRows },
     ];
   }
 
   function handleExportExcel() {
     setIsExporting(true);
     setTimeout(() => {
-      downloadCsv(`mmvn-lms-${effectiveTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, activeReportRows());
+      downloadWorkbook(
+        `mmvn-lms-reports-${new Date().toISOString().slice(0, 10)}.xls`,
+        workbookSheets()
+      );
       setIsExporting(false);
       setExportComplete(true);
       setTimeout(() => setExportComplete(false), 3000);
@@ -193,7 +282,9 @@ export default function AdminReports() {
             onClick={handleExportExcel}
             disabled={isExporting}
           >
-            {exportComplete ? 'CSV Downloaded!' : 'Export Excel Report (CSV)'}
+            {exportComplete
+              ? 'Workbook downloaded!'
+              : canViewOrgWide ? 'Export all 5 reports (Excel, 5 sheets)' : 'Export my CSAT report (Excel)'}
           </Button>
           <Button
             variant="primary"
@@ -506,41 +597,40 @@ export default function AdminReports() {
       {/* TAB 2: DUAL-HIERARCHY COMPETENCY GAP HEATMAP */}
       {effectiveTab === 'HEATMAP' && (
         <div style={{ marginBottom: 28 }}>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 16px', maxWidth: 950 }}>
+            Each cell is the average attainment of that unit's employees on the courses in that competency
+            category — a recorded score where one exists, otherwise course progress — read straight from the
+            enrollment matrix. A blank cell means nobody in that unit has been enrolled on that category yet,
+            which is an allocation gap rather than a low score.
+          </p>
+
           {/* Operations Heatmap */}
           <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>1. Hypermarket Store Operations Branch (7 Retail Stores)</span>
-            <Badge tone="amber">Operations Stores</Badge>
+            <span>1. Store Operations Branch ({heatmap.operations.length} units)</span>
+            <Badge tone="sage" icon="ti-bolt">Live data</Badge>
           </div>
           <div className="card" style={{ marginBottom: 24, overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 220 }}>Store Location</th>
-                  <th>Region</th>
-                  <th>HACCP Food Safety</th>
-                  <th>Cold Chain Integrity</th>
-                  <th>Shrinkage Control</th>
-                  <th>POS Speed</th>
-                  <th>Customer Service</th>
-                  <th>Leadership</th>
+                  <th style={{ width: 220 }}>Store / Division</th>
+                  <th>Headcount</th>
+                  {OPERATIONS_COMPETENCIES.map((c) => <th key={c.key}>{c.label}</th>)}
                   <th>Average Gap</th>
                   <th>Audit Readiness</th>
                 </tr>
               </thead>
               <tbody>
-                {companyHeatmapData.operations.map((st, i) => (
-                  <tr key={i}>
+                {heatmap.operations.length === 0 ? (
+                  <tr><td colSpan={OPERATIONS_COMPETENCIES.length + 4} style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-soft)' }}>No operations units on the roster.</td></tr>
+                ) : heatmap.operations.map((st) => (
+                  <tr key={st.entity}>
                     <td><strong>{st.entity}</strong></td>
-                    <td><span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{st.area}</span></td>
-                    <td><HeatCell val={st.foodSafety} /></td>
-                    <td><HeatCell val={st.coldChain} /></td>
-                    <td><HeatCell val={st.shrinkControl} /></td>
-                    <td><HeatCell val={st.posSpeed} /></td>
-                    <td><HeatCell val={st.customerService} /></td>
-                    <td><HeatCell val={st.leadership} /></td>
+                    <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{st.headcount}</td>
+                    {OPERATIONS_COMPETENCIES.map((c) => <td key={c.key}><HeatCell val={st[c.key]} /></td>)}
                     <td>
-                      <strong style={{ color: st.gapAvg <= 10 ? 'var(--sage)' : 'var(--amber)' }}>
-                        {st.gapAvg}%
+                      <strong style={{ color: st.gapAvg === null ? 'var(--ink-faint)' : st.gapAvg <= 10 ? 'var(--sage)' : 'var(--amber)' }}>
+                        {st.gapAvg === null ? '—' : `${st.gapAvg}%`}
                       </strong>
                     </td>
                     <td>
@@ -556,43 +646,37 @@ export default function AdminReports() {
 
           {/* Supporting Office Heatmap */}
           <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>2. Head Office Supporting Functions Branch</span>
-            <Badge tone="rail">An Phu Headquarters</Badge>
+            <span>2. Head Office Supporting Functions ({heatmap.supportingOffice.length} divisions)</span>
+            <Badge tone="sage" icon="ti-bolt">Live data</Badge>
           </div>
           <div className="card" style={{ marginBottom: 24, overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
                   <th style={{ width: 240 }}>Corporate Division</th>
-                  <th>Location</th>
-                  <th>QA &amp; Standards</th>
-                  <th>Supply Chain</th>
-                  <th>Legal Compliance</th>
-                  <th>IT InfoSec</th>
-                  <th>Collaboration</th>
-                  <th>Strategic Leadership</th>
+                  <th>Headcount</th>
+                  {OFFICE_COMPETENCIES.map((c) => <th key={c.key}>{c.label}</th>)}
                   <th>Average Gap</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {companyHeatmapData.supportingOffice.map((ho, i) => (
-                  <tr key={i}>
+                {heatmap.supportingOffice.length === 0 ? (
+                  <tr><td colSpan={OFFICE_COMPETENCIES.length + 4} style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-soft)' }}>No head-office divisions on the roster.</td></tr>
+                ) : heatmap.supportingOffice.map((ho) => (
+                  <tr key={ho.entity}>
                     <td><strong>{ho.entity}</strong></td>
-                    <td><span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{ho.branch}</span></td>
-                    <td><HeatCell val={ho.foodSafety} /></td>
-                    <td><HeatCell val={ho.coldChain} /></td>
-                    <td><HeatCell val={ho.shrinkControl} /></td>
-                    <td><HeatCell val={ho.posSpeed} /></td>
-                    <td><HeatCell val={ho.customerService} /></td>
-                    <td><HeatCell val={ho.leadership} /></td>
+                    <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{ho.headcount}</td>
+                    {OFFICE_COMPETENCIES.map((c) => <td key={c.key}><HeatCell val={ho[c.key]} /></td>)}
                     <td>
-                      <strong style={{ color: ho.gapAvg <= 5 ? 'var(--sage)' : 'var(--rail)' }}>
-                        {ho.gapAvg}%
+                      <strong style={{ color: ho.gapAvg === null ? 'var(--ink-faint)' : ho.gapAvg <= 10 ? 'var(--sage)' : 'var(--rail)' }}>
+                        {ho.gapAvg === null ? '—' : `${ho.gapAvg}%`}
                       </strong>
                     </td>
                     <td>
-                      <Badge tone="sage">Head Office Compliant</Badge>
+                      <Badge tone={ho.auditReady ? 'sage' : 'amber'}>
+                        {ho.auditReady ? 'Audit Ready' : 'Training Required'}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
@@ -607,55 +691,71 @@ export default function AdminReports() {
         <div style={{ marginBottom: 28 }}>
           <div className="grid grid-4" style={{ gap: 14, marginBottom: 20 }}>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Annual L&amp;D Budget</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>4,500,000,000 ₫</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>FY2026 Allocation</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Allocated L&amp;D Budget</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>{formatVnd(budgetAllocated)}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>Across {costCentersRanked.length} cost centers</div>
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Disbursed YTD</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>2,850,000,000 ₫</div>
-              <div style={{ fontSize: 11, color: 'var(--sage)', fontWeight: 600, marginTop: 2 }}>63.3% Utilization Rate</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Disbursed to date</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--rail)', marginTop: 4 }}>{formatVnd(budgetSpent)}</div>
+              <div style={{ fontSize: 11, color: 'var(--sage)', fontWeight: 600, marginTop: 2 }}>{budgetUtilization}% utilization</div>
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Average Cost / Learner</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>1,328,000 ₫</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>18% Optimization vs 2025</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>{formatVnd(costPerLearner)}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>{costTotals.distinctLearners || 0} charged learners</div>
             </div>
             <div className="card card-pad" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>External Platform Licenses</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>1,285,000,000 ₫</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>LinkedIn / Coursera / Udemy</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Paid enrollments</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>{costTotals.paidEnrollments || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 2 }}>
+                of {costTotals.totalEnrollments || 0} charged transactions
+              </div>
             </div>
           </div>
 
-          {/* Department Spend Table */}
-          <div className="section-label">Cost Center &amp; Budget Allocation Breakdown</div>
+          {/* Cost Center Table — live ledger */}
+          <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Cost Center &amp; Budget Allocation Breakdown</span>
+            <Badge tone="sage" icon="ti-bolt">Live ledger</Badge>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 12px', maxWidth: 900 }}>
+            Every figure here is summed from the training cost ledger — the same engine behind the Training Cost
+            Center — so an approval that charges a course to a department moves these numbers immediately.
+          </p>
           <div className="card" style={{ marginBottom: 24, overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
-                  <th>Branch / Program Category</th>
+                  <th>Cost Center</th>
+                  <th>Branch</th>
                   <th>Allocated Budget (VND)</th>
-                  <th>Disbursed YTD (VND)</th>
-                  <th>Participating Trainees</th>
-                  <th>Cost per Trainee</th>
+                  <th>Disbursed (VND)</th>
+                  <th>Charged Learners</th>
                   <th>Budget Utilization</th>
                 </tr>
               </thead>
               <tbody>
-                {costTrackingData.departmentSpend.map((d, i) => (
-                  <tr key={i}>
-                    <td><strong>{d.name}</strong></td>
-                    <td>{d.budget.toLocaleString()} ₫</td>
-                    <td><strong>{d.spent.toLocaleString()} ₫</strong></td>
-                    <td>{d.learners.toLocaleString()} trainees</td>
-                    <td>{d.costPerHead.toLocaleString()} ₫</td>
+                {costCentersRanked.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-soft)' }}>
+                    No cost center has a budget or any spend recorded yet.
+                  </td></tr>
+                ) : costCentersRanked.map((c) => (
+                  <tr key={c.id || c.code}>
+                    <td>
+                      <strong>{c.name}</strong>
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{c.code}</div>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.branchName || c.branch || '—'}</td>
+                    <td>{formatVnd(c.income)}</td>
+                    <td><strong>{formatVnd(c.spent)}</strong></td>
+                    <td>{c.learners}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <ProgressBar value={parseInt(d.utilization)} tone="rail" size="sm" />
+                          <ProgressBar value={c.utilization} tone={c.utilization > 90 ? 'rust' : 'rail'} size="sm" />
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700 }}>{d.utilization}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>{c.utilization}%</span>
                       </div>
                     </td>
                   </tr>
@@ -665,7 +765,10 @@ export default function AdminReports() {
           </div>
 
           {/* External Platform Subscriptions */}
-          <div className="section-label">External Platform Enterprise License Subscriptions</div>
+          <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>External Platform Enterprise License Subscriptions</span>
+            <Badge tone="slate" icon="ti-file-text">Contract data</Badge>
+          </div>
           <div className="grid grid-3" style={{ gap: 14 }}>
             {costTrackingData.externalPlatformLicenses.map((lic, i) => (
               <div key={i} className="card card-pad">
@@ -688,7 +791,16 @@ export default function AdminReports() {
       {/* TAB 4: COMPLIANCE LEAGUE TABLE */}
       {effectiveTab === 'COMPLIANCE_LEAGUE' && (
         <div style={{ marginBottom: 28 }}>
-          <div className="section-label">Enterprise Mandatory Compliance League Table (16 Divisions &amp; Stores)</div>
+          <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Enterprise Mandatory Compliance League Table ({complianceLeague.length} divisions)</span>
+            <Badge tone="sage" icon="ti-bolt">Live data</Badge>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '0 0 12px', maxWidth: 900 }}>
+            <strong>Compliance rate</strong> is mandatory course assignments completed — the measure that ranks this
+            table. <strong>Fully compliant</strong> counts people who have finished all three mandatory courses,
+            which is the stricter measure an audit applies; a course never assigned counts against the employee.
+            The lead shown is the most senior employee on that division's roster.
+          </p>
           <div className="card" style={{ overflowX: 'auto' }}>
             <table className="table">
               <thead>
@@ -696,7 +808,7 @@ export default function AdminReports() {
                   <th style={{ width: 60 }}>Rank</th>
                   <th>Operating Division / Unit</th>
                   <th>Headcount</th>
-                  <th>Completed</th>
+                  <th>Fully Compliant</th>
                   <th>In Progress</th>
                   <th>Overdue</th>
                   <th style={{ minWidth: 140 }}>Compliance Rate</th>
@@ -705,7 +817,11 @@ export default function AdminReports() {
                 </tr>
               </thead>
               <tbody>
-                {divisionComplianceLeague.map((div) => (
+                {complianceLeague.length === 0 ? (
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-soft)' }}>
+                    No active employees on the roster.
+                  </td></tr>
+                ) : complianceLeague.map((div) => (
                   <tr key={div.code}>
                     <td>
                       <span style={{ fontWeight: 800, fontSize: 13, color: div.rank <= 3 ? 'var(--amber)' : 'var(--ink-faint)' }}>
@@ -714,10 +830,10 @@ export default function AdminReports() {
                     </td>
                     <td>
                       <strong>{div.name}</strong> ({div.code})
-                      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Director: {div.director}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Division lead: {div.director}</div>
                     </td>
                     <td>{div.headcount}</td>
-                    <td><strong style={{ color: 'var(--sage)' }}>{div.completedCount}</strong></td>
+                    <td><strong style={{ color: div.fullyCompliantCount > 0 ? 'var(--sage)' : 'var(--ink-faint)' }}>{div.fullyCompliantCount}</strong></td>
                     <td>{div.inProgressCount}</td>
                     <td>
                       <span style={{ color: div.overdueCount > 0 ? 'var(--rust)' : 'var(--ink-faint)', fontWeight: div.overdueCount > 0 ? 700 : 400 }}>
@@ -732,7 +848,7 @@ export default function AdminReports() {
                         <span style={{ fontSize: 12, fontWeight: 700 }}>{div.completionRate}%</span>
                       </div>
                     </td>
-                    <td>{div.avgScore}%</td>
+                    <td>{div.avgScore === null ? <span style={{ color: 'var(--ink-faint)' }}>—</span> : `${div.avgScore}%`}</td>
                     <td>
                       <Badge tone={div.status === 'AUDIT_READY' ? 'sage' : div.status === 'NEEDS_ATTENTION' ? 'amber' : 'rust'}>
                         {div.status === 'AUDIT_READY' ? 'Audit Ready' : div.status === 'NEEDS_ATTENTION' ? 'Needs Attention' : 'At Risk'}
@@ -750,6 +866,10 @@ export default function AdminReports() {
 }
 
 function HeatCell({ val }) {
+  // Never trained on this category is not the same finding as scored badly.
+  if (val === null || val === undefined) {
+    return <span style={{ color: 'var(--ink-faint)', fontSize: 12 }} title="No enrollments in this category yet">—</span>;
+  }
   const bg = val >= 92 ? '#DCFCE7' : val >= 82 ? '#FEF3C7' : '#FEE2E2';
   const color = val >= 92 ? '#166534' : val >= 82 ? '#92400E' : '#991B1B';
   return (
