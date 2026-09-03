@@ -18,6 +18,7 @@ import {
 import { buildCalendarEvents, buildOrganizationMonthlyEvents, EVENT_CATEGORIES } from '../../utils/calendarEvents';
 import { Badge, Button, Modal, ProgressBar } from '../common/ui';
 import { normalizeRole, roleDefinition, hasCapability } from '../../data/roles';
+import MultiTargetAssigner from '../catalog/MultiTargetAssigner';
 
 export default function UniversalCalendar({ basePath = '/my-learning' }) {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
     checkInClassroom,
     openSurveyModal,
     enrollCourse,
+    extendEnrollmentDueDate,
+    assignCourse,
   } = useCourseStore();
 
   const role = normalizeRole(currentUser?.role || 'learner');
@@ -54,6 +57,11 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   const [scannerSession, setScannerSession] = useState(null);
   const [scanState, setScanState] = useState('SCANNING'); // SCANNING | VERIFYING | SUCCESS
   const [liveQrSession, setLiveQrSession] = useState(null);
+  const [extendingEvent, setExtendingEvent] = useState(null);
+  const [customExtensionDate, setCustomExtensionDate] = useState('');
+  const [extensionFeedback, setExtensionFeedback] = useState('');
+  const [assigningCourse, setAssigningCourse] = useState(null);
+  const [assignFeedback, setAssignFeedback] = useState('');
 
   // Build calendar events for the user
   const { allEvents, personalEvents, operationalEvents, byDate } = useMemo(() => {
@@ -143,16 +151,26 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
     return map;
   }, [filteredEvents]);
 
-  // Selected date events
+  // Selected date events (combining personal, operational & organization events)
   const selectedEvents = useMemo(() => {
-    return eventsByDate.get(selectedDate) || [];
-  }, [eventsByDate, selectedDate]);
+    const personalAndOps = eventsByDate.get(selectedDate) || [];
+    const orgItems = filteredOrgEventsByDate[selectedDate] || [];
+    const map = new Map();
+    personalAndOps.forEach((e) => map.set(e.courseId ? `course-${e.courseId}` : e.id, e));
+    orgItems.forEach((e) => {
+      const key = `course-${e.courseId}`;
+      if (!map.has(key)) map.set(key, e);
+    });
+    return Array.from(map.values());
+  }, [eventsByDate, filteredOrgEventsByDate, selectedDate]);
 
   // Month event count
   const monthEventCount = useMemo(() => {
     const monthPrefix = viewMonth.slice(0, 7);
-    return filteredEvents.filter((ev) => (ev.date || '').startsWith(monthPrefix)).length;
-  }, [filteredEvents, viewMonth]);
+    const personalCount = filteredEvents.filter((ev) => (ev.date || '').startsWith(monthPrefix)).length;
+    const orgCount = filteredOrgEvents.filter((ev) => (ev.date || '').startsWith(monthPrefix)).length;
+    return personalCount + orgCount;
+  }, [filteredEvents, filteredOrgEvents, viewMonth]);
 
   // Upcoming events within next 14 days (for right panel preview when day is empty)
   const upcomingEvents = useMemo(() => {
@@ -266,6 +284,35 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
   function handleExportIcs() {
     const calendarTitle = `MMLearn - Training Calendar (${roleDef.shortVi})`;
     generateIcsFile(filteredEvents, calendarTitle);
+  }
+
+  function handleOpenExtendModal(ev, e) {
+    if (e) e.stopPropagation();
+    setExtendingEvent(ev);
+    const currDate = ev.date || today;
+    setCustomExtensionDate(addDays(currDate, 7));
+    setExtensionFeedback('');
+  }
+
+  function handleConfirmExtension(daysOffset = 0) {
+    if (!extendingEvent || !extendingEvent.courseId) return;
+    const baseDate = extendingEvent.date || today;
+    const targetDate = daysOffset > 0 ? addDays(baseDate, daysOffset) : customExtensionDate;
+    if (!targetDate) return;
+
+    extendEnrollmentDueDate(extendingEvent.courseId, targetDate, currentUser);
+    setExtensionFeedback(
+      language === 'en'
+        ? `Successfully extended course deadline to ${targetDate}!`
+        : `Đã gia hạn thành công thời hạn khóa học đến ngày ${targetDate}!`
+    );
+    setTimeout(() => {
+      setExtendingEvent(null);
+      setExtensionFeedback('');
+      if (detailModalEvent && detailModalEvent.courseId === extendingEvent.courseId) {
+        setDetailModalEvent(null);
+      }
+    }, 1200);
   }
 
   const weeks = useMemo(() => getMonthGridWeeks(viewMonth), [viewMonth]);
@@ -470,9 +517,20 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   <div className="cal-week-row-seamless" key={wIdx}>
                     {week.map((cell) => {
                       const dayEvents = eventsByDate.get(cell.date) || [];
-                      const visibleEvents = dayEvents.slice(0, 2);
-                      const overflowCount = dayEvents.length - visibleEvents.length;
                       const dayOrgEvents = filteredOrgEventsByDate[cell.date] || [];
+
+                      // Combine without duplicate course items
+                      const map = new Map();
+                      dayEvents.forEach((e) => map.set(e.courseId ? `course-${e.courseId}` : e.id, e));
+                      dayOrgEvents.forEach((e) => {
+                        const key = `course-${e.courseId}`;
+                        if (!map.has(key)) map.set(key, e);
+                      });
+                      const allDayItems = Array.from(map.values());
+                      const MAX_VISIBLE_PILLS = 3;
+                      const visibleEvents = allDayItems.slice(0, MAX_VISIBLE_PILLS);
+                      const overflowCount = allDayItems.length - visibleEvents.length;
+
                       const isToday = cell.date === today;
                       const isSelected = cell.date === selectedDate;
 
@@ -480,7 +538,7 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                       if (!cell.inMonth) cellCls += ' other-month';
                       if (isToday) cellCls += ' is-today';
                       if (isSelected) cellCls += ' is-selected';
-                      if (dayEvents.length > 0) cellCls += ' has-events';
+                      if (allDayItems.length > 0) cellCls += ' has-events';
 
                       return (
                         <div
@@ -488,13 +546,13 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                           className={cellCls}
                           onClick={() => handleSelectDate(cell.date)}
                           onMouseEnter={(e) => {
-                            if (dayEvents.length > 0) {
+                            if (allDayItems.length > 0) {
                               const rect = e.currentTarget.getBoundingClientRect();
                               setHoverCell({
                                 date: cell.date,
                                 top: rect.bottom + 6,
                                 left: Math.min(rect.left, window.innerWidth - 300),
-                                events: dayEvents,
+                                events: allDayItems,
                               });
                             }
                           }}
@@ -504,8 +562,8 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                             <span className={`cal-day-number ${isToday ? 'today-pill' : ''}`}>
                               {Number(cell.date.slice(8, 10))}
                             </span>
-                            {dayEvents.length > 0 && (
-                              <span className="cal-day-density-dot" title={`${dayEvents.length} events`} />
+                            {allDayItems.length > 0 && (
+                              <span className="cal-day-density-dot" title={`${allDayItems.length} events`} />
                             )}
                           </div>
 
@@ -518,31 +576,25 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                                   e.stopPropagation();
                                   setDetailModalEvent(ev);
                                 }}
-                                title={`${ev.title} (${ev.time})`}
+                                title={`${ev.title} (${ev.statusLabel || ev.time})`}
                               >
                                 <i className={`ti ${ev.icon}`} />
                                 <span className="cal-pill-text">{ev.title}</span>
                               </div>
                             ))}
                             {overflowCount > 0 && (
-                              <div className="cal-overflow-badge">
-                                +{overflowCount} {language === 'en' ? 'more' : 'more'}
-                              </div>
-                            )}
-                            {dayOrgEvents.map((ev) => (
-                              <div
-                                key={ev.id}
-                                className={`cal-event-pill tone-${ev.tone}`}
+                              <button
+                                type="button"
+                                className="cal-overflow-badge"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setDetailModalEvent(ev);
+                                  handleSelectDate(cell.date);
                                 }}
-                                title={ev.subtitle || ev.title}
+                                title="Click to view all events on this day"
                               >
-                                <i className={`ti ${ev.icon}`} />
-                                <span className="cal-pill-text">{ev.title}</span>
-                              </div>
-                            ))}
+                                +{overflowCount} {language === 'en' ? 'more' : 'khóa khác'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -561,6 +613,14 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   const isToday = d.date === today;
                   const isSelected = d.date === selectedDate;
                   const dayEvents = eventsByDate.get(d.date) || [];
+                  const dayOrgEvents = filteredOrgEventsByDate[d.date] || [];
+                  const map = new Map();
+                  dayEvents.forEach((e) => map.set(e.courseId ? `course-${e.courseId}` : e.id, e));
+                  dayOrgEvents.forEach((e) => {
+                    const key = `course-${e.courseId}`;
+                    if (!map.has(key)) map.set(key, e);
+                  });
+                  const allDayEvents = Array.from(map.values());
 
                   return (
                     <div
@@ -574,18 +634,18 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                           {d.dayNum}
                         </span>
                         <span className="cal-week-col-count">
-                          {dayEvents.length} {language === 'en' ? 'events' : 'events'}
+                          {allDayEvents.length} {language === 'en' ? 'events' : 'events'}
                         </span>
                       </div>
 
                       <div className="cal-week-col-body">
-                        {dayEvents.length === 0 ? (
+                        {allDayEvents.length === 0 ? (
                           <div className="cal-week-empty-col">
                             <i className="ti ti-circle-dashed" />
                             <span>{language === 'en' ? 'No items' : 'No events'}</span>
                           </div>
                         ) : (
-                          dayEvents.map((ev) => (
+                          allDayEvents.map((ev) => (
                             <div
                               key={ev.id}
                               className={`cal-week-event-card tone-${ev.tone}`}
@@ -599,16 +659,30 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                               </div>
                               <div className="cal-week-event-title">{ev.title}</div>
                               <div className="cal-week-event-venue">
-                                <i className="ti ti-map-pin" /> {ev.venue}
+                                <i className="ti ti-map-pin" /> {ev.venue || 'MMLearn'}
                               </div>
                               <div className="cal-week-event-footer">
                                 <Badge tone={ev.tone} size="sm">{ev.statusLabel}</Badge>
-                                <button
-                                  className="cal-btn-mini-action"
-                                  onClick={(e) => handleEventAction(ev, e)}
-                                >
-                                  {ev.actionLabel}
-                                </button>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {ev.canExtend && (
+                                    <button
+                                      type="button"
+                                      className="cal-btn-mini-action"
+                                      style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}
+                                      onClick={(e) => handleOpenExtendModal(ev, e)}
+                                      title={language === 'en' ? 'Extend deadline' : 'Xin gia hạn'}
+                                    >
+                                      <i className="ti ti-calendar-plus" />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="cal-btn-mini-action"
+                                    onClick={(e) => handleEventAction(ev, e)}
+                                  >
+                                    {ev.actionLabel}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))
@@ -787,6 +861,17 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                       >
                         {ev.actionLabel}
                       </Button>
+                      {ev.canExtend && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          icon="ti-calendar-plus"
+                          onClick={(e) => handleOpenExtendModal(ev, e)}
+                          title={language === 'en' ? 'Extend course deadline' : 'Xin gia hạn thời gian hoàn thành khóa học'}
+                        >
+                          {language === 'en' ? 'Extend' : 'Gia hạn'}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -861,6 +946,15 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                 >
                   {language === 'en' ? 'Export Event (.ics)' : 'Export Event'}
                 </Button>
+                {detailModalEvent.canExtend && (
+                  <Button
+                    variant="outline"
+                    icon="ti-calendar-plus"
+                    onClick={() => handleOpenExtendModal(detailModalEvent)}
+                  >
+                    {language === 'en' ? 'Extend Deadline' : 'Xin gia hạn'}
+                  </Button>
+                )}
                 {detailModalEvent.actionType !== 'ENROLL_COURSE' && (
                   <Button
                     variant="primary"
@@ -889,9 +983,18 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
                   <Button
                     variant="outline"
                     icon="ti-users"
-                    onClick={() => navigate(`/admin/courses/${detailModalEvent.courseId}`)}
+                    onClick={() => {
+                      const found = courses.find((c) => c.id === detailModalEvent.courseId);
+                      setAssigningCourse(
+                        found || {
+                          id: detailModalEvent.courseId,
+                          title: detailModalEvent.title,
+                          code: detailModalEvent.courseCode,
+                        }
+                      );
+                    }}
                   >
-                    {language === 'en' ? 'Assign to Team' : 'Assign to Team'}
+                    {language === 'en' ? 'Assign to Team' : 'Gán cho nhân viên'}
                   </Button>
                 )}
               </div>
@@ -1028,6 +1131,163 @@ export default function UniversalCalendar({ basePath = '/my-learning' }) {
               {language === 'en' ? 'Copy QR Token' : 'Copy The Attendance Code'}
             </Button>
           </div>
+        </Modal>
+      )}
+
+      {/* 10. EXTEND DEADLINE MODAL */}
+      {extendingEvent && (
+        <Modal
+          isOpen={true}
+          onClose={() => { setExtendingEvent(null); setExtensionFeedback(''); }}
+          title={language === 'en' ? 'Extend Course Deadline' : 'Gia Hạn Thời Gian Hoàn Thành Khóa Học'}
+          subtitle={`${extendingEvent.title} · Mã: ${extendingEvent.courseCode || extendingEvent.courseId || extendingEvent.id}`}
+          size="md"
+          footer={
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
+              <Button
+                variant="outline"
+                onClick={() => { setExtendingEvent(null); setExtensionFeedback(''); }}
+              >
+                {language === 'en' ? 'Cancel' : 'Hủy bỏ'}
+              </Button>
+              <Button
+                variant="primary"
+                tone="primary"
+                icon="ti-check"
+                disabled={!customExtensionDate}
+                onClick={() => handleConfirmExtension(0)}
+              >
+                {language === 'en' ? 'Confirm Extension' : 'Xác nhận gia hạn'}
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {extensionFeedback ? (
+              <div style={{ padding: 14, borderRadius: 8, background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', display: 'flex', alignItems: 'center', gap: 10, fontWeight: 600 }}>
+                <i className="ti ti-circle-check" style={{ fontSize: 20 }} />
+                <span>{extensionFeedback}</span>
+              </div>
+            ) : (
+              <>
+                <div style={{ padding: 12, borderRadius: 8, background: 'var(--paper-sunken)', border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {language === 'en' ? 'Current Course & Status' : 'Khóa học & Trạng thái hiện tại'}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)', marginTop: 4 }}>
+                    {extendingEvent.title}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                    <Badge tone={extendingEvent.tone} icon={extendingEvent.icon}>{extendingEvent.statusLabel}</Badge>
+                    <Badge tone="slate" icon="ti-calendar">{language === 'en' ? 'Current Deadline:' : 'Hạn hiện tại:'} {extendingEvent.date}</Badge>
+                    {extendingEvent.progress !== undefined && extendingEvent.progress > 0 && (
+                      <Badge tone="blue" icon="ti-progress">{language === 'en' ? `Progress: ${extendingEvent.progress}%` : `Tiến độ: ${extendingEvent.progress}%`}</Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'block' }}>
+                    {language === 'en' ? 'Quick Extension Presets:' : 'Chọn nhanh thời gian gia hạn:'}
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon="ti-calendar-plus"
+                      onClick={() => handleConfirmExtension(7)}
+                    >
+                      +7 {language === 'en' ? 'Days (1 Wk)' : 'Ngày (1 Tuần)'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon="ti-calendar-plus"
+                      onClick={() => handleConfirmExtension(14)}
+                    >
+                      +14 {language === 'en' ? 'Days (2 Wks)' : 'Ngày (2 Tuần)'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon="ti-calendar-plus"
+                      onClick={() => handleConfirmExtension(30)}
+                    >
+                      +30 {language === 'en' ? 'Days (1 Mo)' : 'Ngày (1 Tháng)'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 6, display: 'block' }}>
+                    {language === 'en' ? 'Or Select Custom Target Deadline Date:' : 'Hoặc chọn ngày hết hạn mới:'}
+                  </label>
+                  <input
+                    type="date"
+                    className="input-field"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)' }}
+                    value={customExtensionDate}
+                    min={today}
+                    onChange={(e) => setCustomExtensionDate(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5, background: 'var(--blue-soft)', padding: 10, borderRadius: 6, border: '1px solid #BFDBFE' }}>
+                  <i className="ti ti-info-circle" style={{ marginRight: 4 }} />
+                  {language === 'en'
+                    ? 'Extending the course will update your learning deadline, clear any overdue status, and automatically shift the calendar schedule.'
+                    : 'Gia hạn thời hạn khóa học sẽ cập nhật trực tiếp tiến độ học tập, xóa bỏ trạng thái quá hạn nếu ngày mới ở tương lai và tự động dời lịch trên Calendar của bạn.'}
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* 11. ASSIGN TO TEAM / AUDIENCE MODAL */}
+      {assigningCourse && (
+        <Modal
+          isOpen={true}
+          onClose={() => { setAssigningCourse(null); setAssignFeedback(''); }}
+          title={language === 'en' ? 'Assign Course to Team / Audience' : 'Phân Bổ Khóa Học Cho Nhân Viên / Đội Ngũ'}
+          subtitle={`${assigningCourse.title} · Mã: ${assigningCourse.code || assigningCourse.courseCode || assigningCourse.id}`}
+          size="lg"
+        >
+          {assignFeedback ? (
+            <div style={{ padding: 16, borderRadius: 8, background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', display: 'flex', alignItems: 'center', gap: 10, fontWeight: 600 }}>
+              <i className="ti ti-circle-check" style={{ fontSize: 22 }} />
+              <span>{assignFeedback}</span>
+            </div>
+          ) : (
+            <MultiTargetAssigner
+              course={assigningCourse}
+              onSave={({ assignmentType, targets, dueDate, justification, groupPolicy, assignedLevelEligibility }) => {
+                const toAdd = (targets || []).map((t) => ({
+                  assignmentType,
+                  targetId: t.targetId,
+                  targetLabel: t.targetLabel,
+                  dueDate: dueDate || '',
+                  justification: justification || '',
+                  groupPolicy: groupPolicy || 'ELIGIBLE_ONLY',
+                  assignedLevelEligibility,
+                }));
+                assignCourse(assigningCourse.id, toAdd);
+                setAssignFeedback(
+                  language === 'en'
+                    ? `Course successfully assigned to ${targets.length} target audiences!`
+                    : `Đã phân bổ khóa học thành công cho ${targets.length} đối tượng / nhân viên!`
+                );
+                setTimeout(() => {
+                  setAssigningCourse(null);
+                  setAssignFeedback('');
+                  setDetailModalEvent(null);
+                }, 1400);
+              }}
+              onCancel={() => setAssigningCourse(null)}
+              initialAssignType={role === 'manager' ? 'DEPARTMENT' : 'DIVISION'}
+              saveButtonLabel={language === 'en' ? 'Confirm Assignment' : 'Xác Nhận Phân Bổ'}
+            />
+          )}
         </Modal>
       )}
     </div>

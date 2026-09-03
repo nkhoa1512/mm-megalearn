@@ -37,6 +37,17 @@ const DEADLINE_STATUS_LABEL = {
   NOT_STARTED: 'Not Started',
 };
 
+function getDeterministicDayOfMonth(str, maxDays = 28) {
+  let hash = 0;
+  const s = String(str || 'CRS-001');
+  for (let i = 0; i < s.length; i += 1) {
+    hash = (hash << 5) - hash + s.charCodeAt(i);
+    hash |= 0;
+  }
+  const day = (Math.abs(hash) % maxDays) + 1;
+  return String(day).padStart(2, '0');
+}
+
 /**
  * 1. Personal e-learning deadline events
  */
@@ -47,8 +58,10 @@ function buildPersonalDeadlineEvents(courses = [], myEnrollments = {}) {
     const course = courses.find((c) => c.id === courseId);
     if (!course) continue;
 
-    const date = enrollment.completedAt || enrollment.dueDate || enrollment.lastActivityAt || '2026-08-28';
+    const date = enrollment.completedAt || enrollment.dueDate || enrollment.lastActivityAt || '2026-09-15';
     const isCompleted = enrollment.status === 'COMPLETED';
+    const isOverdue = enrollment.status === 'OVERDUE';
+    const isInProgress = enrollment.status === 'IN_PROGRESS';
     const tone = DEADLINE_TONE_BY_STATUS[enrollment.status] || 'slate';
     const statusLabel = DEADLINE_STATUS_LABEL[enrollment.status] || 'Not Started';
 
@@ -57,11 +70,13 @@ function buildPersonalDeadlineEvents(courses = [], myEnrollments = {}) {
       scope: 'PERSONAL',
       category: 'ELEARNING',
       categoryLabel: 'E-Learning Course',
-      icon: 'ti-book-2',
+      icon: isCompleted ? 'ti-circle-check' : (isOverdue ? 'ti-alert-triangle' : (isInProgress ? 'ti-player-play' : 'ti-book-2')),
       date,
       time: '23:59 (deadline)',
       title: course.title,
-      subtitle: isCompleted ? `Completed on ${date}` : `Course completion deadline`,
+      subtitle: isCompleted
+        ? `Completed on ${date}`
+        : (isOverdue ? `Overdue deadline: ${date}` : (isInProgress ? `In progress (${enrollment.progressPercent || 0}%) · Deadline: ${date}` : `Course deadline: ${date}`)),
       courseCode: course.code,
       courseId: course.id,
       venue: 'Online Learning (E-Learning Portal)',
@@ -70,10 +85,11 @@ function buildPersonalDeadlineEvents(courses = [], myEnrollments = {}) {
       statusLabel,
       tone,
       actionType: 'START_COURSE',
-      actionLabel: isCompleted ? 'Review The Lesson' : 'Start Learning',
+      actionLabel: isCompleted ? 'Review The Lesson' : (isInProgress ? 'Continue Learning' : 'Start Learning'),
       actionUrl: `/learner/courses/${courseId}`,
-      progress: enrollment.progress || (isCompleted ? 100 : 0),
+      progress: enrollment.progressPercent ?? enrollment.progress ?? (isCompleted ? 100 : 0),
       isMandatory: course.courseType === 'MANDATORY',
+      canExtend: !isCompleted,
     });
   }
   return events;
@@ -441,25 +457,62 @@ function buildOperationalEventsByRole(role, { courses = [], classrooms = [], use
 export function buildOrganizationMonthlyEvents({ courses = [], myEnrollments = {}, viewMonth, currentUser }) {
   if (!viewMonth) return [];
   const [viewYear, viewMonthNum] = viewMonth.split('-').map(Number);
+  const viewMonthPrefix = `${viewYear}-${String(viewMonthNum).padStart(2, '0')}`;
 
   return (courses || [])
     .filter((course) => course.published !== false && (course.courseType === 'MANDATORY' || course.courseType === 'OPTIONAL'))
     .map((course) => {
-      const isEnrolled = Boolean(myEnrollments[course.id]);
-      const dueDate = course.assignment?.dueDate || null;
+      const enrollment = myEnrollments[course.id];
+      const isEnrolled = Boolean(enrollment);
+      const enrollmentDueDate = enrollment?.dueDate;
+      const courseDueDate = course.assignment?.dueDate || null;
 
       let eventDate;
-      if (dueDate) {
-        const [dy, dm] = dueDate.split('-').map(Number);
-        if (dy !== viewYear || dm !== viewMonthNum) return null; // due date falls outside the viewed month
-        eventDate = dueDate;
+      if (enrollmentDueDate) {
+        eventDate = enrollmentDueDate;
+      } else if (courseDueDate) {
+        const [dy, dm] = courseDueDate.split('-').map(Number);
+        if (dy === viewYear && dm === viewMonthNum) {
+          eventDate = courseDueDate;
+        } else {
+          // If course due date is outside the view month, scatter it across the view month days
+          const day = getDeterministicDayOfMonth(course.id, 28);
+          eventDate = `${viewMonthPrefix}-${day}`;
+        }
       } else {
-        // No due date (typically an optional elective) — represent it on the 1st of the viewed month
-        // so every month's overview always lists it, per the spec's "org-wide overview" requirement.
-        eventDate = `${viewYear}-${String(viewMonthNum).padStart(2, '0')}-01`;
+        // No due date (optional course) — distribute across days 1..28 of the month
+        const day = getDeterministicDayOfMonth(course.id, 28);
+        eventDate = `${viewMonthPrefix}-${day}`;
       }
 
       const isMandatory = course.courseType === 'MANDATORY';
+      const status = enrollment?.status || (isMandatory ? 'NOT_STARTED' : 'AVAILABLE');
+      const isOverdue = status === 'OVERDUE';
+      const isCompleted = status === 'COMPLETED';
+      const isInProgress = status === 'IN_PROGRESS';
+
+      let tone = 'slate';
+      let statusLabel = 'Available to Join';
+      if (isCompleted) {
+        tone = 'sage';
+        statusLabel = 'Completed';
+      } else if (isOverdue) {
+        tone = 'rust';
+        statusLabel = 'Overdue';
+      } else if (isInProgress) {
+        tone = 'blue';
+        statusLabel = `In Progress (${enrollment?.progressPercent || 0}%)`;
+      } else if (isMandatory) {
+        tone = isEnrolled ? 'blue' : 'rust';
+        statusLabel = isEnrolled ? 'Assigned · Not Started' : 'Mandatory · Not Enrolled';
+      } else if (isEnrolled) {
+        tone = 'blue';
+        statusLabel = 'Enrolled';
+      } else {
+        tone = 'sage';
+        statusLabel = 'Optional Course';
+      }
+
       return {
         id: `org-${course.id}`,
         scope: 'ORGANIZATION',
@@ -469,16 +522,20 @@ export function buildOrganizationMonthlyEvents({ courses = [], myEnrollments = {
         title: course.title,
         courseType: course.courseType,
         isEnrolled,
-        tone: isMandatory ? 'rust' : 'sage',
-        color: isMandatory ? '#DC2626' : 'var(--bigc-green)',
-        icon: isMandatory ? 'ti-alert-circle' : 'ti-sparkles',
+        status,
+        statusLabel,
+        progress: enrollment?.progressPercent ?? (isCompleted ? 100 : 0),
+        tone,
+        color: isCompleted ? 'var(--sage)' : (isOverdue ? '#DC2626' : (isMandatory ? '#DC2626' : 'var(--bigc-green)')),
+        icon: isCompleted ? 'ti-circle-check' : (isOverdue ? 'ti-alert-triangle' : (isInProgress ? 'ti-player-play' : (isMandatory ? 'ti-alert-circle' : 'ti-sparkles'))),
         subtitle: isMandatory
-          ? (isEnrolled ? 'Mandatory · Enrolled (In Progress / Completed)' : 'Mandatory · Action Required (Not Enrolled)')
-          : (isEnrolled ? 'Optional · Enrolled' : 'Optional · Available to Join'),
+          ? (isCompleted ? 'Mandatory · Completed' : (isOverdue ? `Mandatory · OVERDUE (${eventDate})` : (isEnrolled ? `Mandatory · In Progress (${enrollment?.progressPercent || 0}%)` : 'Mandatory · Action Required (Not Enrolled)')))
+          : (isCompleted ? 'Optional · Completed' : (isEnrolled ? `Optional · In Progress (${enrollment?.progressPercent || 0}%)` : 'Optional · Available to Join')),
         actionType: isEnrolled ? 'START_COURSE' : 'ENROLL_COURSE',
         actionLabel: isEnrolled
-          ? (isMandatory ? 'Continue Learning' : 'Open Course')
+          ? (isCompleted ? 'Review Lesson' : (isInProgress ? 'Continue Learning' : 'Start Course'))
           : 'Enroll in Course',
+        canExtend: Boolean(isEnrolled && !isCompleted),
       };
     })
     .filter(Boolean);

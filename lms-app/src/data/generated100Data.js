@@ -674,7 +674,7 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
         targetDivisionId: tpl.targetType === 'DIVISION' ? tpl.targetId : null,
         targetLevel,
         assignedDate: '2026-08-01',
-        dueDate: '2026-09-30',
+        dueDate: `2026-${['09', '09', '09', '10', '08'][courseCounter % 5]}-${['04', '07', '10', '12', '15', '18', '21', '24', '26', '28'][courseCounter % 10]}`,
         assignedBy: 'Sarah Nguyen (L&OD Admin)',
       } : null,
       modules: [

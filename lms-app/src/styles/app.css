@@ -1490,8 +1490,23 @@
 .cal-overflow-badge {
   font-size: 11px;
   font-weight: 700;
-  color: var(--ink-faint);
-  padding: 1px 4px;
+  color: var(--mm-blue, #0284c7);
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 2px;
+  cursor: pointer;
+  display: inline-block;
+  text-align: left;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.cal-overflow-badge:hover {
+  background: var(--mm-blue, #0284c7);
+  color: #fff;
+  border-color: var(--mm-blue, #0284c7);
 }
 
 /* Week View */

@@ -1454,6 +1454,59 @@ export function CourseStoreProvider({ children }) {
     [courses, currentUser, accessFor, costCenters]
   );
 
+  /** Extends or updates the completion deadline for an enrolled course. */
+  const extendEnrollmentDueDate = useCallback(
+    (courseId, newDueDate, user = currentUser) => {
+      if (!user) return { ok: false, reason: 'Not signed in.' };
+      setEnrollments((prev) => {
+        const forUser = prev[user.userId] || {};
+        const existing = forUser[courseId];
+        if (!existing) {
+          // If not enrolled yet, create the enrollment with the extended due date
+          const course = courses.find((c) => c.id === courseId);
+          return {
+            ...prev,
+            [user.userId]: {
+              ...forUser,
+              [courseId]: {
+                courseId,
+                userId: user.userId,
+                courseType: course?.courseType || 'OPTIONAL',
+                enrolledVersion: course?.currentVersion || 'v1.0',
+                status: 'IN_PROGRESS',
+                progressPercent: 0,
+                score: null,
+                attemptsCount: 0,
+                completedAt: null,
+                dueDate: newDueDate,
+                lastActivityAt: todayIso(),
+                extendedAt: todayIso(),
+                enrolledVia: 'SELF_ENROLL',
+              },
+            },
+          };
+        }
+
+        const isOverdueNow = existing.status === 'OVERDUE';
+        const newStatus = isOverdueNow ? 'IN_PROGRESS' : existing.status;
+        return {
+          ...prev,
+          [user.userId]: {
+            ...forUser,
+            [courseId]: {
+              ...existing,
+              dueDate: newDueDate,
+              status: newStatus,
+              extendedAt: todayIso(),
+            },
+          },
+        };
+      });
+      return { ok: true, newDueDate };
+    },
+    [courses, currentUser]
+  );
+
   /**
    * Saves learning progress: updates both the course object (each lesson's status) and
    * the learner's enrollment overlay, so every screen reads the same number.
@@ -2281,6 +2334,7 @@ export function CourseStoreProvider({ children }) {
         getCategoryMeta: (name) => getCategoryMetadata(name, companyCategoryObjects),
         accessFor,
         enrollCourse,
+        extendEnrollmentDueDate,
         // Cost Center
         costCenters,
         costLedger,
