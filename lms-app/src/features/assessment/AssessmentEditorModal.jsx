@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Modal, Button, Badge } from '../common/ui';
 import {
   ASSESSMENT_TYPES,
+  ASSESSMENT_MODES,
   DELIVERY_FORMATS,
   QUESTION_TYPES,
   QUESTION_GROUPS,
@@ -67,6 +68,13 @@ export default function AssessmentEditorModal({
 
       return {
         ...assessment,
+        evaluationMode: assessment.evaluationMode || ASSESSMENT_MODES.TEST,
+        isConfidential: assessment.isConfidential ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
+        requiresPasscode: assessment.requiresPasscode ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
+        passcode: assessment.passcode || '',
+        hideImmediateResult: assessment.hideImmediateResult ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
+        hideAnswers: assessment.hideAnswers ?? (assessment.evaluationMode === ASSESSMENT_MODES.PROMOTION),
+        isAnonymous: assessment.isAnonymous ?? (assessment.evaluationMode === ASSESSMENT_MODES.EES),
         types: initialTypes,
         type: initialTypes[0] || ASSESSMENT_TYPES.QUIZ,
         categories: initialCategories,
@@ -115,6 +123,13 @@ export default function AssessmentEditorModal({
       code: generateAssessmentCode(defaultTitle),
       title: '',
       description: '',
+      evaluationMode: ASSESSMENT_MODES.TEST,
+      isConfidential: false,
+      requiresPasscode: false,
+      passcode: '',
+      hideImmediateResult: false,
+      hideAnswers: false,
+      isAnonymous: false,
       type: ASSESSMENT_TYPES.QUIZ,
       types: [ASSESSMENT_TYPES.QUIZ],
       contentFormats: [CONTENT_FORMATS.INTERACTIVE_BANK],
@@ -694,7 +709,7 @@ export default function AssessmentEditorModal({
   const totalMatrixCount = Object.values(formData.questionMatrix || {}).reduce((s, n) => s + (Number(n) || 0), 0);
 
   // Scope buttons for Step 4
-  const SCOPE_BUTTONS = [
+  const ALL_SCOPE_BUTTONS = [
     { id: 'DIVISION', label: '1. Division', icon: 'ti-building-skyscraper' },
     { id: 'DEPARTMENT', label: '2. Department (Dept)', icon: 'ti-building' },
     { id: 'SUBDEPARTMENT', label: '3. Sub-Dept', icon: 'ti-git-branch' },
@@ -704,6 +719,9 @@ export default function AssessmentEditorModal({
     { id: 'GROUP', label: '👥 Custom Group', icon: 'ti-users-group' },
     { id: 'ALL', label: '🌐 Enterprise-Wide', icon: 'ti-world' },
   ];
+  const SCOPE_BUTTONS = formData.evaluationMode === ASSESSMENT_MODES.EES
+    ? ALL_SCOPE_BUTTONS.filter((btn) => btn.id !== 'USER')
+    : ALL_SCOPE_BUTTONS;
 
   return (
     <Modal
@@ -908,6 +926,64 @@ export default function AssessmentEditorModal({
                 value={formData.description}
                 onChange={(e) => patchForm({ description: e.target.value })}
               />
+            </div>
+
+            <div className="field-group">
+              <label className="field-label">Evaluation Mode</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[
+                  { mode: ASSESSMENT_MODES.PROMOTION, label: '🏆 Promotion / Level Gate', icon: 'ti-trophy' },
+                  { mode: ASSESSMENT_MODES.SURVEY, label: '📋 Survey / CSAT', icon: 'ti-clipboard-list' },
+                  { mode: ASSESSMENT_MODES.TEST, label: '📝 Standard Test', icon: 'ti-file-text' },
+                  { mode: ASSESSMENT_MODES.EES, label: '📊 EES (Engagement Survey)', icon: 'ti-chart-bar' },
+                ].map((opt) => (
+                  <button
+                    key={opt.mode}
+                    type="button"
+                    className="filter-chip"
+                    style={{
+                      border: formData.evaluationMode === opt.mode ? '2px solid var(--rail)' : '1px solid var(--line)',
+                      background: formData.evaluationMode === opt.mode ? 'var(--rail-soft)' : 'var(--paper-raised)',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setFormData((prev) => ({
+                      ...prev,
+                      evaluationMode: opt.mode,
+                      isConfidential: opt.mode === ASSESSMENT_MODES.PROMOTION,
+                      requiresPasscode: opt.mode === ASSESSMENT_MODES.PROMOTION,
+                      hideImmediateResult: opt.mode === ASSESSMENT_MODES.PROMOTION,
+                      hideAnswers: opt.mode === ASSESSMENT_MODES.PROMOTION,
+                      isAnonymous: opt.mode === ASSESSMENT_MODES.EES,
+                    }))}
+                  >
+                    <i className={`ti ${opt.icon}`} style={{ marginRight: 6 }} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {formData.evaluationMode === ASSESSMENT_MODES.PROMOTION && (
+                <div className="card card-pad" style={{ marginTop: 10, borderColor: 'var(--rust)', background: 'var(--rust-soft, rgba(220,38,38,0.05))' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--rust)', marginBottom: 6 }}>
+                    <i className="ti ti-alert-triangle" style={{ marginRight: 6 }} />
+                    Security Notice: Promotion Exam Confidentiality
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 10 }}>
+                    This exam's content, questions, and raw results will be restricted to the Examination Board (System Administrator). Regular User Admins will not be able to view or edit it. Answer review and immediate results are automatically disabled for candidates.
+                  </p>
+                  <label className="field-label">Exam Room / Proctor Passcode</label>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={formData.passcode}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, passcode: e.target.value }))}
+                    placeholder="e.g. GATE2026"
+                    style={{ maxWidth: 260 }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Assessment type (multi-select) */}

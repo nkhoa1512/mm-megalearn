@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import QRCode from 'qrcode';
 import {
   meetingRoomsAndLabs,
   classroomSessions,
@@ -11,6 +12,34 @@ import { useCourseStore } from '../../store/CourseStore';
 import { Badge, Button, Modal, ProgressBar, DonutChart, BarChart, LineChart } from '../../features/common/ui';
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
+import {
+  generateQrToken,
+  currentBucket,
+  secondsUntilNextBucket,
+  sessionQrSecret,
+  deriveAttendanceWindows,
+} from '../../utils/qrAttendance';
+
+function QrCodeDisplay({ value }) {
+  const [dataUrl, setDataUrl] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toDataURL(value, { width: 220, margin: 1 }).then((url) => {
+      if (!cancelled) setDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+  if (!dataUrl) return <div style={{ width: 220, height: 220, margin: '0 auto' }} />;
+  return (
+    <img
+      src={dataUrl}
+      alt="Live attendance QR code"
+      style={{ width: 220, height: 220, margin: '0 auto', display: 'block', borderRadius: 8 }}
+    />
+  );
+}
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const navigate = useNavigate();
@@ -196,8 +225,15 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterFilter, setRosterFilter] = useState('ALL'); // ALL | CONFIRMED | PENDING
   const [activeRoster, setActiveRoster] = useState([]);
-  const [qrTokenSuffix, setQrTokenSuffix] = useState(Date.now().toString().slice(-4));
+  const [qrPhase, setQrPhase] = useState('CHECKIN');
+  const [nowTick, setNowTick] = useState(Date.now());
   const [copiedToken, setCopiedToken] = useState(false);
+
+  useEffect(() => {
+    if (!liveQrClass) return;
+    const interval = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [liveQrClass]);
 
   // Trainer Custom Materials & Syllabus State
   const [classMaterialsMap, setClassMaterialsMap] = useState({});
@@ -211,7 +247,8 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
 
   function openLiveQrModal(cls) {
     setLiveQrClass(cls);
-    setQrTokenSuffix(Date.now().toString().slice(-4));
+    setQrPhase('CHECKIN');
+    setNowTick(Date.now());
     setCopiedToken(false);
   }
 
@@ -1069,114 +1106,119 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       )}
 
       {/* MODAL 1: LIVE QR ATTENDANCE DISPLAY */}
-      {liveQrClass && (
-        <Modal
-          isOpen={Boolean(liveQrClass)}
-          title={`Live Attendance QR Code — ${liveQrClass.code}`}
-          subtitle={`${liveQrClass.date} (${liveQrClass.time}) · ${liveQrClass.venue}`}
-          onClose={() => setLiveQrClass(null)}
-          size="md"
-        >
-          <div style={{ textAlign: 'center', padding: '6px 0' }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
-              {liveQrClass.title}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 }}>
-              <Badge tone="sage" icon="ti-broadcast">The QR Code Is Live</Badge>
-              <Badge tone="blue" icon="ti-user-check">Class size: {liveQrClass.enrolledCount}/{liveQrClass.maxCapacity} Learner</Badge>
-            </div>
+      {liveQrClass && (() => {
+        const qrToken = generateQrToken(liveQrClass.id, sessionQrSecret(liveQrClass), qrPhase, currentBucket(nowTick));
+        const secondsLeft = secondsUntilNextBucket(nowTick);
+        const windows = deriveAttendanceWindows(liveQrClass);
 
-            {/* High-res Interactive QR Code Display */}
-            <div style={{
-              background: 'var(--paper-raised)',
-              border: '3px solid var(--bigc-green, #007A38)',
-              borderRadius: 16,
-              padding: 24,
-              display: 'inline-block',
-              boxShadow: '0 10px 35px rgba(0,122,56,0.18)',
-              marginBottom: 16,
-              position: 'relative',
-            }}>
+        return (
+          <Modal
+            isOpen={Boolean(liveQrClass)}
+            title={`Live Attendance QR Code — ${liveQrClass.code}`}
+            subtitle={`${liveQrClass.date} (${liveQrClass.time}) · ${liveQrClass.venue}`}
+            onClose={() => setLiveQrClass(null)}
+            size="md"
+          >
+            <div style={{ textAlign: 'center', padding: '6px 0' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
+                {liveQrClass.title}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+                <Badge tone="sage" icon="ti-broadcast">The QR Code Is Live</Badge>
+                <Badge tone="blue" icon="ti-user-check">Class size: {liveQrClass.enrolledCount}/{liveQrClass.maxCapacity} Learner</Badge>
+              </div>
+
+              {windows && (
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12 }}>
+                  <i className="ti ti-clock" style={{ marginRight: 5 }} />
+                  {qrPhase === 'CHECKIN'
+                    ? `Check-in window: ${new Date(windows.checkIn.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – ${new Date(windows.checkIn.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : `Check-out window: ${new Date(windows.checkOut.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – ${new Date(windows.checkOut.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  }
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
+                <Button variant={qrPhase === 'CHECKIN' ? 'primary' : 'outline'} onClick={() => setQrPhase('CHECKIN')}>
+                  QR Check-in (Class Start)
+                </Button>
+                <Button variant={qrPhase === 'CHECKOUT' ? 'primary' : 'outline'} onClick={() => setQrPhase('CHECKOUT')}>
+                  QR Check-out &amp; Survey (Class End)
+                </Button>
+              </div>
+
+              {/* High-res Interactive QR Code Display */}
               <div style={{
-                width: 220,
-                height: 220,
-                background: 'linear-gradient(135deg, #007A38 0%, #004D24 100%)',
-                borderRadius: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
+                background: 'var(--paper-raised)',
+                border: '3px solid var(--bigc-green, #007A38)',
+                borderRadius: 16,
+                padding: 24,
+                display: 'inline-block',
+                boxShadow: '0 10px 35px rgba(0,122,56,0.18)',
+                marginBottom: 16,
                 position: 'relative',
               }}>
-                <i className="ti ti-qrcode" style={{ fontSize: 140, lineHeight: 1 }} />
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, marginTop: 4, background: 'rgba(0,0,0,0.4)', padding: '3px 10px', borderRadius: 4 }}>
-                  SCAN WITH MEGALEARN
+                <QrCodeDisplay value={qrToken} />
+                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                  <Badge tone={secondsLeft <= 5 ? 'rust' : 'amber'} icon="ti-clock" size="lg">
+                    Refreshing in {secondsLeft}s
+                  </Badge>
                 </div>
               </div>
-            </div>
 
-            {/* Dynamic Token display with copy & refresh */}
-            <div style={{
-              background: 'var(--paper-sunken)',
-              border: '1px dashed var(--line-strong)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              maxWidth: 420,
-              margin: '0 auto 16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>SESSION TOKEN:</div>
-                <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 13, color: 'var(--ink)' }}>
-                  {liveQrClass.qrToken}-{qrTokenSuffix}
+              {/* Dynamic Token display with copy */}
+              <div style={{
+                background: 'var(--paper-sunken)',
+                border: '1px dashed var(--line-strong)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                maxWidth: 420,
+                margin: '0 auto 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>SESSION TOKEN ({qrPhase}):</div>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 13, color: 'var(--ink)' }}>
+                    {qrToken}
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
                 <Button
                   size="sm"
                   variant="outline"
                   icon={copiedToken ? 'ti-check' : 'ti-copy'}
-                  onClick={() => handleCopyToken(`${liveQrClass.qrToken}-${qrTokenSuffix}`)}
+                  onClick={() => handleCopyToken(qrToken)}
                 >
                   {copiedToken ? 'Copied' : 'Copy'}
                 </Button>
+              </div>
+
+              <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.45 }}>
+                The trainer opens this screen on the training room projector. Learners scan the code in the app <strong>MMLearn</strong> to complete check-in and record course attendance.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <Button variant="outline" onClick={() => setLiveQrClass(null)}>
+                  Close The Screen
+                </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  icon="ti-refresh"
-                  title="Generate a new session code"
-                  onClick={() => setQrTokenSuffix(Date.now().toString().slice(-4))}
-                />
+                  variant="primary"
+                  icon="ti-users"
+                  onClick={() => {
+                    const c = liveQrClass;
+                    setLiveQrClass(null);
+                    openRosterModal(c);
+                  }}
+                >
+                  Open The Learner List ({liveQrClass.enrolledCount} Learner)
+                </Button>
               </div>
             </div>
-
-            <p style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 460, margin: '0 auto 18px', lineHeight: 1.45 }}>
-              The trainer opens this screen on the training room projector. Learners scan the code in the app <strong>MMLearn</strong> to complete check-in and record course attendance.
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <Button variant="outline" onClick={() => setLiveQrClass(null)}>
-                Close The Screen
-              </Button>
-              <Button
-                variant="primary"
-                icon="ti-users"
-                onClick={() => {
-                  const c = liveQrClass;
-                  setLiveQrClass(null);
-                  openRosterModal(c);
-                }}
-              >
-                Open The Learner List ({liveQrClass.enrolledCount} Learner)
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
 
       {/* MODAL 2: STUDENT ROSTER & MANUAL ATTENDANCE TOGGLE */}
       {rosterClass && (

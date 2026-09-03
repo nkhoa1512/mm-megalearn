@@ -480,6 +480,8 @@ export function CourseStoreProvider({ children }) {
   // Mirrors the `enrollments` overlay pattern above, but for standalone assessments
   // (no Cost Center transaction — that is specific to paid course enrollment).
   const [assessmentRegistrations, setAssessmentRegistrations] = useState({});
+  // Classroom surveys collected at check-out: { [sessionId]: { [userId]: { ...surveyData, submittedAt } } }
+  const [classroomSurveys, setClassroomSurveys] = useState({});
 
   // Modals & UI States
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
@@ -1937,6 +1939,24 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
+  const checkOutClassroom = useCallback((sessionId, surveyData = {}, user = currentUser) => {
+    const userId = user?.userId;
+    setClassrooms((prev) =>
+      prev.map((session) =>
+        session.id === sessionId ? { ...session, attendanceStatus: 'CHECKED_OUT' } : session
+      )
+    );
+    if (userId) {
+      setClassroomSurveys((prev) => ({
+        ...prev,
+        [sessionId]: {
+          ...(prev[sessionId] || {}),
+          [userId]: { ...surveyData, submittedAt: new Date().toISOString() },
+        },
+      }));
+    }
+  }, [currentUser]);
+
   const enrollClassroom = useCallback((sessionId) => {
     setClassrooms((prev) =>
       prev.map((s) =>
@@ -2210,6 +2230,8 @@ export function CourseStoreProvider({ children }) {
         assignTrainerToCourse,
         classrooms,
         checkInClassroom,
+        checkOutClassroom,
+        classroomSurveys,
         enrollClassroom,
         batchEnrollStudents,
         approvals,

@@ -3,7 +3,14 @@ import { useCourseStore } from '../../store/CourseStore';
 import { Modal, Button, Badge } from './ui';
 
 export default function PostTrainingSurveyModal() {
-  const { surveyModalConfig, closeSurveyModal, createActionPlan, updateActionPlan, currentUser } = useCourseStore();
+  const {
+    surveyModalConfig,
+    closeSurveyModal,
+    createActionPlan,
+    updateActionPlan,
+    currentUser,
+    checkOutClassroom,
+  } = useCourseStore();
   const { isOpen, course, type, learner } = surveyModalConfig;
 
   // L1 Form state
@@ -56,6 +63,15 @@ export default function PostTrainingSurveyModal() {
         surveyL1Score: (trainerRating + contentRating + usabilityRating) / 3,
         managerReviewL3: null,
       });
+    } else if (isClassroomCsat) {
+      if (course?.id && checkOutClassroom) {
+        checkOutClassroom(course.id, {
+          csatTrainerRating,
+          csatContentRating,
+          csatFacilityRating,
+          csatComment,
+        });
+      }
     } else if (!isL1 && !isClassroomCsat && learner?.planId) {
       // Level 3 review (manager): sign off the existing action plan with the
       // behavioural evidence the Level 4 ROI report is later built from.
@@ -137,7 +153,7 @@ export default function PostTrainingSurveyModal() {
             <div key={qi} className="card card-pad" style={{ padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>{q.label}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{q.value} / 5 Sao</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--amber)' }}>{q.value} / 5 Stars</span>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 {[1, 2, 3, 4, 5].map((star) => (

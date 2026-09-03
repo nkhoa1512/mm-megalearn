@@ -1,8 +1,17 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../../store/CourseStore';
 import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
+import {
+  deriveAttendanceWindows,
+  generateQrToken,
+  isQrTokenValid,
+  currentBucket,
+  sessionQrSecret,
+} from '../../utils/qrAttendance';
 
 export default function LearnerClassrooms() {
+  const navigate = useNavigate();
   const { classrooms = [], checkInClassroom, enrollClassroom, currentUser, openSurveyModal } = useCourseStore();
 
   // Quick Filter Pills (Top)
@@ -22,7 +31,9 @@ export default function LearnerClassrooms() {
 
   // Scanner Modal state (Simulated Camera Viewfinder)
   const [scanningSession, setScanningSession] = useState(null);
+  const [scanPhase, setScanPhase] = useState('CHECKIN'); // 'CHECKIN' | 'CHECKOUT'
   const [scanState, setScanState] = useState('SCANNING'); // SCANNING, VERIFYING, SUCCESS
+  const [scanError, setScanError] = useState('');
 
   // Syllabus & Materials Modal state
   const [viewingMaterialsSession, setViewingMaterialsSession] = useState(null);
@@ -133,9 +144,11 @@ export default function LearnerClassrooms() {
     setGroupBy('NONE');
   }
 
-  function handleOpenScanner(session) {
+  function handleOpenScanner(session, phase = 'CHECKIN') {
     setScanningSession(session);
+    setScanPhase(phase);
     setScanState('SCANNING');
+    setScanError('');
   }
 
   function handleOpenSurvey(session) {
@@ -143,25 +156,53 @@ export default function LearnerClassrooms() {
   }
 
   function handleSimulateScan() {
+    setScanError('');
     setScanState('VERIFYING');
     setTimeout(() => {
-      if (scanningSession) {
-        checkInClassroom(scanningSession.id);
+      if (scanPhase === 'CHECKIN') {
+        if (scanningSession) {
+          checkInClassroom(scanningSession.id);
+        }
+        setScanState('SUCCESS');
+        setTimeout(() => {
+          setScanningSession(null);
+          setScanState('SCANNING');
+        }, 1500);
+      } else {
+        // CHECKOUT: do not mutate attendance yet — the survey submit is what finalizes it
+        setScanState('SUCCESS');
+        setTimeout(() => {
+          const sessionToSurvey = scanningSession;
+          setScanningSession(null);
+          setScanState('SCANNING');
+          if (sessionToSurvey) {
+            openSurveyModal(sessionToSurvey, 'CLASSROOM_CSAT');
+          }
+        }, 1500);
       }
-      setScanState('SUCCESS');
-      setTimeout(() => {
-        const checkedInSession = scanningSession;
-        setScanningSession(null);
-        setScanState('SCANNING');
-        if (checkedInSession) handleOpenSurvey(checkedInSession);
-      }, 1500);
     }, 1000);
+  }
+
+  function handleSimulateExpiredScan() {
+    if (!scanningSession) return;
+    const staleBucket = currentBucket() - 5;
+    const staleToken = generateQrToken(scanningSession.id, sessionQrSecret(scanningSession), scanPhase, staleBucket);
+    const isValid = isQrTokenValid(staleToken, scanningSession.id, sessionQrSecret(scanningSession), scanPhase);
+    if (!isValid) {
+      setScanError('This QR code has expired. Please scan the live screen currently being projected.');
+    }
   }
 
   // Helper render for single session card in Grid
   function renderSessionCard(session) {
     const isFull = session.enrolledCount >= session.maxCapacity;
+    const isCheckedOut = session.attendanceStatus === 'CHECKED_OUT';
     const isCheckedIn = session.attendanceStatus === 'CHECKED_IN';
+    const isPendingCheckin = session.isEnrolled && (session.attendanceStatus === 'PENDING_CHECKIN' || (!isCheckedIn && !isCheckedOut));
+    const windows = deriveAttendanceWindows(session);
+    const now = Date.now();
+    const inCheckInWindow = !windows || (new Date(windows.checkIn.start).getTime() <= now && now <= new Date(windows.checkIn.end).getTime());
+    const inCheckOutWindow = !windows || (new Date(windows.checkOut.start).getTime() <= now && now <= new Date(windows.checkOut.end).getTime());
 
     return (
       <div key={session.id} className="card card-pad" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 20 }}>
@@ -175,7 +216,9 @@ export default function LearnerClassrooms() {
               <span style={{ fontSize: 12, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{session.code}</span>
             </div>
 
-            {isCheckedIn ? (
+            {isCheckedOut ? (
+              <Badge tone="sage" icon="ti-certificate">Completed · Certificate Unlocked</Badge>
+            ) : isCheckedIn ? (
               <Badge tone="sage" icon="ti-circle-check">Attendance Recorded</Badge>
             ) : session.isEnrolled ? (
               <Badge tone="amber" icon="ti-clock">Awaiting In-Class QR Scan</Badge>
@@ -236,14 +279,47 @@ export default function LearnerClassrooms() {
               Syllabus &amp; Slides
             </Button>
 
-            {/* CASE 1: Learner is enrolled and needs to scan Trainer's QR */}
-            {session.isEnrolled && !isCheckedIn && session.status !== 'COMPLETED' && (
-              <Button variant="primary" size="sm" icon="ti-camera" onClick={() => handleOpenScanner(session)}>
-                📷 Scan The Attendance QR
+            {/* CASE 1: Learner completed and checked out -> View Certificate */}
+            {isCheckedOut && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="ti-certificate"
+                onClick={() => navigate('/learner/certificates')}
+              >
+                View Certificate
               </Button>
             )}
 
-            {/* CASE 2: Learner not enrolled yet */}
+            {/* CASE 2: Learner has checked in -> Can scan Check-out QR & trigger CSAT */}
+            {isCheckedIn && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon="ti-camera"
+                disabled={!inCheckOutWindow}
+                title={!inCheckOutWindow ? 'Check-out window is not active' : 'Scan check-out QR to complete class and survey'}
+                onClick={() => handleOpenScanner(session, 'CHECKOUT')}
+              >
+                📷 Scan Check-out QR &amp; Survey
+              </Button>
+            )}
+
+            {/* CASE 3: Learner is enrolled and needs to scan Check-in QR */}
+            {isPendingCheckin && session.status !== 'COMPLETED' && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon="ti-camera"
+                disabled={!inCheckInWindow}
+                title={!inCheckInWindow ? 'Check-in window is not active' : 'Scan check-in QR'}
+                onClick={() => handleOpenScanner(session, 'CHECKIN')}
+              >
+                📷 Scan Check-in QR
+              </Button>
+            )}
+
+            {/* CASE 4: Learner not enrolled yet */}
             {!session.isEnrolled && session.status !== 'COMPLETED' && (
               <Button
                 variant="primary"
@@ -253,13 +329,6 @@ export default function LearnerClassrooms() {
                 onClick={() => enrollClassroom(session.id)}
               >
                 {isFull ? 'Class Full' : 'Register To Attend'}
-              </Button>
-            )}
-
-            {/* CASE 3: Learner has checked in -> Can submit CSAT rating */}
-            {isCheckedIn && (
-              <Button variant="outline" size="sm" icon="ti-star" onClick={() => handleOpenSurvey(session)}>
-                ⭐ Rate The Session (CSAT)
               </Button>
             )}
           </div>
@@ -289,7 +358,14 @@ export default function LearnerClassrooms() {
           <tbody>
             {sessionsList.map((s) => {
               const isFull = s.enrolledCount >= s.maxCapacity;
+              const isCheckedOut = s.attendanceStatus === 'CHECKED_OUT';
               const isCheckedIn = s.attendanceStatus === 'CHECKED_IN';
+              const isPendingCheckin = s.isEnrolled && (s.attendanceStatus === 'PENDING_CHECKIN' || (!isCheckedIn && !isCheckedOut));
+              const windows = deriveAttendanceWindows(s);
+              const now = Date.now();
+              const inCheckInWindow = !windows || (new Date(windows.checkIn.start).getTime() <= now && now <= new Date(windows.checkIn.end).getTime());
+              const inCheckOutWindow = !windows || (new Date(windows.checkOut.start).getTime() <= now && now <= new Date(windows.checkOut.end).getTime());
+
               return (
                 <tr key={s.id}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--blue)' }}>
@@ -323,7 +399,9 @@ export default function LearnerClassrooms() {
                     <ProgressBar value={Math.round((s.enrolledCount / s.maxCapacity) * 100)} tone={isFull ? 'rust' : 'rail'} size="sm" />
                   </td>
                   <td>
-                    {isCheckedIn ? (
+                    {isCheckedOut ? (
+                      <Badge tone="sage" size="sm" icon="ti-certificate">Completed · Certificate Unlocked</Badge>
+                    ) : isCheckedIn ? (
                       <Badge tone="sage" size="sm" icon="ti-circle-check">Attendance Recorded</Badge>
                     ) : s.isEnrolled ? (
                       <Badge tone="amber" size="sm" icon="ti-clock">Registered</Badge>
@@ -338,19 +416,24 @@ export default function LearnerClassrooms() {
                       <Button variant="ghost" size="sm" icon="ti-file-description" title="Syllabus & Slides" onClick={() => setViewingMaterialsSession(s)}>
                         Slide
                       </Button>
-                      {s.isEnrolled && !isCheckedIn && s.status !== 'COMPLETED' && (
-                        <Button variant="primary" size="sm" icon="ti-camera" onClick={() => handleOpenScanner(s)}>
-                          Scan QR
+                      {isCheckedOut && (
+                        <Button variant="outline" size="sm" icon="ti-certificate" onClick={() => navigate('/learner/certificates')}>
+                          Certificate
+                        </Button>
+                      )}
+                      {isCheckedIn && (
+                        <Button variant="primary" size="sm" icon="ti-camera" disabled={!inCheckOutWindow} onClick={() => handleOpenScanner(s, 'CHECKOUT')}>
+                          Check-out QR
+                        </Button>
+                      )}
+                      {isPendingCheckin && s.status !== 'COMPLETED' && (
+                        <Button variant="primary" size="sm" icon="ti-camera" disabled={!inCheckInWindow} onClick={() => handleOpenScanner(s, 'CHECKIN')}>
+                          Check-in QR
                         </Button>
                       )}
                       {!s.isEnrolled && s.status !== 'COMPLETED' && (
                         <Button variant="primary" size="sm" icon="ti-plus" disabled={isFull} onClick={() => enrollClassroom(s.id)}>
                           Register
-                        </Button>
-                      )}
-                      {isCheckedIn && (
-                        <Button variant="outline" size="sm" icon="ti-star" onClick={() => handleOpenSurvey(s)}>
-                          CSAT
                         </Button>
                       )}
                     </div>
@@ -769,7 +852,7 @@ export default function LearnerClassrooms() {
         <Modal
           isOpen={Boolean(scanningSession)}
           onClose={() => setScanningSession(null)}
-          title="Scan The Attendance QR Code In Class"
+          title={scanPhase === 'CHECKIN' ? 'Scan Check-in QR Code (Class Start)' : 'Scan Check-out QR Code (Class End)'}
           size="sm"
         >
           <div style={{ textAlign: 'center', padding: '6px 0' }}>
@@ -794,18 +877,28 @@ export default function LearnerClassrooms() {
               justifyContent: 'center',
               overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-              border: '3px solid var(--blue)',
+              border: scanError ? '3px solid var(--rust)' : '3px solid var(--blue)',
             }}>
-              {scanState === 'SUCCESS' ? (
+              {scanError ? (
+                <div style={{ color: '#EF4444', padding: '16px', textAlign: 'center' }}>
+                  <i className="ti ti-alert-triangle" style={{ fontSize: 56, marginBottom: 8 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Scan Failed</div>
+                  <div style={{ fontSize: 12, color: '#F87171', marginTop: 6, lineHeight: 1.4 }}>{scanError}</div>
+                </div>
+              ) : scanState === 'SUCCESS' ? (
                 <div style={{ color: '#10B981', animation: 'scaleUp 0.3s ease' }}>
                   <i className="ti ti-circle-check" style={{ fontSize: 72 }} />
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 8 }}>ATTENDANCE RECORDED!</div>
-                  <div style={{ fontSize: 12, color: '#10B981' }}>Course Attendance Confirmed</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 8 }}>
+                    {scanPhase === 'CHECKIN' ? 'CHECK-IN RECORDED!' : 'CHECK-OUT RECORDED!'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#10B981' }}>
+                    {scanPhase === 'CHECKIN' ? 'Attendance Confirmed' : 'Proceeding to Training Survey...'}
+                  </div>
                 </div>
               ) : scanState === 'VERIFYING' ? (
                 <div style={{ color: '#fff' }}>
                   <i className="ti ti-loader" style={{ fontSize: 48, animation: 'spin 1s linear infinite' }} />
-                  <div style={{ fontSize: 13, marginTop: 10 }}>Verifying the trainer token...</div>
+                  <div style={{ fontSize: 13, marginTop: 10 }}>Verifying live rotating token...</div>
                 </div>
               ) : (
                 <>
@@ -833,17 +926,17 @@ export default function LearnerClassrooms() {
                     }} />
                   </div>
                   <div style={{ color: 'var(--ink-faint)', fontSize: 11, marginTop: 10, padding: '0 10px' }}>
-                    Point your camera at the QR code on the trainer's screen
+                    Point your camera at the 30s rotating QR code on the trainer's screen
                   </div>
                 </>
               )}
             </div>
 
             <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.45, margin: '0 0 16px' }}>
-              Learner <strong>{currentUser.fullName}</strong> ({currentUser.employeeCode}) is scanning the attendance code for class <strong>{scanningSession.code}</strong>.
+              Learner <strong>{currentUser?.fullName}</strong> ({currentUser?.employeeCode}) is scanning the {scanPhase === 'CHECKIN' ? 'check-in' : 'check-out'} code for class <strong>{scanningSession.code}</strong>.
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
               <Button variant="ghost" onClick={() => setScanningSession(null)}>Close The Camera</Button>
               <Button
                 variant="primary"
@@ -851,7 +944,18 @@ export default function LearnerClassrooms() {
                 disabled={scanState !== 'SCANNING'}
                 onClick={handleSimulateScan}
               >
-                {scanState === 'SCANNING' ? 'Tap To Scan The Trainer QR Code' : scanState === 'VERIFYING' ? 'Processing...' : 'Attendance Recorded!'}
+                {scanState === 'SCANNING'
+                  ? (scanPhase === 'CHECKIN' ? 'Tap To Scan Check-in QR' : 'Tap To Scan Check-out QR')
+                  : scanState === 'VERIFYING' ? 'Processing...' : 'Recorded!'}
+              </Button>
+              <Button
+                variant="outline"
+                icon="ti-alert-circle"
+                disabled={scanState !== 'SCANNING'}
+                onClick={handleSimulateExpiredScan}
+                title="Simulate scanning an expired/outdated QR token"
+              >
+                Simulate an Expired Scan
               </Button>
             </div>
           </div>

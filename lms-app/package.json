@@ -15,6 +15,7 @@
     "verify:manager": "esbuild scripts/verify-manager.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-manager.mjs && node node_modules/.cache/verify-manager.mjs"
   },
   "dependencies": {
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0"

@@ -768,15 +768,15 @@ git commit -m "feat(assessment): mask confidential promotion-exam content from n
 **Interfaces:**
 - Consumes: `ASSESSMENT_MODES` from Task 4.
 
-- [ ] **Step 1: Read the file's `GENERAL` tab section and `formData` state fully**
+- [x] **Step 1: Read the file's `GENERAL` tab section and `formData` state fully**
 
 Confirm the exact shape of `formData` (already listed in the codebase report: `types, categories, contentFormats, quizSourceMode, ...`) and where the `GENERAL` tab's JSX lives, so the new mode selector is added as a sibling field within that existing tab rather than a new tab (the spec calls for adding it to the existing `GENERAL` tab).
 
-- [ ] **Step 2: Add `evaluationMode` (and the 6 dependent fields) to `formData`'s initial-state derivation**
+- [x] **Step 2: Add `evaluationMode` (and the 6 dependent fields) to `formData`'s initial-state derivation**
 
 Wherever `formData` is seeded from the `assessment` prop (the large default-derivation block already in the file), add: `evaluationMode: assessment?.evaluationMode || ASSESSMENT_MODES.TEST, isConfidential: assessment?.isConfidential || false, requiresPasscode: assessment?.requiresPasscode || false, passcode: assessment?.passcode || '', hideImmediateResult: assessment?.hideImmediateResult || false, hideAnswers: assessment?.hideAnswers || false, isAnonymous: assessment?.isAnonymous || false,`.
 
-- [ ] **Step 3: Add the 4-way mode selector to the `GENERAL` tab**
+- [x] **Step 3: Add the 4-way mode selector to the `GENERAL` tab**
 
 ```jsx
 <div className="field-group">
@@ -840,23 +840,23 @@ Wherever `formData` is seeded from the `assessment` prop (the large default-deri
 
 Import `ASSESSMENT_MODES` alongside the existing `assessmentData.js` imports in this file.
 
-- [ ] **Step 4: Restrict the EES audience picker to broad targets only**
+- [x] **Step 4: Restrict the EES audience picker to broad targets only**
 
 In the `ASSIGNMENTS` tab's audience-picker logic (the cascading-target picker also used for courses, per the codebase report — `getCascadingTargetOptions` from `data/assignmentTargets.js`), when `formData.evaluationMode === ASSESSMENT_MODES.EES`, hide/disable whichever `assignmentType` option targets a single named individual (read the existing `ASSIGNMENT_TYPES` options rendered in that tab first — there should be a per-person or per-user target type distinct from `ALL/DEPARTMENT/LEVEL/STORE`; if the existing types are already all group-level with no single-person option, note this in the commit message as "no per-person target existed to restrict" and skip this step's UI change, but still keep the `isAnonymous: true` default from Step 3).
 
-- [ ] **Step 5: Ensure `passcode`/mode fields are included when saving**
+- [x] **Step 5: Ensure `passcode`/mode fields are included when saving**
 
 Confirm the existing `onSave`/submit handler (wherever it assembles the final assessment object from `formData` before calling the `onSave` prop) already spreads all of `formData` into the saved object (it very likely does, given the existing large `formData` shape) — if it instead explicitly lists fields one by one, add the 6 new fields to that explicit list.
 
-- [ ] **Step 6: Manual verification**
+- [x] **Step 6: Manual verification**
 
 Run `npm run dev` as `sysadmin` (or `useradmin` for non-Promotion modes). Open the assessment editor for a new assessment, select each of the 4 modes, confirm: selecting Promotion reveals the passcode field and the security notice, and auto-checks the confidentiality flags (verify by saving and re-opening the editor — the flags should persist); selecting any other mode hides the passcode field; selecting EES doesn't crash the Assignments tab. Save a Promotion-mode assessment with a passcode and confirm (from Task 6's masking) that it now shows locked for `useradmin` and open for `sysadmin`.
 
-- [ ] **Step 7: Append verify-script checks and run verify**
+- [x] **Step 7: Append verify-script checks and run verify**
 
 Add a section rendering `AssessmentEditorModal` with a Promotion-mode `formData`/`assessment` prop and asserting the HTML contains `'Exam Room / Proctor Passcode'` and `'Security Notice'`; render with a Test-mode prop and assert those strings are ABSENT. Run `npm run verify`, confirm baseline unchanged plus new checks passing.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/features/assessment/AssessmentEditorModal.jsx scripts/verify-role-level-model.jsx
@@ -883,12 +883,12 @@ git commit -m "feat(assessment): add 4-mode selector and promotion passcode fiel
   - `export function deriveAttendanceWindows(session): { checkIn: {start, end}, checkOut: {start, end} }` — ISO datetime strings, derived from `session.date`/`session.time` when the session has no explicit window fields.
   - `checkOutClassroom(sessionId, surveyData, user = currentUser)` action and `classroomSurveys` state (`{ [sessionId]: { [userId]: {...surveyData, submittedAt} } }`), both exposed from `useCourseStore()`.
 
-- [ ] **Step 1: Add the `qrcode` dependency**
+- [x] **Step 1: Add the `qrcode` dependency**
 
 Run: `npm install qrcode`
 Expected: `lms-app/package.json`'s `dependencies` gains `"qrcode": "^1.5.4"` (or whatever exact version resolves), `package-lock.json` updates. Confirm `npm run dev` still starts cleanly afterward.
 
-- [ ] **Step 2: Write `src/utils/qrAttendance.js`**
+- [x] **Step 2: Write `src/utils/qrAttendance.js`**
 
 ```js
 const BUCKET_MS = 30000;
@@ -949,7 +949,7 @@ export function deriveAttendanceWindows(session) {
 }
 ```
 
-- [ ] **Step 3: Add `checkOutClassroom` and `classroomSurveys` to `CourseStore.jsx`**
+- [x] **Step 3: Add `checkOutClassroom` and `classroomSurveys` to `CourseStore.jsx`**
 
 Read the existing `checkInClassroom` action fully first (mirror its exact style — how it finds/updates the session inside the `classrooms` state array). Add near it:
 
@@ -975,15 +975,15 @@ function checkOutClassroom(sessionId, surveyData = {}, user = currentUser) {
 
 (Adapt `setClassrooms`/the state setter name to whatever `checkInClassroom` already uses — read Step 1's findings first, do not assume the exact setter name without confirming it.) Expose `checkOutClassroom` and `classroomSurveys` in the same context-value object where `checkInClassroom` is already exposed.
 
-- [ ] **Step 4: Manual verification of the pure helpers**
+- [x] **Step 4: Manual verification of the pure helpers**
 
 Write a throwaway scratch script (in the OS temp/scratchpad directory, not committed) that imports `generateQrToken`/`isQrTokenValid`/`currentBucket` and confirms: a token generated for bucket N validates against `isQrTokenValid` called immediately after (same bucket) and also ~29 seconds later (still bucket N, or now bucket N+1 but within the "previous bucket" tolerance) — but does NOT validate against a token from bucket N-5 (far outside tolerance). Confirm `deriveAttendanceWindows` returns sane ISO strings for a real seeded session (pick one from `mockData.js`'s `classroomSessions`).
 
-- [ ] **Step 5: Append verify-script checks and run verify**
+- [x] **Step 5: Append verify-script checks and run verify**
 
 Add a section importing `generateQrToken`/`isQrTokenValid` directly (pure function assertions, no render needed) and asserting: same-bucket token validates; a token forced to bucket `currentBucket() - 5` does NOT validate. Run `npm run verify`, confirm baseline unchanged plus new checks passing.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/utils/qrAttendance.js src/store/CourseStore.jsx package.json package-lock.json scripts/verify-role-level-model.jsx
@@ -1001,11 +1001,11 @@ git commit -m "feat(attendance): add 30s rotating QR token helper, checkOutClass
 **Interfaces:**
 - Consumes: `generateQrToken`, `currentBucket`, `secondsUntilNextBucket`, `sessionQrSecret` from Task 8's `utils/qrAttendance.js`; the `qrcode` package (Task 8) for rendering.
 
-- [ ] **Step 1: Read the existing live-QR modal section fully**
+- [x] **Step 1: Read the existing live-QR modal section fully**
 
 Locate `liveQrClass`/`openLiveQrModal`/`qrTokenSuffix` and the existing manual-refresh QR display (the Tabler-icon-or-mock-SVG block). Note the exact button that currently does manual refresh (`qrTokenSuffix = Date.now()...`) — this whole manual-refresh mechanism is replaced by automatic rotation in this task.
 
-- [ ] **Step 2: Add a check-in/check-out phase toggle and automatic rotation**
+- [x] **Step 2: Add a check-in/check-out phase toggle and automatic rotation**
 
 Add local state `const [qrPhase, setQrPhase] = useState('CHECKIN');` and a ticking re-render every second while the modal is open:
 
@@ -1027,11 +1027,11 @@ const secondsLeft = secondsUntilNextBucket(nowTick);
 
 Import `generateQrToken, currentBucket, secondsUntilNextBucket, sessionQrSecret` from `'../../utils/qrAttendance'`.
 
-- [ ] **Step 2b: Display the (derived) attendance window for the active phase**
+- [x] **Step 2b: Display the (derived) attendance window for the active phase**
 
 Also import `deriveAttendanceWindows` from `'../../utils/qrAttendance'`. Compute `const windows = liveQrClass ? deriveAttendanceWindows(liveQrClass) : null;` and render a small read-only line above the toggle buttons, e.g. `Check-in window: {new Date(windows.checkIn.start).toLocaleTimeString()} – {new Date(windows.checkIn.end).toLocaleTimeString()}` (swap to `windows.checkOut` when `qrPhase === 'CHECKOUT'`). This satisfies the spec's "configurable attendance windows" requirement via the Task 8 Ruling's derive-from-schedule default (no separate window-editing UI is built in this plan — the window is computed, not hand-configured, per that ruling) — purely informational, does not gate anything in this file (gating happens in Task 10, learner side).
 
-- [ ] **Step 3: Render the toggle, the real QR (via `qrcode`), and the countdown ring**
+- [x] **Step 3: Render the toggle, the real QR (via `qrcode`), and the countdown ring**
 
 ```jsx
 <div style={{ display: 'flex', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
@@ -1069,15 +1069,15 @@ function QrCodeDisplay({ value }) {
 
 Import `QRCode from 'qrcode'` at the top of the file. Remove the old manual "Refresh" button and the old hand-drawn SVG/icon QR mock entirely — they're superseded by `QrCodeDisplay` + automatic rotation.
 
-- [ ] **Step 4: Manual verification**
+- [x] **Step 4: Manual verification**
 
 Run `npm run dev` as a trainer. Open the Live QR modal for a class you teach. Confirm a real scannable-looking QR renders (not an icon/mock), the countdown badge ticks down from 30 to 0 and the QR image visibly changes (different image) each time it hits 0, and toggling between Check-in/Check-out changes the QR image immediately (different token/phase). Leave the modal open for over 60 seconds and confirm it keeps rotating indefinitely without needing any manual action.
 
-- [ ] **Step 5: Append verify-script checks and run verify**
+- [x] **Step 5: Append verify-script checks and run verify**
 
 Add a section rendering `TrainerHub` under a trainer persona with the Live QR modal pre-opened (follow whichever state-seeding approach nearby existing `TrainerHub` sections in the file already use, if any exist — otherwise this can be a lighter check that just confirms `TrainerHub` still renders without throwing after this change, since fully exercising a ticking `setInterval` inside a static `renderToStaticMarkup` render is not meaningful — a smoke render is sufficient here). Run `npm run verify`, confirm baseline unchanged plus new checks passing.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/pages/trainer/TrainerHub.jsx scripts/verify-role-level-model.jsx
@@ -1096,11 +1096,11 @@ git commit -m "feat(attendance): real rotating QR with check-in/check-out toggle
 **Interfaces:**
 - Consumes: `isQrTokenValid`, `sessionQrSecret` from Task 8; `checkOutClassroom` from Task 8; `openSurveyModal`/`closeSurveyModal` (existing).
 
-- [ ] **Step 1: Read both files fully with these insertion points in mind**
+- [x] **Step 1: Read both files fully with these insertion points in mind**
 
 `LearnerClassrooms.jsx`: the `scanningSession`/`scanState`/`handleSimulateScan` flow, and exactly where it currently calls `checkInClassroom` then `handleOpenSurvey`/`openSurveyModal(session, 'CLASSROOM_CSAT')` right after check-in succeeds — this survey-on-checkin call is removed/moved in this task. `PostTrainingSurveyModal.jsx`: the `handleSubmit` function's `if (isL1) {...} else if (!isL1 && !isClassroomCsat && learner?.planId) {...}` structure — note the `isClassroomCsat` case currently has no branch (the bug being fixed), and the two `"/ 5 Sao"` occurrences (lines ~140 and ~189 per the codebase report) to fix to `"/ 5 Stars"`.
 
-- [ ] **Step 2: Add a scan-phase concept to `LearnerClassrooms.jsx`**
+- [x] **Step 2: Add a scan-phase concept to `LearnerClassrooms.jsx`**
 
 Add a `scanPhase` state (`'CHECKIN' | 'CHECKOUT'`) set when the learner opens the scanner (from whatever UI element currently triggers `scanningSession` — likely two now-separate buttons/entry points instead of one: a "Scan Check-in QR" and a "Scan Check-out QR" action, gated by the session's current `attendanceStatus`: check-in scan only available when `attendanceStatus === 'PENDING_CHECKIN'`, check-out scan only available when `attendanceStatus === 'CHECKED_IN'`).
 
@@ -1126,7 +1126,7 @@ if (scanPhase === 'CHECKIN') {
 
 Adapt exact variable names (`scanningSession`, `setScanState`, etc.) to what Step 1 found. The simulated freshness check (`isQrTokenValid`) is exercised at the point the "scan" is simulated — since this app has no real camera/QR decode, treat the simulate-scan button itself as always presenting a fresh token (the anti-proxy rejection path is demonstrated via a SEPARATE explicit "Simulate an Expired Scan" secondary action/button in the same modal, which calls `isQrTokenValid` with a bucket forced 5+ buckets in the past and, when it returns `false`, shows an alert: `"This QR code has expired. Please scan the live screen currently being projected."` — add this as a second button next to the existing simulate-scan button, wired to `isQrTokenValid(fakeStaleToken, scanningSession.id, sessionQrSecret(scanningSession), scanPhase, Date.now() - 5*30000)`).
 
-- [ ] **Step 3: Fix `PostTrainingSurveyModal.jsx`'s `isClassroomCsat` submit branch**
+- [x] **Step 3: Fix `PostTrainingSurveyModal.jsx`'s `isClassroomCsat` submit branch**
 
 In `handleSubmit`, add the missing branch (the function currently has `if (isL1) {...} else if (!isL1 && !isClassroomCsat && learner?.planId) {...}` — add an `else if (isClassroomCsat)` branch before or in place of that structure):
 
@@ -1147,23 +1147,23 @@ if (isL1 && actionPlanCommitment.trim()) {
 
 Add `checkOutClassroom` to the existing `useCourseStore()` destructuring at the top of the file. Recall from the design spec that `course` here is actually the classroom session object (passed as `openSurveyModal(session, 'CLASSROOM_CSAT')`'s first argument) — so `course.id` is the session id, matching `checkOutClassroom(sessionId, surveyData)`'s expected first argument.
 
-- [ ] **Step 4: Fix the two `"Sao"` → `"Stars"` occurrences**
+- [x] **Step 4: Fix the two `"Sao"` → `"Stars"` occurrences**
 
 Change both `{q.value} / 5 Sao` (CSAT block) and `{trainerRating} / 5 Sao` (L1 block — confirm exact variable name at that call site, it may differ per-question) to end in `/ 5 Stars`.
 
-- [ ] **Step 5: Update the "Certificate unlocked" signal in `LearnerClassrooms.jsx`**
+- [x] **Step 5: Update the "Certificate unlocked" signal in `LearnerClassrooms.jsx`**
 
 Wherever the session card currently shows attendance status badges (`PENDING_CHECKIN`/`CHECKED_IN`/etc.), add a `CHECKED_OUT` case showing a `Badge tone="sage" icon="ti-certificate"` reading `"Completed · Certificate Unlocked"`, with a button/link to `/learner/certificates` (reuse the exact navigation the codebase already uses elsewhere for "view certificate" — e.g. `AssessmentPlayer.jsx`'s result screen already does `navigate('/learner/certificates')`; use the same route).
 
-- [ ] **Step 6: Manual verification — the full dual flow**
+- [x] **Step 6: Manual verification — the full dual flow**
 
 Run `npm run dev` as a learner enrolled in an in-person class. Open the classroom, trigger "Scan Check-in QR" → confirm status becomes `CHECKED_IN` and **no survey modal appears** (this is the behavior change from before). Trigger "Scan Check-out QR" → confirm the CSAT survey modal opens automatically. Fill in the 3 star ratings + comment, submit → confirm the modal shows the thank-you state, then closes, and the session card now shows `CHECKED_OUT`/"Certificate Unlocked". Reload the page and confirm the status persists (survives a re-render from the store, not just local component state). Trigger "Simulate an Expired Scan" and confirm the rejection alert appears and no state changes.
 
-- [ ] **Step 7: Append verify-script checks and run verify**
+- [x] **Step 7: Append verify-script checks and run verify**
 
 Add a section that calls `checkOutClassroom` directly on a store instance (or via whatever pre-seeding pattern the file's other sections use) with sample survey data, then asserts `classroomSurveys[sessionId][userId].csatTrainerRating` matches what was passed and the session's `attendanceStatus === 'CHECKED_OUT'` — this directly proves the previously-silent-discard bug is fixed. Run `npm run verify`, confirm baseline unchanged plus new checks passing.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/pages/learner/LearnerClassrooms.jsx src/features/common/PostTrainingSurveyModal.jsx scripts/verify-role-level-model.jsx

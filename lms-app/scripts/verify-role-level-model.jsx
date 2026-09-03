@@ -1518,6 +1518,101 @@ console.log('\n=== 34: Confidentiality masking — ASM-PROMO-001 hidden from rol
     Boolean(fullListHtml) && fullListHtml.includes(promoExam.description));
 }
 
+console.log('\n=== 35: Assessment Editor — mode selector, passcode field, EES audience restriction ===');
+{
+  const { default: AssessmentEditorModal } = await import('../src/features/assessment/AssessmentEditorModal');
+  const { ASSESSMENT_MODES, INITIAL_ASSESSMENTS } = await import('../src/data/assessmentData');
+
+  const promoExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-PROMO-001');
+  const testExam = INITIAL_ASSESSMENTS.find((a) => a.id === 'ASM-TEST-001');
+
+  actAs('sysadmin');
+  const promoEditorHtml = render(
+    'AssessmentEditorModal PROMOTION mode',
+    <AssessmentEditorModal assessment={promoExam} isOpen onClose={() => {}} onSave={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('AssessmentEditorModal in PROMOTION mode renders the Exam Room / Proctor Passcode field',
+    Boolean(promoEditorHtml) && promoEditorHtml.includes('Exam Room / Proctor Passcode'));
+  check('AssessmentEditorModal in PROMOTION mode renders the Security Notice',
+    Boolean(promoEditorHtml) && promoEditorHtml.includes('Security Notice'));
+
+  const testEditorHtml = render(
+    'AssessmentEditorModal TEST mode',
+    <AssessmentEditorModal assessment={testExam} isOpen onClose={() => {}} onSave={() => {}} />,
+    '/dummy',
+    '/dummy'
+  );
+  check('AssessmentEditorModal in TEST mode does NOT render the Exam Room / Proctor Passcode field',
+    Boolean(testEditorHtml) && !testEditorHtml.includes('Exam Room / Proctor Passcode'));
+  check('AssessmentEditorModal in TEST mode does NOT render the Security Notice',
+    Boolean(testEditorHtml) && !testEditorHtml.includes('Security Notice'));
+}
+
+console.log('\n=== 36: QR Attendance — 30s rotating token generator and validation helper ===');
+{
+  const { currentBucket, generateQrToken, isQrTokenValid, deriveAttendanceWindows, sessionQrSecret } = await import('../src/utils/qrAttendance');
+
+  const now = Date.now();
+  const bucket = currentBucket(now);
+  const token = generateQrToken('session-1', 'secret-key', 'CHECKIN', bucket);
+
+  check('same-bucket QR token validates successfully',
+    isQrTokenValid(token, 'session-1', 'secret-key', 'CHECKIN', now) === true);
+
+  const staleToken = generateQrToken('session-1', 'secret-key', 'CHECKIN', bucket - 5);
+  check('stale QR token (5 buckets in the past) fails validation',
+    isQrTokenValid(staleToken, 'session-1', 'secret-key', 'CHECKIN', now) === false);
+
+  const checkoutToken = generateQrToken('session-1', 'secret-key', 'CHECKOUT', bucket);
+  check('checkout token fails when validating against checkin phase',
+    isQrTokenValid(checkoutToken, 'session-1', 'secret-key', 'CHECKIN', now) === false);
+  check('checkout token validates against checkout phase',
+    isQrTokenValid(checkoutToken, 'session-1', 'secret-key', 'CHECKOUT', now) === true);
+
+  const sampleSession = { id: 's-1', date: '2026-09-05', time: '09:00' };
+  const windows = deriveAttendanceWindows(sampleSession);
+  check('deriveAttendanceWindows returns checkIn and checkOut windows with start & end',
+    Boolean(windows?.checkIn?.start) && Boolean(windows?.checkIn?.end) &&
+    Boolean(windows?.checkOut?.start) && Boolean(windows?.checkOut?.end));
+  check('sessionQrSecret defaults to session.id if qrSecret is absent',
+    sessionQrSecret(sampleSession) === 's-1');
+}
+
+console.log('\n=== 37: Trainer Hub — Live Rotating QR and phase toggle rendering ===');
+{
+  actAs('trainer');
+  const trainerHubHtml = render(
+    'TrainerHub live QR smoke test',
+    <TrainerHub initialTab="CLASSES" />,
+    '/trainer/hub',
+    '/trainer/hub'
+  );
+  check('TrainerHub renders cleanly under trainer role with classes tab',
+    Boolean(trainerHubHtml) && (trainerHubHtml.includes('Teaching &amp; Practice Class Dashboard') || trainerHubHtml.includes('Teaching & Practice Class Dashboard')));
+}
+
+console.log('\n=== 38: Learner Classrooms — Dual QR scan, check-out survey wiring, and translation fixes ===');
+{
+  const fs = await import('node:fs');
+  const surveySource = fs.readFileSync('src/features/common/PostTrainingSurveyModal.jsx', 'utf8');
+  check('the "Sao" string no longer appears in PostTrainingSurveyModal.jsx',
+    !surveySource.includes('Sao'));
+  check('PostTrainingSurveyModal handles isClassroomCsat submission via checkOutClassroom',
+    surveySource.includes('checkOutClassroom(course.id') || surveySource.includes('checkOutClassroom(course?.id'));
+
+  actAs('learner');
+  const classroomsHtml = render(
+    'LearnerClassrooms smoke test',
+    <LearnerClassrooms />,
+    '/learner/classrooms',
+    '/learner/classrooms'
+  );
+  check('LearnerClassrooms renders cleanly under learner role',
+    Boolean(classroomsHtml) && classroomsHtml.includes('In-Person Classes'));
+}
+
 console.log('\n' + (failures === 0 ? 'SMOKE PASSED' : failures + ' SMOKE FAILURE(S)'));
 console.log('FAILURES LIST:', JSON.stringify(failureLog, null, 2));
 process.exit(failures === 0 ? 0 : 1);
