@@ -49,7 +49,6 @@ const PAGE_META = {
   '/learner/classrooms': { title: 'Classroom Workshops & QR Check-in', crumb: 'Learner (Store & HO)' },
   '/learner/paths': { title: 'Career Learning Paths & 70-20-10 Framework', crumb: 'Learner (Store & HO)' },
   '/learner/ai-hub': { title: 'AI Learning Tutor & Standard SOP Retrieval', crumb: 'AI Knowledge Engine' },
-  '/learner/leaderboard': { title: 'Honor Roll & Gamification XP', crumb: 'Learner (Store & HO)' },
   '/learner/certificates': { title: 'Digital Credentials & Recertification Schedule', crumb: 'Learner (Store & HO)' },
   '/learner/history': { title: 'Learning Transcript & Completed Records', crumb: 'Learner (Store & HO)' },
   '/learner/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'Learner (Store & HO)' },

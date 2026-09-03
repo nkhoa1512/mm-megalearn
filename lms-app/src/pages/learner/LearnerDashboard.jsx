@@ -73,7 +73,6 @@ export default function LearnerDashboard() {
     : 75;
 
   const streakDays = user.streakDays || 8;
-  const totalXp = user.totalXp || (completedCount * 150 + inProgressCourses.length * 50 + 200);
 
   return (
     <>
@@ -503,8 +502,8 @@ export default function LearnerDashboard() {
         </div>
       </div>
 
-      {/* 6. ACHIEVEMENTS, RANKING & NOTIFICATIONS */}
-      <div className="grid grid-3" style={{ gap: 16 }}>
+      {/* 6. ACHIEVEMENTS & NOTIFICATIONS */}
+      <div className="grid grid-2" style={{ gap: 16 }}>
         <ResourceCard
           icon="ti-certificate"
           tone="sage"
@@ -512,14 +511,6 @@ export default function LearnerDashboard() {
           value={`${certificates.length} digital certificates`}
           subtext="MMVN security verified"
           onClick={() => navigate('/learner/certificates')}
-        />
-        <ResourceCard
-          icon="ti-trophy"
-          tone="amber"
-          title="Learning Leaderboard"
-          value={`Top 3 Departments`}
-          subtext={`Level ${user.level} · meets the role standard`}
-          onClick={() => navigate('/learner/history')}
         />
         <ResourceCard
           icon="ti-bell-ringing"

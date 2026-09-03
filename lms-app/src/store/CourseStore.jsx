@@ -1893,14 +1893,6 @@ export function CourseStoreProvider({ children }) {
           : s
       )
     );
-    // Award 150 XP for attending classroom
-    setGamification((prev) => ({
-      ...prev,
-      userStats: {
-        ...prev.userStats,
-        points: prev.userStats.points + 150,
-      },
-    }));
   }, []);
 
   const enrollClassroom = useCallback((sessionId) => {
