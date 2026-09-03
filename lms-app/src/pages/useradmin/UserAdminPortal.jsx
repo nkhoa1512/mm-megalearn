@@ -1018,11 +1018,8 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                     </button>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons — bulk import lives inside this modal as its own tab */}
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <Button size="sm" variant="outline" icon="ti-file-import" onClick={() => handleOpenAddUser('IMPORT')} style={{ height: 38 }}>
-                      Bulk Import
-                    </Button>
                     <Button size="sm" variant="primary" icon="ti-user-plus" onClick={() => handleOpenAddUser('MANUAL')} style={{ height: 38 }}>
                       Add Employees
                     </Button>
