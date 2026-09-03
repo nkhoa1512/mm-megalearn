@@ -30,6 +30,14 @@ const CATEGORY_OPTIONS = [
   { id: 'QUALITY_ASSURANCE', label: 'Quality Assurance & Inspection' },
 ];
 
+// The org hierarchy is chosen top-down, so a child selection without its parent is dropped.
+function normaliseCriteria(criteria = {}) {
+  const divisionId = criteria.divisionId || 'ALL';
+  const departmentId = divisionId === 'ALL' ? 'ALL' : (criteria.departmentId || 'ALL');
+  const subDepartmentId = departmentId === 'ALL' ? 'ALL' : (criteria.subDepartmentId || 'ALL');
+  return { ...criteria, divisionId, departmentId, subDepartmentId };
+}
+
 export default function CustomGroupsManager() {
   const {
     customGroups = [],
@@ -204,6 +212,18 @@ export default function CustomGroupsManager() {
     return resolveGroupMembers(tempGroup, users);
   }, [formTab, form.criteria, users]);
 
+  // Org hierarchy is picked top-down: Division -> Department -> Sub-Department
+  const selectedDivisionId = form.criteria?.divisionId || 'ALL';
+  const selectedDepartmentId = form.criteria?.departmentId || 'ALL';
+  const departmentOptions = useMemo(
+    () => (selectedDivisionId === 'ALL' ? [] : departments.filter((dept) => dept.divisionId === selectedDivisionId)),
+    [departments, selectedDivisionId]
+  );
+  const subDepartmentOptions = useMemo(
+    () => (selectedDepartmentId === 'ALL' ? [] : subDepartments.filter((s) => s.departmentId === selectedDepartmentId)),
+    [subDepartments, selectedDepartmentId]
+  );
+
   // Filtered list for Manual Picker Tab
   const manualAvailableUsers = useMemo(() => {
     return users.filter((u) => {
@@ -259,14 +279,14 @@ export default function CustomGroupsManager() {
       type: grp.type || 'DYNAMIC',
       category: grp.category || 'SPECIAL_COHORT',
       badgeColor: grp.badgeColor || '#0EA5E9',
-      criteria: grp.criteria || {
+      criteria: normaliseCriteria(grp.criteria || {
         businessUnitId: 'bu-mmvn',
         divisionId: 'ALL',
         departmentId: 'ALL',
         subDepartmentId: 'ALL',
         level: 'ALL',
         role: 'ALL',
-      },
+      }),
       memberUserIds: grp.memberUserIds || [],
     });
     setFormTab(grp.type || 'DYNAMIC');
@@ -1132,6 +1152,7 @@ export default function CustomGroupsManager() {
                       className="field-select"
                       style={{ fontSize: 12 }}
                       value={form.criteria?.departmentId || 'ALL'}
+                      disabled={selectedDivisionId === 'ALL'}
                       onChange={(e) => {
                         const deptId = e.target.value;
                         setForm((p) => ({
@@ -1144,12 +1165,12 @@ export default function CustomGroupsManager() {
                         }));
                       }}
                     >
-                      <option value="ALL">-- All Departments --</option>
-                      {departments
-                        .filter((dept) => !form.criteria?.divisionId || form.criteria.divisionId === 'ALL' || dept.divisionId === form.criteria.divisionId)
-                        .map((dept) => (
-                          <option key={dept.id} value={dept.id}>{dept.code} — {dept.name}</option>
-                        ))}
+                      <option value="ALL">
+                        {selectedDivisionId === 'ALL' ? '-- Select a Division first --' : '-- All Departments --'}
+                      </option>
+                      {departmentOptions.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.code} — {dept.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1161,14 +1182,19 @@ export default function CustomGroupsManager() {
                       className="field-select"
                       style={{ fontSize: 12 }}
                       value={form.criteria?.subDepartmentId || 'ALL'}
+                      disabled={selectedDepartmentId === 'ALL' || subDepartmentOptions.length === 0}
                       onChange={(e) => setForm((p) => ({ ...p, criteria: { ...p.criteria, subDepartmentId: e.target.value } }))}
                     >
-                      <option value="ALL">-- All Sub-Departments --</option>
-                      {subDepartments
-                        .filter((s) => !form.criteria?.departmentId || form.criteria.departmentId === 'ALL' || s.departmentId === form.criteria.departmentId)
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>🌿 {s.name}</option>
-                        ))}
+                      <option value="ALL">
+                        {selectedDepartmentId === 'ALL'
+                          ? '-- Select a Division & Department first --'
+                          : subDepartmentOptions.length === 0
+                            ? '-- No sub-department --'
+                            : '-- All Sub-Departments --'}
+                      </option>
+                      {subDepartmentOptions.map((s) => (
+                        <option key={s.id} value={s.id}>🌿 {s.name}</option>
+                      ))}
                     </select>
                   </div>
 
