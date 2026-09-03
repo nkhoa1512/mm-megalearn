@@ -836,7 +836,7 @@ export default function CustomGroupsManager() {
                 Download The Template (CSV)
               </Button>
               <Button variant="primary" size="sm" icon="ti-plus" onClick={handleOpenAdd} style={{ height: 38 }}>
-                + Create New Group
+                Create New Group
               </Button>
             </div>
           </div>

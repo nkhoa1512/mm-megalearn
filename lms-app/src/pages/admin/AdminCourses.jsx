@@ -922,7 +922,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
               >
-                {language === 'en' ? '+ Create In-Person Class' : '+ Create An In-Person Course'}
+                {language === 'en' ? 'Create In-Person Class' : 'Create An In-Person Course'}
               </Button>
             ) : activeTab === 'online-class' ? (
               <Button
@@ -930,7 +930,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=online&deliveryType=ONLINE_ELEARNING&onlineClassType=E_LEARNING')}
               >
-                {language === 'en' ? '+ Create Online Course' : '+ Create An Online Course'}
+                {language === 'en' ? 'Create Online Course' : 'Create An Online Course'}
               </Button>
             ) : activeTab === 'classroom' ? (
               <Button
@@ -938,7 +938,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
               >
-                {language === 'en' ? '+ Create In-Person Course' : '+ Create An In-Person Course'}
+                {language === 'en' ? 'Create In-Person Course' : 'Create An In-Person Course'}
               </Button>
             ) : (
               <Button
@@ -946,7 +946,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=all')}
               >
-                {language === 'en' ? '+ Create New Course' : '+ Create New Course'}
+                {language === 'en' ? 'Create New Course' : 'Create New Course'}
               </Button>
             )}
           </div>

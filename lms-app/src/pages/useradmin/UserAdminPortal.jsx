@@ -1332,7 +1332,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
                 </p>
               </div>
               <Button size="sm" variant="primary" icon="ti-plus" onClick={handleOpenAddLevel}>
-                + Add A New Job Level
+                Add A New Job Level
               </Button>
             </div>
           </div>
