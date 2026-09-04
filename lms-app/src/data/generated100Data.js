@@ -740,19 +740,23 @@ export const generated100EnrollmentList = [];
 // These are all Level 7 courses: you must finish your own level's program before
 // submit a request to study up to Level 6 (see the Sequential Level Gate flow).
 const MINH_TRAN_ENROLLMENTS = {
-  'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-20', startedAt: '2026-08-22' },
-  'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30', enrolledAt: '2026-07-20', startedAt: '2026-07-22' },
-  'CRS-FSH-003': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30', enrolledAt: '2026-07-25', startedAt: '2026-07-28' },
-  'CRS-ISA-011': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30', enrolledAt: '2026-07-15', startedAt: '2026-07-16' },
-  'CRS-ISA-012': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15', enrolledAt: '2026-07-10', startedAt: '2026-07-15' },
-  'CRS-HSE-019': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15', enrolledAt: '2026-08-01', startedAt: '2026-08-03' },
-  'CRS-HSE-020': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10', enrolledAt: '2026-07-05', startedAt: '2026-07-20' },
-  'CRS-STOPS-037': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-15', startedAt: '2026-08-18' },
-  'CRS-STOPS-038': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31', enrolledAt: '2026-08-25', startedAt: null },
-  'CRS-CSERV-087': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31', enrolledAt: '2026-08-20', startedAt: '2026-08-25' },
-  'CRS-CULT-093': { status: 'COMPLETED', progressPercent: 100, score: 88, attemptsCount: 1, completedAt: '2026-07-28', dueDate: '2026-08-15', enrolledAt: '2026-07-01', startedAt: '2026-07-03' },
-  'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-10', startedAt: '2026-08-12' },
+  'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 1.4, dueDate: '2026-09-30', enrolledAt: '2026-08-20', startedAt: '2026-08-22' },
+  'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', completedTime: '14:35', hoursSpent: 3.2, dueDate: '2026-08-30', enrolledAt: '2026-07-20', startedAt: '2026-07-22' },
+  'CRS-FSH-003': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', completedTime: '09:10', hoursSpent: 3.6, dueDate: '2026-08-30', enrolledAt: '2026-07-25', startedAt: '2026-07-28' },
+  'CRS-ISA-011': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', completedTime: '16:48', hoursSpent: 1.8, dueDate: '2026-08-30', enrolledAt: '2026-07-15', startedAt: '2026-07-16' },
+  'CRS-ISA-012': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 0.5, dueDate: '2026-08-15', enrolledAt: '2026-07-10', startedAt: '2026-07-15' },
+  'CRS-HSE-019': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 2.5, dueDate: '2026-09-15', enrolledAt: '2026-08-01', startedAt: '2026-08-03' },
+  'CRS-HSE-020': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 0.3, dueDate: '2026-08-10', enrolledAt: '2026-07-05', startedAt: '2026-07-20' },
+  'CRS-STOPS-037': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 1.2, dueDate: '2026-09-30', enrolledAt: '2026-08-15', startedAt: '2026-08-18' },
+  'CRS-STOPS-038': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 0, dueDate: '2026-10-31', enrolledAt: '2026-08-25', startedAt: null },
+  'CRS-CSERV-087': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 0.9, dueDate: '2026-10-31', enrolledAt: '2026-08-20', startedAt: '2026-08-25' },
+  'CRS-CULT-093': { status: 'COMPLETED', progressPercent: 100, score: 88, attemptsCount: 1, completedAt: '2026-07-28', completedTime: '11:20', hoursSpent: 2.1, dueDate: '2026-08-15', enrolledAt: '2026-07-01', startedAt: '2026-07-03' },
+  'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, completedTime: null, hoursSpent: 1.6, dueDate: '2026-09-30', enrolledAt: '2026-08-10', startedAt: '2026-08-12' },
 };
+
+// The "today" the whole demo dataset is anchored to (the app's clock is fixed to
+// this date, see the days-remaining maths on the operational reports).
+const TODAY = '2026-09-04';
 
 // Deterministic day-shift so every employee/course pair gets its own (but stable
 // across re-renders) enrollment/start date instead of one fixed constant for
@@ -826,14 +830,12 @@ generated100Users.forEach((user, uIdx) => {
         let progressPercent = 35 + ((uIdx * 7 + cIdx * 11) % 55);
         let score = null;
         let attemptsCount = 0;
-        let completedAt = null;
 
         if ((uIdx + cIdx) % 4 === 0) {
           status = 'COMPLETED';
           progressPercent = 100;
           score = 85 + ((uIdx * 3 + cIdx) % 15);
           attemptsCount = 1;
-          completedAt = '2026-08-14';
         } else if ((uIdx + cIdx) % 7 === 0) {
           status = 'NOT_STARTED';
           progressPercent = 0;
@@ -843,12 +845,34 @@ generated100Users.forEach((user, uIdx) => {
         }
 
         const dueDate = c.assignment?.dueDate || '2026-09-30';
-        // Spread enrollment 20-59 days before the due date, and the actual start
-        // a few days after that, so every employee/course pair carries its own
-        // timeline instead of one hardcoded date for the whole company.
-        const enrollLagDays = 20 + ((uIdx * 7 + cIdx * 11) % 40);
-        const enrolledAt = shiftDate(dueDate, -enrollLagDays);
-        const startedAt = status === 'NOT_STARTED' ? null : shiftDate(enrolledAt, 2 + ((uIdx + cIdx) % 6));
+
+        // A completed record is anchored backwards from today so the whole
+        // timeline stays coherent and in the past (enrolled → started →
+        // completed); anything unfinished is anchored to its deadline instead.
+        let enrolledAt;
+        let startedAt = null;
+        let completedAt = null;
+        let completedTime = null;
+
+        if (status === 'COMPLETED') {
+          completedAt = shiftDate(TODAY, -(1 + ((uIdx * 5 + cIdx * 3) % 45)));
+          completedTime = `${String(8 + ((uIdx + cIdx) % 10)).padStart(2, '0')}:${String((uIdx * 7 + cIdx * 13) % 60).padStart(2, '0')}`;
+          startedAt = shiftDate(completedAt, -(3 + ((uIdx + cIdx) % 12)));
+          enrolledAt = shiftDate(startedAt, -(2 + ((uIdx * 3 + cIdx) % 8)));
+        } else {
+          const enrollLagDays = 20 + ((uIdx * 7 + cIdx * 11) % 40);
+          enrolledAt = shiftDate(dueDate, -enrollLagDays);
+          startedAt = status === 'NOT_STARTED' ? null : shiftDate(enrolledAt, 2 + ((uIdx + cIdx) % 6));
+        }
+
+        // Hours actually spent on the course, as opposed to the course's declared
+        // length: a completed record lands near the declared length (±20%), an
+        // unfinished one in proportion to how far the learner has got.
+        const declaredHours = parseFloat(c.estimatedHours) || 2;
+        const effortFactor = 0.85 + (((uIdx * 13 + cIdx * 7) % 40) / 100);
+        const hoursSpent = status === 'NOT_STARTED'
+          ? 0
+          : Math.round(declaredHours * (status === 'COMPLETED' ? 1 : progressPercent / 100) * effortFactor * 10) / 10;
 
         userEnrollmentMap[c.id] = {
           courseId: c.id,
@@ -859,6 +883,8 @@ generated100Users.forEach((user, uIdx) => {
           score,
           attemptsCount,
           completedAt,
+          completedTime,
+          hoursSpent,
           dueDate,
           enrolledAt,
           startedAt,

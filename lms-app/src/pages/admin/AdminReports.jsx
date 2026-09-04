@@ -169,16 +169,21 @@ export default function AdminReports() {
   // Certificate codes must come from the same deriveCertificates() engine the
   // learner's own Certificates page uses (mockData.js) — a locally-invented ID
   // scheme here would show a different certificate number than the one the
-  // employee can actually present, for the same completed course.
-  const certCodeByUserCourse = useMemo(() => {
+  // employee can actually present, for the same completed course. The same pass
+  // also keeps each cert's validUntil, so the Progress report can surface a
+  // completed-but-expiring-soon course as something still needing action.
+  const certByUserCourse = useMemo(() => {
     const map = new Map();
     roster.forEach((u) => {
       deriveCertificates(courses, u, storeEnrollments, certificateTemplates).forEach((cert) => {
-        map.set(`${u.userId}::${cert.courseId}`, cert.id);
+        map.set(`${u.userId}::${cert.courseId}`, cert);
       });
     });
     return map;
   }, [roster, courses, storeEnrollments, certificateTemplates]);
+
+  const RECERT_WARNING_DAYS = 30;
+  const TODAY_STR = '2026-09-04';
 
   // Flattened Operational Dataset for Learning Transcript & Learner Progress Reports
   const flattenedEnrollmentRows = useMemo(() => {
@@ -198,7 +203,7 @@ export default function AdminReports() {
         let daysDiff = 0;
         try {
           const dueD = new Date(dueStr);
-          const nowD = new Date('2026-09-04');
+          const nowD = new Date(TODAY_STR);
           daysDiff = Math.ceil((dueD - nowD) / (1000 * 60 * 60 * 24));
         } catch (_) {
           daysDiff = 15;
@@ -212,14 +217,32 @@ export default function AdminReports() {
         // durationHours never existed on this data model, so reading it always
         // fell through to a guessed value instead of the declared course length.
         const durationHrs = course?.estimatedHours ? parseFloat(course.estimatedHours) : (course?.modules ? `${course.modules.length * 1.5}` : '2.0');
-        const certCode = certCodeByUserCourse.get(`${u.userId}::${courseId}`) || '—';
+        const cert = certByUserCourse.get(`${u.userId}::${courseId}`) || null;
+        const certCode = cert?.id || '—';
+
+        // A completed course still needs the learner's attention once its
+        // certificate is close to (or past) its expiry — the Progress report
+        // surfaces that even though the enrollment itself says COMPLETED.
+        let recertDaysRemaining = null;
+        let needsRecertification = false;
+        if (e.status === 'COMPLETED' && cert && !cert.isLifetime && cert.validUntil) {
+          try {
+            recertDaysRemaining = Math.ceil((new Date(cert.validUntil) - new Date(TODAY_STR)) / (1000 * 60 * 60 * 24));
+            needsRecertification = recertDaysRemaining <= RECERT_WARNING_DAYS;
+          } catch (_) { /* leave as not-needing-recertification */ }
+        }
 
         rows.push({
           userId: u.userId,
           employeeCode: u.employeeCode || u.userId,
           employeeName: u.fullName,
           position: u.position || u.title || 'Nhân viên chuyên môn',
-          department: u.storeName || u.departmentName || u.divisionName || 'MM Mega Market',
+          // Division (khối) and Department (phòng ban) are reported as two separate
+          // levels — collapsing them into one cell hid which division an employee
+          // belongs to, which is the level L&D actually reports against.
+          division: u.divisionName || u.businessUnitName || 'MM Mega Market',
+          department: u.departmentName || u.subDepartmentName || u.divisionName || '—',
+          workplace: u.storeName || 'Head Office (An Phu)',
           level: u.level ? `Level ${u.level}` : 'Level 7',
           courseId,
           courseCode: course?.code || courseId,
@@ -229,21 +252,42 @@ export default function AdminReports() {
           deliveryType: course?.deliveryType === 'IN_PERSON_CLASSROOM' ? 'Trực tiếp / Xưởng (ILT)' : 'E-Learning Online',
           enrollmentDate: e.enrolledAt || e.assignedDate || '—',
           startDate: e.status !== 'NOT_STARTED' ? (e.startedAt || '—') : '—',
-          completionDate: e.completedAt || (e.status === 'COMPLETED' ? '2026-08-14' : '—'),
+          completionDate: e.completedAt || '—',
+          completionTime: e.completedTime || null,
           status: e.status || 'IN_PROGRESS',
           progressPercent: progress,
           score: typeof e.score === 'number' ? e.score : null,
           certificateCode: certCode,
+          // Hours actually spent by this employee, with the course's declared
+          // length kept alongside it for comparison.
+          hoursSpent: typeof e.hoursSpent === 'number' ? e.hoursSpent : null,
           learningHours: `${durationHrs} giờ`,
           lastActivity: e.lastActivityAt || (e.status === 'NOT_STARTED' ? 'Chưa học' : '2026-08-20'),
           dueDate: dueStr,
           daysRemaining: daysDiff,
+          needsRecertification,
+          recertDaysRemaining,
+          certValidUntil: cert?.validUntil || null,
         });
       });
     });
 
     return rows;
-  }, [roster, enrollmentsByUser, courses, isTrainer, trainerCourseIds, certCodeByUserCourse]);
+  }, [roster, enrollmentsByUser, courses, isTrainer, trainerCourseIds, certByUserCourse]);
+
+  // Progress report = anything not yet cleanly finished: not started, in
+  // progress, overdue, or a completed course whose certificate is about to
+  // (or has already) expired — i.e. what a manager needs to chase right now.
+  // Transcript = the permanent record of what an employee has actually
+  // completed, kept even after a certificate later expires.
+  const progressReportRows = useMemo(
+    () => flattenedEnrollmentRows.filter((r) => r.status !== 'COMPLETED' || r.needsRecertification),
+    [flattenedEnrollmentRows]
+  );
+  const transcriptReportRows = useMemo(
+    () => flattenedEnrollmentRows.filter((r) => r.status === 'COMPLETED'),
+    [flattenedEnrollmentRows]
+  );
 
   const [selectedInspectionPackage, setSelectedInspectionPackage] = useState('HACCP');
   const [isExporting, setIsExporting] = useState(false);
@@ -255,38 +299,40 @@ export default function AdminReports() {
   const [lpStatusFilter, setLpStatusFilter] = useState('ALL');
   const [lpCourseFilter, setLpCourseFilter] = useState('ALL');
   const [lpDeptFilter, setLpDeptFilter] = useState('ALL');
+  const [lpDivFilter, setLpDivFilter] = useState('ALL');
 
   const [ltSearch, setLtSearch] = useState('');
-  const [ltStatusFilter, setLtStatusFilter] = useState('ALL');
   const [ltPathFilter, setLtPathFilter] = useState('ALL');
   const [ltDeptFilter, setLtDeptFilter] = useState('ALL');
+  const [ltDivFilter, setLtDivFilter] = useState('ALL');
 
   // Filtered Lists
   const filteredLearnerProgress = useMemo(() => {
-    return flattenedEnrollmentRows.filter((r) => {
+    return progressReportRows.filter((r) => {
       const matchSearch = !lpSearch.trim() ||
         r.employeeName.toLowerCase().includes(lpSearch.toLowerCase()) ||
         r.employeeCode.toLowerCase().includes(lpSearch.toLowerCase()) ||
         r.courseTitle.toLowerCase().includes(lpSearch.toLowerCase());
       const matchStatus = lpStatusFilter === 'ALL' || r.status === lpStatusFilter;
       const matchCourse = lpCourseFilter === 'ALL' || r.courseId === lpCourseFilter;
+      const matchDiv = lpDivFilter === 'ALL' || r.division === lpDivFilter;
       const matchDept = lpDeptFilter === 'ALL' || r.department === lpDeptFilter;
-      return matchSearch && matchStatus && matchCourse && matchDept;
+      return matchSearch && matchStatus && matchCourse && matchDiv && matchDept;
     });
-  }, [flattenedEnrollmentRows, lpSearch, lpStatusFilter, lpCourseFilter, lpDeptFilter]);
+  }, [progressReportRows, lpSearch, lpStatusFilter, lpCourseFilter, lpDivFilter, lpDeptFilter]);
 
   const filteredLearningTranscript = useMemo(() => {
-    return flattenedEnrollmentRows.filter((r) => {
+    return transcriptReportRows.filter((r) => {
       const matchSearch = !ltSearch.trim() ||
         r.employeeName.toLowerCase().includes(ltSearch.toLowerCase()) ||
         r.employeeCode.toLowerCase().includes(ltSearch.toLowerCase()) ||
         r.courseTitle.toLowerCase().includes(ltSearch.toLowerCase());
-      const matchStatus = ltStatusFilter === 'ALL' || r.status === ltStatusFilter;
       const matchPath = ltPathFilter === 'ALL' || r.learningPath === ltPathFilter;
+      const matchDiv = ltDivFilter === 'ALL' || r.division === ltDivFilter;
       const matchDept = ltDeptFilter === 'ALL' || r.department === ltDeptFilter;
-      return matchSearch && matchStatus && matchPath && matchDept;
+      return matchSearch && matchPath && matchDiv && matchDept;
     });
-  }, [flattenedEnrollmentRows, ltSearch, ltStatusFilter, ltPathFilter, ltDeptFilter]);
+  }, [transcriptReportRows, ltSearch, ltPathFilter, ltDivFilter, ltDeptFilter]);
 
   const openedOnReports = /reports\/?$/.test(pathname);
   const [activeReportTab, setActiveReportTab] = useState(openedOnReports ? 'LEARNER_PROGRESS' : 'OVERVIEW');
@@ -310,30 +356,35 @@ export default function AdminReports() {
     ? ALL_REPORT_TABS
     : ALL_REPORT_TABS.filter((t) => t.id === 'OVERVIEW' || t.id === 'LEARNER_PROGRESS' || t.id === 'LEARNING_TRANSCRIPT' || t.id === 'TRAINER_CSAT');
 
-  const learnerProgressSheetRows = flattenedEnrollmentRows.map((r) => ({
+  const learnerProgressSheetRows = progressReportRows.map((r) => ({
     'Employee Name': r.employeeName,
     'Employee Code': r.employeeCode,
-    'Department / Store': r.department,
+    Division: r.division,
+    Department: r.department,
+    'Workplace / Store': r.workplace,
     Level: r.level,
     'Course Title': r.courseTitle,
     'Course Code': r.courseCode,
     'Progress %': `${r.progressPercent}%`,
-    Status: r.status,
+    Status: r.needsRecertification ? 'NEEDS_RECERTIFICATION' : r.status,
     'Last Activity': r.lastActivity,
     'Due Date': r.dueDate,
-    'Days Remaining / Overdue':
-      r.status === 'COMPLETED'
-        ? 'Completed'
-        : r.daysRemaining < 0
-        ? `Overdue ${Math.abs(r.daysRemaining)} days`
-        : `Remaining ${r.daysRemaining} days`,
+    'Days Remaining / Overdue': r.needsRecertification
+      ? (r.recertDaysRemaining < 0
+        ? `Certificate expired ${Math.abs(r.recertDaysRemaining)} days ago`
+        : `Certificate expires in ${r.recertDaysRemaining} days`)
+      : r.daysRemaining < 0
+      ? `Overdue ${Math.abs(r.daysRemaining)} days`
+      : `Remaining ${r.daysRemaining} days`,
   }));
 
-  const learningTranscriptSheetRows = flattenedEnrollmentRows.map((r) => ({
+  const learningTranscriptSheetRows = transcriptReportRows.map((r) => ({
     'Employee Name': r.employeeName,
     'Employee Code': r.employeeCode,
     Position: r.position,
-    'Department / Store': r.department,
+    Division: r.division,
+    Department: r.department,
+    'Workplace / Store': r.workplace,
     Level: r.level,
     'Course Title': r.courseTitle,
     'Course Code': r.courseCode,
@@ -341,11 +392,17 @@ export default function AdminReports() {
     'Delivery Type': r.deliveryType,
     'Enrollment Date': r.enrollmentDate,
     'Start Date': r.startDate,
+    // Kept as two separate columns rather than one combined "date + time"
+    // string — Excel silently re-detects a combined value as a date-only
+    // cell on open and drops the time portion from what's displayed, even
+    // though the underlying cell type is declared as text.
     'Completion Date': r.completionDate,
+    'Completion Time': r.completionTime || '—',
     Status: r.status,
     Score: r.score !== null ? `${r.score}%` : '—',
     Certificate: r.certificateCode,
-    'Learning Hours': r.learningHours,
+    'Hours Spent': r.hoursSpent !== null ? `${r.hoursSpent} h` : '—',
+    'Declared Course Length': r.learningHours,
   }));
 
   const csatSheetRows = trainerSessions.map((s) => ({
@@ -415,31 +472,39 @@ export default function AdminReports() {
   }));
 
   /**
-   * Every report the viewer is entitled to, one sheet each — a Trainer's
-   * workbook therefore contains Learner Progress, Learning Transcript and Teaching CSAT for their classes.
+   * Export is always scoped to whichever report tab is currently open — no
+   * "export everything" bundle. Each tab maps to exactly one sheet/section;
+   * the Overview tab is a live dashboard with no row data, so it has none.
    */
-  function workbookSheets() {
-    const sheets = [
-      { name: 'Learner Progress', rows: learnerProgressSheetRows },
-      { name: 'Learning Transcript', rows: learningTranscriptSheetRows },
-      { name: 'Teaching CSAT', rows: csatSheetRows },
-    ];
-    if (!canViewOrgWide) return sheets;
-    return [
-      ...sheets,
-      { name: 'Kirkpatrick ROI', rows: kirkpatrickSheetRows },
-      { name: 'Competency Heatmap', rows: heatmapSheetRows },
-      { name: 'Cost & Budget', rows: costSheetRows },
-      { name: 'Compliance League', rows: complianceSheetRows },
-    ];
+  function activeReportExport() {
+    switch (effectiveTab) {
+      case 'LEARNER_PROGRESS':
+        return { fileBase: 'learner-progress-report', sheetName: 'Learner Progress', rows: learnerProgressSheetRows, pdfTitle: 'Learner Progress Report' };
+      case 'LEARNING_TRANSCRIPT':
+        return { fileBase: 'learning-transcript', sheetName: 'Learning Transcript', rows: learningTranscriptSheetRows, pdfTitle: 'Learning Transcript' };
+      case 'TRAINER_CSAT':
+        return { fileBase: 'teaching-csat', sheetName: 'Teaching CSAT', rows: csatSheetRows, pdfTitle: 'Teaching CSAT Rating' };
+      case 'ROI_KIRKPATRICK':
+        return { fileBase: 'kirkpatrick-roi', sheetName: 'Kirkpatrick ROI', rows: kirkpatrickSheetRows, pdfTitle: 'Kirkpatrick 4-Level ROI Framework' };
+      case 'HEATMAP':
+        return { fileBase: 'competency-heatmap', sheetName: 'Competency Heatmap', rows: heatmapSheetRows, pdfTitle: 'Competency Gap Heatmap' };
+      case 'COST_BUDGET':
+        return { fileBase: 'training-cost-budget', sheetName: 'Cost & Budget', rows: costSheetRows, pdfTitle: 'Training Cost Tracking & L&D Budget' };
+      case 'COMPLIANCE_LEAGUE':
+        return { fileBase: 'compliance-league', sheetName: 'Compliance League', rows: complianceSheetRows, pdfTitle: 'Compliance League Table' };
+      default:
+        return null;
+    }
   }
 
   function handleExportExcel() {
+    const cfg = activeReportExport();
+    if (!cfg) return;
     setIsExporting(true);
     setTimeout(() => {
       downloadWorkbook(
-        `mmvn-lms-reports-${new Date().toISOString().slice(0, 10)}.xls`,
-        workbookSheets()
+        `mmvn-${cfg.fileBase}-${new Date().toISOString().slice(0, 10)}.xls`,
+        [{ name: cfg.sheetName, rows: cfg.rows }]
       );
       setIsExporting(false);
       setExportComplete(true);
@@ -448,21 +513,23 @@ export default function AdminReports() {
   }
 
   function handleExportDossier() {
+    const cfg = activeReportExport();
+    if (!cfg) return;
     setIsExporting(true);
     setTimeout(() => {
       downloadDossierPdf(
-        `mmvn-lms-audit-dossier-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `mmvn-${cfg.fileBase}-${new Date().toISOString().slice(0, 10)}.pdf`,
         {
-          title: 'MM Mega Market Vietnam — L&D Audit Dossier',
+          title: `MM Mega Market Vietnam — ${cfg.pdfTitle}`,
           subtitle: isTrainer
-            ? `Teaching command dossier for ${currentUser?.fullName || 'Trainer'} — classes personally taught only.`
-            : 'Executive L&D command dossier — compliance, Kirkpatrick ROI and course governance, company-wide.',
+            ? `Report for ${currentUser?.fullName || 'Trainer'} — classes personally taught only.`
+            : `Company-wide report (${roster.length} employees).`,
           meta: [
             `Exported by: ${currentUser?.fullName || '—'} (${currentUser?.employeeCode || currentUser?.userId || '—'})`,
             `Exported on: ${new Date().toISOString().slice(0, 10)}`,
             `Scope: ${isTrainer ? 'Classes personally taught' : `Company-wide (${roster.length} employees)`}`,
           ],
-          sections: workbookSheets(),
+          sections: [{ name: cfg.sheetName, rows: cfg.rows }],
         }
       );
       setIsExporting(false);
@@ -489,28 +556,28 @@ export default function AdminReports() {
               : 'Compliance monitoring and course governance in the overview tab, plus Kirkpatrick ROI, competency heatmaps, L&D budget and signed audit dossiers in the report tabs — one place instead of two look-alike pages.'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Button
-            variant="outline"
-            icon={exportComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-spreadsheet'}
-            onClick={handleExportExcel}
-            disabled={isExporting}
-          >
-            {exportComplete
-              ? 'Workbook downloaded!'
-              : canViewOrgWide ? `Export all reports (Excel, ${workbookSheets().length} sheets)` : 'Export my CSAT report (Excel)'}
-          </Button>
-          <Button
-            variant="primary"
-            icon={dossierComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
-            onClick={handleExportDossier}
-            disabled={isExporting}
-          >
-            {dossierComplete
-              ? 'PDF downloaded!'
-              : isExporting ? 'Generating PDF...' : 'Export Audit Dossier (Download PDF)'}
-          </Button>
-        </div>
+        {activeReportExport() && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Button
+              variant="outline"
+              icon={exportComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-spreadsheet'}
+              onClick={handleExportExcel}
+              disabled={isExporting}
+            >
+              {exportComplete ? 'Excel downloaded!' : `Export Excel — ${activeReportExport().sheetName}`}
+            </Button>
+            <Button
+              variant="primary"
+              icon={dossierComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
+              onClick={handleExportDossier}
+              disabled={isExporting}
+            >
+              {dossierComplete
+                ? 'PDF downloaded!'
+                : isExporting ? 'Generating PDF...' : `Export PDF — ${activeReportExport().sheetName}`}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* REPORT SECTION TABS */}
@@ -550,8 +617,8 @@ export default function AdminReports() {
               </h2>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
                 {isTrainer
-                  ? 'Theo dõi & giám sát tiến độ học tập của các học viên thuộc các khóa/lớp bạn trực tiếp giảng dạy.'
-                  : `Giám sát tiến độ học tập theo thời gian thực của toàn bộ ${roster.length} nhân sự trên hệ thống.`}
+                  ? 'Theo dõi & giám sát tiến độ học tập của các học viên thuộc các khóa/lớp bạn trực tiếp giảng dạy. Chỉ hiện các khóa đang học, quá hạn, chưa bắt đầu hoặc cần tái cấp chứng chỉ — khóa đã hoàn thành trọn vẹn xem ở tab Hồ Sơ Học Tập.'
+                  : `Giám sát tiến độ học tập theo thời gian thực của toàn bộ ${roster.length} nhân sự trên hệ thống. Chỉ hiện các khóa đang học, quá hạn, chưa bắt đầu hoặc cần tái cấp chứng chỉ — khóa đã hoàn thành trọn vẹn xem ở tab Hồ Sơ Học Tập.`}
               </p>
             </div>
             <Badge tone={isTrainer ? 'sage' : 'ai'} icon="ti-shield-check">
@@ -562,33 +629,33 @@ export default function AdminReports() {
           {/* 4 Summary Metric Cards */}
           <div className="grid grid-4" style={{ gap: 16 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Lượt Theo Dõi</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Đang Cần Theo Dõi</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.length}
+                {progressReportRows.length}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Khóa học đang theo dõi</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Khóa chưa hoàn thành trọn vẹn</div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Đang Học Tích Cực</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.filter(r => r.status === 'IN_PROGRESS').length}
+                {progressReportRows.filter(r => r.status === 'IN_PROGRESS').length}
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Tiến độ từ 1% đến 99%</div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Đã Hoàn Thành</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Cần Tái Cấp Chứng Chỉ</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.filter(r => r.status === 'COMPLETED').length}
+                {progressReportRows.filter(r => r.needsRecertification).length}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Đạt 100% &amp; bài kiểm tra</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Đã hoàn thành nhưng chứng chỉ sắp/đã hết hạn</div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Cảnh Báo Quá Hạn</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--red)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.filter(r => r.status === 'OVERDUE' || (r.status !== 'COMPLETED' && r.daysRemaining < 0)).length}
+                {progressReportRows.filter(r => r.status === 'OVERDUE' || (r.status !== 'COMPLETED' && r.daysRemaining < 0)).length}
               </div>
               <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, fontWeight: 600 }}>Cần đôn đốc giục học</div>
             </div>
@@ -614,10 +681,10 @@ export default function AdminReports() {
                 onChange={(e) => setLpStatusFilter(e.target.value)}
                 style={{ padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
               >
-                <option value="ALL">Tất cả trạng thái ({flattenedEnrollmentRows.length})</option>
+                <option value="ALL">Tất cả trạng thái ({progressReportRows.length})</option>
                 <option value="IN_PROGRESS">Đang học (IN_PROGRESS)</option>
                 <option value="OVERDUE">Quá hạn (OVERDUE)</option>
-                <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
+                <option value="COMPLETED">Cần tái cấp chứng chỉ (COMPLETED)</option>
                 <option value="NOT_STARTED">Chưa bắt đầu (NOT_STARTED)</option>
               </select>
 
@@ -629,34 +696,47 @@ export default function AdminReports() {
                 style={{ maxWidth: 220, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
               >
                 <option value="ALL">Tất cả khóa học</option>
-                {Array.from(new Set(flattenedEnrollmentRows.map(r => r.courseId))).map(cid => {
-                  const cRow = flattenedEnrollmentRows.find(r => r.courseId === cid);
+                {Array.from(new Set(progressReportRows.map(r => r.courseId))).map(cid => {
+                  const cRow = progressReportRows.find(r => r.courseId === cid);
                   return <option key={cid} value={cid}>{cRow?.courseTitle || cid}</option>;
                 })}
               </select>
 
               {!isTrainer && (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Đơn vị / Khối:</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Khối (Division):</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={lpDivFilter}
+                    onChange={(e) => setLpDivFilter(e.target.value)}
+                    style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+                  >
+                    <option value="ALL">Tất cả khối</option>
+                    {Array.from(new Set(progressReportRows.map(r => r.division))).sort().map(div => (
+                      <option key={div} value={div}>{div}</option>
+                    ))}
+                  </select>
+
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Phòng ban:</span>
                   <select
                     className="form-select form-select-sm"
                     value={lpDeptFilter}
                     onChange={(e) => setLpDeptFilter(e.target.value)}
                     style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
                   >
-                    <option value="ALL">Tất cả đơn vị</option>
-                    {Array.from(new Set(flattenedEnrollmentRows.map(r => r.department))).sort().map(dept => (
+                    <option value="ALL">Tất cả phòng ban</option>
+                    {Array.from(new Set(progressReportRows.map(r => r.department))).sort().map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </>
               )}
 
-              {(lpSearch || lpStatusFilter !== 'ALL' || lpCourseFilter !== 'ALL' || lpDeptFilter !== 'ALL') && (
+              {(lpSearch || lpStatusFilter !== 'ALL' || lpCourseFilter !== 'ALL' || lpDivFilter !== 'ALL' || lpDeptFilter !== 'ALL') && (
                 <button
                   type="button"
                   className="btn btn-sm btn-ghost"
-                  onClick={() => { setLpSearch(''); setLpStatusFilter('ALL'); setLpCourseFilter('ALL'); setLpDeptFilter('ALL'); }}
+                  onClick={() => { setLpSearch(''); setLpStatusFilter('ALL'); setLpCourseFilter('ALL'); setLpDivFilter('ALL'); setLpDeptFilter('ALL'); }}
                   style={{ fontSize: 11, color: 'var(--ink-soft)', cursor: 'pointer' }}
                 >
                   <i className="ti ti-x" /> Đặt lại
@@ -671,7 +751,7 @@ export default function AdminReports() {
               <thead>
                 <tr>
                   <th style={{ minWidth: 200 }}>Học Viên (Employee)</th>
-                  <th style={{ minWidth: 150 }}>Đơn Vị / Khối</th>
+                  <th style={{ minWidth: 190 }}>Khối (Division) / Phòng Ban</th>
                   <th style={{ minWidth: 240 }}>Khóa Học (Course)</th>
                   <th style={{ minWidth: 160 }}>Tiến Độ (% Progress)</th>
                   <th style={{ minWidth: 120 }}>Trạng Thái (Status)</th>
@@ -689,7 +769,7 @@ export default function AdminReports() {
                   </tr>
                 ) : (
                   filteredLearnerProgress.map((row, idx) => {
-                    const isOverdue = row.status === 'OVERDUE' || (row.status !== 'COMPLETED' && row.daysRemaining < 0);
+                    const isOverdue = !row.needsRecertification && (row.status === 'OVERDUE' || (row.status !== 'COMPLETED' && row.daysRemaining < 0));
                     return (
                       <tr key={`${row.userId}-${row.courseId}-${idx}`}>
                         <td>
@@ -699,7 +779,9 @@ export default function AdminReports() {
                           </div>
                         </td>
                         <td>
-                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{row.department}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>{row.division}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{row.department}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{row.workplace}</div>
                         </td>
                         <td>
                           <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{row.courseTitle}</div>
@@ -724,12 +806,12 @@ export default function AdminReports() {
                         <td>
                           <Badge
                             tone={
-                              row.status === 'COMPLETED' ? 'sage' :
+                              row.needsRecertification ? 'blue' :
                               isOverdue ? 'rust' :
                               row.status === 'NOT_STARTED' ? 'slate' : 'amber'
                             }
                           >
-                            {row.status === 'COMPLETED' ? 'Đã hoàn thành' :
+                            {row.needsRecertification ? 'Cần tái cấp' :
                              row.status === 'OVERDUE' ? 'Quá hạn' :
                              row.status === 'NOT_STARTED' ? 'Chưa học' : 'Đang học'}
                           </Badge>
@@ -741,13 +823,15 @@ export default function AdminReports() {
                         </td>
                         <td>
                           <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
-                            {row.dueDate}
+                            {row.needsRecertification ? row.certValidUntil : row.dueDate}
                           </span>
                         </td>
                         <td>
-                          {row.status === 'COMPLETED' ? (
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage)' }}>
-                              ✓ Đã hoàn thành
+                          {row.needsRecertification ? (
+                            <span style={{ fontSize: 12, fontWeight: 800, color: row.recertDaysRemaining < 0 ? 'var(--red)' : 'var(--amber)', background: row.recertDaysRemaining < 0 ? 'var(--red-soft)' : 'var(--amber-soft)', padding: '2px 8px', borderRadius: 4 }}>
+                              {row.recertDaysRemaining < 0
+                                ? `Chứng chỉ hết hạn ${Math.abs(row.recertDaysRemaining)} ngày trước`
+                                : `Chứng chỉ hết hạn sau ${row.recertDaysRemaining} ngày`}
                             </span>
                           ) : isOverdue ? (
                             <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)', background: 'var(--red-soft)', padding: '2px 8px', borderRadius: 4 }}>
@@ -785,8 +869,8 @@ export default function AdminReports() {
               </h2>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
                 {isTrainer
-                  ? 'Hồ sơ tổng hợp quá trình học tập toàn diện của học viên tham gia các lớp/khóa giảng viên phụ trách.'
-                  : 'Hồ sơ học tập toàn bộ quá trình của nhân sự toàn công ty, phục vụ kiểm toán tuân thủ & cấp chứng chỉ.'}
+                  ? 'Hồ sơ đầy đủ các khóa đã hoàn thành trọn vẹn của học viên tham gia các lớp/khóa giảng viên phụ trách — ngày ghi danh, ngày & giờ hoàn thành, điểm số, chứng chỉ và số giờ học thực tế. Khóa đang học/quá hạn xem ở tab Giám Sát Tiến Độ.'
+                  : 'Hồ sơ đầy đủ các khóa đã hoàn thành trọn vẹn của nhân sự toàn công ty — ngày ghi danh, ngày & giờ hoàn thành, điểm số, chứng chỉ và số giờ học thực tế. Phục vụ kiểm toán tuân thủ & xác nhận năng lực. Khóa đang học/quá hạn xem ở tab Giám Sát Tiến Độ.'}
               </p>
             </div>
             <Badge tone={isTrainer ? 'sage' : 'ai'} icon="ti-file-certificate">
@@ -797,11 +881,11 @@ export default function AdminReports() {
           {/* 4 Summary Metric Cards */}
           <div className="grid grid-4" style={{ gap: 16 }}>
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Hồ Sơ Ghi Nhận</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Khóa Đã Hoàn Thành</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.length}
+                {transcriptReportRows.length}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Lượt học tập trong hệ thống</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Lượt học tập đã hoàn thành trọn vẹn</div>
             </div>
 
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
@@ -815,7 +899,7 @@ export default function AdminReports() {
             <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Chứng Chỉ Đã Cấp</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>
-                {flattenedEnrollmentRows.filter(r => r.certificateCode !== '—').length}
+                {transcriptReportRows.filter(r => r.certificateCode !== '—').length}
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Chứng chỉ số kèm mã QR</div>
             </div>
@@ -842,55 +926,54 @@ export default function AdminReports() {
               />
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Trạng thái:</span>
-              <select
-                className="form-select form-select-sm"
-                value={ltStatusFilter}
-                onChange={(e) => setLtStatusFilter(e.target.value)}
-                style={{ padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
-              >
-                <option value="ALL">Tất cả trạng thái ({flattenedEnrollmentRows.length})</option>
-                <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
-                <option value="IN_PROGRESS">Đang học (IN_PROGRESS)</option>
-                <option value="OVERDUE">Quá hạn (OVERDUE)</option>
-                <option value="NOT_STARTED">Chưa bắt đầu (NOT_STARTED)</option>
-              </select>
-
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Lộ trình:</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Lộ trình:</span>
               <select
                 className="form-select form-select-sm"
                 value={ltPathFilter}
                 onChange={(e) => setLtPathFilter(e.target.value)}
                 style={{ maxWidth: 220, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
               >
-                <option value="ALL">Tất cả lộ trình</option>
-                {Array.from(new Set(flattenedEnrollmentRows.map(r => r.learningPath))).map(lp => (
+                <option value="ALL">Tất cả lộ trình ({transcriptReportRows.length})</option>
+                {Array.from(new Set(transcriptReportRows.map(r => r.learningPath))).map(lp => (
                   <option key={lp} value={lp}>{lp}</option>
                 ))}
               </select>
 
               {!isTrainer && (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Đơn vị / Khối:</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Khối (Division):</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={ltDivFilter}
+                    onChange={(e) => setLtDivFilter(e.target.value)}
+                    style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+                  >
+                    <option value="ALL">Tất cả khối</option>
+                    {Array.from(new Set(transcriptReportRows.map(r => r.division))).sort().map(div => (
+                      <option key={div} value={div}>{div}</option>
+                    ))}
+                  </select>
+
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Phòng ban:</span>
                   <select
                     className="form-select form-select-sm"
                     value={ltDeptFilter}
                     onChange={(e) => setLtDeptFilter(e.target.value)}
                     style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
                   >
-                    <option value="ALL">Tất cả đơn vị</option>
-                    {Array.from(new Set(flattenedEnrollmentRows.map(r => r.department))).sort().map(dept => (
+                    <option value="ALL">Tất cả phòng ban</option>
+                    {Array.from(new Set(transcriptReportRows.map(r => r.department))).sort().map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </>
               )}
 
-              {(ltSearch || ltStatusFilter !== 'ALL' || ltPathFilter !== 'ALL' || ltDeptFilter !== 'ALL') && (
+              {(ltSearch || ltPathFilter !== 'ALL' || ltDivFilter !== 'ALL' || ltDeptFilter !== 'ALL') && (
                 <button
                   type="button"
                   className="btn btn-sm btn-ghost"
-                  onClick={() => { setLtSearch(''); setLtStatusFilter('ALL'); setLtPathFilter('ALL'); setLtDeptFilter('ALL'); }}
+                  onClick={() => { setLtSearch(''); setLtPathFilter('ALL'); setLtDivFilter('ALL'); setLtDeptFilter('ALL'); }}
                   style={{ fontSize: 11, color: 'var(--ink-soft)', cursor: 'pointer' }}
                 >
                   <i className="ti ti-x" /> Đặt lại
@@ -904,16 +987,16 @@ export default function AdminReports() {
             <table className="table" style={{ fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: 190 }}>1. Nhân Viên (Employee)</th>
+                  <th style={{ minWidth: 210 }}>1. Nhân Viên · Khối / Phòng Ban</th>
                   <th style={{ minWidth: 220 }}>2. Khóa Học (Course)</th>
                   <th style={{ minWidth: 160 }}>3. Lộ Trình (Learning Path)</th>
                   <th style={{ minWidth: 110 }}>4. Ngày Ghi Danh</th>
                   <th style={{ minWidth: 110 }}>5. Ngày Bắt Đầu</th>
-                  <th style={{ minWidth: 110 }}>6. Ngày Hoàn Thành</th>
+                  <th style={{ minWidth: 120 }}>6. Ngày &amp; Giờ Hoàn Thành</th>
                   <th style={{ minWidth: 120 }}>7. Trạng Thái (Status)</th>
                   <th style={{ minWidth: 90 }}>8. Điểm Số (Score)</th>
                   <th style={{ minWidth: 150 }}>9. Chứng Chỉ (Certificate)</th>
-                  <th style={{ minWidth: 100 }}>10. Giờ Học (Hours)</th>
+                  <th style={{ minWidth: 130 }}>10. Số Giờ Học Thực Tế</th>
                 </tr>
               </thead>
               <tbody>
@@ -931,7 +1014,8 @@ export default function AdminReports() {
                         <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
                           {row.employeeCode} · {row.position}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{row.department}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>{row.division}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{row.department} · {row.workplace}</div>
                       </td>
                       <td>
                         <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{row.courseTitle}</div>
@@ -956,6 +1040,11 @@ export default function AdminReports() {
                         <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
                           {row.completionDate}
                         </span>
+                        {row.completionTime && (
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                            lúc {row.completionTime}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <Badge
@@ -989,9 +1078,12 @@ export default function AdminReports() {
                         )}
                       </td>
                       <td>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-soft)' }}>
-                          {row.learningHours}
+                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>
+                          {row.hoursSpent !== null ? `${row.hoursSpent} giờ` : '—'}
                         </span>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                          Thời lượng khóa: {row.learningHours}
+                        </div>
                       </td>
                     </tr>
                   ))
