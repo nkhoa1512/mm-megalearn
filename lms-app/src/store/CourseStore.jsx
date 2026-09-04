@@ -68,12 +68,12 @@ const ROADMAP_KEY = 'mm-megalearn-roadmaps-v7';
 // Curriculum (Curriculum -> Courses -> Modules -> Lessons) and the company area
 // company areas (Category) managed by the System Admin — two new domains that never
 // existed before this 5-section catalog build.
-const CURRICULUM_KEY = 'mm-megalearn-curriculum-v2';
+const CURRICULUM_KEY = 'mm-megalearn-curriculum-v3';
 // Library (Library -> Area/Domain -> Courses): the admin creates the Library, adds
 // the areas (each bound to an existing Category) and then assign courses manually
 // to each area for easy lookup — unlike a Curriculum, it is only a view
 // a reference/lookup view for User Admin & System Admin, with no allocation/enrollment.
-const LIBRARY_KEY = 'mm-megalearn-libraries-v1';
+const LIBRARY_KEY = 'mm-megalearn-libraries-v2';
 
 // Sample data for the first few Libraries (demo/first-run) — pre-grouping the seed
 // seed courses from mockData.js into the area matching their Category, so the
@@ -140,8 +140,8 @@ const CATEGORY_GROUP_KEY = 'mm-megalearn-category-groups-v1';
 // is not used for rendering; the remaining fields (signerName/signerTitle/issuerOrg)
 // genuinely replaces the default content on the CertificateModal.
 const CERT_TEMPLATE_KEY = 'mm-megalearn-cert-templates-v4';
-const ASSESSMENT_KEY = 'mm-megalearn-assessments-v1';
-const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v1';
+const ASSESSMENT_KEY = 'mm-megalearn-assessments-v2';
+const QUESTION_BANK_KEY = 'mm-megalearn-questionbanks-v2';
 const ATTEMPT_KEY = 'mm-megalearn-assessment-attempts-v1';
 const INTERVENTION_KEY = 'mm-megalearn-interventions-v2';
 const SUCCESSION_KEY = 'mm-megalearn-succession-v2';
