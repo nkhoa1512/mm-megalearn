@@ -68,7 +68,7 @@ const ROLE_WORK_NAV = {
   ],
   useradmin: [
     { to: '/user-admin', label: 'People Administration & Org Structure', labelVi: 'People Administration & Org Structure', labelEn: 'User & Org Administration', icon: 'ti-users-group', end: true },
-    { to: '/admin', label: 'L&D Command Hub & Reports', labelVi: 'L&D Command Hub & Reports', labelEn: 'L&D Command Hub & Reports', icon: 'ti-crown', activePaths: ['/admin', '/admin/reports'] },
+    { to: '/admin', label: 'Learner Progress & Records', labelVi: 'Learner Progress & Records', labelEn: 'Learner Progress & Records', icon: 'ti-report-analytics', activePaths: ['/admin', '/admin/reports'] },
     { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
     { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
     { to: '/admin/roadmaps', label: 'Level Roadmap Management', labelVi: 'Level Roadmap Management', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },
@@ -77,7 +77,7 @@ const ROLE_WORK_NAV = {
   ],
   sysadmin: [
     { to: '/sysadmin', label: 'System Administration & Security', labelVi: 'System Administration & Security', labelEn: 'System Admin & Security', icon: 'ti-server-cog', end: true },
-    { to: '/admin', label: 'L&D Command Hub & Reports', labelVi: 'L&D Command Hub & Reports', labelEn: 'L&D Command Hub & Reports', icon: 'ti-crown', activePaths: ['/admin', '/admin/reports'] },
+    { to: '/admin', label: 'Learner Progress & Records', labelVi: 'Learner Progress & Records', labelEn: 'Learner Progress & Records', icon: 'ti-report-analytics', activePaths: ['/admin', '/admin/reports'] },
     { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
     { to: '/trainer', label: 'Teaching Classes & Live QR', labelVi: 'Teaching Classes & Live QR', labelEn: 'Teaching Classes & Live QR', icon: 'ti-school' },
     { to: '/admin/roadmaps', label: 'Level Roadmap Management', labelVi: 'Level Roadmap Management', labelEn: 'Level Roadmaps Management', icon: 'ti-map-2' },

@@ -113,7 +113,7 @@ const PAGE_META = {
   '/manager/reports': { title: 'Team Training & Competency Management', crumb: 'Manager (Level 4)' },
   '/manager/catalog': { title: 'Full Course Catalog (View & Enroll Only)', crumb: 'Manager (Level 4)' },
 
-  '/admin': { title: 'Executive L&D Command & Reports Center', crumb: 'L&D Faculty' },
+  '/admin': { title: 'Learner Progress & Training Records Center', crumb: 'L&D Faculty' },
   '/admin/courses': { title: 'Multi-Modal Course Catalog & SCORM Builder', crumb: 'L&D Faculty' },
   '/admin/training-ops': { title: 'Lab Room Booking & Participant List Upload', crumb: 'L&D Faculty' },
   '/admin/roadmaps': { title: 'Level Roadmap Management (Level Roadmaps)', crumb: 'L&D Faculty' },
@@ -121,7 +121,7 @@ const PAGE_META = {
   '/admin/config': { title: 'Dual-Branch Org Architecture & HRIS Sync', crumb: 'System Admin IT' },
   '/admin/certifications': { title: 'Certificate Management (Certificate Templates)', crumb: 'System Administration' },
   '/admin/categories': { title: 'Category Management (Category Taxonomy)', crumb: 'System Administration' },
-  '/admin/reports': { title: 'Executive L&D Command & Reports Center', crumb: 'L&D Faculty' },
+  '/admin/reports': { title: 'Learner Progress & Training Records Center', crumb: 'L&D Faculty' },
 };
 
 class ErrorBoundary extends React.Component {
