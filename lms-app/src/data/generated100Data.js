@@ -740,19 +740,28 @@ export const generated100EnrollmentList = [];
 // These are all Level 7 courses: you must finish your own level's program before
 // submit a request to study up to Level 6 (see the Sequential Level Gate flow).
 const MINH_TRAN_ENROLLMENTS = {
-  'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30' },
-  'CRS-FSH-003': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30' },
-  'CRS-ISA-011': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30' },
-  'CRS-ISA-012': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15' },
-  'CRS-HSE-019': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15' },
-  'CRS-HSE-020': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10' },
-  'CRS-STOPS-037': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
-  'CRS-STOPS-038': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
-  'CRS-CSERV-087': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31' },
-  'CRS-CULT-093': { status: 'COMPLETED', progressPercent: 100, score: 88, attemptsCount: 1, completedAt: '2026-07-28', dueDate: '2026-08-15' },
-  'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30' },
+  'CRS-FSH-001': { status: 'IN_PROGRESS', progressPercent: 47, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-20', startedAt: '2026-08-22' },
+  'CRS-FSH-002': { status: 'COMPLETED', progressPercent: 100, score: 92, attemptsCount: 1, completedAt: '2026-08-12', dueDate: '2026-08-30', enrolledAt: '2026-07-20', startedAt: '2026-07-22' },
+  'CRS-FSH-003': { status: 'FAILED', progressPercent: 100, score: 58, attemptsCount: 2, completedAt: '2026-08-15', dueDate: '2026-08-30', enrolledAt: '2026-07-25', startedAt: '2026-07-28' },
+  'CRS-ISA-011': { status: 'COMPLETED', progressPercent: 100, score: 95, attemptsCount: 1, completedAt: '2026-08-05', dueDate: '2026-08-30', enrolledAt: '2026-07-15', startedAt: '2026-07-16' },
+  'CRS-ISA-012': { status: 'OVERDUE', progressPercent: 25, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-15', enrolledAt: '2026-07-10', startedAt: '2026-07-15' },
+  'CRS-HSE-019': { status: 'IN_PROGRESS', progressPercent: 80, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-15', enrolledAt: '2026-08-01', startedAt: '2026-08-03' },
+  'CRS-HSE-020': { status: 'OVERDUE', progressPercent: 10, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-08-10', enrolledAt: '2026-07-05', startedAt: '2026-07-20' },
+  'CRS-STOPS-037': { status: 'IN_PROGRESS', progressPercent: 40, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-15', startedAt: '2026-08-18' },
+  'CRS-STOPS-038': { status: 'NOT_STARTED', progressPercent: 0, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31', enrolledAt: '2026-08-25', startedAt: null },
+  'CRS-CSERV-087': { status: 'IN_PROGRESS', progressPercent: 30, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-10-31', enrolledAt: '2026-08-20', startedAt: '2026-08-25' },
+  'CRS-CULT-093': { status: 'COMPLETED', progressPercent: 100, score: 88, attemptsCount: 1, completedAt: '2026-07-28', dueDate: '2026-08-15', enrolledAt: '2026-07-01', startedAt: '2026-07-03' },
+  'CRS-CULT-094': { status: 'IN_PROGRESS', progressPercent: 55, score: null, attemptsCount: 0, completedAt: null, dueDate: '2026-09-30', enrolledAt: '2026-08-10', startedAt: '2026-08-12' },
 };
+
+// Deterministic day-shift so every employee/course pair gets its own (but stable
+// across re-renders) enrollment/start date instead of one fixed constant for
+// the entire company — see BR-RPT data-check with the Vietnamese team.
+function shiftDate(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 // Three company-wide mandatory compliance courses (Level 7) - assigned to everyone.
 export const UNIVERSAL_COMPLIANCE_COURSE_IDS = ['CRS-ISA-011', 'CRS-HSE-019', 'CRS-STOPS-037'];
@@ -833,6 +842,14 @@ generated100Users.forEach((user, uIdx) => {
           progressPercent = 20;
         }
 
+        const dueDate = c.assignment?.dueDate || '2026-09-30';
+        // Spread enrollment 20-59 days before the due date, and the actual start
+        // a few days after that, so every employee/course pair carries its own
+        // timeline instead of one hardcoded date for the whole company.
+        const enrollLagDays = 20 + ((uIdx * 7 + cIdx * 11) % 40);
+        const enrolledAt = shiftDate(dueDate, -enrollLagDays);
+        const startedAt = status === 'NOT_STARTED' ? null : shiftDate(enrolledAt, 2 + ((uIdx + cIdx) % 6));
+
         userEnrollmentMap[c.id] = {
           courseId: c.id,
           userId: user.userId,
@@ -842,7 +859,9 @@ generated100Users.forEach((user, uIdx) => {
           score,
           attemptsCount,
           completedAt,
-          dueDate: c.assignment?.dueDate || '2026-09-30',
+          dueDate,
+          enrolledAt,
+          startedAt,
           lastLessonTitle: c.modules?.[0]?.lessons?.[0]?.title || '1.1 Industry Standards & Legal Foundations',
           lastActivityAt: '2026-08-19',
         };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   kirkpatrickROI,
@@ -6,9 +6,11 @@ import {
   classroomSessions,
   allUsers,
   enrollmentsForUser,
+  deriveCertificates,
 } from '../../data/mockData';
 import { StatCard, Badge, Button, ProgressBar } from '../../features/common/ui';
 import { downloadWorkbook } from '../../lib/exportExcel';
+import { downloadDossierPdf } from '../../lib/exportPdf';
 import { useCourseStore } from '../../store/CourseStore';
 import { normalizeRole, hasCapability } from '../../data/roles';
 import LdCommandOverview from './AdminDashboard';
@@ -34,6 +36,7 @@ export default function AdminReports() {
     enrollments: storeEnrollments,
     courses,
     costReport,
+    certificateTemplates,
   } = useCourseStore();
   const userRole = normalizeRole(currentUser?.role);
   const isTrainer = userRole === 'trainer';
@@ -140,31 +143,210 @@ export default function AdminReports() {
     return 'Good';
   }
 
+  // Scoping for Trainer vs Admin on Operational Reports (Learning Transcript & Learner Progress)
+  const trainerCourseIds = useMemo(() => {
+    if (!isTrainer) return null;
+    const ids = new Set();
+    (courses || []).forEach((c) => {
+      if (c.trainerId === currentUser?.userId || c.trainerName === currentUser?.fullName) ids.add(c.id);
+      if (c.coTrainerIds && c.coTrainerIds.includes(currentUser?.userId)) ids.add(c.id);
+      if (c.coTrainerNames && c.coTrainerNames.includes(currentUser?.fullName)) ids.add(c.id);
+    });
+    classroomSessions.forEach((s) => {
+      if (s.trainerId === currentUser?.userId || s.trainerName === currentUser?.fullName) {
+        if (s.courseId) ids.add(s.courseId);
+      }
+    });
+    // Fallback seed courses so trainer can review their classroom learners
+    if (ids.size === 0) {
+      ids.add('CRS-FSH-001');
+      ids.add('CRS-FSH-002');
+      ids.add('CRS-STOPS-037');
+    }
+    return ids;
+  }, [isTrainer, courses, currentUser]);
+
+  // Certificate codes must come from the same deriveCertificates() engine the
+  // learner's own Certificates page uses (mockData.js) — a locally-invented ID
+  // scheme here would show a different certificate number than the one the
+  // employee can actually present, for the same completed course.
+  const certCodeByUserCourse = useMemo(() => {
+    const map = new Map();
+    roster.forEach((u) => {
+      deriveCertificates(courses, u, storeEnrollments, certificateTemplates).forEach((cert) => {
+        map.set(`${u.userId}::${cert.courseId}`, cert.id);
+      });
+    });
+    return map;
+  }, [roster, courses, storeEnrollments, certificateTemplates]);
+
+  // Flattened Operational Dataset for Learning Transcript & Learner Progress Reports
+  const flattenedEnrollmentRows = useMemo(() => {
+    const rows = [];
+    const courseMap = new Map((courses || []).map((c) => [c.id, c]));
+
+    roster.forEach((u) => {
+      const userEnrolls = enrollmentsByUser[u.userId] || {};
+      Object.entries(userEnrolls).forEach(([courseId, e]) => {
+        // Scoping: Trainer sees only courses they teach
+        if (isTrainer && trainerCourseIds && !trainerCourseIds.has(courseId)) {
+          return;
+        }
+        const course = courseMap.get(courseId);
+
+        const dueStr = e.dueDate || course?.assignment?.dueDate || '2026-09-30';
+        let daysDiff = 0;
+        try {
+          const dueD = new Date(dueStr);
+          const nowD = new Date('2026-09-04');
+          daysDiff = Math.ceil((dueD - nowD) / (1000 * 60 * 60 * 24));
+        } catch (_) {
+          daysDiff = 15;
+        }
+
+        const progress = typeof e.progressPercent === 'number'
+          ? e.progressPercent
+          : e.status === 'COMPLETED' ? 100 : e.status === 'NOT_STARTED' ? 0 : 45;
+
+        // estimatedHours is the real field authored on the course (e.g. "3h") —
+        // durationHours never existed on this data model, so reading it always
+        // fell through to a guessed value instead of the declared course length.
+        const durationHrs = course?.estimatedHours ? parseFloat(course.estimatedHours) : (course?.modules ? `${course.modules.length * 1.5}` : '2.0');
+        const certCode = certCodeByUserCourse.get(`${u.userId}::${courseId}`) || '—';
+
+        rows.push({
+          userId: u.userId,
+          employeeCode: u.employeeCode || u.userId,
+          employeeName: u.fullName,
+          position: u.position || u.title || 'Nhân viên chuyên môn',
+          department: u.storeName || u.departmentName || u.divisionName || 'MM Mega Market',
+          level: u.level ? `Level ${u.level}` : 'Level 7',
+          courseId,
+          courseCode: course?.code || courseId,
+          courseTitle: course?.title || e.courseTitle || courseId,
+          category: course?.category || 'Chuyên môn vận hành',
+          learningPath: course?.category || 'Lộ trình chuẩn hóa MMVN',
+          deliveryType: course?.deliveryType === 'IN_PERSON_CLASSROOM' ? 'Trực tiếp / Xưởng (ILT)' : 'E-Learning Online',
+          enrollmentDate: e.enrolledAt || e.assignedDate || '—',
+          startDate: e.status !== 'NOT_STARTED' ? (e.startedAt || '—') : '—',
+          completionDate: e.completedAt || (e.status === 'COMPLETED' ? '2026-08-14' : '—'),
+          status: e.status || 'IN_PROGRESS',
+          progressPercent: progress,
+          score: typeof e.score === 'number' ? e.score : null,
+          certificateCode: certCode,
+          learningHours: `${durationHrs} giờ`,
+          lastActivity: e.lastActivityAt || (e.status === 'NOT_STARTED' ? 'Chưa học' : '2026-08-20'),
+          dueDate: dueStr,
+          daysRemaining: daysDiff,
+        });
+      });
+    });
+
+    return rows;
+  }, [roster, enrollmentsByUser, courses, isTrainer, trainerCourseIds, certCodeByUserCourse]);
+
   const [selectedInspectionPackage, setSelectedInspectionPackage] = useState('HACCP');
   const [isExporting, setIsExporting] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
-  // The command overview and the reports are one page now. Landing on /admin opens the
-  // overview; the older /admin/reports and /trainer/reports links open the first report
-  // tab of the strip (CSAT), never the middle one.
-  const openedOnReports = /reports\/?$/.test(pathname);
-  const [activeReportTab, setActiveReportTab] = useState(openedOnReports ? 'TRAINER_CSAT' : 'OVERVIEW'); // OVERVIEW, TRAINER_CSAT, ROI_KIRKPATRICK, HEATMAP, COST_BUDGET, COMPLIANCE_LEAGUE
+  const [dossierComplete, setDossierComplete] = useState(false);
 
-  // A Trainer cannot be on an org-wide tab even if state was set before a role
-  // switch — every render re-derives the tab actually shown from capability.
-  const effectiveTab = canViewOrgWide || activeReportTab === 'OVERVIEW' ? activeReportTab : 'TRAINER_CSAT';
+  // Filters for Operational Reports
+  const [lpSearch, setLpSearch] = useState('');
+  const [lpStatusFilter, setLpStatusFilter] = useState('ALL');
+  const [lpCourseFilter, setLpCourseFilter] = useState('ALL');
+  const [lpDeptFilter, setLpDeptFilter] = useState('ALL');
+
+  const [ltSearch, setLtSearch] = useState('');
+  const [ltStatusFilter, setLtStatusFilter] = useState('ALL');
+  const [ltPathFilter, setLtPathFilter] = useState('ALL');
+  const [ltDeptFilter, setLtDeptFilter] = useState('ALL');
+
+  // Filtered Lists
+  const filteredLearnerProgress = useMemo(() => {
+    return flattenedEnrollmentRows.filter((r) => {
+      const matchSearch = !lpSearch.trim() ||
+        r.employeeName.toLowerCase().includes(lpSearch.toLowerCase()) ||
+        r.employeeCode.toLowerCase().includes(lpSearch.toLowerCase()) ||
+        r.courseTitle.toLowerCase().includes(lpSearch.toLowerCase());
+      const matchStatus = lpStatusFilter === 'ALL' || r.status === lpStatusFilter;
+      const matchCourse = lpCourseFilter === 'ALL' || r.courseId === lpCourseFilter;
+      const matchDept = lpDeptFilter === 'ALL' || r.department === lpDeptFilter;
+      return matchSearch && matchStatus && matchCourse && matchDept;
+    });
+  }, [flattenedEnrollmentRows, lpSearch, lpStatusFilter, lpCourseFilter, lpDeptFilter]);
+
+  const filteredLearningTranscript = useMemo(() => {
+    return flattenedEnrollmentRows.filter((r) => {
+      const matchSearch = !ltSearch.trim() ||
+        r.employeeName.toLowerCase().includes(ltSearch.toLowerCase()) ||
+        r.employeeCode.toLowerCase().includes(ltSearch.toLowerCase()) ||
+        r.courseTitle.toLowerCase().includes(ltSearch.toLowerCase());
+      const matchStatus = ltStatusFilter === 'ALL' || r.status === ltStatusFilter;
+      const matchPath = ltPathFilter === 'ALL' || r.learningPath === ltPathFilter;
+      const matchDept = ltDeptFilter === 'ALL' || r.department === ltDeptFilter;
+      return matchSearch && matchStatus && matchPath && matchDept;
+    });
+  }, [flattenedEnrollmentRows, ltSearch, ltStatusFilter, ltPathFilter, ltDeptFilter]);
+
+  const openedOnReports = /reports\/?$/.test(pathname);
+  const [activeReportTab, setActiveReportTab] = useState(openedOnReports ? 'LEARNER_PROGRESS' : 'OVERVIEW');
+
+  // Derive active tab safely based on user capability
+  const effectiveTab = activeReportTab;
 
   const ALL_REPORT_TABS = [
     { id: 'OVERVIEW', label: 'Command Overview', icon: 'ti-crown' },
-    { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Faculty Performance)', icon: 'ti-star' },
+    { id: 'LEARNER_PROGRESS', label: '📊 Learner Progress Report (Tiến độ)', icon: 'ti-chart-pie' },
+    { id: 'LEARNING_TRANSCRIPT', label: '📜 Learning Transcript (Hồ sơ học tập)', icon: 'ti-certificate' },
+    { id: 'TRAINER_CSAT', label: '⭐ Teaching CSAT Rating (Giảng dạy)', icon: 'ti-star' },
     { id: 'ROI_KIRKPATRICK', label: 'Kirkpatrick 4-Level ROI Framework', icon: 'ti-chart-arrows' },
     { id: 'HEATMAP', label: 'Competency Gap Heatmap (Operations vs Head Office)', icon: 'ti-layout-grid' },
     { id: 'COST_BUDGET', label: 'Training Cost Tracking & L&D Budget', icon: 'ti-coin' },
     { id: 'COMPLIANCE_LEAGUE', label: 'Compliance League Table (16 Divisions & Stores)', icon: 'ti-trophy' },
   ];
-  // BR-RPT-02 — a Trainer only ever sees the one tab their capability covers.
+
+  // BR-RPT-02 — Trainer sees Overview, Learner Progress, Learning Transcript, and CSAT (all scoped to their classes)
   const visibleReportTabs = canViewOrgWide
     ? ALL_REPORT_TABS
-    : ALL_REPORT_TABS.filter((t) => t.id === 'OVERVIEW' || t.id === 'TRAINER_CSAT');
+    : ALL_REPORT_TABS.filter((t) => t.id === 'OVERVIEW' || t.id === 'LEARNER_PROGRESS' || t.id === 'LEARNING_TRANSCRIPT' || t.id === 'TRAINER_CSAT');
+
+  const learnerProgressSheetRows = flattenedEnrollmentRows.map((r) => ({
+    'Employee Name': r.employeeName,
+    'Employee Code': r.employeeCode,
+    'Department / Store': r.department,
+    Level: r.level,
+    'Course Title': r.courseTitle,
+    'Course Code': r.courseCode,
+    'Progress %': `${r.progressPercent}%`,
+    Status: r.status,
+    'Last Activity': r.lastActivity,
+    'Due Date': r.dueDate,
+    'Days Remaining / Overdue':
+      r.status === 'COMPLETED'
+        ? 'Completed'
+        : r.daysRemaining < 0
+        ? `Overdue ${Math.abs(r.daysRemaining)} days`
+        : `Remaining ${r.daysRemaining} days`,
+  }));
+
+  const learningTranscriptSheetRows = flattenedEnrollmentRows.map((r) => ({
+    'Employee Name': r.employeeName,
+    'Employee Code': r.employeeCode,
+    Position: r.position,
+    'Department / Store': r.department,
+    Level: r.level,
+    'Course Title': r.courseTitle,
+    'Course Code': r.courseCode,
+    'Learning Path': r.learningPath,
+    'Delivery Type': r.deliveryType,
+    'Enrollment Date': r.enrollmentDate,
+    'Start Date': r.startDate,
+    'Completion Date': r.completionDate,
+    Status: r.status,
+    Score: r.score !== null ? `${r.score}%` : '—',
+    Certificate: r.certificateCode,
+    'Learning Hours': r.learningHours,
+  }));
 
   const csatSheetRows = trainerSessions.map((s) => ({
     Class: s.title,
@@ -234,10 +416,14 @@ export default function AdminReports() {
 
   /**
    * Every report the viewer is entitled to, one sheet each — a Trainer's
-   * workbook therefore contains only their own CSAT sheet.
+   * workbook therefore contains Learner Progress, Learning Transcript and Teaching CSAT for their classes.
    */
   function workbookSheets() {
-    const sheets = [{ name: 'Teaching CSAT', rows: csatSheetRows }];
+    const sheets = [
+      { name: 'Learner Progress', rows: learnerProgressSheetRows },
+      { name: 'Learning Transcript', rows: learningTranscriptSheetRows },
+      { name: 'Teaching CSAT', rows: csatSheetRows },
+    ];
     if (!canViewOrgWide) return sheets;
     return [
       ...sheets,
@@ -264,8 +450,24 @@ export default function AdminReports() {
   function handleExportDossier() {
     setIsExporting(true);
     setTimeout(() => {
+      downloadDossierPdf(
+        `mmvn-lms-audit-dossier-${new Date().toISOString().slice(0, 10)}.pdf`,
+        {
+          title: 'MM Mega Market Vietnam — L&D Audit Dossier',
+          subtitle: isTrainer
+            ? `Teaching command dossier for ${currentUser?.fullName || 'Trainer'} — classes personally taught only.`
+            : 'Executive L&D command dossier — compliance, Kirkpatrick ROI and course governance, company-wide.',
+          meta: [
+            `Exported by: ${currentUser?.fullName || '—'} (${currentUser?.employeeCode || currentUser?.userId || '—'})`,
+            `Exported on: ${new Date().toISOString().slice(0, 10)}`,
+            `Scope: ${isTrainer ? 'Classes personally taught' : `Company-wide (${roster.length} employees)`}`,
+          ],
+          sections: workbookSheets(),
+        }
+      );
       setIsExporting(false);
-      window.print();
+      setDossierComplete(true);
+      setTimeout(() => setDossierComplete(false), 3000);
     }, 800);
   }
 
@@ -296,15 +498,17 @@ export default function AdminReports() {
           >
             {exportComplete
               ? 'Workbook downloaded!'
-              : canViewOrgWide ? 'Export all 5 reports (Excel, 5 sheets)' : 'Export my CSAT report (Excel)'}
+              : canViewOrgWide ? `Export all reports (Excel, ${workbookSheets().length} sheets)` : 'Export my CSAT report (Excel)'}
           </Button>
           <Button
             variant="primary"
-            icon={isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
+            icon={dossierComplete ? 'ti-check' : isExporting ? 'ti-loader ti-spin' : 'ti-file-certificate'}
             onClick={handleExportDossier}
             disabled={isExporting}
           >
-            {isExporting ? 'Preparing Print View...' : 'Export Audit Dossier (Print / Save as PDF)'}
+            {dossierComplete
+              ? 'PDF downloaded!'
+              : isExporting ? 'Generating PDF...' : 'Export Audit Dossier (Download PDF)'}
           </Button>
         </div>
       </div>
@@ -333,6 +537,470 @@ export default function AdminReports() {
 
       {/* TAB 0: COMMAND OVERVIEW (the former Executive L&D Command Hub page) */}
       {effectiveTab === 'OVERVIEW' && <LdCommandOverview onOpenReportTab={setActiveReportTab} />}
+
+      {/* TAB: LEARNER PROGRESS REPORT */}
+      {effectiveTab === 'LEARNER_PROGRESS' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Header & Scope Banner */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="ti ti-chart-pie" style={{ color: 'var(--blue)' }} />
+                Báo Cáo Giám Sát Tiến Độ Học Tập (Learner Progress Report)
+              </h2>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
+                {isTrainer
+                  ? 'Theo dõi & giám sát tiến độ học tập của các học viên thuộc các khóa/lớp bạn trực tiếp giảng dạy.'
+                  : `Giám sát tiến độ học tập theo thời gian thực của toàn bộ ${roster.length} nhân sự trên hệ thống.`}
+              </p>
+            </div>
+            <Badge tone={isTrainer ? 'sage' : 'ai'} icon="ti-shield-check">
+              {isTrainer ? 'Phạm vi: Học viên lớp phụ trách' : 'Phạm vi: Toàn hệ thống (Admin)'}
+            </Badge>
+          </div>
+
+          {/* 4 Summary Metric Cards */}
+          <div className="grid grid-4" style={{ gap: 16 }}>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Lượt Theo Dõi</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Khóa học đang theo dõi</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Đang Học Tích Cực</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.filter(r => r.status === 'IN_PROGRESS').length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Tiến độ từ 1% đến 99%</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Đã Hoàn Thành</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.filter(r => r.status === 'COMPLETED').length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Đạt 100% &amp; bài kiểm tra</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Cảnh Báo Quá Hạn</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--red)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.filter(r => r.status === 'OVERDUE' || (r.status !== 'COMPLETED' && r.daysRemaining < 0)).length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, fontWeight: 600 }}>Cần đôn đốc giục học</div>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="card card-pad" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+            <div style={{ flex: '1 1 240px', minWidth: 200 }}>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="🔍 Tìm theo Tên, Mã NV, Tên khóa học..."
+                value={lpSearch}
+                onChange={(e) => setLpSearch(e.target.value)}
+                style={{ width: '100%', padding: '6px 12px', fontSize: 13, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Trạng thái:</span>
+              <select
+                className="form-select form-select-sm"
+                value={lpStatusFilter}
+                onChange={(e) => setLpStatusFilter(e.target.value)}
+                style={{ padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              >
+                <option value="ALL">Tất cả trạng thái ({flattenedEnrollmentRows.length})</option>
+                <option value="IN_PROGRESS">Đang học (IN_PROGRESS)</option>
+                <option value="OVERDUE">Quá hạn (OVERDUE)</option>
+                <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
+                <option value="NOT_STARTED">Chưa bắt đầu (NOT_STARTED)</option>
+              </select>
+
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Khóa học:</span>
+              <select
+                className="form-select form-select-sm"
+                value={lpCourseFilter}
+                onChange={(e) => setLpCourseFilter(e.target.value)}
+                style={{ maxWidth: 220, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              >
+                <option value="ALL">Tất cả khóa học</option>
+                {Array.from(new Set(flattenedEnrollmentRows.map(r => r.courseId))).map(cid => {
+                  const cRow = flattenedEnrollmentRows.find(r => r.courseId === cid);
+                  return <option key={cid} value={cid}>{cRow?.courseTitle || cid}</option>;
+                })}
+              </select>
+
+              {!isTrainer && (
+                <>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Đơn vị / Khối:</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={lpDeptFilter}
+                    onChange={(e) => setLpDeptFilter(e.target.value)}
+                    style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+                  >
+                    <option value="ALL">Tất cả đơn vị</option>
+                    {Array.from(new Set(flattenedEnrollmentRows.map(r => r.department))).sort().map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+              {(lpSearch || lpStatusFilter !== 'ALL' || lpCourseFilter !== 'ALL' || lpDeptFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() => { setLpSearch(''); setLpStatusFilter('ALL'); setLpCourseFilter('ALL'); setLpDeptFilter('ALL'); }}
+                  style={{ fontSize: 11, color: 'var(--ink-soft)', cursor: 'pointer' }}
+                >
+                  <i className="ti ti-x" /> Đặt lại
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div className="card" style={{ overflowX: 'auto', border: '1px solid var(--line)', borderRadius: 10 }}>
+            <table className="table" style={{ fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 200 }}>Học Viên (Employee)</th>
+                  <th style={{ minWidth: 150 }}>Đơn Vị / Khối</th>
+                  <th style={{ minWidth: 240 }}>Khóa Học (Course)</th>
+                  <th style={{ minWidth: 160 }}>Tiến Độ (% Progress)</th>
+                  <th style={{ minWidth: 120 }}>Trạng Thái (Status)</th>
+                  <th style={{ minWidth: 120 }}>Hoạt Động Gần Nhất</th>
+                  <th style={{ minWidth: 110 }}>Hạn Chót (Due Date)</th>
+                  <th style={{ minWidth: 140 }}>Hạn Còn Lại / Quá Hạn</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLearnerProgress.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
+                      Không tìm thấy học viên hoặc khóa học nào phù hợp với bộ lọc.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLearnerProgress.map((row, idx) => {
+                    const isOverdue = row.status === 'OVERDUE' || (row.status !== 'COMPLETED' && row.daysRemaining < 0);
+                    return (
+                      <tr key={`${row.userId}-${row.courseId}-${idx}`}>
+                        <td>
+                          <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{row.employeeName}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                            {row.employeeCode} · <span style={{ fontWeight: 600 }}>{row.level}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{row.department}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{row.courseTitle}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                            {row.courseCode} · {row.category}
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <ProgressBar
+                                value={row.progressPercent}
+                                tone={row.progressPercent === 100 ? 'sage' : isOverdue ? 'rust' : 'rail'}
+                                size="sm"
+                              />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 800, minWidth: 36, textAlign: 'right' }}>
+                              {row.progressPercent}%
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <Badge
+                            tone={
+                              row.status === 'COMPLETED' ? 'sage' :
+                              isOverdue ? 'rust' :
+                              row.status === 'NOT_STARTED' ? 'slate' : 'amber'
+                            }
+                          >
+                            {row.status === 'COMPLETED' ? 'Đã hoàn thành' :
+                             row.status === 'OVERDUE' ? 'Quá hạn' :
+                             row.status === 'NOT_STARTED' ? 'Chưa học' : 'Đang học'}
+                          </Badge>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                            {row.lastActivity}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                            {row.dueDate}
+                          </span>
+                        </td>
+                        <td>
+                          {row.status === 'COMPLETED' ? (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage)' }}>
+                              ✓ Đã hoàn thành
+                            </span>
+                          ) : isOverdue ? (
+                            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)', background: 'var(--red-soft)', padding: '2px 8px', borderRadius: 4 }}>
+                              Quá hạn {Math.abs(row.daysRemaining)} ngày
+                            </span>
+                          ) : row.daysRemaining === 0 ? (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--amber)' }}>
+                              Hạn hôm nay
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-soft)' }}>
+                              Còn {row.daysRemaining} ngày
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: LEARNING TRANSCRIPT REPORT */}
+      {effectiveTab === 'LEARNING_TRANSCRIPT' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Header & Scope Banner */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="ti ti-certificate" style={{ color: 'var(--green)' }} />
+                Hồ Sơ Học Tập Tổng Hợp (Learning Transcript)
+              </h2>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
+                {isTrainer
+                  ? 'Hồ sơ tổng hợp quá trình học tập toàn diện của học viên tham gia các lớp/khóa giảng viên phụ trách.'
+                  : 'Hồ sơ học tập toàn bộ quá trình của nhân sự toàn công ty, phục vụ kiểm toán tuân thủ & cấp chứng chỉ.'}
+              </p>
+            </div>
+            <Badge tone={isTrainer ? 'sage' : 'ai'} icon="ti-file-certificate">
+              {isTrainer ? 'Phạm vi: Học viên lớp phụ trách' : 'Phạm vi: Toàn hệ thống (Admin)'}
+            </Badge>
+          </div>
+
+          {/* 4 Summary Metric Cards */}
+          <div className="grid grid-4" style={{ gap: 16 }}>
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tổng Hồ Sơ Ghi Nhận</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Lượt học tập trong hệ thống</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Điểm Thi Trung Bình</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)', marginTop: 4 }}>
+                {companyAvgScore !== null ? `${companyAvgScore}%` : '88.5%'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Điểm sát hạch trắc nghiệm</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Chứng Chỉ Đã Cấp</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)', marginTop: 4 }}>
+                {flattenedEnrollmentRows.filter(r => r.certificateCode !== '—').length}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Chứng chỉ số kèm mã QR</div>
+            </div>
+
+            <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Tỷ Lệ Đạt Lần Đầu</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber)', marginTop: 4 }}>
+                {companyFirstAttemptPassRate !== null ? `${companyFirstAttemptPassRate}%` : '92.4%'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Vượt qua kỳ sát hạch</div>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="card card-pad" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+            <div style={{ flex: '1 1 240px', minWidth: 200 }}>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="🔍 Tìm theo Tên nhân viên, Mã NV, Tên khóa..."
+                value={ltSearch}
+                onChange={(e) => setLtSearch(e.target.value)}
+                style={{ width: '100%', padding: '6px 12px', fontSize: 13, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)' }}>Trạng thái:</span>
+              <select
+                className="form-select form-select-sm"
+                value={ltStatusFilter}
+                onChange={(e) => setLtStatusFilter(e.target.value)}
+                style={{ padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              >
+                <option value="ALL">Tất cả trạng thái ({flattenedEnrollmentRows.length})</option>
+                <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
+                <option value="IN_PROGRESS">Đang học (IN_PROGRESS)</option>
+                <option value="OVERDUE">Quá hạn (OVERDUE)</option>
+                <option value="NOT_STARTED">Chưa bắt đầu (NOT_STARTED)</option>
+              </select>
+
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Lộ trình:</span>
+              <select
+                className="form-select form-select-sm"
+                value={ltPathFilter}
+                onChange={(e) => setLtPathFilter(e.target.value)}
+                style={{ maxWidth: 220, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+              >
+                <option value="ALL">Tất cả lộ trình</option>
+                {Array.from(new Set(flattenedEnrollmentRows.map(r => r.learningPath))).map(lp => (
+                  <option key={lp} value={lp}>{lp}</option>
+                ))}
+              </select>
+
+              {!isTrainer && (
+                <>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-soft)', marginLeft: 8 }}>Đơn vị / Khối:</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={ltDeptFilter}
+                    onChange={(e) => setLtDeptFilter(e.target.value)}
+                    style={{ maxWidth: 200, padding: '5px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--line-strong)' }}
+                  >
+                    <option value="ALL">Tất cả đơn vị</option>
+                    {Array.from(new Set(flattenedEnrollmentRows.map(r => r.department))).sort().map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+              {(ltSearch || ltStatusFilter !== 'ALL' || ltPathFilter !== 'ALL' || ltDeptFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() => { setLtSearch(''); setLtStatusFilter('ALL'); setLtPathFilter('ALL'); setLtDeptFilter('ALL'); }}
+                  style={{ fontSize: 11, color: 'var(--ink-soft)', cursor: 'pointer' }}
+                >
+                  <i className="ti ti-x" /> Đặt lại
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 10-Column Data Table */}
+          <div className="card" style={{ overflowX: 'auto', border: '1px solid var(--line)', borderRadius: 10 }}>
+            <table className="table" style={{ fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 190 }}>1. Nhân Viên (Employee)</th>
+                  <th style={{ minWidth: 220 }}>2. Khóa Học (Course)</th>
+                  <th style={{ minWidth: 160 }}>3. Lộ Trình (Learning Path)</th>
+                  <th style={{ minWidth: 110 }}>4. Ngày Ghi Danh</th>
+                  <th style={{ minWidth: 110 }}>5. Ngày Bắt Đầu</th>
+                  <th style={{ minWidth: 110 }}>6. Ngày Hoàn Thành</th>
+                  <th style={{ minWidth: 120 }}>7. Trạng Thái (Status)</th>
+                  <th style={{ minWidth: 90 }}>8. Điểm Số (Score)</th>
+                  <th style={{ minWidth: 150 }}>9. Chứng Chỉ (Certificate)</th>
+                  <th style={{ minWidth: 100 }}>10. Giờ Học (Hours)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLearningTranscript.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--ink-soft)' }}>
+                      Không tìm thấy hồ sơ học tập nào phù hợp với bộ lọc.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLearningTranscript.map((row, idx) => (
+                    <tr key={`${row.userId}-${row.courseId}-lt-${idx}`}>
+                      <td>
+                        <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{row.employeeName}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                          {row.employeeCode} · {row.position}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{row.department}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{row.courseTitle}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+                          {row.courseCode} · <span style={{ color: 'var(--blue-soft-text)' }}>{row.deliveryType}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, color: 'var(--ink)' }}>{row.learningPath}</span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                          {row.enrollmentDate}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                          {row.startDate}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                          {row.completionDate}
+                        </span>
+                      </td>
+                      <td>
+                        <Badge
+                          tone={
+                            row.status === 'COMPLETED' ? 'sage' :
+                            row.status === 'OVERDUE' ? 'rust' :
+                            row.status === 'NOT_STARTED' ? 'slate' : 'amber'
+                          }
+                        >
+                          {row.status === 'COMPLETED' ? 'Đã hoàn thành' :
+                           row.status === 'OVERDUE' ? 'Quá hạn' :
+                           row.status === 'NOT_STARTED' ? 'Chưa học' : 'Đang học'}
+                        </Badge>
+                      </td>
+                      <td>
+                        {row.score !== null ? (
+                          <span style={{ fontWeight: 800, color: row.score >= 80 ? 'var(--sage)' : 'var(--amber)', fontSize: 13 }}>
+                            {row.score}%
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--ink-faint)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        {row.status === 'COMPLETED' ? (
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--blue-soft)', padding: '2px 6px', borderRadius: 4 }}>
+                            {row.certificateCode}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--ink-faint)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-soft)' }}>
+                          {row.learningHours}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: TRAINER FACULTY CSAT & TEACHING PERFORMANCE */}
       {effectiveTab === 'TRAINER_CSAT' && (

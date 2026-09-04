@@ -497,7 +497,7 @@
       <p class="section-sub">Kế hoạch triển khai tổng thể chia đều thành <b>4 Phase (mỗi Phase 3 tháng / 12 tuần)</b> với <b>~21 chức năng/phase</b>. Mỗi phase đều bao gồm các sprint phát triển tính năng, kiểm thử nội bộ (Internal QA) và <b>tối thiểu 2 tuần kiểm thử chấp nhận người dùng (UAT)</b> trước khi đóng mốc phát hành (Release Milestone) phục vụ nghiệm thu và giải ngân ngân sách.</p>
 
       <div class="phase-track">
-        <a href="#phase-1" class="phase-track-node"><span class="phase-track-dot" style="background:var(--green)"></span><b>Phase 1 · Q1</b><span>21 chức năng · Tuần 1–12</span></a>
+        <a href="#phase-1" class="phase-track-node"><span class="phase-track-dot" style="background:var(--green)"></span><b>Phase 1 · Q1</b><span>23 chức năng · Tuần 1–12</span></a>
         <span class="phase-track-arrow">→</span>
         <a href="#phase-2" class="phase-track-node"><span class="phase-track-dot" style="background:var(--amber)"></span><b>Phase 2 · Q2</b><span>21 chức năng · Tuần 13–24</span></a>
         <span class="phase-track-arrow">→</span>
@@ -510,12 +510,13 @@
         <div class="phase-card" id="phase-1" style="--phase-accent:var(--green); --phase-accent-soft:var(--green-soft); --phase-accent-soft-text:var(--green-soft-text);">
           <div class="phase-num">01</div>
           <div class="phase-body">
-            <h3>Nền Tảng E-Learning Cốt Lõi &amp; Khảo Thí (Core MVP)</h3>
-            <div class="phase-en">Digital Learning MVP · Rank 1 Learner &amp; Rank 5-6 Admin Core · <b>Quý 1 (Tuần 1 – 12)</b></div>
-            <p class="phase-goal">Xây dựng nền tảng học tập trực tuyến cốt lõi cho toàn bộ nhân viên: người học xem và tự học các khóa học đa định dạng (Video/PDF/SCORM), làm bài thi trắc nghiệm rút đề ngẫu nhiên kèm đếm giờ, nhận chứng chỉ số và theo dõi lịch sử; Quản trị viên khởi tạo cây tổ chức 2 nhánh, danh mục nhân sự, tạo khóa học e-Learning, ngân hàng đề thi và cấu hình phân quyền RBAC. Hoàn tất kiểm thử UAT và phát hành bản Release v1.0.</p>
+            <h3>Nền Tảng E-Learning Cốt Lõi, Khảo Thí &amp; Báo Cáo Vận Hành (Core MVP)</h3>
+            <div class="phase-en">Digital Learning MVP &amp; Operations Reporting · Rank 1 Learner &amp; Rank 3/5/6 Trainer &amp; Admin Core · <b>Quý 1 (Tuần 1 – 12)</b></div>
+            <p class="phase-goal">Xây dựng nền tảng học tập trực tuyến cốt lõi cho toàn bộ nhân viên: người học xem và tự học các khóa học đa định dạng (Video/PDF/SCORM), làm bài thi trắc nghiệm rút đề ngẫu nhiên kèm đếm giờ, nhận chứng chỉ số và theo dõi lịch sử; Quản trị viên khởi tạo cây tổ chức 2 nhánh, danh mục nhân sự, tạo khóa học e-Learning, ngân hàng đề thi và cấu hình phân quyền RBAC; Tích hợp 2 báo cáo vận hành cốt lõi (Learning Transcript &amp; Learner Progress Report) cho User Admin, SysAdmin (toàn cty) và Trainer (lớp phụ trách). Hoàn tất kiểm thử UAT và phát hành bản Release v1.0.</p>
             <div class="phase-deliverables">
               <span class="phase-chip">10 · Cổng người học e-Learning</span>
               <span class="phase-chip">6 · Quản trị tổ chức &amp; khóa học</span>
+              <span class="phase-chip">2 · Báo cáo vận hành: Transcript &amp; Giám sát tiến độ</span>
               <span class="phase-chip">3 · Quản trị hệ thống &amp; Audit Log</span>
               <span class="phase-chip">3 · Engine tiến độ, thi &amp; chứng chỉ</span>
               <span class="phase-chip">🎯 UAT &amp; Release v1.0 (Tuần 11–12)</span>
@@ -523,7 +524,7 @@
           </div>
           <div class="phase-meta">
             <span class="phase-time">Tuần 1 – 12 (Q1)</span>
-            <span class="phase-roles">21 chức năng · Core MVP</span>
+            <span class="phase-roles">23 chức năng · Core MVP</span>
             <span class="phase-status done">✓ Release v1.0 (MVP)</span>
           </div>
         </div>
@@ -601,10 +602,10 @@
 
     <section id="functions">
       <h2 class="section-title">Mô tả chi tiết từng chức năng</h2>
-      <p class="section-sub">Toàn bộ <b>84 chức năng</b> được phân bổ đều đặn theo 4 Phase (21 chức năng / Phase). Bấm vào từng Phase bên dưới để lọc danh mục chức năng tương ứng.</p>
+      <p class="section-sub">Toàn bộ <b>86 chức năng</b> được phân bổ theo 4 Phase. Bấm vào từng Phase bên dưới để lọc danh mục chức năng tương ứng.</p>
       <div class="fn-filter" id="fnFilter">
-        <button type="button" class="on" data-phase="all">Tất cả (84)</button>
-        <button type="button" data-phase="1">Phase 1 · Q1: Core MVP (21)</button>
+        <button type="button" class="on" data-phase="all">Tất cả (86)</button>
+        <button type="button" data-phase="1">Phase 1 · Q1: Core MVP (23)</button>
         <button type="button" data-phase="2">Phase 2 · Q2: Operations (21)</button>
         <button type="button" data-phase="3">Phase 3 · Q3: Talent &amp; AI (21)</button>
         <button type="button" data-phase="4">Phase 4 · Q4: Ecosystem (21)</button>
@@ -748,7 +749,7 @@
       <div class="nav-list">
         <div class="nav-item">Bảng Điều Khiển Giảng Dạy &amp; Lớp Học <span class="mono">/trainer</span></div>
         <div class="nav-item">Tạo &amp; Quản Lý Khóa Học <span class="mono">/admin/courses</span></div>
-        <div class="nav-item">Báo Cáo CSAT &amp; Đánh Giá Giảng Dạy <span class="mono">/trainer/reports</span></div>
+        <div class="nav-item">Báo Cáo CSAT &amp; Tiến Độ Học Viên <span class="mono">/trainer/reports</span></div>
       </div>
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
@@ -757,6 +758,7 @@
         <tbody>
           <tr><td class="scr-name">Lớp Học Phụ Trách</td><td class="scr-route">/trainer</td><td class="scr-desc">Danh sách lớp ILT/Webinar đang giảng dạy — lịch, sĩ số đăng ký, trạng thái buổi học.</td></tr>
           <tr><td class="scr-name">Điểm Danh</td><td class="scr-route">/trainer/attendance</td><td class="scr-desc">Roster lọc Tất cả · Đã có mặt · Chưa điểm danh; <b>Dynamic Live QR</b> tự xoay mã mỗi 15–30 giây chống chụp ảnh điểm danh hộ; chấm điểm kỹ năng thực hành từng học viên.</td></tr>
+          <tr><td class="scr-name">Báo Cáo Lớp Phụ Trách</td><td class="scr-route">/trainer/reports</td><td class="scr-desc">Bao gồm 3 phân hệ: <b>1. Learning Transcript</b> (Hồ sơ học tập toàn bộ quá trình của học viên trong lớp phụ trách); <b>2. Learner Progress Report</b> (Giám sát % tiến độ, hạn chót, cảnh báo quá hạn học viên trong lớp mình); <b>3. Teaching CSAT</b> (Điểm đánh giá chất lượng giảng dạy).</td></tr>
           <tr><td class="scr-name">Đánh Giá CSAT</td><td class="scr-route">/trainer/feedback</td><td class="scr-desc">Biểu đồ phân bổ 5-4-3 sao, xu hướng điểm hài lòng theo tháng.</td></tr>
           <tr><td class="scr-name">Xưởng Thực Hành</td><td class="scr-route">/trainer/labs</td><td class="scr-desc">Danh mục phòng Lab/xưởng thực hành siêu thị (bánh, thịt, quầy kệ…) khả dụng để đặt lịch dạy.</td></tr>
           <tr><td class="scr-name">Course Builder (Offline)</td><td class="scr-route">/trainer/courses/new</td><td class="scr-desc">Soạn khóa Offline/ILT kéo-thả cấu trúc Module › Lesson, quản lý version.</td></tr>
@@ -830,6 +832,7 @@
         <div class="nav-item">Tạo &amp; Quản Lý Khóa Học <span class="mono">/admin/courses</span></div>
         <div class="nav-item">Lớp Giảng Dạy &amp; Live QR <span class="mono">/trainer</span></div>
         <div class="nav-item">Quản Lý Lộ Trình Cấp Bậc <span class="mono">/admin/roadmaps</span></div>
+        <div class="nav-item">Trung Tâm Báo Cáo &amp; Giám Sát Tiến Độ <span class="mono">/admin/reports</span></div>
         <div class="nav-item">Duyệt Đơn Học Vượt Cấp <span class="mono">/approvals</span></div>
       </div>
 
@@ -842,6 +845,7 @@
           <tr><td class="scr-name">Cây Cơ Cấu Tổ Chức</td><td class="scr-route">/user-admin/hierarchy</td><td class="scr-desc">Cây tổ chức 2 nhánh (42 khối): Trụ sở chính (BU›Division›Department) &amp; Chuỗi siêu thị (Area›Cluster›Store); đóng/mở từng cấp, thêm nhanh Division/Department/Store.</td></tr>
           <tr><td class="scr-name">Khung Cấp Bậc</td><td class="scr-route">/user-admin/job-levels</td><td class="scr-desc">Cấu hình thang 7 cấp bậc nghề nghiệp (Level 1 BOM → Level 7 Nhân viên tuyến đầu), gắn title cho từng vị trí.</td></tr>
           <tr><td class="scr-name">Lộ Trình Cấp Bậc</td><td class="scr-route">/admin/roadmaps</td><td class="scr-desc">Cấu hình lộ trình học chuẩn theo Division, Department hoặc Level; gộp nhóm hiển thị theo 4 tiêu chí.</td></tr>
+          <tr><td class="scr-name">Báo Cáo Đào Tạo &amp; Tiến Độ</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Quản lý toàn diện: <b>Learning Transcript</b> (hồ sơ học tập 10 trường thông tin của 100% nhân sự) và <b>Learner Progress Report</b> (giám sát tiến độ học tập thời gian thực, lọc theo 42 khối, đôn đốc giục học).</td></tr>
           <tr><td class="scr-name">Course Builder (đầy đủ)</td><td class="scr-route">/admin/courses/new</td><td class="scr-desc">Soạn cả 3 hình thức: E-Learning, Virtual Class (Zoom/Teams), In-Person ILT; cấu hình <b>Auto-Rules gán theo 10 phạm vi</b> (BU/Division/Dept/Area/StoreType/Cluster/Store/Level/Role/User) kèm bắt buộc Due Date; ngân hàng câu hỏi thủ công hoặc import CSV.</td></tr>
           <tr><td class="scr-name">Duyệt Học Vượt Cấp</td><td class="scr-route">/approvals</td><td class="scr-desc">Tiếp nhận &amp; xử lý toàn bộ đơn xin học vượt đúng 1 cấp liền kề từ mọi nhân sự trong hệ thống.</td></tr>
         </tbody>
@@ -872,6 +876,7 @@
         <div class="nav-item">Tạo &amp; Quản Lý Khóa Học <span class="mono">/admin/courses</span></div>
         <div class="nav-item">Lớp Giảng Dạy &amp; Live QR <span class="mono">/trainer</span></div>
         <div class="nav-item">Quản Lý Lộ Trình Cấp Bậc <span class="mono">/admin/roadmaps</span></div>
+        <div class="nav-item">Trung Tâm Báo Cáo Toàn Hệ Thống <span class="mono">/admin/reports</span></div>
         <div class="nav-item">Duyệt Đơn Học Vượt Cấp <span class="mono">/approvals</span></div>
       </div>
 
@@ -883,6 +888,7 @@
           <tr><td class="scr-name">Audit Logs</td><td class="scr-route">/sysadmin/audit</td><td class="scr-desc">Nhật ký bảo mật &amp; giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001.</td></tr>
           <tr><td class="scr-name">Security Policies</td><td class="scr-route">/sysadmin/policies</td><td class="scr-desc">Chính sách chống gian lận thi cử: Dynamic Watermark (tên/mã NV/IP mờ trên màn hình thi), cảnh báo chuyển tab khi đang thi.</td></tr>
           <tr><td class="scr-name">Role Governance</td><td class="scr-route">/sysadmin/roles</td><td class="scr-desc">Quản trị ma trận phân quyền chi tiết của toàn bộ 6 role — bật/tắt từng capability, kể cả cho vai trò User Admin.</td></tr>
+          <tr><td class="scr-name">Báo Cáo &amp; Giám Sát Hệ Thống</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Toàn quyền xem, trích xuất và kiểm toán dữ liệu <b>Learning Transcript</b> &amp; <b>Learner Progress Report</b> của toàn bộ 6 vai trò trên hệ thống.</td></tr>
           <tr><td class="scr-name">System Configuration</td><td class="scr-route">/sysadmin/org-config</td><td class="scr-desc">8 nhóm cấu hình: Auto-Assignment &amp; SLA · Bảo mật/Watermark/Anti-cheat · SAP HRIS · Cơ cấu tổ chức 2 nhánh · Danh mục khóa học · Thông báo &amp; mẫu tin nhắn · Ma trận RBAC · Chứng chỉ &amp; Sao lưu hệ thống.</td></tr>
           <tr><td class="scr-name">Platform Development</td><td class="scr-route">—</td><td class="scr-desc">Thêm module/function mới, sửa schema dữ liệu &amp; migration, quản trị hạ tầng máy chủ/CDN/backup.</td></tr>
         </tbody>
@@ -1033,7 +1039,7 @@
   // Phase 4 (Q4: Tuần 37–48): Enterprise Ecosystem, BI & Global Scale
   // ===================================================================
   var FUNCTIONS = [
-    /* ---------- PHASE 1 · QUÝ 1 (Tuần 1–12) · CORE DIGITAL LEARNING MVP (21) ---------- */
+    /* ---------- PHASE 1 · QUÝ 1 (Tuần 1–12) · CORE DIGITAL LEARNING MVP (23) ---------- */
     {id:"F-01", phase:1, group:"G1", name:"Bảng điều khiển học tập", en:"Learner Dashboard", route:"/learner", roles:"Mọi vai trò", desc:"Trang chủ người học: Thẻ <b>Tiếp tục học</b> đưa thẳng vào bài đang dở; 4 ô chỉ số cá nhân (tổng giờ học, khóa hoàn thành, khóa bắt buộc nợ, điểm năng lực); biểu đồ giờ học theo ngày trong tuần và chuỗi ngày học streak."},
     {id:"F-02", phase:1, group:"G1", name:"Lịch học tập cá nhân", en:"Learning Calendar", route:"/learner/calendar", roles:"Mọi vai trò", desc:"Lịch dạng tháng đồng bộ toàn bộ hạn hoàn thành khóa bắt buộc, bài kiểm tra và sự kiện học tập cá nhân."},
     {id:"F-03", phase:1, group:"G1", name:"Khóa học của tôi", en:"My Courses", route:"/learner/courses", roles:"Mọi vai trò", desc:"Danh sách toàn bộ khóa được gán cho cá nhân với <b>9 tab lọc</b> (Đang học, Hoàn thành, Bắt buộc tuân thủ...) và <b>6 cách gộp nhóm</b>, hiển thị % tiến độ tính lại từ dữ liệu gốc và hạn chót."},
@@ -1050,6 +1056,8 @@
     {id:"F-42", phase:1, group:"G5", name:"Soạn khóa học E-Learning & Đề thi", en:"Course Builder (E-Learning)", route:"/admin/courses/new", roles:"User Admin · SysAdmin", desc:"Trình soạn khóa e-Learning: tạo cấu trúc Module › Lesson, tải tài liệu video/PDF/SCORM, và khởi tạo ngân hàng câu hỏi trắc nghiệm kèm đáp án."},
     {id:"F-43", phase:1, group:"G5", name:"Quản lý danh mục khóa học", en:"Course Catalog Management", route:"/admin/courses", roles:"User Admin · SysAdmin", desc:"Trung tâm quản lý học liệu: thêm, sửa, đổi trạng thái vòng đời (Draft, Published, Archived) và phân loại khóa học."},
     {id:"F-46", phase:1, group:"G5", name:"Quản lý chuyên ngành đào tạo", en:"Category Management", route:"/admin/categories", roles:"User Admin · SysAdmin", desc:"Quản lý bộ danh mục chuyên ngành MM (HACCP, An toàn lao động, Chuỗi cung ứng lạnh, Vận hành quầy kệ, Dịch vụ khách hàng...)."},
+    {id:"F-62", phase:1, group:"G5", name:"Hồ sơ học tập nhân viên", en:"Learning Transcript", route:"/admin/reports · /trainer/reports", roles:"User Admin · SysAdmin (toàn bộ) · Trainer (lớp phụ trách)", desc:"Hồ sơ tổng hợp toàn bộ quá trình học tập của một nhân viên: Employee, Course, Learning Path, Enrollment Date, Start Date, Completion Date, Status, Score, Certificate, Learning Hours. Dùng để đối chiếu và nghiệm thu đào tạo."},
+    {id:"F-63", phase:1, group:"G5", name:"Báo cáo giám sát tiến độ học viên", en:"Learner Progress Report", route:"/admin/reports · /trainer/reports", roles:"User Admin · SysAdmin (toàn bộ) · Trainer (lớp phụ trách)", desc:"Theo dõi &amp; giám sát tiến độ học tập hiện tại của nhân viên (đặc biệt với các khóa đang học): Employee, Course, Progress %, Status, Last Activity, Due Date, Days Remaining / Overdue. Cảnh báo sớm nguy cơ quá hạn để đôn đốc giục học."},
     {id:"F-50", phase:1, group:"G6", name:"Nhật ký kiểm toán bảo mật", en:"Security Audit Log", route:"/sysadmin/audit", roles:"SysAdmin", desc:"Nhật ký bảo mật và giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001 phục vụ kiểm toán và điều tra sự cố."},
     {id:"F-52", phase:1, group:"G6", name:"Quản trị phân quyền vai trò", en:"Role Governance", route:"/sysadmin/roles", roles:"SysAdmin", desc:"Ma trận phân quyền chi tiết của toàn bộ 6 vai trò: bật/tắt từng quyền hạn (capability) độc lập."},
     {id:"F-54", phase:1, group:"G7", name:"Engine tính tiến độ học tập", en:"Course Progress Engine", route:"recomputeEnrollment", roles:"Chạy nền", desc:"Tính lại % tiến độ từ dữ liệu gốc (bài học hoàn thành + điểm thi trắc nghiệm) đảm bảo tính toàn vẹn."},
@@ -1201,7 +1209,9 @@
     {name:"Thi trắc nghiệm rút đề &amp; cấp chứng chỉ", desc:"Rút đề ngẫu nhiên, countdown, tự nộp bài chống trùng, sinh chứng chỉ số tự động.", phase:1, time:"Tuần 5–8", marks:["y","y","y","y","y","y"]},
     {name:"Tạo khóa e-Learning &amp; Ngân hàng đề thi", desc:"Soạn cấu trúc Module › Lesson, tải tài liệu học và import ngân hàng câu hỏi qua file CSV.", phase:1, time:"Tuần 7–8", marks:["n","n","n","n","y","y"]},
     {name:"Cây tổ chức 2 nhánh &amp; Danh bạ nhân sự", desc:"Quản lý 42 khối tổ chức (HQ & Siêu thị), 7 cấp bậc nghề nghiệp và phân quyền RBAC.", phase:1, time:"Tuần 1–4", marks:["n","n","n","n","y","y"]},
-    {name:"Kiểm thử UAT &amp; Phát hành Phase 1 (MVP)", desc:"Nghiệm thu UAT cổng người học và quản trị, đóng mốc phát hành bản Release v1.0.", phase:1, time:"Tuần 11–12", marks:["y","y","y","y","y","y"]},
+    {name:"Hồ sơ học tập nhân viên (Learning Transcript)", desc:"Hồ sơ tổng hợp quá trình học 10 trường thông tin; User Admin/SysAdmin xem toàn cty, Trainer xem học viên lớp phụ trách.", phase:1, time:"Tuần 9–10", marks:["r","r","r","y","y","y"]},
+    {name:"Giám sát tiến độ học viên (Learner Progress)", desc:"Báo cáo theo dõi % tiến độ, hạn chót, ngày còn lại/quá hạn; User Admin/SysAdmin giám sát toàn cty, Trainer giám sát lớp mình.", phase:1, time:"Tuần 9–10", marks:["r","r","r","y","y","y"]},
+    {name:"Kiểm thử UAT &amp; Phát hành Phase 1 (MVP)", desc:"Nghiệm thu UAT cổng người học, quản trị và báo cáo vận hành, đóng mốc phát hành Release v1.0.", phase:1, time:"Tuần 11–12", marks:["y","y","y","y","y","y"]},
 
     /* Phase 2 · Q2 */
     {name:"Quản lý Giảng viên &amp; Đặt phòng lab", desc:"Trainer tự quản lớp phụ trách; Admin phân công giảng viên &amp; chặn trùng lịch phòng thực hành.", phase:2, time:"Tuần 13–16", marks:["n","n","y","n","y","y"]},
