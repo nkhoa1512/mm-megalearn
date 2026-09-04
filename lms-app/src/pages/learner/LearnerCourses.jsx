@@ -11,8 +11,8 @@ import {
 import { useCourseStore } from '../../store/CourseStore';
 import { getCourseImage } from '../../data/courseImages';
 import {
-  courseFormatBadge, courseGroupOf, courseOrgUnitGroups, buildCourseGroups, courseMatchesCategory,
-  catalogSectionOf, CATALOG_SECTIONS,
+  courseFormatBadge, courseGroupOf, courseOrgUnitGroups, buildCourseGroups, courseMatchesCategory, courseMatchesGroup,
+  catalogSectionOf, CATALOG_SECTIONS, groupCategoriesByGroup,
 } from '../../utils/courseCatalog';
 import { isAssessmentAssignedToUser } from '../../utils/assessmentCatalog';
 import { DELIVERY_FORMATS } from '../../data/assessmentData';
@@ -60,6 +60,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
     language,
     t,
     companyCategories,
+    companyCategoryObjects,
+    categoryGroups,
     certificateTemplates,
     assessments,
     assessmentAttempts,
@@ -78,6 +80,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [categoryGroupFilter, setCategoryGroupFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [orgUnitFilter, setOrgUnitFilter] = useState('ALL');
   const [formatFilter, setFormatFilter] = useState('ALL');
@@ -87,6 +90,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
 
   const activeFiltersCount = (
+    (categoryGroupFilter !== 'ALL' ? 1 : 0) +
     (categoryFilter !== 'ALL' ? 1 : 0) +
     (orgUnitFilter !== 'ALL' ? 1 : 0) +
     (formatFilter !== 'ALL' ? 1 : 0)
@@ -95,6 +99,7 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   function resetAllFilters() {
     setSearch('');
     setStatusFilter('ALL');
+    setCategoryGroupFilter('ALL');
     setCategoryFilter('ALL');
     setOrgUnitFilter('ALL');
     setFormatFilter('ALL');
@@ -169,7 +174,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
       (statusFilter === 'PENDING_APPROVAL' && access.state === ACCESS_STATE.PENDING_APPROVAL) ||
       s === statusFilter;
 
-    const matchCategory = courseMatchesCategory(c, categoryFilter);
+    const matchCategoryGroup = categoryGroupFilter === 'ALL' || courseMatchesGroup(c, categoryGroupFilter, companyCategoryObjects);
+    const matchCategory = matchCategoryGroup && courseMatchesCategory(c, categoryFilter);
     const matchOrgUnit = orgUnitFilter === 'ALL' || courseOrgUnitGroups(c).some((g) => g.key === orgUnitFilter);
     const matchFormat = formatFilter === 'ALL' || c.format?.includes(formatFilter) || c.modality === formatFilter
       || (formatFilter === 'VIRTUAL_CLASS' && c.onlineClassType === 'VIRTUAL_CLASS');
@@ -184,6 +190,18 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
   });
 
   const categoryOptions = [...new Set(allCourses.flatMap((c) => (c.categories && c.categories.length ? c.categories : [c.category])).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  // Category filter is a 2-step pick — Category (group) first, then the
+  // Sub-Category options narrow to whichever group is chosen; both levels
+  // only list entries that actually have at least one course, same as
+  // categoryOptions above.
+  const categoryOptionsSet = new Set(categoryOptions);
+  const categoryBuckets = groupCategoriesByGroup(companyCategoryObjects, categoryGroups)
+    .map((b) => ({ group: b.group, categories: b.categories.filter((c) => categoryOptionsSet.has(c.name)) }))
+    .filter((b) => b.categories.length > 0);
+  const categoryOptionsForGroup = categoryGroupFilter === 'ALL'
+    ? []
+    : (categoryBuckets.find((b) => b.group.id === categoryGroupFilter)?.categories || []);
   const orgUnitOptionsMap = new Map();
   allCourses.forEach((c) => {
     const gList = courseOrgUnitGroups(c);
@@ -697,10 +715,37 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         {showFilters && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-              {/* Filter 1: Category */}
+              {/* Filter 1a: Category (group) — chosen first */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
                   Category
+                </label>
+                <select
+                  className="field-select"
+                  style={{
+                    width: '100%',
+                    height: 38,
+                    fontSize: 13,
+                    borderRadius: 6,
+                    background: categoryGroupFilter !== 'ALL' ? 'var(--blue-soft)' : 'var(--paper)',
+                    borderColor: categoryGroupFilter !== 'ALL' ? '#005BAA' : 'var(--line)',
+                    color: categoryGroupFilter !== 'ALL' ? 'var(--blue)' : 'var(--ink)',
+                    fontWeight: categoryGroupFilter !== 'ALL' ? 700 : 500,
+                  }}
+                  value={categoryGroupFilter}
+                  onChange={(e) => { setCategoryGroupFilter(e.target.value); setCategoryFilter('ALL'); }}
+                >
+                  <option value="ALL">All Categories ({categoryBuckets.length})</option>
+                  {categoryBuckets.map(({ group, categories: catsInGroup }) => (
+                    <option key={group.id} value={group.id}>{group.name} ({catsInGroup.length})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter 1b: Sub-Category — narrowed to the Category chosen above */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                  Sub-Category
                 </label>
                 <select
                   className="field-select"
@@ -716,10 +761,13 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                   }}
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
+                  disabled={categoryGroupFilter === 'ALL'}
                 >
-                  <option value="ALL">All Category ({categoryOptions.length})</option>
-                  {categoryOptions.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  <option value="ALL">
+                    {categoryGroupFilter === 'ALL' ? 'Choose a category first' : `All Sub-Categories (${categoryOptionsForGroup.length})`}
+                  </option>
+                  {categoryOptionsForGroup.map((cat) => (
+                    <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -804,9 +852,16 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
                 </span>
               )}
 
+              {categoryGroupFilter !== 'ALL' && (
+                <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  Category: <strong>{categoryBuckets.find((b) => b.group.id === categoryGroupFilter)?.group.name || categoryGroupFilter}</strong>
+                  <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => { setCategoryGroupFilter('ALL'); setCategoryFilter('ALL'); }} />
+                </span>
+              )}
+
               {categoryFilter !== 'ALL' && (
                 <span className="badge" style={{ background: 'var(--blue-soft)', color: 'var(--blue-soft-text)', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  Area: <strong>{categoryFilter}</strong>
+                  Sub-Category: <strong>{categoryFilter}</strong>
                   <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={() => setCategoryFilter('ALL')} />
                 </span>
               )}

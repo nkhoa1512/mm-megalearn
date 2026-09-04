@@ -28,9 +28,12 @@ import { translate, translateDomain, translateStatus, translateDelivery, getLoca
 import {
   DEFAULT_COMPANY_CATEGORIES,
   DEFAULT_CATEGORY_OBJECTS,
+  DEFAULT_CATEGORY_GROUPS,
   normalizeCategory,
+  normalizeCategoryGroup,
   getCategoryMetadata,
   generateCategoryCode,
+  generateGroupCode,
   courseMatchesCategory,
 } from '../utils/courseCatalog';
 import { INITIAL_ASSESSMENTS, QUESTION_BANK, INITIAL_ASSESSMENT_ATTEMPTS } from '../data/assessmentData';
@@ -130,6 +133,7 @@ function buildSeedLibraries(allCourses) {
     .filter((lib) => lib.domains.length > 0);
 }
 const CATEGORY_KEY = 'mm-megalearn-categories-v1';
+const CATEGORY_GROUP_KEY = 'mm-megalearn-category-groups-v1';
 // Certificate Template: a template library the admin manages up front; the Course
 // Builder & Curriculum Editor only attach a certificateTemplateId referencing
 // here (no data copying) — an attached file only stores metadata (name/size),
@@ -435,10 +439,33 @@ export function CourseStoreProvider({ children }) {
 
   // The company Category catalog: a standard list of rich objects that the System Admin can
   // view them all & add new ones from System Configuration — with no count limit.
+  // Category Groups — the top level of the taxonomy (e.g. COMPLIANCE); every
+  // Sub-Category in companyCategoryObjects below carries a groupId into one
+  // of these.
+  const [categoryGroups, setCategoryGroups] = useState(() => {
+    const loaded = loadItem(CATEGORY_GROUP_KEY, DEFAULT_CATEGORY_GROUPS);
+    if (!Array.isArray(loaded) || loaded.length === 0) return DEFAULT_CATEGORY_GROUPS;
+    return loaded.map((g) => normalizeCategoryGroup(g));
+  });
+
   const [companyCategoryObjects, setCompanyCategoryObjects] = useState(() => {
     const loaded = loadItem(CATEGORY_KEY, DEFAULT_CATEGORY_OBJECTS);
     if (!Array.isArray(loaded)) return DEFAULT_CATEGORY_OBJECTS;
-    return loaded.map((cat) => normalizeCategory(cat, DEFAULT_CATEGORY_OBJECTS));
+    const normalized = loaded.map((cat) => normalizeCategory(cat, DEFAULT_CATEGORY_OBJECTS));
+
+    // One-time migration for a browser that saved its category list before
+    // Category Groups existed: a category with no groupId is matched back to
+    // the current defaults by name so it lands under the right group instead
+    // of "Ungrouped", and any brand-new default sub-category a stale save
+    // predates (e.g. the Product Knowledge group's 3 entries) is appended.
+    const migrated = normalized.map((cat) => {
+      if (cat.groupId) return cat;
+      const def = DEFAULT_CATEGORY_OBJECTS.find((d) => d.name.toLowerCase() === cat.name.toLowerCase());
+      return def ? { ...cat, groupId: def.groupId } : cat;
+    });
+    const existingNames = new Set(migrated.map((c) => c.name.toLowerCase()));
+    const missingDefaults = DEFAULT_CATEGORY_OBJECTS.filter((d) => !existingNames.has(d.name.toLowerCase()));
+    return [...migrated, ...missingDefaults];
   });
 
   const companyCategories = useMemo(
@@ -524,6 +551,7 @@ export function CourseStoreProvider({ children }) {
       localStorage.setItem(CURRICULUM_KEY, JSON.stringify(curricula));
       localStorage.setItem(LIBRARY_KEY, JSON.stringify(libraries));
       localStorage.setItem(CATEGORY_KEY, JSON.stringify(companyCategoryObjects));
+      localStorage.setItem(CATEGORY_GROUP_KEY, JSON.stringify(categoryGroups));
       localStorage.setItem(CERT_TEMPLATE_KEY, JSON.stringify(certificateTemplates));
       localStorage.setItem(BU_KEY, JSON.stringify(businessUnits));
       localStorage.setItem(DIV_KEY, JSON.stringify(divisions));
@@ -547,7 +575,7 @@ export function CourseStoreProvider({ children }) {
     } catch {
       // ignore quota / private browsing
     }
-  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, certificateTemplates, customGroups, customGroupCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
+  }, [isAuthenticated, currentUser, users, courses, classrooms, approvals, gamification, actionPlans, enrollments, costLedgerSession, roadmapsConfig, curricula, libraries, companyCategories, categoryGroups, certificateTemplates, customGroups, customGroupCategories, interventions, successionTalents, successionAlignments, complianceNudges, assessments, questionBanks, assessmentAttempts, theme, language]);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -996,6 +1024,66 @@ export function CourseStoreProvider({ children }) {
     );
   }, []);
 
+  const addCategoryGroup = useCallback((groupInput) => {
+    const cleanName = typeof groupInput === 'string' ? groupInput.trim() : (groupInput.name || '').trim();
+    if (!cleanName) return { ok: false, reason: 'The category group name cannot be empty.' };
+
+    let alreadyExists = false;
+    let newGroup = null;
+    setCategoryGroups((prev) => {
+      if (prev.some((g) => g.name.toLowerCase() === cleanName.toLowerCase())) {
+        alreadyExists = true;
+        return prev;
+      }
+      newGroup = {
+        id: (typeof groupInput === 'object' && groupInput.id) || `grp-${Date.now()}`,
+        name: cleanName,
+        code: (typeof groupInput === 'object' && groupInput.code) || generateGroupCode(cleanName, prev.map((g) => g.code)),
+        icon: (typeof groupInput === 'object' && groupInput.icon) || 'ti-folder',
+        color: (typeof groupInput === 'object' && groupInput.color) || '#3b82f6',
+        description: (typeof groupInput === 'object' && groupInput.description) || '',
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+      return [newGroup, ...prev];
+    });
+
+    return alreadyExists
+      ? { ok: false, reason: `The category group "${cleanName}" already exists.` }
+      : { ok: true, group: newGroup, id: newGroup?.id };
+  }, []);
+
+  const updateCategoryGroup = useCallback((idOrOldName, updatedData) => {
+    const cleanName = (updatedData.name || '').trim();
+    if (!cleanName) return { ok: false, reason: 'The category group name cannot be empty.' };
+
+    let updatedObj = null;
+    setCategoryGroups((prev) => prev.map((g) => {
+      const isMatch = g.id === idOrOldName || g.name === idOrOldName;
+      if (!isMatch) return g;
+      updatedObj = { ...g, ...updatedData, name: cleanName, updatedAt: new Date().toISOString().slice(0, 10) };
+      return updatedObj;
+    }));
+
+    return { ok: true, group: updatedObj };
+  }, []);
+
+  // A group can only be deleted once it has no Sub-Categories left inside it —
+  // the same "detach children first" rule Delete already enforces for a
+  // Sub-Category with courses/curricula/assessments attached to it.
+  const deleteCategoryGroup = useCallback((idOrName) => {
+    const stillHasChildren = companyCategoryObjects.some((c) => {
+      const cat = typeof c === 'object' ? c : null;
+      if (!cat) return false;
+      const group = categoryGroups.find((g) => g.id === idOrName || g.name === idOrName);
+      return group && cat.groupId === group.id;
+    });
+    if (stillHasChildren) {
+      return { ok: false, reason: 'This group still contains Sub-Categories — move or delete them first.' };
+    }
+    setCategoryGroups((prev) => prev.filter((g) => g.id !== idOrName && g.name !== idOrName));
+    return { ok: true };
+  }, [companyCategoryObjects, categoryGroups]);
+
   const addCompanyCategory = useCallback((categoryInput) => {
     let catObj;
     if (typeof categoryInput === 'string') {
@@ -1005,6 +1093,7 @@ export function CourseStoreProvider({ children }) {
         id: `cat-${Date.now()}`,
         name: clean,
         code: generateCategoryCode(clean),
+        groupId: null,
         icon: 'ti-folder',
         color: '#3b82f6',
         description: '',
@@ -1014,10 +1103,12 @@ export function CourseStoreProvider({ children }) {
     } else {
       const cleanName = (categoryInput.name || '').trim();
       if (!cleanName) return { ok: false, reason: 'The category name cannot be empty.' };
+      if (!categoryInput.groupId) return { ok: false, reason: 'Please choose which Category group this Sub-Category belongs to.' };
       catObj = {
         id: categoryInput.id || `cat-${Date.now()}`,
         name: cleanName,
         code: categoryInput.code || generateCategoryCode(cleanName),
+        groupId: categoryInput.groupId,
         icon: categoryInput.icon || 'ti-folder',
         color: categoryInput.color || '#3b82f6',
         description: categoryInput.description || '',
@@ -2332,6 +2423,10 @@ export function CourseStoreProvider({ children }) {
         renameCompanyCategory,
         deleteCompanyCategory,
         getCategoryMeta: (name) => getCategoryMetadata(name, companyCategoryObjects),
+        categoryGroups,
+        addCategoryGroup,
+        updateCategoryGroup,
+        deleteCategoryGroup,
         accessFor,
         enrollCourse,
         extendEnrollmentDueDate,

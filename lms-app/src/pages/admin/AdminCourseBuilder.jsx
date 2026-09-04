@@ -10,7 +10,7 @@ import { LEVEL_DEFINITIONS, normalizeLevel, levelTitle } from '../../data/levelS
 import { normalizeRole, hasCapability, roleDefinition } from '../../data/roles';
 import { useCourseStore } from '../../store/CourseStore';
 import { COURSE_IMAGE_PRESETS, getCourseImage } from '../../data/courseImages';
-import { generateCourseCode } from '../../utils/courseCatalog';
+import { generateCourseCode, groupCategoriesByGroup, normalizeCategory, normalizeCategoryGroup } from '../../utils/courseCatalog';
 import CourseImagePickerStudio from '../../features/common/CourseImagePickerStudio';
 import AssessmentEditorModal from '../../features/assessment/AssessmentEditorModal';
 import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
@@ -249,10 +249,28 @@ function CoursePricingSection({ draft, onChange }) {
   );
 }
 
-function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange, hasError, errorMessage }) {
+function CategoryMultiSelectDropdown({ id, selected = [], categoryObjects = [], categoryGroups = [], onChange, hasError, errorMessage }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
+
+  const normalizedGroups = useMemo(() => categoryGroups.map((g) => normalizeCategoryGroup(g)), [categoryGroups]);
+  const normalizedCategories = useMemo(
+    () => categoryObjects.map((c) => normalizeCategory(c, categoryObjects)),
+    [categoryObjects]
+  );
+  const buckets = useMemo(
+    () => groupCategoriesByGroup(normalizedCategories, normalizedGroups).filter((b) => b.categories.length > 0),
+    [normalizedCategories, normalizedGroups]
+  );
+  const options = useMemo(() => normalizedCategories.map((c) => c.name), [normalizedCategories]);
+
+  // Step 1: which Category (group) is the picker currently browsing —
+  // defaults to the group of whatever is already selected, else the first group.
+  const [activeGroupId, setActiveGroupId] = useState(() => {
+    const firstSelectedCat = normalizedCategories.find((c) => selected.includes(c.name));
+    return firstSelectedCat?.groupId || buckets[0]?.group.id || '';
+  });
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -266,10 +284,14 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
     }
   }, [isOpen]);
 
+  const activeBucket = buckets.find((b) => b.group.id === activeGroupId) || buckets[0];
+  const groupOptions = (activeBucket?.categories || []).map((c) => c.name);
+
+  // Step 2: Sub-Categories within the chosen Category, further narrowed by search.
   const filteredOptions = useMemo(() => {
-    if (!search.trim()) return options;
-    return options.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
-  }, [options, search]);
+    if (!search.trim()) return groupOptions;
+    return groupOptions.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
+  }, [groupOptions, search]);
 
   const toggleOption = (cat) => {
     const next = selected.includes(cat) ? selected.filter((c) => c !== cat) : [...selected, cat];
@@ -378,25 +400,53 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
           padding: 10,
         }}
       >
-        {/* Quick Action Buttons */}
+        {/* Step 1: pick the Category (group) to browse — Sub-Categories below always
+            belong to whichever chip is active here. */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+          {buckets.map(({ group, categories: catsInGroup }) => {
+            const isActive = group.id === activeGroupId;
+            const selectedInGroup = catsInGroup.filter((c) => selected.includes(c.name)).length;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveGroupId(group.id); }}
+                className="btn btn-sm"
+                style={{
+                  fontSize: 11,
+                  padding: '3px 8px',
+                  height: 24,
+                  borderRadius: 999,
+                  background: isActive ? (group.color || 'var(--rail)') : 'var(--paper-sunken)',
+                  color: isActive ? '#fff' : 'var(--ink)',
+                  border: isActive ? 'none' : '1px solid var(--line)',
+                }}
+              >
+                {group.name}{selectedInGroup > 0 ? ` (${selectedInGroup})` : ''}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Action Buttons — scoped to the active Category above */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Quick actions:</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Quick actions ({activeBucket?.group.name}):</span>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn btn-sm btn-ghost"
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
-              onClick={() => onChange([...options])}
+              onClick={() => onChange([...new Set([...selected, ...groupOptions])])}
             >
-              Select all ({options.length})
+              Select all in group ({groupOptions.length})
             </button>
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)' }}
-              onClick={() => onChange([options[0]])}
+              style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
+              onClick={() => onChange(selected.filter((c) => !groupOptions.includes(c)))}
             >
-              Default
+              Clear this group
             </button>
             <button
               type="button"
@@ -404,7 +454,7 @@ function CategoryMultiSelectDropdown({ id, selected = [], options = [], onChange
               style={{ fontSize: 11, padding: '2px 6px', height: 24, background: 'var(--paper-sunken)', color: 'var(--rust)' }}
               onClick={() => onChange([])}
             >
-              Clear selection
+              Clear all
             </button>
           </div>
         </div>
@@ -873,6 +923,8 @@ export default function AdminCourseBuilder() {
     updateCourse,
     publishNewCourseVersion,
     companyCategories,
+    companyCategoryObjects,
+    categoryGroups,
     currentUser: authUser,
     assessments,
     addAssessment,
@@ -1969,7 +2021,8 @@ export default function AdminCourseBuilder() {
           <CategoryMultiSelectDropdown
             id="builder-category-field"
             selected={draft.categories || (draft.category ? [draft.category] : [])}
-            options={companyCategories}
+            categoryObjects={companyCategoryObjects}
+            categoryGroups={categoryGroups}
             hasError={Boolean(error && (error.includes('Category') || error.includes('Category')))}
             errorMessage={error && (error.includes('Category') || error.includes('Category')) ? error : ''}
             onChange={(nextCats) => {

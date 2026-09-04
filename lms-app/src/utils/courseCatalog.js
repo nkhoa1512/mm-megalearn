@@ -8,15 +8,93 @@ import { divisions, departments, subDepartments, retailStores } from '../data/as
 import { levelShortLabel } from '../data/levelSystem';
 
 // ---------------------------------------------------------------------------
+// Category Groups — the top-level taxonomy (e.g. COMPLIANCE, LEADERSHIP).
+// Every category below is a Sub-Category that must belong to exactly one of
+// these groups; System Admin & User Admin manage both levels from
+// /admin/categories (create a Group first, then Sub-Categories inside it).
+// ---------------------------------------------------------------------------
+export const DEFAULT_CATEGORY_GROUPS = [
+  {
+    id: 'grp-compliance',
+    name: 'Compliance',
+    code: 'COMPLIANCE',
+    icon: 'ti-shield-lock',
+    color: '#dc2626',
+    description: 'Mandatory regulatory, safety and governance training areas.',
+  },
+  {
+    id: 'grp-essential-skill',
+    name: 'Essential Skill',
+    code: 'ESSENTIAL_SKILL',
+    icon: 'ti-headset',
+    color: '#ec4899',
+    description: 'Baseline skills every employee needs, regardless of role.',
+  },
+  {
+    id: 'grp-functional-skill',
+    name: 'Functional Skill',
+    code: 'FUNCTIONAL_SKILL',
+    icon: 'ti-briefcase',
+    color: '#3b82f6',
+    description: 'Job-function specific operating and commercial skills.',
+  },
+  {
+    id: 'grp-leadership',
+    name: 'Leadership',
+    code: 'LEADERSHIP',
+    icon: 'ti-users',
+    color: '#8b5cf6',
+    description: 'People management and leadership development.',
+  },
+  {
+    id: 'grp-onboarding',
+    name: 'Onboarding',
+    code: 'ONBOARDING',
+    icon: 'ti-compass',
+    color: '#0284c7',
+    description: 'New-hire orientation and company culture.',
+  },
+  {
+    id: 'grp-product-knowledge',
+    name: 'Product Knowledge',
+    code: 'PRODUCT_KNOWLEDGE',
+    icon: 'ti-package',
+    color: '#16a34a',
+    description: 'Category and product-line expertise across the assortment.',
+  },
+  {
+    id: 'grp-technical-skill',
+    name: 'Technical Skill',
+    code: 'TECHNICAL_SKILL',
+    icon: 'ti-tool',
+    color: '#f59e0b',
+    description: 'Hands-on operational and craft technique.',
+  },
+];
+
+export const CATEGORY_GROUP_ICON_PRESETS = [
+  { id: 'ti-shield-lock', label: 'Compliance' },
+  { id: 'ti-headset', label: 'Essential Skill' },
+  { id: 'ti-briefcase', label: 'Functional Skill' },
+  { id: 'ti-users', label: 'Leadership' },
+  { id: 'ti-compass', label: 'Onboarding' },
+  { id: 'ti-package', label: 'Product Knowledge' },
+  { id: 'ti-tool', label: 'Technical Skill' },
+  { id: 'ti-folder', label: 'General' },
+];
+
+// ---------------------------------------------------------------------------
 // Company Category Taxonomy — seeds CourseStore's admin-manageable
 // `companyCategories` list (System Admin & Security can view/add more from
-// there; this is only the initial default set, not a hard cap).
+// there; this is only the initial default set, not a hard cap). Every entry
+// carries a `groupId` pointing at one of the DEFAULT_CATEGORY_GROUPS above.
 // ---------------------------------------------------------------------------
 export const DEFAULT_CATEGORY_OBJECTS = [
   {
     id: 'cat-fsh',
     name: 'Food Safety & Hygiene',
     code: 'FSH',
+    groupId: 'grp-compliance',
     icon: 'ti-shield-check',
     color: '#10b981',
     description: 'Food hygiene and safety standards, HACCP audits, and the preparation and storage procedures for clean food across MM Mega Market.',
@@ -26,6 +104,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-hse',
     name: 'Health & Safety',
     code: 'HSE',
+    groupId: 'grp-compliance',
     icon: 'ti-first-aid-kit',
     color: '#ef4444',
     description: 'Occupational safety, protective equipment, first aid and the fire prevention plan for stores and warehouses.',
@@ -35,6 +114,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-cold',
     name: 'Cold Chain',
     code: 'COLD',
+    groupId: 'grp-compliance',
     icon: 'ti-snowflake',
     color: '#06b6d4',
     description: 'Cold chain management, chiller and deep-freeze temperature monitoring, and fresh food storage standards.',
@@ -44,6 +124,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-ops',
     name: 'Store Operations',
     code: 'OPS',
+    groupId: 'grp-functional-skill',
     icon: 'ti-building-store',
     color: '#3b82f6',
     description: 'Store operations, POS checkout, retail-standard merchandising and the sales floor shrinkage control process.',
@@ -53,6 +134,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-scm',
     name: 'Supply Chain & Logistics',
     code: 'SCM',
+    groupId: 'grp-functional-skill',
     icon: 'ti-truck-delivery',
     color: '#f59e0b',
     description: 'Distribution center warehousing, forklift operation, inter-center stock transfer and last-mile delivery fleet management.',
@@ -62,6 +144,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-lpqa',
     name: 'Loss Prevention & QA',
     code: 'LPQA',
+    groupId: 'grp-compliance',
     icon: 'ti-scan-eye',
     color: '#64748b',
     description: 'Inbound quality control, shrinkage prevention, camera security and MMVN compliance auditing.',
@@ -71,6 +154,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-lead',
     name: 'Leadership & Management',
     code: 'LEAD',
+    groupId: 'grp-leadership',
     icon: 'ti-users',
     color: '#8b5cf6',
     description: 'Building management capability, team leadership, delegation, coaching and OKR performance planning.',
@@ -80,6 +164,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-gov',
     name: 'Corporate Governance',
     code: 'GOV',
+    groupId: 'grp-compliance',
     icon: 'ti-gavel',
     color: 'var(--ink-soft)',
     description: 'Corporate governance, operating regulations, sustainable development (ESG) standards and transparent board reporting.',
@@ -89,6 +174,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-comp',
     name: 'Compliance & Ethics',
     code: 'COMP',
+    groupId: 'grp-compliance',
     icon: 'ti-scale',
     color: '#d97706',
     description: 'The business ethics code of conduct, anti-corruption, conflicts of interest and labour law compliance.',
@@ -98,6 +184,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-sec',
     name: 'Information Security',
     code: 'SEC',
+    groupId: 'grp-compliance',
     icon: 'ti-lock-square-rounded',
     color: '#dc2626',
     description: 'System information security, phishing prevention, customer personal data protection (PDPD) and data encryption.',
@@ -107,6 +194,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-cs',
     name: 'Customer Service',
     code: 'CS',
+    groupId: 'grp-essential-skill',
     icon: 'ti-headset',
     color: '#ec4899',
     description: 'The art of communication, resolving customer complaints, B2B/B2C service standards and a culture of service excellence.',
@@ -116,6 +204,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-merch',
     name: 'Merchandising & Sales',
     code: 'MERCH',
+    groupId: 'grp-functional-skill',
     icon: 'ti-shopping-bag',
     color: '#f97316',
     description: 'Category development strategy, competitive pricing, supplier negotiation and the art of driving sales.',
@@ -125,6 +214,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-digi',
     name: 'Digital & E-Commerce',
     code: 'DIGI',
+    groupId: 'grp-functional-skill',
     icon: 'ti-device-laptop',
     color: '#6366f1',
     description: 'Omnichannel retail e-commerce, digitalizing operational processes and big data management.',
@@ -134,6 +224,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-fin',
     name: 'Finance & Accounting',
     code: 'FIN',
+    groupId: 'grp-functional-skill',
     icon: 'ti-calculator',
     color: '#059669',
     description: 'Store financial management, P&L report control, income/expense reconciliation, e-invoicing and internal audit.',
@@ -143,6 +234,7 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-orient',
     name: 'Corporate Orientation',
     code: 'ORIENT',
+    groupId: 'grp-onboarding',
     icon: 'ti-compass',
     color: '#0284c7',
     description: 'New employee onboarding, MM Mega Market culture, the org structure and the benefits package.',
@@ -152,10 +244,41 @@ export const DEFAULT_CATEGORY_OBJECTS = [
     id: 'cat-fresh',
     name: 'Fresh Food Practice',
     code: 'FRESH',
+    groupId: 'grp-technical-skill',
     icon: 'ti-leaf',
     color: '#16a34a',
     description: 'Meat butchery technique, seafood processing, organic produce preparation and excellent fresh baking.',
     coverImage: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'cat-freshprod',
+    name: 'Fresh Food Products',
+    code: 'FRESHPROD',
+    groupId: 'grp-product-knowledge',
+    icon: 'ti-apple',
+    color: '#22c55e',
+    description: 'Product knowledge for fresh produce, meat, seafood and bakery assortments.',
+    coverImage: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'cat-nonfood',
+    name: 'Non-food Products',
+    code: 'NONFOOD',
+    groupId: 'grp-product-knowledge',
+    icon: 'ti-package',
+    color: '#0ea5e9',
+    description: 'Product knowledge for household, electronics and general merchandise assortments.',
+    coverImage: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    id: 'cat-privlabel',
+    name: 'Private Label Products',
+    code: 'PRIVLABEL',
+    groupId: 'grp-product-knowledge',
+    icon: 'ti-tag',
+    color: '#a855f7',
+    description: 'Product knowledge for MM Mega Market\'s own private-label brands.',
+    coverImage: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -242,6 +365,7 @@ export function getCategoryMetadata(categoryName, customList = []) {
     id: `cat-${stripDiacritics(nameToMatch).toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     name: nameToMatch,
     code: generateCategoryCode(nameToMatch),
+    groupId: null,
     icon: 'ti-folder',
     color: '#3b82f6',
     description: `${nameToMatch} training catalog`,
@@ -256,6 +380,7 @@ export function normalizeCategory(cat, customList = []) {
       id: cat.id || `cat-${stripDiacritics(cat.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
       name: cat.name,
       code: cat.code || generateCategoryCode(cat.name),
+      groupId: cat.groupId || null,
       icon: cat.icon || 'ti-folder',
       color: cat.color || '#3b82f6',
       description: cat.description || '',
@@ -265,6 +390,92 @@ export function normalizeCategory(cat, customList = []) {
     };
   }
   return getCategoryMetadata(cat, customList);
+}
+
+// ---------------------------------------------------------------------------
+// Category Group helpers — mirrors the pattern above, one level up. A
+// Sub-Category (DEFAULT_CATEGORY_OBJECTS entry) always carries a `groupId`;
+// these helpers resolve/normalize the Group side of that relationship.
+// ---------------------------------------------------------------------------
+export function generateGroupCode(name = '', existingCodes = []) {
+  const clean = stripDiacritics(name)
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .trim();
+  const prefix = clean.toUpperCase().replace(/\s+/g, '_').slice(0, 24) || 'GROUP';
+  const existingSet = new Set((existingCodes || []).map((c) => (c || '').toUpperCase()));
+  if (!existingSet.has(prefix)) return prefix;
+  let counter = 1;
+  while (existingSet.has(`${prefix}_${counter}`)) counter++;
+  return `${prefix}_${counter}`;
+}
+
+export function getGroupMetadata(groupNameOrId, customGroups = []) {
+  if (!groupNameOrId) return null;
+  const key = typeof groupNameOrId === 'string' ? groupNameOrId : groupNameOrId?.name;
+  if (!key) return null;
+
+  const foundInCustom = (customGroups || []).find(
+    (g) => g?.name?.toLowerCase() === key.toLowerCase() || g?.id === key || g?.code === key
+  );
+  if (foundInCustom) return foundInCustom;
+
+  const foundInDefault = DEFAULT_CATEGORY_GROUPS.find(
+    (g) => g.name.toLowerCase() === key.toLowerCase() || g.id === key || g.code === key
+  );
+  if (foundInDefault) return foundInDefault;
+
+  return null;
+}
+
+export function normalizeCategoryGroup(grp) {
+  if (!grp) return null;
+  if (typeof grp === 'object' && grp.name) {
+    return {
+      id: grp.id || `grp-${stripDiacritics(grp.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      name: grp.name,
+      code: grp.code || generateGroupCode(grp.name),
+      icon: grp.icon || 'ti-folder',
+      color: grp.color || '#3b82f6',
+      description: grp.description || '',
+      createdAt: grp.createdAt,
+      updatedAt: grp.updatedAt,
+    };
+  }
+  return getGroupMetadata(grp);
+}
+
+/**
+ * Buckets a flat Sub-Category list under their parent Groups, in group order.
+ * A sub-category whose groupId doesn't resolve to any known group is placed
+ * in a synthetic "Ungrouped" bucket instead of being silently dropped.
+ */
+export function groupCategoriesByGroup(categoryObjects = [], groups = DEFAULT_CATEGORY_GROUPS) {
+  const buckets = groups.map((g) => ({ group: g, categories: [] }));
+  const byId = new Map(groups.map((g, i) => [g.id, i]));
+  const ungrouped = [];
+
+  (categoryObjects || []).forEach((cat) => {
+    const idx = cat.groupId && byId.has(cat.groupId) ? byId.get(cat.groupId) : -1;
+    if (idx >= 0) buckets[idx].categories.push(cat);
+    else ungrouped.push(cat);
+  });
+
+  if (ungrouped.length > 0) {
+    buckets.push({
+      group: { id: 'grp-ungrouped', name: 'Ungrouped', code: 'UNGROUPED', icon: 'ti-help-circle', color: '#94a3b8', description: 'Sub-categories not yet assigned to a Category group.' },
+      categories: ungrouped,
+    });
+  }
+  return buckets;
+}
+
+export function courseMatchesGroup(course, group, categoryObjects = []) {
+  if (!group || group === 'ALL') return true;
+  const cats = course.categories && course.categories.length ? course.categories : [course.category];
+  return cats.some((catName) => {
+    const meta = getCategoryMetadata(catName, categoryObjects);
+    return meta?.groupId === group;
+  });
 }
 
 // A couple of legacy free-text `category` values already present in seed

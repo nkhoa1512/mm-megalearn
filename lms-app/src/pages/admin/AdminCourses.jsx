@@ -6,9 +6,9 @@ import { useCourseStore } from '../../store/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
 import { getCourseImage } from '../../data/courseImages';
 import {
-  courseFormatBadge, catalogSectionOf, CATALOG_SECTIONS, courseMatchesCategory,
+  courseFormatBadge, catalogSectionOf, CATALOG_SECTIONS, courseMatchesCategory, courseMatchesGroup,
   computeLifecycleStatus, LIFECYCLE_STATUS_META, buildCourseGroups,
-  personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META,
+  personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META, groupCategoriesByGroup,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../features/catalog/CurriculumTree';
 import { pricingOf, formatVnd } from '../../utils/costCenter';
@@ -142,7 +142,7 @@ export default function AdminCourses() {
   const navigate = useNavigate();
   const {
     courses, updateCourse, removeCourse, currentUser, language, t,
-    companyCategories, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
+    companyCategories, companyCategoryObjects, categoryGroups, curricula, addCurriculum, updateCurriculum, deleteCurriculum,
     libraries, addLibrary, updateLibrary, deleteLibrary,
     certificateTemplates, addCertificateTemplate,
     assignCurriculum, proposeCurriculumAssignment, removeCurriculumAssignment,
@@ -243,6 +243,7 @@ export default function AdminCourses() {
       .map((c) => ({ ...c, enrollment: myEnrollments?.[c.id] || null }));
 
   const [search, setSearch] = useState('');
+  const [selectedCategoryGroup, setSelectedCategoryGroup] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedLifecycle, setSelectedLifecycle] = useState('ALL');
@@ -291,14 +292,26 @@ export default function AdminCourses() {
     }
   }
 
+  // Sub-Categories on offer in the filter narrow down to whichever Category
+  // group is chosen first — picking a group resets any sub-category pick that
+  // no longer belongs to it.
+  const categoryBuckets = useMemo(
+    () => groupCategoriesByGroup(companyCategoryObjects, categoryGroups),
+    [companyCategoryObjects, categoryGroups]
+  );
+  const categoryOptionsForGroup = selectedCategoryGroup === 'ALL'
+    ? []
+    : (categoryBuckets.find((b) => b.group.id === selectedCategoryGroup)?.categories || []);
+
   const bySearchCategoryType = visibleCourses.filter((c) => {
+    const matchGroup = selectedCategoryGroup === 'ALL' || courseMatchesGroup(c, selectedCategoryGroup, companyCategoryObjects);
     const matchCat = selectedCategory === 'ALL' || courseMatchesCategory(c, selectedCategory);
     const matchType = selectedType === 'ALL' || c.courseType === selectedType;
     const matchSearch = !search ||
       c.title.toLowerCase().includes(search.toLowerCase()) ||
       c.code.toLowerCase().includes(search.toLowerCase()) ||
       c.category.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchType && matchSearch;
+    return matchGroup && matchCat && matchType && matchSearch;
   });
 
   const isLibrary = activeTabDef.id === 'library';
@@ -1750,7 +1763,7 @@ export default function AdminCourses() {
         <>
           {/* Filter & Search Bar */}
           {(() => {
-            const activeCourseFiltersCount = (selectedCategory !== 'ALL' ? 1 : 0) + (selectedType !== 'ALL' ? 1 : 0) + (selectedLifecycle !== 'ALL' ? 1 : 0);
+            const activeCourseFiltersCount = (selectedCategoryGroup !== 'ALL' ? 1 : 0) + (selectedCategory !== 'ALL' ? 1 : 0) + (selectedType !== 'ALL' ? 1 : 0) + (selectedLifecycle !== 'ALL' ? 1 : 0);
             return (
               <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
                 {/* Row 1: Search + Group By + Filters Toggle + View Mode Switcher */}
@@ -1848,10 +1861,37 @@ export default function AdminCourses() {
                 {showCourseFilters && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-                      {/* Filter 1: Area */}
+                      {/* Filter 1a: Category (group) — chosen first */}
                       <div>
                         <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
                           Category
+                        </label>
+                        <select
+                          className="field-select"
+                          style={{
+                            width: '100%',
+                            height: 38,
+                            fontSize: 13,
+                            borderRadius: 6,
+                            background: selectedCategoryGroup !== 'ALL' ? 'var(--rail-soft)' : 'var(--paper)',
+                            borderColor: selectedCategoryGroup !== 'ALL' ? 'var(--rail)' : 'var(--line)',
+                            color: selectedCategoryGroup !== 'ALL' ? 'var(--rail-soft-text)' : 'var(--ink)',
+                            fontWeight: selectedCategoryGroup !== 'ALL' ? 700 : 500,
+                          }}
+                          value={selectedCategoryGroup}
+                          onChange={(e) => { setSelectedCategoryGroup(e.target.value); setSelectedCategory('ALL'); setPage(1); }}
+                        >
+                          <option value="ALL">All categories ({categoryBuckets.length})</option>
+                          {categoryBuckets.map(({ group, categories: catsInGroup }) => (
+                            <option key={group.id} value={group.id}>{group.name} ({catsInGroup.length})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Filter 1b: Sub-Category — only within the chosen Category above */}
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-soft)', marginBottom: 6, display: 'block' }}>
+                          Sub-Category
                         </label>
                         <select
                           className="field-select"
@@ -1867,10 +1907,13 @@ export default function AdminCourses() {
                           }}
                           value={selectedCategory}
                           onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+                          disabled={selectedCategoryGroup === 'ALL'}
                         >
-                          <option value="ALL">All areas ({companyCategories.length})</option>
-                          {companyCategories.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
+                          <option value="ALL">
+                            {selectedCategoryGroup === 'ALL' ? 'Choose a category first' : `All sub-categories (${categoryOptionsForGroup.length})`}
+                          </option>
+                          {categoryOptionsForGroup.map((cat) => (
+                            <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
                           ))}
                         </select>
                       </div>
@@ -1942,6 +1985,7 @@ export default function AdminCourses() {
                           style={{ fontSize: 12, color: 'var(--rust)' }}
                           onClick={() => {
                             setSearch('');
+                            setSelectedCategoryGroup('ALL');
                             setSelectedCategory('ALL');
                             setSelectedType('ALL');
                             setSelectedLifecycle('ALL');

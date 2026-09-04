@@ -6,8 +6,12 @@ import { normalizeRole, ROLE_HOME } from '../../data/roles';
 import {
   CATEGORY_ICON_PRESETS,
   CATEGORY_COLOR_PRESETS,
+  CATEGORY_GROUP_ICON_PRESETS,
   generateCategoryCode,
+  generateGroupCode,
   normalizeCategory,
+  normalizeCategoryGroup,
+  groupCategoriesByGroup,
 } from '../../utils/courseCatalog';
 
 const CATEGORY_IMAGE_PRESETS = [
@@ -44,16 +48,28 @@ function usageOf(categoryName, { courses, curricula, assessments, libraries }) {
   };
 }
 
-function emptyCategoryDraft(existingCount = 0) {
+function emptyCategoryDraft(existingCount = 0, groupId = '') {
   const preset = CATEGORY_IMAGE_PRESETS[existingCount % CATEGORY_IMAGE_PRESETS.length];
   return {
     id: `cat-${Date.now()}`,
     name: '',
     code: '',
+    groupId,
     icon: 'ti-folder',
     color: '#3b82f6',
     description: '',
     coverImage: preset?.url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+  };
+}
+
+function emptyGroupDraft() {
+  return {
+    id: `grp-${Date.now()}`,
+    name: '',
+    code: '',
+    icon: 'ti-folder',
+    color: '#3b82f6',
+    description: '',
   };
 }
 
@@ -63,6 +79,10 @@ export default function AdminCategoryManager() {
     addCompanyCategory,
     updateCompanyCategory,
     deleteCompanyCategory,
+    categoryGroups = [],
+    addCategoryGroup,
+    updateCategoryGroup,
+    deleteCategoryGroup,
     courses,
     curricula,
     assessments,
@@ -75,10 +95,11 @@ export default function AdminCategoryManager() {
   const isSystemAdminRole = role === 'useradmin' || role === 'sysadmin';
 
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('GRID'); // 'GRID' | 'TABLE'
   const [toastMessage, setToastMessage] = useState(null);
-  const [categoryModal, setCategoryModal] = useState(null); // null | { isNew: boolean, draft: Object, isCodeTouched: boolean, imageTab: 'PRESET'|'URL'|'UPLOAD' }
+  const [categoryModal, setCategoryModal] = useState(null); // null | { isNew, draft, isCodeTouched, imageTab }
+  const [groupModal, setGroupModal] = useState(null); // null | { isNew, draft }
   const [modalError, setModalError] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState({});
   const fileInputRef = useRef(null);
 
   const ctx = { courses, curricula, assessments, libraries };
@@ -92,12 +113,16 @@ export default function AdminCategoryManager() {
     return <Navigate to={ROLE_HOME[role] || '/learner'} replace />;
   }
 
-  // Normalized list of categories
+  // Normalized list of sub-categories
   const normalizedCategories = useMemo(() => {
     return companyCategoryObjects.map((c) => normalizeCategory(c, companyCategoryObjects));
   }, [companyCategoryObjects]);
 
-  // Filter categories by search (name, code, description)
+  const normalizedGroups = useMemo(() => categoryGroups.map((g) => normalizeCategoryGroup(g)), [categoryGroups]);
+
+  // Filter sub-categories by search (name, code, description), then bucket by
+  // their parent Group so the page reads Group -> Sub-Categories, not a flat
+  // list of 16+ look-alike cards.
   const filteredCategories = useMemo(() => {
     if (!search.trim()) return normalizedCategories;
     const q = search.toLowerCase();
@@ -109,6 +134,11 @@ export default function AdminCategoryManager() {
     );
   }, [normalizedCategories, search]);
 
+  const buckets = useMemo(
+    () => groupCategoriesByGroup(filteredCategories, normalizedGroups),
+    [filteredCategories, normalizedGroups]
+  );
+
   // Usage summary statistics
   const stats = useMemo(() => {
     let inUseCount = 0;
@@ -118,22 +148,25 @@ export default function AdminCategoryManager() {
       if (u.total > 0) inUseCount++;
       else unusedCount++;
     });
-    return { total: normalizedCategories.length, inUseCount, unusedCount };
-  }, [normalizedCategories, ctx]);
+    return { total: normalizedCategories.length, groupTotal: normalizedGroups.length, inUseCount, unusedCount };
+  }, [normalizedCategories, normalizedGroups, ctx]);
 
-  // Open Create Modal
-  function openCreateModal() {
+  function groupUsage(group, categoriesInGroup) {
+    return categoriesInGroup.reduce((sum, cat) => sum + usageOf(cat.name, ctx).total, 0);
+  }
+
+  // --- Sub-Category modal (Create / Edit) ---
+  function openCreateCategoryModal(presetGroupId = '') {
     setCategoryModal({
       isNew: true,
-      draft: emptyCategoryDraft(normalizedCategories.length),
+      draft: emptyCategoryDraft(normalizedCategories.length, presetGroupId || normalizedGroups[0]?.id || ''),
       isCodeTouched: false,
       imageTab: 'PRESET',
     });
     setModalError('');
   }
 
-  // Open Edit Modal
-  function openEditModal(category) {
+  function openEditCategoryModal(category) {
     setCategoryModal({
       isNew: false,
       draft: { ...normalizeCategory(category, normalizedCategories) },
@@ -143,13 +176,16 @@ export default function AdminCategoryManager() {
     setModalError('');
   }
 
-  // Save Modal (Create or Update)
-  function handleSaveModal() {
+  function handleSaveCategoryModal() {
     if (!categoryModal) return;
     const { isNew, draft } = categoryModal;
     const cleanName = (draft.name || '').trim();
     if (!cleanName) {
-      setModalError('Please enter a category name.');
+      setModalError('Please enter a sub-category name.');
+      return;
+    }
+    if (!draft.groupId) {
+      setModalError('Please choose which Category group this Sub-Category belongs to.');
       return;
     }
 
@@ -163,42 +199,99 @@ export default function AdminCategoryManager() {
     if (isNew) {
       const result = addCompanyCategory(categoryToSave);
       if (result && !result.ok) {
-        setModalError(result.reason || `The category "${cleanName}" already exists.`);
+        setModalError(result.reason || `The sub-category "${cleanName}" already exists.`);
         return;
       }
-      showToast(`New category "${cleanName}" created successfully!`);
+      showToast(`New sub-category "${cleanName}" created successfully!`);
     } else {
       const result = updateCompanyCategory(draft.id || draft.name, categoryToSave);
       if (result && !result.ok) {
-        setModalError(result.reason || `Failed to update the category.`);
+        setModalError(result.reason || `Failed to update the sub-category.`);
         return;
       }
-      showToast(`Category "${cleanName}" updated successfully!`);
+      showToast(`Sub-category "${cleanName}" updated successfully!`);
     }
 
     setCategoryModal(null);
     setModalError('');
   }
 
-  // Delete Category
-  function handleDelete(cat) {
+  function handleDeleteCategory(cat) {
     const name = cat.name;
     const usage = usageOf(name, ctx);
     if (usage.total > 0) {
       window.alert(
-        `Cannot delete "${name}" because it is used in ${usage.total} places:
-` +
-        `- ${usage.courseCount} courses
-- ${usage.curriculumCount} curricula
-` +
-        `- ${usage.assessmentCount} assessments
-- ${usage.libraryDomainCount} areas in the Library`
+        `Cannot delete "${name}" because it is used in ${usage.total} places:\n` +
+        `- ${usage.courseCount} courses\n- ${usage.curriculumCount} curricula\n` +
+        `- ${usage.assessmentCount} assessments\n- ${usage.libraryDomainCount} areas in the Library`
       );
       return;
     }
-    if (window.confirm(`Delete the category "${name}"? This action cannot be undone.`)) {
+    if (window.confirm(`Delete the sub-category "${name}"? This action cannot be undone.`)) {
       deleteCompanyCategory(cat.id || name);
-      showToast(`Category "${name}" deleted successfully!`);
+      showToast(`Sub-category "${name}" deleted successfully!`);
+    }
+  }
+
+  // --- Category Group modal (Create / Edit) ---
+  function openCreateGroupModal() {
+    setGroupModal({ isNew: true, draft: emptyGroupDraft() });
+    setModalError('');
+  }
+
+  function openEditGroupModal(group) {
+    setGroupModal({ isNew: false, draft: { ...group } });
+    setModalError('');
+  }
+
+  function handleSaveGroupModal() {
+    if (!groupModal) return;
+    const { isNew, draft } = groupModal;
+    const cleanName = (draft.name || '').trim();
+    if (!cleanName) {
+      setModalError('Please enter a category name.');
+      return;
+    }
+    const cleanCode = (draft.code || '').trim() || generateGroupCode(cleanName, normalizedGroups.map((g) => g.code));
+    const groupToSave = { ...draft, name: cleanName, code: cleanCode.toUpperCase() };
+
+    if (isNew) {
+      const result = addCategoryGroup(groupToSave);
+      if (result && !result.ok) {
+        setModalError(result.reason || `The category "${cleanName}" already exists.`);
+        return;
+      }
+      showToast(`New category "${cleanName}" created! Now add its sub-categories.`);
+      setGroupModal(null);
+      setModalError('');
+      // Straight into "create the first sub-category" — matches the requested
+      // flow of creating a Category, then immediately its Sub-Category.
+      openCreateCategoryModal(result.group?.id || result.id);
+      return;
+    }
+
+    const result = updateCategoryGroup(draft.id || draft.name, groupToSave);
+    if (result && !result.ok) {
+      setModalError(result.reason || 'Failed to update the category.');
+      return;
+    }
+    showToast(`Category "${cleanName}" updated successfully!`);
+    setGroupModal(null);
+    setModalError('');
+  }
+
+  function handleDeleteGroup(group, categoriesInGroup) {
+    if (categoriesInGroup.length > 0) {
+      window.alert(`Cannot delete "${group.name}" because it still contains ${categoriesInGroup.length} sub-categor${categoriesInGroup.length === 1 ? 'y' : 'ies'}. Move or delete them first.`);
+      return;
+    }
+    if (window.confirm(`Delete the category "${group.name}"? This action cannot be undone.`)) {
+      const result = deleteCategoryGroup(group.id || group.name);
+      if (result && !result.ok) {
+        window.alert(result.reason);
+        return;
+      }
+      showToast(`Category "${group.name}" deleted successfully!`);
     }
   }
 
@@ -223,6 +316,10 @@ export default function AdminCategoryManager() {
     reader.readAsDataURL(file);
   }
 
+  function toggleGroupCollapsed(groupId) {
+    setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  }
+
   return (
     <>
       {/* Page Header */}
@@ -230,17 +327,22 @@ export default function AdminCategoryManager() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <h1>{language === 'en' ? 'Manage Category Taxonomy' : 'Category Management'}</h1>
-            <Badge tone="sage">{stats.total} {language === 'en' ? 'Categories' : 'Categories'}</Badge>
+            <Badge tone="sage">{stats.groupTotal} Categories · {stats.total} Sub-Categories</Badge>
           </div>
           <p>
             {language === 'en'
-              ? 'Define company-wide training categories with custom cover images, icons, color codes, and descriptions.'
-              : 'Define the company-wide standardized Category list, with cover images, identity icons, codes and training descriptions.'}
+              ? 'Every Sub-Category belongs to one Category group — create a Category first, then add Sub-Categories inside it.'
+              : 'Mỗi Sub-Category thuộc về đúng một Category — tạo Category trước, rồi thêm Sub-Category vào bên trong.'}
           </p>
         </div>
-        <Button variant="primary" icon="ti-plus" onClick={openCreateModal}>
-          Create New Category
-        </Button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="outline" icon="ti-folder-plus" onClick={openCreateGroupModal}>
+            New Category
+          </Button>
+          <Button variant="primary" icon="ti-plus" onClick={() => openCreateCategoryModal()}>
+            New Sub-Category
+          </Button>
+        </div>
       </div>
 
       {/* Toast Alert */}
@@ -273,8 +375,8 @@ export default function AdminCategoryManager() {
             <i className="ti ti-category" />
           </div>
           <div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 700, textTransform: 'uppercase' }}>Total Standard Categories</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--rail)' }}>{stats.total}</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 700, textTransform: 'uppercase' }}>Categories / Sub-Categories</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--rail)' }}>{stats.groupTotal} / {stats.total}</div>
           </div>
         </div>
         <div className="card card-pad" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -297,367 +399,397 @@ export default function AdminCategoryManager() {
         </div>
       </div>
 
-      {/* Toolbar: Search + Stats + View Switcher */}
+      {/* Toolbar: Search */}
       <div className="card card-pad" style={{ marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: '1 1 300px' }}>
-          <div style={{ position: 'relative', width: 320, maxWidth: '100%' }}>
-            <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
-            <input
-              type="text"
-              className="field-input"
-              style={{ paddingLeft: 36, paddingRight: search ? 30 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
-              placeholder="Search by category name, code, description..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
-              >
-                <i className="ti ti-x" />
-              </button>
-            )}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-            Display <strong>{filteredCategories.length}</strong> / {stats.total} categories
-          </div>
+        <div style={{ position: 'relative', width: 320, maxWidth: '100%' }}>
+          <i className="ti ti-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 15 }} />
+          <input
+            type="text"
+            className="field-input"
+            style={{ paddingLeft: 36, paddingRight: search ? 30 : 12, height: 38, fontSize: 13, width: '100%', borderRadius: 8 }}
+            placeholder="Search by sub-category name, code, description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 14 }}
+            >
+              <i className="ti ti-x" />
+            </button>
+          )}
         </div>
-
-        {/* Right side: Create button + View Mode Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Button size="sm" variant="primary" icon="ti-plus" onClick={openCreateModal}>
-            Create New
-          </Button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--paper-sunken)', padding: 3, borderRadius: 8, border: '1px solid var(--line)', height: 36 }}>
-            <button
-              type="button"
-              onClick={() => setViewMode('GRID')}
-              className={`btn btn-sm ${viewMode === 'GRID' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-              title="Grid View"
-            >
-              <i className="ti ti-layout-grid" />
-              <span>Grid</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('TABLE')}
-              className={`btn btn-sm ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, borderRadius: 6 }}
-              title="List View"
-            >
-              <i className="ti ti-list" />
-              <span>Table</span>
-            </button>
-          </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+          Display <strong>{filteredCategories.length}</strong> / {stats.total} sub-categories across <strong>{buckets.filter((b) => b.categories.length > 0 || !search.trim()).length}</strong> categories
         </div>
       </div>
 
-      {/* Grid View (Rich Cards with Cover Images) */}
-      {viewMode === 'GRID' ? (
-        <div className="grid grid-3" style={{ gap: 16 }}>
-          {filteredCategories.map((cat) => {
-            const usage = usageOf(cat.name, ctx);
-            return (
+      {/* Category (Group) sections, each containing its Sub-Category cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {buckets.map(({ group, categories: categoriesInGroup }) => {
+          if (search.trim() && categoriesInGroup.length === 0) return null;
+          const isCollapsed = Boolean(collapsedGroups[group.id]);
+          const usedTotal = groupUsage(group, categoriesInGroup);
+          const isRealGroup = group.id !== 'grp-ungrouped';
+
+          return (
+            <div key={group.id} className="card" style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+              {/* Group header bar */}
               <div
-                key={cat.id || cat.name}
-                className="card card-interactive"
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
-                  overflow: 'hidden',
-                  borderRadius: 12,
-                  border: '1px solid var(--line)',
+                  gap: 12,
+                  padding: '14px 18px',
+                  background: 'var(--paper-sunken)',
+                  borderBottom: isCollapsed ? 'none' : '1px solid var(--line)',
+                  flexWrap: 'wrap',
                 }}
               >
-                <div>
-                  {/* Card Cover Image Header */}
-                  <div style={{ position: 'relative', height: 130, background: 'var(--paper-sunken)', overflow: 'hidden' }}>
-                    <img
-                      src={cat.coverImage}
-                      alt={cat.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80';
-                      }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)' }} />
-
-                    {/* Top-Right Badge: Usage Status */}
-                    <div style={{ position: 'absolute', top: 10, right: 10 }}>
-                      <span
-                        style={{
-                          background: usage.total > 0 ? 'rgba(16, 185, 129, 0.9)' : 'rgba(100, 116, 139, 0.85)',
-                          color: '#fff',
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          backdropFilter: 'blur(4px)',
-                        }}
-                      >
-                        {usage.total > 0 ? `${usage.total} links` : 'Unused'}
+                <button
+                  type="button"
+                  onClick={() => toggleGroupCollapsed(group.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', flex: '1 1 260px' }}
+                >
+                  <div
+                    style={{
+                      width: 38, height: 38, borderRadius: 9, background: group.color || '#3b82f6', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
+                    }}
+                  >
+                    <i className={`ti ${group.icon || 'ti-folder'}`} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)' }}>{group.name}</span>
+                      <span style={{ background: 'var(--paper)', color: group.color || 'var(--rail)', border: '1px solid var(--line)', padding: '1px 6px', borderRadius: 4, fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-mono, monospace)' }}>
+                        {group.code}
                       </span>
+                      <Badge tone={usedTotal > 0 ? 'sage' : 'slate'} size="sm">{categoriesInGroup.length} sub-categor{categoriesInGroup.length === 1 ? 'y' : 'ies'}</Badge>
                     </div>
-
-                    {/* Bottom-Left Floating Avatar Icon */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 10,
-                        left: 12,
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: cat.color || '#3b82f6',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 20,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-                        border: '2px solid #fff',
-                      }}
-                    >
-                      <i className={`ti ${cat.icon || 'ti-folder'}`} />
-                    </div>
-
-                    {/* Code Badge next to Avatar */}
-                    {cat.code && (
-                      <div style={{ position: 'absolute', bottom: 12, left: 60 }}>
-                        <span
-                          style={{
-                            background: 'rgba(0,0,0,0.65)',
-                            color: '#fff',
-                            padding: '2px 8px',
-                            borderRadius: 4,
-                            fontSize: 11,
-                            fontWeight: 800,
-                            letterSpacing: '0.05em',
-                            fontFamily: 'var(--font-mono, monospace)',
-                            backdropFilter: 'blur(4px)',
-                          }}
-                        >
-                          {cat.code}
-                        </span>
-                      </div>
+                    {group.description && (
+                      <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>{group.description}</div>
                     )}
                   </div>
+                  <i className={`ti ${isCollapsed ? 'ti-chevron-down' : 'ti-chevron-up'}`} style={{ marginLeft: 'auto', color: 'var(--ink-faint)' }} />
+                </button>
 
-                  {/* Card Content */}
-                  <div style={{ padding: '14px 14px 10px 14px' }}>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>
-                      {cat.name}
-                    </div>
-
-                    <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12, minHeight: 34, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {cat.description || 'No training objective or scope has been described for this category yet.'}
-                    </p>
-
-                    {/* Usage Stats 4-Cell Grid */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: 6,
-                        background: 'var(--paper-sunken)',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
+                {isRealGroup && (
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <Button size="sm" variant="outline" icon="ti-plus" onClick={() => openCreateCategoryModal(group.id)}>
+                      Add Sub-Category
+                    </Button>
+                    <Button size="sm" variant="outline" icon="ti-edit" onClick={() => openEditGroupModal(group)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="ti-trash"
+                      disabled={categoriesInGroup.length > 0}
+                      title={categoriesInGroup.length > 0 ? `Contains ${categoriesInGroup.length} sub-categories — move/delete them first` : undefined}
+                      onClick={() => handleDeleteGroup(group, categoriesInGroup)}
                     >
-                      <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <i className="ti ti-books" style={{ color: 'var(--rail)' }} />
-                        <span>Courses: <strong style={{ color: 'var(--ink)' }}>{usage.courseCount}</strong></span>
-                      </div>
-                      <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <i className="ti ti-certificate" style={{ color: 'var(--sage)' }} />
-                        <span>Curricula: <strong style={{ color: 'var(--ink)' }}>{usage.curriculumCount}</strong></span>
-                      </div>
-                      <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <i className="ti ti-writing" style={{ color: 'var(--amber)' }} />
-                        <span>Assessment: <strong style={{ color: 'var(--ink)' }}>{usage.assessmentCount}</strong></span>
-                      </div>
-                      <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <i className="ti ti-folders" style={{ color: '#06b6d4' }} />
-                        <span>Library: <strong style={{ color: 'var(--ink)' }}>{usage.libraryDomainCount}</strong></span>
-                      </div>
-                    </div>
+                      Delete
+                    </Button>
                   </div>
-                </div>
-
-                {/* Card Actions Footer */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 14px', borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
-                  <Button size="sm" variant="outline" icon="ti-edit" onClick={() => openEditModal(cat)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    icon="ti-trash"
-                    disabled={usage.total > 0}
-                    title={usage.total > 0 ? `Used in ${usage.total} places — cannot be deleted` : undefined}
-                    onClick={() => handleDelete(cat)}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                )}
               </div>
-            );
-          })}
 
-          {filteredCategories.length === 0 && (
-            <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '40px 16px' }}>
-              <i className="ti ti-category" aria-hidden="true" />
-              <p>No category matches "{search}".</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* List View (Table) */
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th style={{ width: 110, textAlign: 'center' }}>Course</th>
-                <th style={{ width: 110, textAlign: 'center' }}>Curriculum</th>
-                <th style={{ width: 110, textAlign: 'center' }}>Assessment</th>
-                <th style={{ width: 110, textAlign: 'center' }}>Library</th>
-                <th style={{ width: 140, textAlign: 'center' }}>Total Links</th>
-                <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCategories.map((cat) => {
-                const usage = usageOf(cat.name, ctx);
-                return (
-                  <tr key={cat.id || cat.name}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        {/* Thumbnail & Icon avatar */}
-                        <div style={{ position: 'relative', width: 44, height: 44, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
-                          <img
-                            src={cat.coverImage}
-                            alt={cat.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80';
-                            }}
-                          />
+              {/* Sub-category cards */}
+              {!isCollapsed && (
+                <div style={{ padding: 16 }}>
+                  {categoriesInGroup.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '20px 16px' }}>
+                      <i className="ti ti-folder-off" aria-hidden="true" />
+                      <p>No sub-category in this group yet.</p>
+                      {isRealGroup && (
+                        <Button size="sm" variant="outline" icon="ti-plus" onClick={() => openCreateCategoryModal(group.id)}>
+                          Add the first Sub-Category
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-3" style={{ gap: 16 }}>
+                      {categoriesInGroup.map((cat) => {
+                        const usage = usageOf(cat.name, ctx);
+                        return (
                           <div
+                            key={cat.id || cat.name}
+                            className="card card-interactive"
                             style={{
-                              position: 'absolute',
-                              inset: 0,
-                              background: 'rgba(0,0,0,0.35)',
                               display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#fff',
-                              fontSize: 18,
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              overflow: 'hidden',
+                              borderRadius: 12,
+                              border: '1px solid var(--line)',
                             }}
                           >
-                            <i className={`ti ${cat.icon || 'ti-folder'}`} />
-                          </div>
-                        </div>
+                            <div>
+                              {/* Card Cover Image Header */}
+                              <div style={{ position: 'relative', height: 120, background: 'var(--paper-sunken)', overflow: 'hidden' }}>
+                                <img
+                                  src={cat.coverImage}
+                                  alt={cat.name}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80';
+                                  }}
+                                />
+                                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)' }} />
 
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{cat.name}</span>
-                            {cat.code && (
-                              <span
-                                style={{
-                                  background: 'var(--paper-sunken)',
-                                  color: cat.color || 'var(--rail)',
-                                  padding: '1px 6px',
-                                  borderRadius: 4,
-                                  fontSize: 11,
-                                  fontWeight: 800,
-                                  border: '1px solid var(--line)',
-                                  fontFamily: 'var(--font-mono, monospace)',
-                                }}
+                                <div style={{ position: 'absolute', top: 10, right: 10 }}>
+                                  <span
+                                    style={{
+                                      background: usage.total > 0 ? 'rgba(16, 185, 129, 0.9)' : 'rgba(100, 116, 139, 0.85)',
+                                      color: '#fff',
+                                      padding: '3px 8px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      backdropFilter: 'blur(4px)',
+                                    }}
+                                  >
+                                    {usage.total > 0 ? `${usage.total} links` : 'Unused'}
+                                  </span>
+                                </div>
+
+                                <div
+                                  style={{
+                                    position: 'absolute', bottom: 10, left: 12, width: 36, height: 36, borderRadius: 9,
+                                    background: cat.color || '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center', fontSize: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.25)', border: '2px solid #fff',
+                                  }}
+                                >
+                                  <i className={`ti ${cat.icon || 'ti-folder'}`} />
+                                </div>
+
+                                {cat.code && (
+                                  <div style={{ position: 'absolute', bottom: 12, left: 56 }}>
+                                    <span
+                                      style={{
+                                        background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 8px', borderRadius: 4,
+                                        fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', fontFamily: 'var(--font-mono, monospace)', backdropFilter: 'blur(4px)',
+                                      }}
+                                    >
+                                      {cat.code}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ padding: '14px 14px 10px 14px' }}>
+                                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>
+                                  {cat.name}
+                                </div>
+
+                                <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12, minHeight: 34, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {cat.description || 'No training objective or scope has been described for this sub-category yet.'}
+                                </p>
+
+                                <div
+                                  style={{
+                                    display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6, background: 'var(--paper-sunken)',
+                                    padding: '8px 10px', borderRadius: 8, fontSize: 12,
+                                  }}
+                                >
+                                  <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <i className="ti ti-books" style={{ color: 'var(--rail)' }} />
+                                    <span>Courses: <strong style={{ color: 'var(--ink)' }}>{usage.courseCount}</strong></span>
+                                  </div>
+                                  <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <i className="ti ti-certificate" style={{ color: 'var(--sage)' }} />
+                                    <span>Curricula: <strong style={{ color: 'var(--ink)' }}>{usage.curriculumCount}</strong></span>
+                                  </div>
+                                  <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <i className="ti ti-writing" style={{ color: 'var(--amber)' }} />
+                                    <span>Assessment: <strong style={{ color: 'var(--ink)' }}>{usage.assessmentCount}</strong></span>
+                                  </div>
+                                  <div style={{ color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <i className="ti ti-folders" style={{ color: '#06b6d4' }} />
+                                    <span>Library: <strong style={{ color: 'var(--ink)' }}>{usage.libraryDomainCount}</strong></span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 14px', borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
+                              <Button size="sm" variant="outline" icon="ti-edit" onClick={() => openEditCategoryModal(cat)}>
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                icon="ti-trash"
+                                disabled={usage.total > 0}
+                                title={usage.total > 0 ? `Used in ${usage.total} places — cannot be deleted` : undefined}
+                                onClick={() => handleDeleteCategory(cat)}
                               >
-                                {cat.code}
-                              </span>
-                            )}
+                                Delete
+                              </Button>
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 360, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {cat.description || 'No description.'}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 600, color: usage.courseCount > 0 ? 'var(--ink)' : 'var(--ink-faint)' }}>
-                      {usage.courseCount}
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 600, color: usage.curriculumCount > 0 ? 'var(--ink)' : 'var(--ink-faint)' }}>
-                      {usage.curriculumCount}
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 600, color: usage.assessmentCount > 0 ? 'var(--ink)' : 'var(--ink-faint)' }}>
-                      {usage.assessmentCount}
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 600, color: usage.libraryDomainCount > 0 ? 'var(--ink)' : 'var(--ink-faint)' }}>
-                      {usage.libraryDomainCount}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <Badge tone={usage.total > 0 ? 'sage' : 'slate'} size="sm">
-                        {usage.total > 0 ? `${usage.total} links` : 'Free'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                        <Button size="sm" variant="outline" icon="ti-edit" onClick={() => openEditModal(cat)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          icon="ti-trash"
-                          disabled={usage.total > 0}
-                          title={usage.total > 0 ? `Used in ${usage.total} places — cannot be deleted` : undefined}
-                          onClick={() => handleDelete(cat)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredCategories.length === 0 && (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--ink-soft)' }}>
-                    <i className="ti ti-search" style={{ fontSize: 24, marginBottom: 8, display: 'block', color: 'var(--ink-faint)' }} />
-                    No category matches "{search}".
-                  </td>
-                </tr>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          );
+        })}
+
+        {filteredCategories.length === 0 && (
+          <div className="empty-state" style={{ padding: '40px 16px' }}>
+            <i className="ti ti-category" aria-hidden="true" />
+            <p>No sub-category matches "{search}".</p>
+          </div>
+        )}
+      </div>
+
+      {/* Category Group Modal (Create & Edit) */}
+      {groupModal && (
+        <Modal
+          isOpen
+          title={groupModal.isNew ? 'Create A New Category' : `Edit Category "${groupModal.draft.name}"`}
+          subtitle="Categories are the top level of the taxonomy — Sub-Categories live inside them."
+          onClose={() => setGroupModal(null)}
+          size="md"
+          footer={(
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>* A category name is required</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button variant="ghost" onClick={() => setGroupModal(null)}>Cancel</Button>
+                <Button variant="primary" icon="ti-check" disabled={!groupModal.draft.name.trim()} onClick={handleSaveGroupModal}>
+                  {groupModal.isNew ? 'Create & Add Sub-Category' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          )}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr', gap: 10 }}>
+              <div>
+                <label className="field-label" style={{ fontWeight: 700, marginBottom: 4 }}>
+                  Category Name <span style={{ color: 'var(--rust)' }}>*</span>
+                </label>
+                <input
+                  className="field-input"
+                  placeholder="E.g. Compliance, Leadership..."
+                  value={groupModal.draft.name}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setGroupModal({ ...groupModal, draft: { ...groupModal.draft, name: newName } });
+                    setModalError('');
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="field-label" style={{ fontWeight: 700, marginBottom: 4 }}>Code</label>
+                <input
+                  className="field-input"
+                  style={{ textTransform: 'uppercase', fontFamily: 'var(--font-mono, monospace)', fontWeight: 700 }}
+                  placeholder="e.g. COMPLIANCE"
+                  value={groupModal.draft.code}
+                  onChange={(e) => setGroupModal({ ...groupModal, draft: { ...groupModal.draft, code: e.target.value.toUpperCase() } })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label" style={{ fontWeight: 700, marginBottom: 6 }}>Identity Color</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                {CATEGORY_COLOR_PRESETS.map((color) => {
+                  const isSelected = groupModal.draft.color === color.value;
+                  return (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setGroupModal({ ...groupModal, draft: { ...groupModal.draft, color: color.value } })}
+                      style={{
+                        width: 28, height: 28, borderRadius: '50%', background: color.value,
+                        border: isSelected ? '3px solid var(--ink)' : '2px solid transparent', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12,
+                        boxShadow: isSelected ? '0 0 0 2px rgba(0,0,0,0.15)' : 'none',
+                      }}
+                      title={color.label}
+                    >
+                      {isSelected && <i className="ti ti-check" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label" style={{ fontWeight: 700, marginBottom: 6 }}>Icon</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6, padding: 8, background: 'var(--paper-sunken)', borderRadius: 8, border: '1px solid var(--line)' }}>
+                {CATEGORY_GROUP_ICON_PRESETS.map((icon) => {
+                  const isSelected = groupModal.draft.icon === icon.id;
+                  return (
+                    <button
+                      key={icon.id}
+                      type="button"
+                      onClick={() => setGroupModal({ ...groupModal, draft: { ...groupModal.draft, icon: icon.id } })}
+                      style={{
+                        width: '100%', aspectRatio: '1', borderRadius: 6,
+                        background: isSelected ? groupModal.draft.color || 'var(--rail)' : 'var(--paper-raised)',
+                        color: isSelected ? '#fff' : 'var(--ink)', border: isSelected ? 'none' : '1px solid var(--line)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                      }}
+                      title={icon.label}
+                    >
+                      <i className={`ti ${icon.id}`} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label" style={{ fontWeight: 700, marginBottom: 4 }}>Description</label>
+              <textarea
+                className="field-input"
+                rows={2}
+                style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
+                placeholder="What kind of sub-categories belong under this Category?"
+                value={groupModal.draft.description}
+                onChange={(e) => setGroupModal({ ...groupModal, draft: { ...groupModal.draft, description: e.target.value } })}
+              />
+            </div>
+
+            {modalError && (
+              <div style={{ fontSize: 13, color: 'var(--rust)', fontWeight: 600 }}>
+                <i className="ti ti-alert-triangle" style={{ marginRight: 4 }} />
+                {modalError}
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
 
-      {/* Rich Category Modal (Create & Edit) */}
+      {/* Sub-Category Modal (Create & Edit) */}
       {categoryModal && (
         <Modal
           isOpen
-          title={categoryModal.isNew ? 'Create A New Category' : `Edit Category "${categoryModal.draft.name}"`}
-          subtitle="Set the name, short code, cover image, identity icon and a detailed description."
+          title={categoryModal.isNew ? 'Create A New Sub-Category' : `Edit Sub-Category "${categoryModal.draft.name}"`}
+          subtitle="Choose the parent Category, then set the name, code, cover image, icon and description."
           onClose={() => setCategoryModal(null)}
           size="lg"
           footer={(
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
-                * A category name is required
+                * A Category and Sub-Category name are required
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button variant="ghost" onClick={() => setCategoryModal(null)}>Cancel</Button>
-                <Button variant="primary" icon="ti-check" disabled={!categoryModal.draft.name.trim()} onClick={handleSaveModal}>
-                  {categoryModal.isNew ? 'Create Category' : 'Save Changes'}
+                <Button variant="primary" icon="ti-check" disabled={!categoryModal.draft.name.trim() || !categoryModal.draft.groupId} onClick={handleSaveCategoryModal}>
+                  {categoryModal.isNew ? 'Create Sub-Category' : 'Save Changes'}
                 </Button>
               </div>
             </div>
@@ -666,11 +798,29 @@ export default function AdminCategoryManager() {
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20, alignItems: 'start' }}>
             {/* Left Column: Form Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Step 1: Category (Group) selector — required, chosen before the Sub-Category's own details */}
+              <div>
+                <label className="field-label" style={{ fontWeight: 700, marginBottom: 4 }}>
+                  1. Category (parent group) <span style={{ color: 'var(--rust)' }}>*</span>
+                </label>
+                <select
+                  className="field-select"
+                  style={{ width: '100%' }}
+                  value={categoryModal.draft.groupId || ''}
+                  onChange={(e) => setCategoryModal({ ...categoryModal, draft: { ...categoryModal.draft, groupId: e.target.value } })}
+                >
+                  <option value="">— Choose a category —</option>
+                  {normalizedGroups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name} ({g.code})</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Row 1: Name & Code */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr', gap: 10 }}>
                 <div>
                   <label className="field-label" style={{ fontWeight: 700, marginBottom: 4 }}>
-                    Category Name <span style={{ color: 'var(--rust)' }}>*</span>
+                    2. Sub-Category Name <span style={{ color: 'var(--rust)' }}>*</span>
                   </label>
                   <input
                     className="field-input"
@@ -687,7 +837,6 @@ export default function AdminCategoryManager() {
                       });
                       setModalError('');
                     }}
-                    autoFocus
                   />
                 </div>
 
@@ -819,7 +968,7 @@ export default function AdminCategoryManager() {
                   className="field-input"
                   rows={2}
                   style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
-                  placeholder="Describe the knowledge, skills or operations covered by this category..."
+                  placeholder="Describe the knowledge, skills or operations covered by this sub-category..."
                   value={categoryModal.draft.description}
                   onChange={(e) => setCategoryModal({ ...categoryModal, draft: { ...categoryModal.draft, description: e.target.value } })}
                 />
@@ -976,14 +1125,12 @@ export default function AdminCategoryManager() {
                   />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)' }} />
 
-                  {/* Status Badge */}
                   <div style={{ position: 'absolute', top: 10, right: 10 }}>
                     <span style={{ background: 'rgba(16, 185, 129, 0.9)', color: '#fff', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                       Card Preview
                     </span>
                   </div>
 
-                  {/* Avatar Icon */}
                   <div
                     style={{
                       position: 'absolute',
@@ -1005,7 +1152,6 @@ export default function AdminCategoryManager() {
                     <i className={`ti ${categoryModal.draft.icon || 'ti-folder'}`} />
                   </div>
 
-                  {/* Code */}
                   {categoryModal.draft.code && (
                     <div style={{ position: 'absolute', bottom: 12, left: 60 }}>
                       <span
@@ -1025,14 +1171,16 @@ export default function AdminCategoryManager() {
                   )}
                 </div>
 
-                {/* Preview Content */}
                 <div style={{ padding: '14px 14px 10px 14px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    {normalizedGroups.find((g) => g.id === categoryModal.draft.groupId)?.name || 'No category chosen'}
+                  </div>
                   <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)', marginBottom: 6, minHeight: 20 }}>
-                    {categoryModal.draft.name || 'Category Name...'}
+                    {categoryModal.draft.name || 'Sub-Category Name...'}
                   </div>
 
                   <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 12, minHeight: 34, lineHeight: 1.4 }}>
-                    {categoryModal.draft.description || 'A short description of this category\'s training objective and scope appears here.'}
+                    {categoryModal.draft.description || 'A short description of this sub-category\'s training objective and scope appears here.'}
                   </p>
 
                   <div
