@@ -445,7 +445,7 @@
     </div>
     <div class="sidenav-group">
       <div class="sidenav-label">Hệ thống lõi</div>
-      <a href="#engines" data-nav>8 Engine dùng chung</a>
+      <a href="#engines" data-nav>8 Cơ chế tự động dùng chung</a>
       <a href="#status" data-nav>Trạng thái triển khai</a>
     </div>
   </nav>
@@ -454,7 +454,7 @@
     <section id="overview" class="prose">
       <span class="kicker">Đặc tả chức năng · Lộ trình 1 năm 4 Phase</span>
       <h1 class="page-title">Chức năng &amp; quyền hạn theo từng vai trò trong MM MegaLearn</h1>
-      <p class="lede">Tài liệu này liệt kê <b>toàn bộ 84 tính năng, quyền hạn (capabilities) và lộ trình 4 Phase (12 tháng)</b> sắp xếp theo 6 vai trò phân cấp — từ <b>User Learner</b> (mọi nhân sự) đến <b>System Admin</b> (IT). Mỗi vai trò kế thừa toàn bộ chức năng của các vai trò rank thấp hơn.</p>
+      <p class="lede">Tài liệu này liệt kê <b>toàn bộ 85 tính năng, quyền hạn và lộ trình 4 Phase (12 tháng)</b> sắp xếp theo 6 vai trò phân cấp — từ <b>Nhân viên/Học viên</b> (mọi nhân sự) đến <b>Quản trị hệ thống IT</b>. Mỗi vai trò kế thừa toàn bộ chức năng của các vai trò ở bậc thấp hơn.</p>
       
       <div class="quick-actions" style="display:flex; gap:10px; align-items:center; margin:16px 0 10px; flex-wrap:wrap;">
         <button class="pdf-btn" onclick="exportToPdf()">
@@ -465,21 +465,21 @@
       </div>
 
       <div class="scope-note">
-        <b>Phạm vi:</b> Đây là tài liệu đặc tả chức năng (Functional Specification) chuẩn hóa lộ trình 1 năm cho MM MegaLearn. Mỗi Phase kéo dài 3 tháng (12 tuần) có đầy đủ thời gian đệm cho UAT và Release. Để in hoặc lưu file PDF gửi cấp trên, bấm nút <b>Xuất PDF / In Báo Cáo</b> ở góc trên bên phải.
+        <b>Phạm vi:</b> Đây là tài liệu đặc tả chức năng, chuẩn hóa lộ trình 1 năm cho MM MegaLearn. Mỗi Phase kéo dài 3 tháng (12 tuần) có đầy đủ thời gian đệm cho UAT và Release. Để in hoặc lưu file PDF gửi cấp trên, bấm nút <b>Xuất PDF / In Báo Cáo</b> ở góc trên bên phải.
       </div>
 
       <div class="pipeline">
-        <a href="#role-learner" class="pipe-node" style="border-top:3px solid var(--green)"><span class="pipe-rank">RANK 01</span><span class="pipe-name">User Learner</span></a>
+        <a href="#role-learner" class="pipe-node" style="border-top:3px solid var(--green)"><span class="pipe-rank">BẬC 01</span><span class="pipe-name">Nhân viên / Học viên</span></a>
         <span class="pipe-arrow">→</span>
-        <a href="#role-manager" class="pipe-node" style="border-top:3px solid var(--amber)"><span class="pipe-rank">RANK 02</span><span class="pipe-name">Line Manager</span></a>
+        <a href="#role-manager" class="pipe-node" style="border-top:3px solid var(--amber)"><span class="pipe-rank">BẬC 02</span><span class="pipe-name">Quản lý trực tiếp</span></a>
         <span class="pipe-arrow">→</span>
-        <a href="#role-trainer" class="pipe-node" style="border-top:3px solid var(--green)"><span class="pipe-rank">RANK 03</span><span class="pipe-name">Trainer / L&amp;D</span></a>
+        <a href="#role-trainer" class="pipe-node" style="border-top:3px solid var(--green)"><span class="pipe-rank">BẬC 03</span><span class="pipe-name">Giảng viên / L&amp;D</span></a>
         <span class="pipe-arrow">→</span>
-        <a href="#role-hrbp" class="pipe-node" style="border-top:3px solid var(--blue)"><span class="pipe-rank">RANK 04</span><span class="pipe-name">HRBP</span></a>
+        <a href="#role-hrbp" class="pipe-node" style="border-top:3px solid var(--blue)"><span class="pipe-rank">BẬC 04</span><span class="pipe-name">Đối tác nhân sự (HRBP)</span></a>
         <span class="pipe-arrow">→</span>
-        <a href="#role-useradmin" class="pipe-node" style="border-top:3px solid var(--blue)"><span class="pipe-rank">RANK 05</span><span class="pipe-name">User Admin</span></a>
+        <a href="#role-useradmin" class="pipe-node" style="border-top:3px solid var(--blue)"><span class="pipe-rank">BẬC 05</span><span class="pipe-name">Quản trị nhân sự</span></a>
         <span class="pipe-arrow">→</span>
-        <a href="#role-sysadmin" class="pipe-node" style="border-top:3px solid var(--red)"><span class="pipe-rank">RANK 06</span><span class="pipe-name">System Admin</span></a>
+        <a href="#role-sysadmin" class="pipe-node" style="border-top:3px solid var(--red)"><span class="pipe-rank">BẬC 06</span><span class="pipe-name">Quản trị hệ thống IT</span></a>
       </div>
 
       <div class="stat-row">
@@ -488,7 +488,7 @@
         <div class="stat-tile"><div class="stat-num">34</div><div class="stat-label">Màn hình chức năng</div></div>
         <div class="stat-tile"><div class="stat-num">25</div><div class="stat-label">Quyền hạn (capabilities)</div></div>
         <div class="stat-tile"><div class="stat-num">44</div><div class="stat-label">Use case nghiệp vụ</div></div>
-        <div class="stat-tile"><div class="stat-num">8</div><div class="stat-label">Engine lõi dùng chung</div></div>
+        <div class="stat-tile"><div class="stat-num">8</div><div class="stat-label">Cơ chế tự động dùng chung</div></div>
       </div>
     </section>
 
@@ -510,9 +510,9 @@
         <div class="phase-card" id="phase-1" style="--phase-accent:var(--green); --phase-accent-soft:var(--green-soft); --phase-accent-soft-text:var(--green-soft-text);">
           <div class="phase-num">01</div>
           <div class="phase-body">
-            <h3>Nền Tảng E-Learning Cốt Lõi, Khảo Thí &amp; Báo Cáo Vận Hành (Core MVP)</h3>
+            <h3>Nền Tảng E-Learning Cốt Lõi, Khảo Thí &amp; Báo Cáo Vận Hành</h3>
             <div class="phase-en">Digital Learning MVP &amp; Operations Reporting · Rank 1 Learner &amp; Rank 3/5/6 Trainer &amp; Admin Core · <b>Quý 1 (Tuần 1 – 12)</b></div>
-            <p class="phase-goal">Xây dựng nền tảng học tập trực tuyến cốt lõi cho toàn bộ nhân viên: người học xem và tự học các khóa học đa định dạng (Video/PDF/SCORM), làm bài thi trắc nghiệm rút đề ngẫu nhiên kèm đếm giờ, nhận chứng chỉ số và theo dõi lịch sử; Quản trị viên khởi tạo cây tổ chức 2 nhánh, danh mục nhân sự, tạo khóa học e-Learning, ngân hàng đề thi và cấu hình phân quyền RBAC; Tích hợp 2 báo cáo vận hành cốt lõi (Learning Transcript &amp; Learner Progress Report) cho User Admin, SysAdmin (toàn cty) và Trainer (lớp phụ trách). Hoàn tất kiểm thử UAT và phát hành bản Release v1.0.</p>
+            <p class="phase-goal">Xây dựng nền tảng học tập trực tuyến cốt lõi cho toàn bộ nhân viên: người học xem và tự học các khóa học đa định dạng (Video/PDF/SCORM), làm bài thi trắc nghiệm rút đề ngẫu nhiên kèm đếm giờ, nhận chứng chỉ số và theo dõi lịch sử; Quản trị viên khởi tạo cây tổ chức 2 nhánh, danh mục nhân sự, tạo khóa học e-Learning, ngân hàng đề thi và cấu hình phân quyền theo vai trò; Tích hợp 2 báo cáo vận hành cốt lõi (Learning Transcript &amp; Learner Progress Report) cho User Admin, SysAdmin (toàn cty) và Trainer (lớp phụ trách). Hoàn tất kiểm thử UAT và phát hành bản Release v1.0.</p>
             <div class="phase-deliverables">
               <span class="phase-chip">10 · Cổng người học e-Learning</span>
               <span class="phase-chip">6 · Quản trị tổ chức &amp; khóa học</span>
@@ -524,8 +524,8 @@
           </div>
           <div class="phase-meta">
             <span class="phase-time">Tuần 1 – 12 (Q1)</span>
-            <span class="phase-roles">23 chức năng · Core MVP</span>
-            <span class="phase-status done">✓ Release v1.0 (MVP)</span>
+            <span class="phase-roles">23 chức năng · Nền tảng cốt lõi</span>
+            <span class="phase-status done">✓ Release v1.0 (Nền tảng cốt lõi)</span>
           </div>
         </div>
 
@@ -605,7 +605,7 @@
       <p class="section-sub">Toàn bộ <b>85 chức năng</b> được phân bổ theo 4 Phase. Bấm vào từng Phase bên dưới để lọc danh mục chức năng tương ứng.</p>
       <div class="fn-filter" id="fnFilter">
         <button type="button" class="on" data-phase="all">Tất cả (85)</button>
-        <button type="button" data-phase="1">Phase 1 · Q1: Core MVP (23)</button>
+        <button type="button" data-phase="1">Phase 1 · Q1: Nền tảng cốt lõi (23)</button>
         <button type="button" data-phase="2">Phase 2 · Q2: Operations (20)</button>
         <button type="button" data-phase="3">Phase 3 · Q3: Talent &amp; AI (21)</button>
         <button type="button" data-phase="4">Phase 4 · Q4: Ecosystem (21)</button>
@@ -616,7 +616,7 @@
     <section id="rbac-matrix">
 
       <h2 class="section-title">Ma trận quyền truy cập chức năng (RBAC)</h2>
-      <p class="section-sub">Đối chiếu trực tiếp với <code>src/data/roles.js</code>, sắp xếp theo đúng thứ tự 4 phase ở trên để thuyết trình liền mạch. ✓ = có quyền toàn phần · <span class="mk mk-r" style="position:relative;top:-1px;">GIỚI HẠN</span> = chỉ xem/phạm vi hẹp · − = không có quyền. Cột <b>Phase</b> đối chiếu với lộ trình triển khai; cột <b>Hoàn thành</b> là mốc tuần dự kiến.</p>
+      <p class="section-sub">Đối chiếu trực tiếp với cấu hình phân quyền thực tế trong hệ thống, sắp xếp theo đúng thứ tự 4 Phase ở trên để thuyết trình liền mạch. ✓ = có quyền toàn phần · <span class="mk mk-r" style="position:relative;top:-1px;">GIỚI HẠN</span> = chỉ xem/phạm vi hẹp · − = không có quyền. Cột <b>Phase</b> đối chiếu với lộ trình triển khai; cột <b>Hoàn thành</b> là mốc tuần dự kiến.</p>
       <div class="table-scroll">
         <table class="matrix">
           <thead>
@@ -639,9 +639,9 @@
           <p class="role-summary">Học các khóa thuộc đúng cấp bậc của mình, làm bài thi, nhận chứng chỉ số và có thể gửi đơn xin học vượt đúng 1 cấp liền kề. Nền tảng của toàn bộ 6 vai trò — ai cũng là Learner.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 1 / 6</span>
+          <span class="meta-pill">Thứ bậc 1 / 6</span>
           <span class="meta-pill">Cấp bậc mặc định: 7</span>
-          <span class="meta-pill route">/learner</span>
+          <span class="meta-pill route">Trang chính: /learner</span>
         </div>
       </div>
 
@@ -663,21 +663,21 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">Learner Dashboard</td><td class="scr-route">/learner</td><td class="scr-desc">Thẻ "Tiếp tục học", KPI tiến độ cá nhân, khóa sắp đến hạn, streak học tập.</td></tr>
+          <tr><td class="scr-name">Bảng Điều Khiển Cá Nhân</td><td class="scr-route">/learner</td><td class="scr-desc">Thẻ "Tiếp tục học", các chỉ số tiến độ cá nhân, khóa sắp đến hạn, số ngày học liên tục.</td></tr>
           <tr><td class="scr-name">Khóa Học Của Tôi</td><td class="scr-route">/learner/courses</td><td class="scr-desc"><ul>
             <li>9 tab lọc: Tất cả · Cần tái cấp chứng chỉ · Đang học · Hoàn thành · Quá hạn · Bắt buộc tuân thủ · Theo giáo trình · Đào tạo trực tiếp · Lớp trực tuyến</li>
             <li>Gộp nhóm theo 6 tiêu chí: Phòng ban/Khối, Cấp bậc &amp; lộ trình, Trạng thái, Hình thức đào tạo, Chuyên ngành</li>
           </ul></td></tr>
-          <tr><td class="scr-name">Chi Tiết Khóa Học</td><td class="scr-route">/learner/courses/:id</td><td class="scr-desc">Cấu trúc Course › Module › Lesson; nút "Xin học vượt cấp" xuất hiện khi Level Gap = 1 (REQUESTABLE).</td></tr>
-          <tr><td class="scr-name">Lesson Player</td><td class="scr-route">.../lessons/:id</td><td class="scr-desc">Phát nội dung đa định dạng: Video/YouTube (≥90% thời lượng), PDF/SOP/Text (cuộn ≥90%), SCORM 2004, Slide/PPT, Bộ ảnh — tự động ghi nhận hoàn thành theo ngưỡng từng loại.</td></tr>
-          <tr><td class="scr-name">Assessment Player</td><td class="scr-route">.../assessment</td><td class="scr-desc">Rút đề ngẫu nhiên từ ngân hàng câu hỏi, đếm giờ countdown, tự nộp bài khi hết giờ (chống nộp trùng), hiện đáp án theo 4 chế độ cấu hình.</td></tr>
-          <tr><td class="scr-name">Lớp Trực Tiếp &amp; Webinar</td><td class="scr-route">/learner/classrooms</td><td class="scr-desc">Lọc theo Tất cả · Lớp của tôi · Sắp diễn ra · Thực hành xưởng siêu thị · Hội thảo trực tuyến; quét Live QR (mã xoay 15-30s) để điểm danh, nhận +150 XP.</td></tr>
-          <tr><td class="scr-name">Lộ Trình Học Tập</td><td class="scr-route">/learner/paths</td><td class="scr-desc">Timeline trực quan khung 70-20-10 (70% trải nghiệm thực tế, 20% mentoring, 10% khóa chính quy) theo 7 cấp bậc nghề nghiệp.</td></tr>
-          <tr><td class="scr-name">AI Learning Hub</td><td class="scr-route">/learner/ai-hub</td><td class="scr-desc">Chatbot tra cứu SOP theo 5 chủ đề (Thực phẩm tươi/Bánh mì HACCP, Vận hành quầy kệ, PCCC &amp; Bảo mật, Thương mại điện tử…) + gợi ý khóa học cá nhân hóa theo chức danh.</td></tr>
-          <tr><td class="scr-name">Chứng Chỉ Của Tôi</td><td class="scr-route">/learner/certificates</td><td class="scr-desc">Chứng chỉ số sinh tự động khi hoàn thành (CERT-{courseId}), mã QR tra cứu, cảnh báo hạn tái cấp.</td></tr>
-          <tr><td class="scr-name">Lịch Sử Học Tập</td><td class="scr-route">/learner/history</td><td class="scr-desc">Transcript bất biến (append-only), lọc theo Bài thi · Bài học · Điểm danh QR.</td></tr>
+          <tr><td class="scr-name">Chi Tiết Khóa Học</td><td class="scr-route">/learner/courses/:id</td><td class="scr-desc">Cấu trúc Khóa học › Chương › Bài học; nút "Xin học vượt cấp" chỉ hiện ra khi khóa cao hơn đúng 1 cấp so với cấp hiện tại của người học.</td></tr>
+          <tr><td class="scr-name">Trình Phát Bài Học</td><td class="scr-route">.../lessons/:id</td><td class="scr-desc">Phát nội dung đa định dạng: Video/YouTube (xem ≥90% thời lượng), PDF/SOP/Văn bản (cuộn đọc ≥90%), gói bài giảng chuẩn SCORM, Slide/PPT, Bộ ảnh — tự động ghi nhận hoàn thành theo từng loại.</td></tr>
+          <tr><td class="scr-name">Trình Thi Trắc Nghiệm</td><td class="scr-route">.../assessment</td><td class="scr-desc">Rút đề ngẫu nhiên từ ngân hàng câu hỏi, đếm ngược thời gian làm bài, tự động nộp bài khi hết giờ (không cho nộp trùng lần 2), hiện đáp án theo 4 kiểu cấu hình.</td></tr>
+          <tr><td class="scr-name">Lớp Trực Tiếp &amp; Hội Thảo Trực Tuyến</td><td class="scr-route">/learner/classrooms</td><td class="scr-desc">Lọc theo Tất cả · Lớp của tôi · Sắp diễn ra · Thực hành xưởng siêu thị · Hội thảo trực tuyến; quét mã QR xoay liên tục (đổi mã mỗi 15-30 giây) để điểm danh, được cộng thêm 150 điểm kinh nghiệm.</td></tr>
+          <tr><td class="scr-name">Lộ Trình Học Tập</td><td class="scr-route">/learner/paths</td><td class="scr-desc">Timeline trực quan khung 70-20-10 (70% trải nghiệm thực tế, 20% kèm cặp, 10% khóa chính quy) theo 7 cấp bậc nghề nghiệp.</td></tr>
+          <tr><td class="scr-name">Trợ Lý AI Tra Cứu Quy Trình</td><td class="scr-route">/learner/ai-hub</td><td class="scr-desc">Chatbot trả lời câu hỏi tra cứu quy trình chuẩn theo 5 chủ đề (Thực phẩm tươi/Bánh mì HACCP, Vận hành quầy kệ, PCCC &amp; Bảo mật, Thương mại điện tử…) + gợi ý khóa học phù hợp riêng theo chức danh.</td></tr>
+          <tr><td class="scr-name">Chứng Chỉ Của Tôi</td><td class="scr-route">/learner/certificates</td><td class="scr-desc">Chứng chỉ số tự động cấp khi hoàn thành khóa học, có mã QR để tra cứu xác thực, cảnh báo trước khi cần tái cấp.</td></tr>
+          <tr><td class="scr-name">Lịch Sử Học Tập</td><td class="scr-route">/learner/history</td><td class="scr-desc">Hồ sơ học tập không thể chỉnh sửa/xóa, lọc theo Bài thi · Bài học · Điểm danh QR.</td></tr>
         </tbody>
       </table>
     </section>
@@ -692,9 +692,9 @@
           <p class="role-summary">Giám sát tiến độ học của nhân viên phòng ban (monitoring-only), đề cử khóa học phát triển cá nhân, và đánh giá hành vi Kirkpatrick L3 sau 3–6 tháng. <b>Không</b> có quyền duyệt đơn học vượt cấp.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 2 / 6</span>
+          <span class="meta-pill">Thứ bậc 2 / 6</span>
           <span class="meta-pill">Cấp bậc mặc định: 4</span>
-          <span class="meta-pill route">/manager</span>
+          <span class="meta-pill route">Trang chính: /manager</span>
         </div>
       </div>
 
@@ -711,17 +711,17 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">Manager Dashboard</td><td class="scr-route">/manager</td><td class="scr-desc">Tổng quan đội ngũ: số nhân viên quá hạn, không hoạt động &gt;3 ngày, thi trượt hết lượt ("Needs Attention").</td></tr>
-          <tr><td class="scr-name">Team</td><td class="scr-route">/manager/team</td><td class="scr-desc"><ul>
-            <li><b>Roster</b> — danh sách nhân viên trực thuộc &amp; tiến độ học, nút gửi nhắc nhở 1-chạm (Nudge)</li>
-            <li><b>Skill Gap</b> — ma trận khoảng cách năng lực của đội ngũ</li>
-            <li><b>Action Plans &amp; L3 Review</b> — đánh giá tiến bộ hành vi 1-5 sao sau 3–6 tháng, ký xác nhận (sign-off)</li>
+          <tr><td class="scr-name">Bảng Điều Khiển Đội Ngũ</td><td class="scr-route">/manager</td><td class="scr-desc">Tổng quan đội ngũ: số nhân viên quá hạn, không hoạt động &gt;3 ngày, thi trượt hết lượt ("Cần quan tâm").</td></tr>
+          <tr><td class="scr-name">Quản Lý Đội Ngũ</td><td class="scr-route">/manager/team</td><td class="scr-desc"><ul>
+            <li><b>Danh sách nhân sự</b> — danh sách nhân viên trực thuộc &amp; tiến độ học, nút gửi nhắc nhở 1-chạm (Nudge)</li>
+            <li><b>Khoảng cách năng lực</b> — ma trận so sánh năng lực thực tế với chuẩn của đội ngũ</li>
+            <li><b>Cam kết hành động &amp; Đánh giá hành vi</b> — đánh giá tiến bộ hành vi 1-5 sao sau 3–6 tháng, ký xác nhận</li>
           </ul></td></tr>
-          <tr><td class="scr-name">Courses (Nomination)</td><td class="scr-route">/manager/courses</td><td class="scr-desc">Đề cử/chỉ định khóa học trực tiếp 1:1 cho nhân viên — chọn khóa, đặt hạn hoàn thành, nhập lý do đề cử.</td></tr>
-          <tr><td class="scr-name">Reports</td><td class="scr-route">/manager/reports</td><td class="scr-desc">Báo cáo tuân thủ &amp; hiệu quả đào tạo của phòng ban mình quản lý.</td></tr>
-          <tr><td class="scr-name">Learning / Certificates / Catalog</td><td class="scr-route">/manager/learning…</td><td class="scr-desc">Cổng học tập cá nhân — Manager cũng là Learner (kế thừa toàn bộ chức năng Rank 1).</td></tr>
+          <tr><td class="scr-name">Đề Cử Khóa Học</td><td class="scr-route">/manager/courses</td><td class="scr-desc">Đề cử/chỉ định khóa học trực tiếp 1:1 cho nhân viên — chọn khóa, đặt hạn hoàn thành, nhập lý do đề cử.</td></tr>
+          <tr><td class="scr-name">Báo Cáo</td><td class="scr-route">/manager/reports</td><td class="scr-desc">Báo cáo tuân thủ &amp; hiệu quả đào tạo của phòng ban mình quản lý.</td></tr>
+          <tr><td class="scr-name">Học Tập / Chứng Chỉ / Danh Mục Khóa Học</td><td class="scr-route">/manager/learning…</td><td class="scr-desc">Cổng học tập cá nhân — Quản lý cũng là một Học viên (kế thừa toàn bộ chức năng của bậc thấp nhất).</td></tr>
         </tbody>
       </table>
     </section>
@@ -736,9 +736,9 @@
           <p class="role-summary">Quản lý lớp học trực tiếp, tự soạn khóa Offline/ILT, chiếu Live QR điểm danh thời gian thực, chấm điểm thực hành và xem đánh giá CSAT từ học viên. Chỉ tạo được khóa <b>Trực tiếp</b> — không tạo khóa Online.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 3 / 6</span>
+          <span class="meta-pill">Thứ bậc 3 / 6</span>
           <span class="meta-pill">Cấp bậc mặc định: 3</span>
-          <span class="meta-pill route">/trainer</span>
+          <span class="meta-pill route">Trang chính: /trainer</span>
         </div>
       </div>
 
@@ -753,15 +753,15 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">Lớp Học Phụ Trách</td><td class="scr-route">/trainer</td><td class="scr-desc">Danh sách lớp ILT/Webinar đang giảng dạy — lịch, sĩ số đăng ký, trạng thái buổi học.</td></tr>
-          <tr><td class="scr-name">Điểm Danh</td><td class="scr-route">/trainer/attendance</td><td class="scr-desc">Roster lọc Tất cả · Đã có mặt · Chưa điểm danh; <b>Dynamic Live QR</b> tự xoay mã mỗi 15–30 giây chống chụp ảnh điểm danh hộ; chấm điểm kỹ năng thực hành từng học viên.</td></tr>
-          <tr><td class="scr-name">Báo Cáo Lớp Phụ Trách</td><td class="scr-route">/trainer/reports</td><td class="scr-desc">Bao gồm 3 phân hệ: <b>1. Learning Transcript</b> (Hồ sơ học tập toàn bộ quá trình của học viên trong lớp phụ trách); <b>2. Learner Progress Report</b> (Giám sát % tiến độ, hạn chót, cảnh báo quá hạn học viên trong lớp mình); <b>3. Teaching CSAT</b> (Điểm đánh giá chất lượng giảng dạy).</td></tr>
-          <tr><td class="scr-name">Đánh Giá CSAT</td><td class="scr-route">/trainer/feedback</td><td class="scr-desc">Biểu đồ phân bổ 5-4-3 sao, xu hướng điểm hài lòng theo tháng.</td></tr>
-          <tr><td class="scr-name">Xưởng Thực Hành</td><td class="scr-route">/trainer/labs</td><td class="scr-desc">Danh mục phòng Lab/xưởng thực hành siêu thị (bánh, thịt, quầy kệ…) khả dụng để đặt lịch dạy.</td></tr>
-          <tr><td class="scr-name">Course Builder (Offline)</td><td class="scr-route">/trainer/courses/new</td><td class="scr-desc">Soạn khóa Offline/ILT kéo-thả cấu trúc Module › Lesson, quản lý version.</td></tr>
-          <tr><td class="scr-name">Training Ops</td><td class="scr-route">/trainer/training-ops</td><td class="scr-desc">Đặt phòng thực hành/họp — chặn trùng lịch theo (phòng, ngày); upload danh sách học viên hàng loạt (Batch Upload).</td></tr>
+          <tr><td class="scr-name">Lớp Học Phụ Trách</td><td class="scr-route">/trainer</td><td class="scr-desc">Danh sách lớp trực tiếp/hội thảo trực tuyến đang giảng dạy — lịch, sĩ số đăng ký, trạng thái buổi học.</td></tr>
+          <tr><td class="scr-name">Điểm Danh</td><td class="scr-route">/trainer/attendance</td><td class="scr-desc">Danh sách học viên lọc Tất cả · Đã có mặt · Chưa điểm danh; <b>mã QR xoay liên tục</b> đổi mã mỗi 15–30 giây để chống chụp ảnh điểm danh hộ; chấm điểm kỹ năng thực hành từng học viên.</td></tr>
+          <tr><td class="scr-name">Báo Cáo Lớp Phụ Trách</td><td class="scr-route">/trainer/reports</td><td class="scr-desc">Bao gồm 3 phân hệ: <b>1. Hồ sơ học tập (Learning Transcript)</b> — quá trình học của học viên trong lớp phụ trách; <b>2. Báo cáo tiến độ (Learner Progress Report)</b> — giám sát % tiến độ, hạn chót, cảnh báo quá hạn học viên trong lớp mình; <b>3. Đánh giá giảng dạy (Teaching CSAT)</b> — điểm đánh giá chất lượng giảng dạy.</td></tr>
+          <tr><td class="scr-name">Đánh Giá Chất Lượng Giảng Dạy</td><td class="scr-route">/trainer/feedback</td><td class="scr-desc">Biểu đồ phân bổ 5-4-3 sao, xu hướng điểm hài lòng theo tháng.</td></tr>
+          <tr><td class="scr-name">Xưởng Thực Hành</td><td class="scr-route">/trainer/labs</td><td class="scr-desc">Danh mục phòng thực hành/xưởng tại siêu thị (bánh, thịt, quầy kệ…) khả dụng để đặt lịch dạy.</td></tr>
+          <tr><td class="scr-name">Soạn Khóa Học Trực Tiếp</td><td class="scr-route">/trainer/courses/new</td><td class="scr-desc">Soạn khóa học trực tiếp kéo-thả cấu trúc Chương › Bài học, quản lý các phiên bản chỉnh sửa.</td></tr>
+          <tr><td class="scr-name">Vận Hành Đào Tạo</td><td class="scr-route">/trainer/training-ops</td><td class="scr-desc">Đặt phòng thực hành/họp — chặn trùng lịch theo (phòng, ngày); tải lên danh sách học viên hàng loạt cùng lúc.</td></tr>
         </tbody>
       </table>
     </section>
@@ -776,9 +776,9 @@
           <p class="role-summary">Phân tích ma trận khoảng cách năng lực, quy hoạch kế nhiệm theo khung 70-20-10, giám sát tuân thủ theo vùng và đề xuất nhân tài vào giáo trình. Chỉ <b>xem &amp; đề xuất</b> giáo trình — không tự tạo khóa học hay tự duyệt.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 4 / 6</span>
+          <span class="meta-pill">Thứ bậc 4 / 6</span>
           <span class="meta-pill">Cấp bậc mặc định: 2</span>
-          <span class="meta-pill route">/hrbp</span>
+          <span class="meta-pill route">Trang chính: /hrbp</span>
         </div>
       </div>
 
@@ -793,13 +793,13 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">Skill Gap Matrix</td><td class="scr-route">/hrbp</td><td class="scr-desc">Ma trận khoảng cách năng lực toàn tổ chức so với chuẩn định biên chức danh, danh sách ticket can thiệp L&amp;D đề xuất.</td></tr>
-          <tr><td class="scr-name">Succession Pipeline</td><td class="scr-route">/hrbp/succession</td><td class="scr-desc">Quy hoạch kế nhiệm &amp; Talent Pool theo khung 70-20-10 ("Thánh Gióng Pipeline") cho các vị trí chủ chốt.</td></tr>
-          <tr><td class="scr-name">Compliance Heatmap</td><td class="scr-route">/hrbp/compliance</td><td class="scr-desc">Sơ đồ về tuân thủ khu vực khóa bắt buộc theo vùng/siêu thị (Xanh ≥90% · Vàng 70-89% · Đỏ &lt;70%).</td></tr>
-          <tr><td class="scr-name">Curriculum</td><td class="scr-route">/hrbp/curriculum</td><td class="scr-desc"><ul>
-            <li><b>Giáo trình của bản thân</b> — giáo trình được phân bổ cho HRBP như một Learner</li>
+          <tr><td class="scr-name">Ma Trận Khoảng Cách Năng Lực</td><td class="scr-route">/hrbp</td><td class="scr-desc">Ma trận khoảng cách năng lực toàn tổ chức so với chuẩn định biên chức danh, danh sách đề xuất can thiệp đào tạo.</td></tr>
+          <tr><td class="scr-name">Quy Hoạch Kế Nhiệm</td><td class="scr-route">/hrbp/succession</td><td class="scr-desc">Quy hoạch kế nhiệm &amp; nguồn nhân tài kế cận theo khung 70-20-10 cho các vị trí chủ chốt.</td></tr>
+          <tr><td class="scr-name">Sơ Đồ Nhiệt Tuân Thủ</td><td class="scr-route">/hrbp/compliance</td><td class="scr-desc">Sơ đồ trực quan mức độ tuân thủ khóa bắt buộc theo vùng/siêu thị (Xanh ≥90% · Vàng 70-89% · Đỏ &lt;70%).</td></tr>
+          <tr><td class="scr-name">Giáo Trình</td><td class="scr-route">/hrbp/curriculum</td><td class="scr-desc"><ul>
+            <li><b>Giáo trình của bản thân</b> — giáo trình được phân bổ cho HRBP với vai trò là một học viên</li>
             <li><b>Đã đề xuất</b> — theo dõi trạng thái đề xuất nhân tài đang chờ User Admin/SysAdmin duyệt</li>
             <li><b>Toàn bộ giáo trình</b> — chỉ xem, không sửa/xóa; dùng để chọn ứng viên đề xuất</li>
           </ul></td></tr>
@@ -817,9 +817,9 @@
           <p class="role-summary">Quản trị hồ sơ 100+ nhân sự, cấu hình cây tổ chức, phân bổ khóa học bắt buộc theo 10 phạm vi, phân công giảng viên, soạn mọi hình thức khóa học và <b>phê duyệt đơn học vượt cấp</b> toàn hệ thống.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 5 / 6</span>
+          <span class="meta-pill">Thứ bậc 5 / 6</span>
           <span class="meta-pill">Cấp bậc mặc định: 2</span>
-          <span class="meta-pill route">/user-admin</span>
+          <span class="meta-pill route">Trang chính: /user-admin</span>
         </div>
       </div>
 
@@ -837,15 +837,15 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">Danh Mục Nhân Sự</td><td class="scr-route">/user-admin</td><td class="scr-desc">Hồ sơ &gt;100 nhân sự mẫu — tìm kiếm đa tiêu chí, CRUD hồ sơ, Talent Profile 4 tab (Kế nhiệm, Lịch sử nghề nghiệp, Dự án chiến lược, Điểm số đào tạo).</td></tr>
-          <tr><td class="scr-name">Nhóm Tùy Chỉnh</td><td class="scr-route">tab GROUPS</td><td class="scr-desc">Tạo nhóm nhân sự động (theo tiêu chí lọc) hoặc thủ công (chọn tay) để làm đối tượng gán khóa học nhanh.</td></tr>
-          <tr><td class="scr-name">Cây Cơ Cấu Tổ Chức</td><td class="scr-route">/user-admin/hierarchy</td><td class="scr-desc">Cây tổ chức 2 nhánh (42 khối): Trụ sở chính (BU›Division›Department) &amp; Chuỗi siêu thị (Area›Cluster›Store); đóng/mở từng cấp, thêm nhanh Division/Department/Store.</td></tr>
-          <tr><td class="scr-name">Khung Cấp Bậc</td><td class="scr-route">/user-admin/job-levels</td><td class="scr-desc">Cấu hình thang 7 cấp bậc nghề nghiệp (Level 1 BOM → Level 7 Nhân viên tuyến đầu), gắn title cho từng vị trí.</td></tr>
-          <tr><td class="scr-name">Lộ Trình Cấp Bậc</td><td class="scr-route">/admin/roadmaps</td><td class="scr-desc">Cấu hình lộ trình học chuẩn theo Division, Department hoặc Level; gộp nhóm hiển thị theo 4 tiêu chí.</td></tr>
-          <tr><td class="scr-name">Báo Cáo Đào Tạo &amp; Tiến Độ</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Quản lý toàn diện: <b>Learning Transcript</b> (hồ sơ học tập 10 trường thông tin của 100% nhân sự) và <b>Learner Progress Report</b> (giám sát tiến độ học tập thời gian thực, lọc theo 42 khối, đôn đốc giục học).</td></tr>
-          <tr><td class="scr-name">Course Builder (đầy đủ)</td><td class="scr-route">/admin/courses/new</td><td class="scr-desc">Soạn cả 3 hình thức: E-Learning, Virtual Class (Zoom/Teams), In-Person ILT; cấu hình <b>Auto-Rules gán theo 10 phạm vi</b> (BU/Division/Dept/Area/StoreType/Cluster/Store/Level/Role/User) kèm bắt buộc Due Date; ngân hàng câu hỏi thủ công hoặc import CSV.</td></tr>
+          <tr><td class="scr-name">Danh Mục Nhân Sự</td><td class="scr-route">/user-admin</td><td class="scr-desc">Hồ sơ &gt;100 nhân sự mẫu — tìm kiếm đa tiêu chí, thêm/sửa/xóa hồ sơ, Hồ sơ nhân tài 4 tab (Kế nhiệm, Lịch sử nghề nghiệp, Dự án chiến lược, Điểm số đào tạo).</td></tr>
+          <tr><td class="scr-name">Nhóm Tùy Chỉnh</td><td class="scr-route">/user-admin (tab Nhóm)</td><td class="scr-desc">Tạo nhóm nhân sự tự động (theo tiêu chí lọc) hoặc thủ công (chọn tay) để làm đối tượng gán khóa học nhanh.</td></tr>
+          <tr><td class="scr-name">Cây Cơ Cấu Tổ Chức</td><td class="scr-route">/user-admin/hierarchy</td><td class="scr-desc">Cây tổ chức 2 nhánh (42 khối): Trụ sở chính (Khối›Ngành›Phòng ban) &amp; Chuỗi siêu thị (Vùng›Cụm›Siêu thị); đóng/mở từng cấp, thêm nhanh Ngành/Phòng ban/Siêu thị.</td></tr>
+          <tr><td class="scr-name">Khung Cấp Bậc</td><td class="scr-route">/user-admin/job-levels</td><td class="scr-desc">Cấu hình thang 7 cấp bậc nghề nghiệp (Cấp 1 Ban điều hành → Cấp 7 Nhân viên tuyến đầu), gắn chức danh cho từng vị trí.</td></tr>
+          <tr><td class="scr-name">Lộ Trình Cấp Bậc</td><td class="scr-route">/admin/roadmaps</td><td class="scr-desc">Cấu hình lộ trình học chuẩn theo Ngành, Phòng ban hoặc Cấp bậc; gộp nhóm hiển thị theo 4 tiêu chí.</td></tr>
+          <tr><td class="scr-name">Báo Cáo Đào Tạo &amp; Tiến Độ</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Quản lý toàn diện: <b>Hồ sơ học tập (Learning Transcript)</b> — 10 trường thông tin của 100% nhân sự, và <b>Báo cáo tiến độ (Learner Progress Report)</b> — giám sát tiến độ học tập thời gian thực, lọc theo 42 khối, đôn đốc giục học.</td></tr>
+          <tr><td class="scr-name">Soạn Khóa Học (đầy đủ)</td><td class="scr-route">/admin/courses/new</td><td class="scr-desc">Soạn cả 3 hình thức: E-Learning, Lớp học trực tuyến (Zoom/Teams), Đào tạo trực tiếp; cấu hình <b>quy tắc tự động gán khóa theo 10 phạm vi tổ chức</b> (khối, ngành, phòng ban, vùng, loại siêu thị, cụm, siêu thị, cấp bậc, vai trò, cá nhân) kèm bắt buộc đặt hạn hoàn thành; nhập câu hỏi thủ công hoặc nhập hàng loạt từ file Excel/CSV.</td></tr>
           <tr><td class="scr-name">Duyệt Học Vượt Cấp</td><td class="scr-route">/approvals</td><td class="scr-desc">Tiếp nhận &amp; xử lý toàn bộ đơn xin học vượt đúng 1 cấp liền kề từ mọi nhân sự trong hệ thống.</td></tr>
         </tbody>
       </table>
@@ -861,9 +861,9 @@
           <p class="role-summary">Toàn quyền kỹ thuật: pipeline đồng bộ SAP HRIS, nhật ký audit ISO 27001, chính sách bảo mật &amp; chống gian lận thi cử, quản trị phân quyền toàn bộ 6 role kể cả User Admin.</p>
         </div>
         <div class="role-meta">
-          <span class="meta-pill">Rank 6 / 6 · Cao nhất</span>
+          <span class="meta-pill">Thứ bậc 6 / 6 · Cao nhất</span>
           <span class="meta-pill">Cấp bậc mặc định: 1</span>
-          <span class="meta-pill route">/sysadmin</span>
+          <span class="meta-pill route">Trang chính: /sysadmin</span>
         </div>
       </div>
 
@@ -881,71 +881,63 @@
 
       <h3 class="sub-title">Màn hình &amp; chức năng chi tiết</h3>
       <table class="screens">
-        <thead><tr><th>Màn hình</th><th>Route</th><th>Chức năng</th></tr></thead>
+        <thead><tr><th>Màn hình</th><th>Đường dẫn</th><th>Chức năng</th></tr></thead>
         <tbody>
-          <tr><td class="scr-name">HRIS Sync</td><td class="scr-route">/sysadmin</td><td class="scr-desc">Tích hợp &amp; đồng bộ dữ liệu tổ chức/nhân sự qua API Pipeline (mô phỏng SAP SuccessFactors), nút Manual Sync Trigger, nhật ký đồng bộ chi tiết.</td></tr>
-          <tr><td class="scr-name">Audit Logs</td><td class="scr-route">/sysadmin/audit</td><td class="scr-desc">Nhật ký bảo mật &amp; giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001.</td></tr>
-          <tr><td class="scr-name">Security Policies</td><td class="scr-route">/sysadmin/policies</td><td class="scr-desc">Chính sách chống gian lận thi cử: Dynamic Watermark (tên/mã NV/IP mờ trên màn hình thi), cảnh báo chuyển tab khi đang thi.</td></tr>
-          <tr><td class="scr-name">Role Governance</td><td class="scr-route">/sysadmin/roles</td><td class="scr-desc">Quản trị ma trận phân quyền chi tiết của toàn bộ 6 role — bật/tắt từng capability, kể cả cho vai trò User Admin.</td></tr>
-          <tr><td class="scr-name">Báo Cáo &amp; Giám Sát Hệ Thống</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Toàn quyền xem, trích xuất và kiểm toán dữ liệu <b>Learning Transcript</b> &amp; <b>Learner Progress Report</b> của toàn bộ 6 vai trò trên hệ thống.</td></tr>
-          <tr><td class="scr-name">System Configuration</td><td class="scr-route">/sysadmin/org-config</td><td class="scr-desc">8 nhóm cấu hình: Auto-Assignment &amp; SLA · Bảo mật/Watermark/Anti-cheat · SAP HRIS · Cơ cấu tổ chức 2 nhánh · Danh mục khóa học · Thông báo &amp; mẫu tin nhắn · Ma trận RBAC · Chứng chỉ &amp; Sao lưu hệ thống.</td></tr>
-          <tr><td class="scr-name">Platform Development</td><td class="scr-route">—</td><td class="scr-desc">Thêm module/function mới, sửa schema dữ liệu &amp; migration, quản trị hạ tầng máy chủ/CDN/backup.</td></tr>
+          <tr><td class="scr-name">Đồng Bộ Dữ Liệu Nhân Sự</td><td class="scr-route">/sysadmin</td><td class="scr-desc">Tích hợp &amp; đồng bộ dữ liệu tổ chức/nhân sự với hệ thống SAP SuccessFactors (bản demo hiện mô phỏng đường truyền này), có nút đồng bộ thủ công và nhật ký đồng bộ chi tiết.</td></tr>
+          <tr><td class="scr-name">Nhật Ký Kiểm Toán</td><td class="scr-route">/sysadmin/audit</td><td class="scr-desc">Nhật ký bảo mật &amp; giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001.</td></tr>
+          <tr><td class="scr-name">Chính Sách Bảo Mật</td><td class="scr-route">/sysadmin/policies</td><td class="scr-desc">Chính sách chống gian lận thi cử: hiện mờ tên/mã nhân viên/địa chỉ mạng lên màn hình thi để răn đe, cảnh báo khi học viên chuyển sang tab khác lúc đang thi.</td></tr>
+          <tr><td class="scr-name">Quản Trị Phân Quyền</td><td class="scr-route">/sysadmin/roles</td><td class="scr-desc">Quản trị ma trận phân quyền chi tiết của toàn bộ 6 vai trò — bật/tắt từng quyền hạn, kể cả cho vai trò User Admin.</td></tr>
+          <tr><td class="scr-name">Báo Cáo &amp; Giám Sát Hệ Thống</td><td class="scr-route">/admin/reports</td><td class="scr-desc">Toàn quyền xem, trích xuất và kiểm toán dữ liệu <b>Hồ sơ học tập (Learning Transcript)</b> &amp; <b>Báo cáo tiến độ (Learner Progress Report)</b> của toàn bộ 6 vai trò trên hệ thống.</td></tr>
+          <tr><td class="scr-name">Cấu Hình Hệ Thống</td><td class="scr-route">/sysadmin/org-config</td><td class="scr-desc">8 nhóm cấu hình: Tự động gán khóa &amp; cam kết thời gian xử lý · Bảo mật/Chống gian lận thi cử · Đồng bộ SAP · Cơ cấu tổ chức 2 nhánh · Danh mục khóa học · Thông báo &amp; mẫu tin nhắn · Ma trận phân quyền · Chứng chỉ &amp; Sao lưu hệ thống.</td></tr>
+          <tr><td class="scr-name">Phát Triển Nền Tảng</td><td class="scr-route">—</td><td class="scr-desc">Thêm chức năng mới, chỉnh sửa cấu trúc dữ liệu, quản trị hạ tầng máy chủ và sao lưu hệ thống.</td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- ============ ENGINES ============ -->
     <section id="engines">
-      <h2 class="section-title">8 Engine lõi dùng chung mọi vai trò</h2>
-      <p class="section-sub">Các cơ chế nghiệp vụ chạy nền, không thuộc riêng UI của role nào — là "luật chơi" áp dụng xuyên suốt toàn hệ thống.</p>
+      <h2 class="section-title">8 Cơ chế tự động dùng chung cho mọi vai trò</h2>
+      <p class="section-sub">Các cơ chế xử lý ngầm phía sau, không gắn riêng với màn hình của vai trò nào — là "luật chơi chung" áp dụng xuyên suốt toàn hệ thống.</p>
       <div class="engine-grid">
         <div class="engine-card">
-          <div class="engine-num">ENGINE 01</div>
-          <h4>Course Progress Engine</h4>
-          <p>Tính lại % tiến độ từ dữ liệu gốc (không dùng cờ rời rạc). Khóa không thi: % = lesson bắt buộc hoàn thành / tổng lesson. Khóa có thi: Lesson 70% + Điểm đạt 30%.</p>
-          <div class="engine-tags"><span class="engine-tag">recomputeEnrollment</span><span class="engine-tag">BR-018/019</span></div>
+          <div class="engine-num">CƠ CHẾ 01</div>
+          <h4>Tự Động Tính Tiến Độ Học</h4>
+          <p>Luôn tự tính lại % tiến độ từ dữ liệu học thực tế (không đánh dấu tay). Khóa không thi: tính theo số bài học bắt buộc đã hoàn thành trên tổng số bài học. Khóa có thi: 70% theo bài học đã học + 30% theo điểm thi.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 02</div>
-          <h4>Assessment Engine</h4>
-          <p>Rút đề ngẫu nhiên (xáo câu &amp; đáp án), đếm giờ, tự nộp bài chống trùng (idempotent), lưu lịch sử bất biến (append-only), 4 chế độ hiện đáp án.</p>
-          <div class="engine-tags"><span class="engine-tag">submittedRef</span><span class="engine-tag">BR-022→026</span></div>
+          <div class="engine-num">CƠ CHẾ 02</div>
+          <h4>Hệ Thống Thi Trắc Nghiệm</h4>
+          <p>Rút đề ngẫu nhiên (xáo câu hỏi &amp; đáp án), đếm giờ làm bài, tự nộp bài khi hết giờ và không cho nộp trùng lần 2, lưu lại toàn bộ lịch sử làm bài không thể sửa/xóa, có 4 kiểu hiển thị đáp án sau khi thi.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 03</div>
-          <h4>Certificate &amp; Recertification</h4>
-          <p>Chứng chỉ derived tự động khi COMPLETED. Vòng đời NONE→ACTIVE→DUE_SOON→EXPIRED theo <code>validityPeriodMonths</code>; 3 hình thức tái cấp (học lại/chỉ thi/workshop).</p>
-          <div class="engine-tags"><span class="engine-tag">recertification.js</span></div>
+          <div class="engine-num">CƠ CHẾ 03</div>
+          <h4>Chứng Chỉ Số &amp; Tái Cấp</h4>
+          <p>Tự động cấp chứng chỉ số ngay khi hoàn thành khóa học. Chứng chỉ có vòng đời rõ ràng: Còn hiệu lực → Sắp hết hạn → Đã hết hạn, theo đúng thời hạn đã cấu hình cho từng khóa; hỗ trợ 3 hình thức tái cấp khi hết hạn (học lại toàn bộ, chỉ thi lại, hoặc tham gia workshop).</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 04</div>
-          <h4>Kirkpatrick L1–L4 &amp; Action Plan</h4>
-          <p>Khảo sát CSAT (L1) → cam kết Action Plan 90 ngày → Manager đánh giá hành vi L3 sau 3-6 tháng (sign-off) → tổng hợp báo cáo ROI L4.</p>
-          <div class="engine-tags"><span class="engine-tag">BR-027/028</span></div>
+          <div class="engine-num">CƠ CHẾ 04</div>
+          <h4>Đo Lường Hiệu Quả Đào Tạo (Kirkpatrick) &amp; Cam Kết Hành Động</h4>
+          <p>Khảo sát mức hài lòng ngay sau khóa học → nhân viên cam kết áp dụng vào công việc trong 90 ngày → Quản lý trực tiếp đánh giá thay đổi hành vi sau 3–6 tháng (ký xác nhận) → tổng hợp thành báo cáo hiệu quả đầu tư đào tạo.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 05</div>
-          <h4>Auto-Assignment Engine</h4>
-          <p>So khớp tổ chức người dùng với 10 phạm vi gán khóa Mandatory, tự tạo Enrollment; chặn publish nếu thiếu Due Date.</p>
-          <div class="engine-tags"><span class="engine-tag">BR-009/010/011</span></div>
+          <div class="engine-num">CƠ CHẾ 05</div>
+          <h4>Tự Động Gán Khóa Học</h4>
+          <p>Tự động đối chiếu phòng ban/chi nhánh/cấp bậc của từng nhân viên với 10 phạm vi gán khóa bắt buộc, tự động ghi danh khi khớp điều kiện; không cho phát hành khóa bắt buộc nếu chưa đặt hạn hoàn thành.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 06</div>
-          <h4>Room / Lab Booking Guard</h4>
-          <p>Chặn trùng lịch đặt phòng thực hành/họp theo cặp (roomId, ngày) — hiển thị cảnh báo conflict tức thời.</p>
-          <div class="engine-tags"><span class="engine-tag">BR-030</span></div>
+          <div class="engine-num">CƠ CHẾ 06</div>
+          <h4>Chặn Trùng Lịch Phòng Học/Xưởng Thực Hành</h4>
+          <p>Không cho đặt 2 lớp học/cuộc họp vào cùng một phòng thực hành trong cùng một ngày — báo xung đột lịch ngay khi phát hiện trùng.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 07</div>
-          <h4>Gamification Engine</h4>
-          <p>Điểm kinh nghiệm (XP), chuỗi ngày học liên tục (streak), huy hiệu, bảng xếp hạng theo phòng ban &amp; toàn công ty.</p>
-          <div class="engine-tags"><span class="engine-tag">BR-029</span></div>
+          <div class="engine-num">CƠ CHẾ 07</div>
+          <h4>Trò Chơi Hóa Học Tập</h4>
+          <p>Tích điểm kinh nghiệm, đếm số ngày học liên tục, trao huy hiệu, xếp hạng thi đua theo phòng ban &amp; toàn công ty.</p>
         </div>
         <div class="engine-card">
-          <div class="engine-num">ENGINE 08</div>
-          <h4>AI Learning Hub</h4>
-          <p>Hỏi-đáp tra cứu SOP theo ngữ nghĩa, gợi ý khóa học cá nhân hóa theo chức danh &amp; lịch sử học tập.</p>
-          <div class="engine-tags"><span class="engine-tag">FR-AI-001→003</span></div>
+          <div class="engine-num">CƠ CHẾ 08</div>
+          <h4>Trợ Lý AI Tra Cứu Quy Trình</h4>
+          <p>Trả lời câu hỏi tra cứu quy trình chuẩn (SOP) một cách thông minh, gợi ý khóa học phù hợp riêng cho từng người theo chức danh &amp; lịch sử học tập.</p>
         </div>
       </div>
     </section>
@@ -960,22 +952,22 @@
           <p>Toàn bộ luồng nghiệp vụ, 8 engine ở trên, UI 6 vai trò và quy tắc tính toán chạy hoàn chỉnh trên front-end với dữ liệu mock — đủ để demo, đào tạo nội bộ, và làm đặc tả nghiệm thu cho đội backend.</p>
         </div>
         <div class="legend-card">
-          <span class="legend-badge target">◐ MỤC TIÊU — CẦN BACKEND</span>
-          <p>Chưa tồn tại trong code, cần xây khi lên production:</p>
+          <span class="legend-badge target">◐ MỤC TIÊU — CẦN XÂY DỰNG THÊM</span>
+          <p>Chưa có sẵn ở bản demo hiện tại, cần xây dựng khi triển khai chính thức:</p>
           <ul>
-            <li>Xác thực thật qua SSO/SAML/Azure AD (Role Switcher hiện chỉ là công cụ demo)</li>
-            <li>Database quan hệ (PostgreSQL/MySQL) thay cho mock data + localStorage</li>
-            <li>Object storage (S3/GCS) cho video, PDF, gói SCORM</li>
-            <li>Đồng bộ thật với SAP SuccessFactors HRIS</li>
-            <li>WebSocket/Socket.io cho Live QR xoay mã thời gian thực</li>
-            <li>RBAC kiểm soát ở cả Backend Interceptor, không chỉ phía client</li>
+            <li>Đăng nhập thật qua hệ thống xác thực tập trung của công ty (bản demo hiện chỉ cho chọn nhanh vai trò để xem thử)</li>
+            <li>Cơ sở dữ liệu chính thức thay cho dữ liệu mẫu đang lưu tạm trên trình duyệt</li>
+            <li>Kho lưu trữ file thật cho video, PDF, gói bài giảng</li>
+            <li>Đồng bộ dữ liệu thật với hệ thống nhân sự SAP SuccessFactors</li>
+            <li>Kênh cập nhật trực tiếp để mã QR điểm danh tự xoay theo thời gian thực</li>
+            <li>Kiểm soát phân quyền chặt chẽ ở cả phía máy chủ, không chỉ phía trình duyệt</li>
           </ul>
         </div>
       </div>
     </section>
 
     <footer class="doc-footer">
-      <div><b>Nguồn dữ liệu:</b> đối chiếu trực tiếp với <code>lms-app/src/data/roles.js</code>, <code>src/App.jsx</code>, <code>src/pages/**</code>, <code>src/features/layout/AppHeader.jsx</code> và <code>MM_MEGALEARN_MASTER_DOCUMENTATION.md</code>.</div>
+      <div><b>Nguồn dữ liệu:</b> đối chiếu trực tiếp với mã nguồn thực tế của hệ thống MM MegaLearn (cấu hình vai trò &amp; phân quyền, danh sách màn hình, menu điều hướng của từng vai trò) và tài liệu đặc tả tổng thể của dự án.</div>
       <div>Người biên soạn: nkhoa1512 · Ngày cập nhật: 31/08/2026 · Phiên bản: FUNC-SPEC-MMVN-v1.0</div>
     </footer>
   </main>
@@ -997,17 +989,47 @@
     canManageSkillMatrix:"Quản lý ma trận khoảng cách năng lực (Skill Gap)",
     canManageSuccession:"Quy hoạch kế nhiệm &amp; Talent Pool 70-20-10",
     canProposeCurriculum:"Đề xuất nhân tài vào giáo trình (không tự duyệt)",
-    canManageUsers:"Quản trị hồ sơ nhân sự (CRUD master data)",
+    canManageUsers:"Quản trị hồ sơ nhân sự (thêm, sửa, xóa dữ liệu gốc)",
     canAllocateCourses:"Phân bổ khóa học bắt buộc theo phạm vi tổ chức",
     canAssignTrainers:"Phân công giảng viên phụ trách lớp học",
     canConfigureOrg:"Cấu hình cây tổ chức 2 nhánh (thêm Division/Dept/Store)",
     canManageLevelRoadmaps:"Cấu hình lộ trình học chuẩn theo từng cấp bậc",
     canManageCurriculum:"Tạo / sửa / xóa Giáo trình &amp; phân bổ trực tiếp",
     canCreateVirtualClass:"Tạo lớp học trực tuyến (Zoom / Teams)",
-    canConfigureSystem:"Cấu hình hệ thống (HRIS / SSO / bảo mật / anti-cheat)",
-    canViewAuditLogs:"Xem nhật ký audit log bảo mật ISO 27001",
-    canManageAllRoles:"Quản trị phân quyền toàn bộ 6 role, kể cả User Admin",
-    canDevelopPlatform:"Toàn quyền kỹ thuật nền tảng, schema, hạ tầng"
+    canConfigureSystem:"Cấu hình hệ thống (đồng bộ nhân sự / đăng nhập tập trung / bảo mật / chống gian lận thi cử)",
+    canViewAuditLogs:"Xem nhật ký kiểm toán bảo mật theo chuẩn ISO 27001",
+    canManageAllRoles:"Quản trị phân quyền toàn bộ 6 vai trò, kể cả User Admin",
+    canDevelopPlatform:"Toàn quyền kỹ thuật nền tảng: cấu trúc dữ liệu, hạ tầng máy chủ"
+  };
+
+  // Nhãn tiếng Việt ngắn gọn hiển thị cho người đọc — key ở trên chỉ dùng để đối
+  // chiếu nội bộ với cấu hình phân quyền thực tế trong hệ thống, không hiển thị trực tiếp.
+  var CAP_LABELS = {
+    canLearn:"Học tập cá nhân",
+    canRequestLevelSkip:"Xin học vượt cấp",
+    canApproveLevelSkip:"Duyệt học vượt cấp",
+    canViewTeam:"Xem đội ngũ",
+    canViewCsat:"Xem đánh giá CSAT",
+    canAuthorOfflineCourses:"Soạn khóa trực tiếp",
+    canAuthorOnlineCourses:"Soạn khóa trực tuyến",
+    canTeach:"Đứng lớp giảng dạy",
+    canBeAssignedToClass:"Được phân công lớp",
+    canManageAttendance:"Quản lý điểm danh",
+    canViewOrgProgress:"Xem tiến độ toàn tổ chức",
+    canManageSkillMatrix:"Quản lý khoảng cách năng lực",
+    canManageSuccession:"Quản lý kế nhiệm",
+    canProposeCurriculum:"Đề xuất giáo trình",
+    canManageUsers:"Quản trị hồ sơ nhân sự",
+    canAllocateCourses:"Phân bổ khóa học",
+    canAssignTrainers:"Phân công giảng viên",
+    canConfigureOrg:"Cấu hình cơ cấu tổ chức",
+    canManageLevelRoadmaps:"Quản lý lộ trình cấp bậc",
+    canManageCurriculum:"Quản lý giáo trình",
+    canCreateVirtualClass:"Tạo lớp trực tuyến",
+    canConfigureSystem:"Cấu hình hệ thống",
+    canViewAuditLogs:"Xem nhật ký kiểm toán",
+    canManageAllRoles:"Quản trị phân quyền",
+    canDevelopPlatform:"Phát triển nền tảng"
   };
 
   var ROLES = {
@@ -1025,7 +1047,7 @@
     ROLES[roleId].caps.forEach(function(key){
       var chip = document.createElement('span');
       chip.className = 'cap-chip';
-      chip.innerHTML = '<b>' + key + '</b> · ' + CAPS[key];
+      chip.innerHTML = '<b>' + (CAP_LABELS[key] || key) + '</b> · ' + CAPS[key];
       wrap.appendChild(chip);
     });
   });
@@ -1044,14 +1066,14 @@
     {id:"F-03", phase:1, group:"G1", name:"Khóa học của tôi", en:"My Courses", route:"/learner/courses", roles:"Mọi vai trò", desc:"Danh sách toàn bộ khóa được gán cho cá nhân với <b>9 tab lọc</b> (Đang học, Hoàn thành, Bắt buộc tuân thủ...) và <b>6 cách gộp nhóm</b>, hiển thị % tiến độ tính lại từ dữ liệu gốc và hạn chót."},
     {id:"F-04", phase:1, group:"G1", name:"Chi tiết khóa học", en:"Course Detail", route:"/learner/courses/:courseId", roles:"Mọi vai trò", desc:"Cấu trúc phân cấp Course › Module › Lesson với trạng thái từng bài, điều kiện tiên quyết và nút vào học bài kế tiếp."},
     {id:"F-05", phase:1, group:"G1", name:"Trình phát bài học", en:"Lesson Player", route:"/learner/courses/:courseId/lessons/:lessonId", roles:"Mọi vai trò", desc:"Phát nội dung đa định dạng và tự động ghi nhận hoàn thành theo ngưỡng: Video/YouTube (≥90%), PDF/SOP (≥90%), SCORM 2004, Slide/PPT và Bộ ảnh."},
-    {id:"F-06", phase:1, group:"G1", name:"Trình thi trắc nghiệm", en:"Assessment Player", route:"/learner/courses/:courseId/assessment", roles:"Mọi vai trò", desc:"Rút đề ngẫu nhiên từ ngân hàng câu hỏi, đồng hồ đếm ngược countdown, tự nộp bài chống trùng (idempotent), hỗ trợ 4 chế độ hiện đáp án và lưu lịch sử thi."},
+    {id:"F-06", phase:1, group:"G1", name:"Trình thi trắc nghiệm", en:"Assessment Player", route:"/learner/courses/:courseId/assessment", roles:"Mọi vai trò", desc:"Rút đề ngẫu nhiên từ ngân hàng câu hỏi, đồng hồ đếm ngược thời gian làm bài, tự động nộp bài khi hết giờ và không cho nộp trùng lần 2, hỗ trợ 4 chế độ hiện đáp án và lưu lịch sử thi."},
     {id:"F-07", phase:1, group:"G1", name:"Danh mục toàn bộ khóa học", en:"Full Course Catalog", route:"/learner/catalog", roles:"Mọi vai trò", desc:"Kho học liệu công ty với 6 tab (All, Online, In-Person, Curriculum, Assessment, Library), tìm kiếm và lọc theo chuyên ngành/cấp bậc."},
     {id:"F-11", phase:1, group:"G1", name:"Chứng chỉ của tôi", en:"My Certificates", route:"/learner/certificates", roles:"Mọi vai trò", desc:"Chứng chỉ số được sinh tự động khi hoàn thành khóa học (mã CERT-{id}), kèm mã QR tra cứu và hiển thị vòng đời Active / Due Soon / Expired."},
-    {id:"F-12", phase:1, group:"G1", name:"Lịch sử học tập & Audit", en:"Learning History & Audit Trail", route:"/learner/history", roles:"Mọi vai trò", desc:"Bảng ghi hoạt động học tập bất biến (append-only) phục vụ đối chiếu kiểm toán tuân thủ, lọc theo Bài thi, Bài học và Ghi danh."},
-    {id:"F-15", phase:1, group:"G1", name:"Không gian học tập dùng chung", en:"My Learning Workspace", route:"/my-learning · /my-certificates", roles:"Mọi vai trò", desc:"Menu tự học dùng chung cho cả 6 vai trò (Manager, Trainer, HRBP, Admin đều có cổng tự học cá nhân riêng mà không cần chuyển role)."},
-    {id:"F-34", phase:1, group:"G5", name:"Danh mục nhân sự", en:"Employee Directory & Talent Profile", route:"/user-admin", roles:"User Admin · SysAdmin", desc:"Hồ sơ nhân sự toàn công ty: tìm kiếm, thêm, sửa, xóa, nhập danh sách hàng loạt qua file CSV và xem hồ sơ Talent Profile cơ bản."},
-    {id:"F-36", phase:1, group:"G5", name:"Cây cơ cấu tổ chức", en:"Dual-Branch Organization Tree", route:"/user-admin/hierarchy", roles:"User Admin · SysAdmin", desc:"Cây tổ chức hai nhánh với 42 khối: Trụ sở chính (BU › Division › Dept) và Chuỗi siêu thị (Area › Cluster › Store)."},
-    {id:"F-37", phase:1, group:"G5", name:"Khung cấp bậc nghề nghiệp", en:"Job Level Framework (7 Levels)", route:"/user-admin/job-levels", roles:"User Admin · SysAdmin", desc:"Cấu hình thang 7 cấp bậc nghề nghiệp từ Level 1 (Ban điều hành) đến Level 7 (Tuyến đầu siêu thị), làm tham chiếu phân bổ khóa học."},
+    {id:"F-12", phase:1, group:"G1", name:"Lịch sử học tập & Kiểm toán", en:"Learning History & Audit Trail", route:"/learner/history", roles:"Mọi vai trò", desc:"Bảng ghi hoạt động học tập không thể chỉnh sửa/xóa, phục vụ đối chiếu kiểm toán tuân thủ, lọc theo Bài thi, Bài học và Ghi danh."},
+    {id:"F-15", phase:1, group:"G1", name:"Không gian học tập dùng chung", en:"My Learning Workspace", route:"/my-learning · /my-certificates", roles:"Mọi vai trò", desc:"Menu tự học dùng chung cho cả 6 vai trò (Manager, Trainer, HRBP, Admin đều có cổng tự học cá nhân riêng mà không cần chuyển vai trò)."},
+    {id:"F-34", phase:1, group:"G5", name:"Danh mục nhân sự", en:"Employee Directory & Talent Profile", route:"/user-admin", roles:"User Admin · SysAdmin", desc:"Hồ sơ nhân sự toàn công ty: tìm kiếm, thêm, sửa, xóa, nhập danh sách hàng loạt qua file CSV và xem hồ sơ nhân tài cơ bản."},
+    {id:"F-36", phase:1, group:"G5", name:"Cây cơ cấu tổ chức", en:"Dual-Branch Organization Tree", route:"/user-admin/hierarchy", roles:"User Admin · SysAdmin", desc:"Cây tổ chức hai nhánh với 42 khối: Trụ sở chính (Khối › Ngành › Phòng ban) và Chuỗi siêu thị (Vùng › Cụm › Siêu thị)."},
+    {id:"F-37", phase:1, group:"G5", name:"Khung cấp bậc nghề nghiệp", en:"Job Level Framework (7 Levels)", route:"/user-admin/job-levels", roles:"User Admin · SysAdmin", desc:"Cấu hình thang 7 cấp bậc nghề nghiệp từ Cấp 1 (Ban điều hành) đến Cấp 7 (Tuyến đầu siêu thị), làm tham chiếu phân bổ khóa học."},
     {id:"F-42", phase:1, group:"G5", name:"Soạn khóa học E-Learning & Đề thi", en:"Course Builder (E-Learning)", route:"/admin/courses/new", roles:"User Admin · SysAdmin", desc:"Trình soạn khóa e-Learning: tạo cấu trúc Module › Lesson, tải tài liệu video/PDF/SCORM, và khởi tạo ngân hàng câu hỏi trắc nghiệm kèm đáp án."},
     {id:"F-43", phase:1, group:"G5", name:"Quản lý danh mục khóa học", en:"Course Catalog Management", route:"/admin/courses", roles:"User Admin · SysAdmin", desc:"Trung tâm quản lý học liệu: thêm, sửa, đổi trạng thái vòng đời (Draft, Published, Archived) và phân loại khóa học."},
     {id:"F-46", phase:1, group:"G5", name:"Quản lý chuyên ngành đào tạo", en:"Category Management", route:"/admin/categories", roles:"User Admin · SysAdmin", desc:"Quản lý bộ danh mục chuyên ngành MM (HACCP, An toàn lao động, Chuỗi cung ứng lạnh, Vận hành quầy kệ, Dịch vụ khách hàng...)."},
@@ -1059,9 +1081,9 @@
     {id:"F-63", phase:1, group:"G5", name:"Báo cáo giám sát tiến độ học viên", en:"Learner Progress Report", route:"/admin/reports · /trainer/reports", roles:"User Admin · SysAdmin (toàn bộ) · Trainer (lớp phụ trách)", desc:"Theo dõi &amp; giám sát tiến độ học tập hiện tại của nhân viên (đặc biệt với các khóa đang học): Employee, Course, Progress %, Status, Last Activity, Due Date, Days Remaining / Overdue. Cảnh báo sớm nguy cơ quá hạn để đôn đốc giục học."},
     {id:"F-50", phase:1, group:"G6", name:"Nhật ký kiểm toán bảo mật", en:"Security Audit Log", route:"/sysadmin/audit", roles:"SysAdmin", desc:"Nhật ký bảo mật và giám sát phiên đăng nhập toàn hệ thống theo chuẩn ISO 27001 phục vụ kiểm toán và điều tra sự cố."},
     {id:"F-52", phase:1, group:"G6", name:"Quản trị phân quyền vai trò", en:"Role Governance", route:"/sysadmin/roles", roles:"SysAdmin", desc:"Ma trận phân quyền chi tiết của toàn bộ 6 vai trò: bật/tắt từng quyền hạn (capability) độc lập."},
-    {id:"F-54", phase:1, group:"G7", name:"Engine tính tiến độ học tập", en:"Course Progress Engine", route:"recomputeEnrollment", roles:"Chạy nền", desc:"Tính lại % tiến độ từ dữ liệu gốc (bài học hoàn thành + điểm thi trắc nghiệm) đảm bảo tính toàn vẹn."},
-    {id:"F-55", phase:1, group:"G7", name:"Engine thi trắc nghiệm", en:"Assessment Engine", route:"submittedRef · BR-022→026", roles:"Chạy nền", desc:"Xáo trộn câu hỏi và đáp án, đếm giờ, nộp bài chống trùng lặp (idempotent) và chấm điểm tự động."},
-    {id:"F-56", phase:1, group:"G7", name:"Engine chứng chỉ số", en:"Certificate Engine", route:"recertification.js", roles:"Chạy nền", desc:"Tự động sinh chứng chỉ số ngay khi đạt điều kiện hoàn thành khóa học và theo dõi hạn hiệu lực."},
+    {id:"F-54", phase:1, group:"G7", name:"Tự động tính tiến độ học tập", en:"Course Progress Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Tính lại % tiến độ từ dữ liệu học thực tế (bài học đã hoàn thành + điểm thi trắc nghiệm) để đảm bảo số liệu luôn đúng."},
+    {id:"F-55", phase:1, group:"G7", name:"Tự động chấm thi trắc nghiệm", en:"Assessment Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Xáo trộn câu hỏi và đáp án, đếm giờ làm bài, không cho nộp bài trùng lần 2 và tự động chấm điểm."},
+    {id:"F-56", phase:1, group:"G7", name:"Tự động cấp chứng chỉ số", en:"Certificate Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Tự động sinh chứng chỉ số ngay khi đạt điều kiện hoàn thành khóa học và theo dõi hạn hiệu lực."},
 
     /* ---------- PHASE 2 · QUÝ 2 (Tuần 13–24) · VẬN HÀNH TRỰC TIẾP & ĐỘI NGŨ (20) ---------- */
     {id:"F-08", phase:2, group:"G1", name:"Lớp trực tiếp & Điểm danh QR", en:"Live Classrooms & QR Check-in", route:"/learner/classrooms", roles:"Mọi vai trò", desc:"Học viên đăng ký lớp học thực hành tại siêu thị hoặc webinar và quét mã Live QR để điểm danh."},
@@ -1079,29 +1101,29 @@
     {id:"F-28", phase:2, group:"G3", name:"Soạn khóa học trực tiếp (ILT)", en:"Course Builder (Offline / ILT)", route:"/trainer/courses/new", roles:"Trainer", desc:"Trình soạn khóa dành riêng cho Giảng viên: dựng bài học thực hành, gắn tài liệu xưởng và thiết lập lịch học."},
     {id:"F-29", phase:2, group:"G3", name:"Báo cáo chất lượng giảng dạy", en:"CSAT & Teaching Quality Report", route:"/trainer/reports", roles:"Trainer", desc:"Báo cáo tổng hợp hiệu quả giảng dạy cá nhân: điểm CSAT trung bình, tỷ lệ hoàn thành lớp và điểm thi học viên."},
     {id:"F-35", phase:2, group:"G5", name:"Nhóm nhân sự tùy chỉnh", en:"Custom Groups", route:"/user-admin", roles:"User Admin · SysAdmin", desc:"Tạo nhóm nhân sự động theo tiêu chí hoặc thủ công để gán khóa học nhanh cho các chiến dịch đào tạo."},
-    {id:"F-38", phase:2, group:"G5", name:"Phân bổ khóa theo 10 phạm vi", en:"Course Allocation By Org Scope", route:"/user-admin/allocation", roles:"User Admin · SysAdmin", desc:"Tự động gán khóa bắt buộc theo 10 phạm vi tổ chức (BU, Division, Dept, Area, Cluster, Store, Level, Role...)."},
+    {id:"F-38", phase:2, group:"G5", name:"Phân bổ khóa theo 10 phạm vi", en:"Course Allocation By Org Scope", route:"/user-admin/allocation", roles:"User Admin · SysAdmin", desc:"Tự động gán khóa bắt buộc theo 10 phạm vi tổ chức (Khối, Ngành, Phòng ban, Vùng, Cụm, Siêu thị, Cấp bậc, Vai trò...)."},
     {id:"F-39", phase:2, group:"G5", name:"Phân công giảng viên", en:"Trainer Assignment By Branch", route:"/user-admin/trainers", roles:"User Admin · SysAdmin", desc:"Phân công giảng viên phụ trách lớp theo chi nhánh và chuyên ngành, kiểm soát tải giảng dạy."},
     {id:"F-41", phase:2, group:"G5", name:"Duyệt đơn học vượt cấp", en:"Level Skip Approvals", route:"/approvals", roles:"User Admin · SysAdmin", desc:"Hàng đợi tiếp nhận và phê duyệt đơn xin học vượt 1 cấp bậc từ nhân viên toàn hệ thống."},
     {id:"F-45", phase:2, group:"G5", name:"Mẫu chứng chỉ & Tái cấp", en:"Certificate & Recertification Templates", route:"/admin/certifications", roles:"User Admin · SysAdmin", desc:"Thiết kế mẫu chứng chỉ, đặt thời hạn hiệu lực và cấu hình 3 hình thức tái cấp (học lại, thi lại, workshop)."},
-    {id:"F-58", phase:2, group:"G7", name:"Engine tự động gán khóa học", en:"Auto-Assignment Engine", route:"BR-009/010/011", roles:"Chạy nền", desc:"Tự động so khớp tổ chức của người dùng và tạo bản ghi ghi danh khi có khóa bắt buộc mới."},
+    {id:"F-58", phase:2, group:"G7", name:"Tự động gán khóa học bắt buộc", en:"Auto-Assignment Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Tự động so khớp tổ chức của người dùng và tạo bản ghi ghi danh khi có khóa bắt buộc mới."},
 
     /* ---------- PHASE 3 · QUÝ 3 (Tuần 25–36) · NHÂN TÀI (HRBP), 70-20-10 & AI HUB (21) ---------- */
     {id:"F-09", phase:3, group:"G1", name:"Lộ trình học tập cá nhân 70-20-10", en:"My Learning Roadmap (70-20-10)", route:"/learner/paths", roles:"Mọi vai trò", desc:"Timeline trực quan lộ trình phát triển khung 70% trải nghiệm, 20% kèm cặp, 10% khóa chính quy theo 7 cấp bậc."},
     {id:"F-10", phase:3, group:"G1", name:"AI Learning Hub", en:"AI Learning Hub", route:"/learner/ai-hub", roles:"Mọi vai trò", desc:"Trợ lý hỏi-đáp tra cứu quy trình chuẩn SOP siêu thị theo ngữ nghĩa (HACCP, Vận hành quầy kệ, PCCC, Dịch vụ KH)."},
-    {id:"F-19", phase:3, group:"G2", name:"Cam kết hành động & Đánh giá L3", en:"Action Plan & Kirkpatrick L3 Review", route:"/manager/team", roles:"Line Manager", desc:"Kế hoạch hành động 90 ngày sau khóa học và đánh giá tiến bộ hành vi 1-5 sao của Quản lý sau 3-6 tháng (sign-off)."},
-    {id:"F-30", phase:3, group:"G4", name:"Ma trận khoảng cách năng lực", en:"Skill Gap Matrix", route:"/hrbp", roles:"HR Business Partner", desc:"So sánh năng lực thực tế với chuẩn định biên chức danh toàn tổ chức, tự động sinh ticket can thiệp L&D."},
-    {id:"F-31", phase:3, group:"G4", name:"Quy hoạch kế nhiệm & Talent Pool", en:"Succession Planning & Talent Pool", route:"/hrbp/succession", roles:"HR Business Partner", desc:"Đường ống kế nhiệm cho các vị trí chủ chốt theo khung 70-20-10, đo độ sẵn sàng và lộ trình phát triển."},
+    {id:"F-19", phase:3, group:"G2", name:"Cam kết hành động & Đánh giá hành vi", en:"Action Plan & Kirkpatrick L3 Review", route:"/manager/team", roles:"Line Manager", desc:"Kế hoạch hành động 90 ngày sau khóa học và đánh giá tiến bộ hành vi 1-5 sao của Quản lý sau 3-6 tháng (ký xác nhận)."},
+    {id:"F-30", phase:3, group:"G4", name:"Ma trận khoảng cách năng lực", en:"Skill Gap Matrix", route:"/hrbp", roles:"HR Business Partner", desc:"So sánh năng lực thực tế với chuẩn định biên chức danh toàn tổ chức, tự động tạo đề xuất can thiệp đào tạo."},
+    {id:"F-31", phase:3, group:"G4", name:"Quy hoạch kế nhiệm & Nguồn nhân tài kế cận", en:"Succession Planning & Talent Pool", route:"/hrbp/succession", roles:"HR Business Partner", desc:"Lộ trình kế nhiệm cho các vị trí chủ chốt theo khung 70-20-10, đo độ sẵn sàng và lộ trình phát triển."},
     {id:"F-32", phase:3, group:"G4", name:"Sơ đồ nhiệt tuân thủ khu vực", en:"Regional Compliance Heatmap", route:"/hrbp/compliance", roles:"HR Business Partner", desc:"Bản đồ nhiệt tỷ lệ hoàn thành khóa bắt buộc theo vùng và siêu thị (Xanh ≥90%, Vàng 70-89%, Đỏ <70%)."},
     {id:"F-33", phase:3, group:"G4", name:"Giáo trình & Đề cử nhân tài", en:"Curriculum & Talent Nomination", route:"/hrbp/curriculum", roles:"HR Business Partner", desc:"HRBP theo dõi giáo trình và gửi đề xuất đề cử nhân tài vào chương trình đào tạo trọng điểm."},
-    {id:"F-40", phase:3, group:"G5", name:"Quản lý lộ trình cấp bậc", en:"Level Roadmap Management", route:"/admin/roadmaps", roles:"User Admin · SysAdmin", desc:"Cấu hình lộ trình học chuẩn theo Division, Dept hoặc Job Level với các chặng khóa học bắt buộc."},
+    {id:"F-40", phase:3, group:"G5", name:"Quản lý lộ trình cấp bậc", en:"Level Roadmap Management", route:"/admin/roadmaps", roles:"User Admin · SysAdmin", desc:"Cấu hình lộ trình học chuẩn theo Ngành, Phòng ban hoặc Cấp bậc với các chặng khóa học bắt buộc."},
     {id:"F-44", phase:3, group:"G5", name:"Trung tâm chi phí đào tạo", en:"Training Cost Center", route:"/admin/cost-center", roles:"User Admin · SysAdmin", desc:"Quản lý ngân sách đào tạo 5 tab: Tổng quan thu chi, Bảng giá khóa học, Theo nhân viên và Sổ cái giao dịch."},
     {id:"F-47", phase:3, group:"G5", name:"Trung tâm điều hành L&D", en:"Executive L&D Command Hub", route:"/admin", roles:"User Admin · SysAdmin", desc:"Bảng điều khiển điều hành theo dõi tình trạng tuân thủ của 16 khối và siêu thị (Sẵn sàng kiểm toán / Rủi ro)."},
     {id:"F-48", phase:3, group:"G5", name:"Bộ 5 báo cáo L&D điều hành", en:"Executive L&D Reports & ROI", route:"/admin/reports", roles:"Admin · Trainer", desc:"Bộ 5 báo cáo: CSAT, Khung ROI Kirkpatrick 4 cấp, Bản đồ năng lực, Chi phí ngân sách và Bảng xếp hạng tuân thủ (xuất Excel 5 sheet)."},
-    {id:"F-51", phase:3, group:"G6", name:"Chính sách bảo mật & Chống gian lận", en:"Security & Anti-Cheating Policies", route:"/sysadmin/policies", roles:"SysAdmin", desc:"Watermark động in mờ tên/IP/mã NV trên màn hình thi và cảnh báo/ghi nhận chuyển tab."},
-    {id:"F-53", phase:3, group:"G6", name:"Cấu hình hệ thống & Mẫu tin nhắn", en:"System Configuration & Templates", route:"/sysadmin/org-config", roles:"SysAdmin", desc:"Cấu hình SLA học tập, mẫu tin nhắn thông báo (quá hạn, gán khóa, chứng chỉ) và chính sách hệ thống."},
-    {id:"F-57", phase:3, group:"G7", name:"Engine Kirkpatrick L1-L4", en:"Kirkpatrick & Action Plan Engine", route:"BR-027/028", roles:"Chạy nền", desc:"Chuỗi liên hoàn: Khảo sát L1 → Cam kết Action Plan 90 ngày L2 → Manager đánh giá L3 → Tổng hợp ROI L4."},
-    {id:"F-59", phase:3, group:"G7", name:"Engine chống trùng lịch phòng", en:"Room / Lab Booking Guard", route:"BR-030", roles:"Chạy nền", desc:"Chặn trùng lịch phòng thực hành/họp theo cặp (phòng, ngày) và cảnh báo xung đột tức thời."},
-    {id:"F-61", phase:3, group:"G7", name:"Engine AI Learning Hub", en:"AI Learning Hub Engine", route:"FR-AI-001→003", roles:"Chạy nền", desc:"Truy xuất thông tin quy trình SOP theo mô hình ngữ nghĩa (Semantic Search & RAG)."},
+    {id:"F-51", phase:3, group:"G6", name:"Chính sách bảo mật & Chống gian lận", en:"Security & Anti-Cheating Policies", route:"/sysadmin/policies", roles:"SysAdmin", desc:"Hiện mờ tên/địa chỉ mạng/mã nhân viên lên màn hình thi để răn đe, và cảnh báo/ghi nhận khi học viên chuyển sang tab khác lúc đang thi."},
+    {id:"F-53", phase:3, group:"G6", name:"Cấu hình hệ thống & Mẫu tin nhắn", en:"System Configuration & Templates", route:"/sysadmin/org-config", roles:"SysAdmin", desc:"Cấu hình cam kết thời gian xử lý học tập, mẫu tin nhắn thông báo (quá hạn, gán khóa, chứng chỉ) và chính sách hệ thống."},
+    {id:"F-57", phase:3, group:"G7", name:"Tự động đo hiệu quả đào tạo (Kirkpatrick)", en:"Kirkpatrick & Action Plan Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Chuỗi liên hoàn: Khảo sát hài lòng → Cam kết hành động 90 ngày → Quản lý đánh giá thay đổi hành vi → Tổng hợp báo cáo hiệu quả đầu tư đào tạo."},
+    {id:"F-59", phase:3, group:"G7", name:"Tự động chặn trùng lịch phòng", en:"Room / Lab Booking Guard", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Chặn trùng lịch phòng thực hành/họp theo cặp (phòng, ngày) và cảnh báo xung đột tức thời."},
+    {id:"F-61", phase:3, group:"G7", name:"AI tra cứu quy trình", en:"AI Learning Hub Engine", route:"Chạy tự động — không có màn hình riêng", roles:"Chạy nền", desc:"Tìm kiếm thông tin quy trình chuẩn (SOP) một cách thông minh, hiểu đúng ý câu hỏi của người dùng thay vì chỉ tìm từ khóa trùng khớp."},
     {id:"P2-06", phase:3, group:"H1", name:"Ứng dụng di động cho nhân viên siêu thị", en:"Mobile App (Offline-first)", route:"iOS & Android", roles:"Mọi vai trò", desc:"Ứng dụng di động cho nhân viên tuyến đầu: tải bài học xem ngoại tuyến, quét Live QR điểm danh bằng camera điện thoại."},
     {id:"P2-07", phase:3, group:"H1", name:"Hệ thống thông báo đa kênh", en:"Multi-channel Notifications", route:"Zalo · Push · Email", roles:"Toàn hệ thống", desc:"Gửi thông báo gán khóa và nhắc hạn qua Zalo OA, thông báo đẩy ứng dụng di động và Email."},
     {id:"P2-08", phase:3, group:"H1", name:"Live QR thời gian thực (WebSocket)", en:"Realtime Live QR (WebSocket)", route:"WebSocket Engine", roles:"Trainer · Learner", desc:"Kênh WebSocket đồng bộ Live QR tự xoay và cập nhật sĩ số điểm danh tức thì trên màn hình giảng viên."},
@@ -1109,27 +1131,27 @@
     {id:"P3-02", phase:3, group:"H2", name:"Trợ lý AI soạn khóa học từ SOP", en:"AI Course Authoring Assistant", route:"/admin/courses", roles:"Trainer · User Admin", desc:"Tải tài liệu Word/PDF quy trình SOP lên, AI tự động sinh dàn ý module, nội dung bài học và bộ câu hỏi trắc nghiệm."},
 
     /* ---------- PHASE 4 · QUÝ 4 (Tuần 37–48) · HỆ SINH THÁI & CHUẨN DOANH NGHIỆP (21) ---------- */
-    {id:"F-49", phase:4, group:"G6", name:"Đồng bộ dữ liệu SAP HRIS", en:"HRIS Data Integration & Sync", route:"/sysadmin", roles:"SysAdmin", desc:"Đường ống tích hợp API đồng bộ 2 chiều với SAP HRIS: tự động nhận cơ cấu tổ chức, nhân sự và trả ngược chứng chỉ."},
-    {id:"P2-01", phase:4, group:"H1", name:"Bảo mật nâng cao & SSO", en:"SSO / SAML & Azure AD", route:"SysAdmin Security", roles:"SysAdmin", desc:"Xác thực SSO doanh nghiệp, xác thực 2 lớp bắt buộc cho quản trị viên và tự động khóa tài khoản khi nghỉ việc."},
-    {id:"P2-02", phase:4, group:"H1", name:"Tối ưu hóa tải lớn 20.000+ người", en:"Enterprise Scale Optimization", route:"Database Cluster", roles:"SysAdmin", desc:"Tối ưu hóa truy vấn cơ sở dữ liệu PostgreSQL và cụm máy chủ chịu tải cao cho 20.000+ nhân sự học đồng thời."},
-    {id:"P2-03", phase:4, group:"H1", name:"Kiểm soát an toàn API", en:"Comprehensive API Security Guard", route:"API Gateway", roles:"SysAdmin", desc:"Kiểm soát tường lửa ứng dụng (WAF), giới hạn tần suất gọi API (Rate Limiting) và bảo mật RBAC máy chủ."},
-    {id:"P2-04", phase:4, group:"H1", name:"Xử lý lệch dữ liệu & Tự động hóa SAP", en:"Automated SAP HRIS Pipeline", route:"Backend Pipeline", roles:"SysAdmin", desc:"Cơ chế tự động hóa đồng bộ SAP theo lịch định kỳ, tự động thử lại khi gián đoạn và cảnh báo sai lệch dữ liệu."},
-    {id:"P2-05", phase:4, group:"H1", name:"Lưu trữ học liệu CDN & SCORM/xAPI", en:"Object Storage & SCORM/xAPI Runtime", route:"S3 / CDN Engine", roles:"Toàn hệ thống", desc:"Lưu trữ video và học liệu trên Cloud Object Storage phát qua CDN, kèm runtime xAPI/SCORM 2004 chuẩn."},
-    {id:"P3-03", phase:4, group:"H2", name:"Học tập thích ứng (Adaptive Learning)", en:"Adaptive Learning Path", route:"Adaptive Engine", roles:"Mọi vai trò", desc:"Tự động điều chỉnh độ khó và thứ tự bài học theo kết quả làm bài thực tế của từng học viên."},
+    {id:"F-49", phase:4, group:"G6", name:"Đồng bộ dữ liệu với hệ thống nhân sự SAP", en:"HRIS Data Integration & Sync", route:"/sysadmin", roles:"SysAdmin", desc:"Kết nối đồng bộ 2 chiều với hệ thống nhân sự SAP: tự động nhận cơ cấu tổ chức, dữ liệu nhân sự và gửi ngược lại kết quả chứng chỉ."},
+    {id:"P2-01", phase:4, group:"H1", name:"Đăng nhập tập trung & Bảo mật nâng cao", en:"SSO / SAML & Azure AD", route:"Bảo mật hệ thống (SysAdmin)", roles:"SysAdmin", desc:"Đăng nhập một lần dùng chung tài khoản công ty, bắt buộc xác thực 2 lớp cho quản trị viên và tự động khóa tài khoản khi nhân viên nghỉ việc."},
+    {id:"P2-02", phase:4, group:"H1", name:"Tối ưu hiệu năng cho 20.000+ người dùng", en:"Enterprise Scale Optimization", route:"Hạ tầng máy chủ", roles:"SysAdmin", desc:"Tối ưu tốc độ truy vấn cơ sở dữ liệu và mở rộng cụm máy chủ để chịu tải cao khi có tới 20.000+ nhân sự học cùng lúc."},
+    {id:"P2-03", phase:4, group:"H1", name:"Kiểm soát an toàn kết nối hệ thống", en:"Comprehensive API Security Guard", route:"Bảo mật hệ thống (SysAdmin)", roles:"SysAdmin", desc:"Tường lửa bảo vệ ứng dụng, giới hạn số lần gọi hệ thống trong một khoảng thời gian để chống tấn công, và kiểm soát phân quyền chặt chẽ ở phía máy chủ."},
+    {id:"P2-04", phase:4, group:"H1", name:"Tự động hóa &amp; xử lý lệch dữ liệu khi đồng bộ SAP", en:"Automated SAP HRIS Pipeline", route:"Đồng bộ dữ liệu (chạy nền)", roles:"SysAdmin", desc:"Tự động đồng bộ với hệ thống SAP theo lịch định kỳ, tự động thử lại khi bị gián đoạn và cảnh báo khi phát hiện dữ liệu sai lệch."},
+    {id:"P2-05", phase:4, group:"H1", name:"Lưu trữ &amp; phát học liệu tốc độ cao", en:"Object Storage & SCORM/xAPI Runtime", route:"Hạ tầng lưu trữ", roles:"Toàn hệ thống", desc:"Lưu trữ video và học liệu trên nền tảng đám mây, phát qua mạng lưới máy chủ tốc độ cao trên toàn quốc, tương thích chuẩn bài giảng SCORM 2004."},
+    {id:"P3-03", phase:4, group:"H2", name:"Học tập thích ứng theo năng lực", en:"Adaptive Learning Path", route:"Chạy tự động — không có màn hình riêng", roles:"Mọi vai trò", desc:"Tự động điều chỉnh độ khó và thứ tự bài học theo kết quả làm bài thực tế của từng học viên."},
     {id:"P3-04", phase:4, group:"H2", name:"Từ điển năng lực & Gắn thẻ tự động", en:"Skill Ontology & Auto-tagging", route:"/hrbp", roles:"HRBP · User Admin", desc:"Chuẩn hóa từ điển năng lực tập đoàn và AI tự động gắn thẻ kỹ năng cho từng khóa học và chức danh."},
-    {id:"P3-05", phase:4, group:"H2", name:"Giám sát thi nâng cao (AI Proctoring)", en:"AI Proctoring & Face Verification", route:"/assessment", roles:"SysAdmin · Trainer", desc:"Giám sát thi sát hạch quan trọng: đối chiếu khuôn mặt, phát hiện người thứ hai và khóa toàn màn hình."},
-    {id:"P3-06", phase:4, group:"H2", name:"Trợ lý hỏi đáp đa kênh Teams & Zalo", en:"Omni-channel Learning Chatbot", route:"MS Teams · Zalo", roles:"Mọi vai trò", desc:"Đưa trợ lý AI Learning Hub vào Microsoft Teams và Zalo để nhân viên tra cứu quy trình mọi lúc mọi nơi."},
-    {id:"P3-07", phase:4, group:"H2", name:"Dự báo rủi ro tuân thủ bằng AI", en:"Predictive Compliance Risk", route:"/admin", roles:"Manager · HRBP · Admin", desc:"Mô hình học máy phân tích dữ liệu dự báo trước 30 ngày các đơn vị có rủi ro trễ hạn khóa bắt buộc."},
+    {id:"P3-05", phase:4, group:"H2", name:"Giám sát thi cử bằng AI", en:"AI Proctoring & Face Verification", route:"/assessment", roles:"SysAdmin · Trainer", desc:"Giám sát thi sát hạch quan trọng: đối chiếu khuôn mặt, phát hiện có người thứ hai xuất hiện và khóa toàn màn hình khi đang thi."},
+    {id:"P3-06", phase:4, group:"H2", name:"Trợ lý hỏi đáp đa kênh Teams & Zalo", en:"Omni-channel Learning Chatbot", route:"Microsoft Teams · Zalo", roles:"Mọi vai trò", desc:"Đưa trợ lý AI tra cứu quy trình vào Microsoft Teams và Zalo để nhân viên tra cứu mọi lúc mọi nơi."},
+    {id:"P3-07", phase:4, group:"H2", name:"Dự báo rủi ro tuân thủ bằng AI", en:"Predictive Compliance Risk", route:"/admin", roles:"Manager · HRBP · Admin", desc:"Mô hình học máy phân tích dữ liệu, dự báo trước 30 ngày các đơn vị có nguy cơ trễ hạn khóa bắt buộc."},
     {id:"P3-08", phase:4, group:"H2", name:"Dịch nội dung & Phụ đề tự động", en:"Automated Content Localization", route:"/admin/courses", roles:"User Admin · SysAdmin", desc:"Dịch tự động nội dung bài học, phụ đề video và câu hỏi thi song ngữ Tiếng Việt - Tiếng Anh."},
     {id:"P4-01", phase:4, group:"H3", name:"Kho nội dung quốc tế bên thứ ba", en:"Content Marketplace Connector", route:"/learner/catalog", roles:"User Admin · SysAdmin", desc:"Kết nối kho khóa học Coursera, LinkedIn Learning, Udemy Business vào danh mục nội bộ."},
-    {id:"P4-02", phase:4, group:"H3", name:"Học tập cộng đồng (Social Learning)", en:"Social & Peer Learning", route:"/learner/community", roles:"Mọi vai trò", desc:"Nhân viên chia sẻ video ngắn mẹo vận hành tại quầy kệ; đồng nghiệp bình chọn, quản lý duyệt thành bài học."},
+    {id:"P4-02", phase:4, group:"H3", name:"Học tập cộng đồng", en:"Social & Peer Learning", route:"/learner/community", roles:"Mọi vai trò", desc:"Nhân viên chia sẻ video ngắn mẹo vận hành tại quầy kệ; đồng nghiệp bình chọn, quản lý duyệt thành bài học."},
     {id:"P4-03", phase:4, group:"H3", name:"Cổng đào tạo Đối tác & Nhà cung cấp", en:"Partner & Supplier Training Portal", route:"/partner-portal", roles:"User Admin", desc:"Không gian đào tạo riêng biệt cho nhân sự ngoài biên chế, nhà cung cấp thực phẩm và đối tác nhà thầu."},
-    {id:"P4-04", phase:4, group:"H3", name:"Chứng chỉ số xác thực mở", en:"Verifiable Credentials (W3C)", route:"/certificates", roles:"Toàn hệ thống", desc:"Phát hành chứng chỉ theo chuẩn W3C / Open Badges cho phép cơ quan kiểm toán độc lập tra cứu."},
-    {id:"P4-05", phase:4, group:"H3", name:"Kho dữ liệu & BI Analytics Connector", en:"Enterprise Data Warehouse & BI", route:"PowerBI / Tableau", roles:"User Admin · SysAdmin", desc:"Đẩy dữ liệu đào tạo sang kho dữ liệu tập đoàn và cung cấp Dashboard PowerBI đo lường tương quan kinh doanh."},
+    {id:"P4-04", phase:4, group:"H3", name:"Chứng chỉ số xác thực mở", en:"Verifiable Credentials (W3C)", route:"/certificates", roles:"Toàn hệ thống", desc:"Phát hành chứng chỉ theo chuẩn quốc tế, cho phép cơ quan kiểm toán độc lập bên ngoài tự tra cứu xác thực mà không cần hỏi lại công ty."},
+    {id:"P4-05", phase:4, group:"H3", name:"Kho dữ liệu tập trung & Báo cáo phân tích", en:"Enterprise Data Warehouse & BI", route:"Báo cáo trực quan PowerBI", roles:"User Admin · SysAdmin", desc:"Đẩy dữ liệu đào tạo sang kho dữ liệu tập trung của tập đoàn và cung cấp báo cáo trực quan đo lường tương quan với kết quả kinh doanh."},
     {id:"P4-06", phase:4, group:"H3", name:"Liên thông Đánh giá Hiệu suất & Lương", en:"Performance & Payroll Integration", route:"/hrbp", roles:"HRBP · User Admin", desc:"Gắn kết quả hoàn thành lộ trình đào tạo với kỳ đánh giá hiệu suất KPI, xét thăng tiến và chính sách lương."},
-    {id:"P4-07", phase:4, group:"H3", name:"Triển khai đa quốc gia & Đa múi giờ", en:"Multi-country & Multi-currency Rollout", route:"Global Platform", roles:"Toàn hệ thống", desc:"Mở rộng nền tảng cho các thị trường quốc tế của tập đoàn với đa ngôn ngữ, đa múi giờ và tiền tệ."},
-    {id:"P4-08", phase:4, group:"H3", name:"Khả năng tiếp cận chuẩn WCAG 2.1 AA", en:"Accessibility Compliance (WCAG 2.1)", route:"Toàn giao diện", roles:"Toàn hệ thống", desc:"Đạt chuẩn tiếp cận quốc tế: tương thích Screen Reader cho người khiếm thị, phím tắt điều hướng và độ tương phản cao."},
-    {id:"P4-09", phase:4, group:"H3", name:"Khôi phục thảm họa & Sẵn sàng cao", en:"Disaster Recovery & High Availability", route:"Multi-Region Cloud", roles:"SysAdmin", desc:"Kiến trúc chịu lỗi đa vùng Cloud với tự động chuyển đổi dự phòng, cam kết RTO ≤ 15 phút, RPO ≤ 1 phút."}
+    {id:"P4-07", phase:4, group:"H3", name:"Triển khai đa quốc gia & Đa múi giờ", en:"Multi-country & Multi-currency Rollout", route:"Nền tảng dùng chung toàn tập đoàn", roles:"Toàn hệ thống", desc:"Mở rộng nền tảng cho các thị trường quốc tế của tập đoàn với đa ngôn ngữ, đa múi giờ và tiền tệ."},
+    {id:"P4-08", phase:4, group:"H3", name:"Chuẩn tiếp cận cho người khuyết tật", en:"Accessibility Compliance (WCAG 2.1)", route:"Toàn giao diện", roles:"Toàn hệ thống", desc:"Đạt chuẩn tiếp cận quốc tế: tương thích phần mềm đọc màn hình cho người khiếm thị, điều hướng bằng phím tắt và độ tương phản cao."},
+    {id:"P4-09", phase:4, group:"H3", name:"Dự phòng sự cố & Sẵn sàng cao", en:"Disaster Recovery & High Availability", route:"Hạ tầng máy chủ nhiều khu vực", roles:"SysAdmin", desc:"Hạ tầng đặt tại nhiều khu vực khác nhau, tự động chuyển sang khu vực dự phòng khi có sự cố, cam kết khôi phục trong vòng 15 phút và không mất quá 1 phút dữ liệu gần nhất."}
   ];
 
   var FN_GROUPS = {
@@ -1206,10 +1228,10 @@
     {name:"Học e-Learning &amp; phát bài học đa định dạng", desc:"Học nội dung Video/PDF/SCORM/Slide, tự động tính % tiến độ chuẩn từ dữ liệu gốc.", phase:1, time:"Tuần 1–4", marks:["y","y","y","y","y","y"]},
     {name:"Thi trắc nghiệm rút đề &amp; cấp chứng chỉ", desc:"Rút đề ngẫu nhiên, countdown, tự nộp bài chống trùng, sinh chứng chỉ số tự động.", phase:1, time:"Tuần 5–8", marks:["y","y","y","y","y","y"]},
     {name:"Tạo khóa e-Learning &amp; Ngân hàng đề thi", desc:"Soạn cấu trúc Module › Lesson, tải tài liệu học và import ngân hàng câu hỏi qua file CSV.", phase:1, time:"Tuần 7–8", marks:["n","n","n","n","y","y"]},
-    {name:"Cây tổ chức 2 nhánh &amp; Danh bạ nhân sự", desc:"Quản lý 42 khối tổ chức (HQ & Siêu thị), 7 cấp bậc nghề nghiệp và phân quyền RBAC.", phase:1, time:"Tuần 1–4", marks:["n","n","n","n","y","y"]},
+    {name:"Cây tổ chức 2 nhánh &amp; Danh bạ nhân sự", desc:"Quản lý 42 khối tổ chức (Trụ sở &amp; Siêu thị), 7 cấp bậc nghề nghiệp và phân quyền theo vai trò.", phase:1, time:"Tuần 1–4", marks:["n","n","n","n","y","y"]},
     {name:"Hồ sơ học tập nhân viên (Learning Transcript)", desc:"Hồ sơ tổng hợp quá trình học 10 trường thông tin; User Admin/SysAdmin xem toàn cty, Trainer xem học viên lớp phụ trách.", phase:1, time:"Tuần 9–10", marks:["r","r","r","y","y","y"]},
     {name:"Giám sát tiến độ học viên (Learner Progress)", desc:"Báo cáo theo dõi % tiến độ, hạn chót, ngày còn lại/quá hạn; User Admin/SysAdmin giám sát toàn cty, Trainer giám sát lớp mình.", phase:1, time:"Tuần 9–10", marks:["r","r","r","y","y","y"]},
-    {name:"Kiểm thử UAT &amp; Phát hành Phase 1 (MVP)", desc:"Nghiệm thu UAT cổng người học, quản trị và báo cáo vận hành, đóng mốc phát hành Release v1.0.", phase:1, time:"Tuần 11–12", marks:["y","y","y","y","y","y"]},
+    {name:"Kiểm thử UAT &amp; Phát hành Phase 1 (Nền tảng cốt lõi)", desc:"Nghiệm thu UAT cổng người học, quản trị và báo cáo vận hành, đóng mốc phát hành Release v1.0.", phase:1, time:"Tuần 11–12", marks:["y","y","y","y","y","y"]},
 
     /* Phase 2 · Q2 */
     {name:"Quản lý Giảng viên &amp; Đặt phòng lab", desc:"Trainer tự quản lớp phụ trách; Admin phân công giảng viên &amp; chặn trùng lịch phòng thực hành.", phase:2, time:"Tuần 13–16", marks:["n","n","y","n","y","y"]},
@@ -1220,20 +1242,20 @@
     {name:"Kiểm thử UAT Siêu thị &amp; Release v2.0", desc:"Nghiệm thu thực tế tại siêu thị với Store Managers & Trainers, phát hành Release v2.0.", phase:2, time:"Tuần 23–24", marks:["y","y","y","y","y","y"]},
 
     /* Phase 3 · Q3 */
-    {name:"Ma trận khoảng cách năng lực (Skill Gap)", desc:"So sánh năng lực thực tế với chuẩn chức danh, tự động sinh ticket can thiệp L&D.", phase:3, time:"Tuần 25–28", marks:["n","n","n","y","n","n"]},
-    {name:"Quy hoạch kế nhiệm &amp; Lộ trình 70-20-10", desc:"Xây dựng Talent Pool kế cận và cấu hình lộ trình học chuẩn 70-20-10 theo cấp bậc.", phase:3, time:"Tuần 27–30", marks:["n","n","n","y","y","y"]},
-    {name:"Đánh giá hành vi Kirkpatrick L3 &amp; ROI L4", desc:"Nhân viên cam kết Action Plan 90 ngày; Quản lý đánh giá hành vi L3 (sign-off); tổng hợp ROI.", phase:3, time:"Tuần 29–32", marks:["n","y","n","y","y","y"]},
+    {name:"Ma trận khoảng cách năng lực", desc:"So sánh năng lực thực tế với chuẩn chức danh, tự động tạo đề xuất can thiệp đào tạo.", phase:3, time:"Tuần 25–28", marks:["n","n","n","y","n","n"]},
+    {name:"Quy hoạch kế nhiệm &amp; Lộ trình 70-20-10", desc:"Xây dựng nguồn nhân tài kế cận và cấu hình lộ trình học chuẩn 70-20-10 theo cấp bậc.", phase:3, time:"Tuần 27–30", marks:["n","n","n","y","y","y"]},
+    {name:"Đánh giá hiệu quả đào tạo (Kirkpatrick) &amp; Cam kết hành động", desc:"Nhân viên cam kết áp dụng vào công việc trong 90 ngày; Quản lý đánh giá thay đổi hành vi (ký xác nhận); tổng hợp hiệu quả đầu tư đào tạo.", phase:3, time:"Tuần 29–32", marks:["n","y","n","y","y","y"]},
     {name:"AI Learning Hub (Tra cứu SOP & AI Soạn khóa)", desc:"Trợ lý AI hỏi đáp quy trình SOP siêu thị (HACCP/PCCC) và AI tự sinh khóa học từ tài liệu.", phase:3, time:"Tuần 29–32", marks:["y","y","y","y","y","y"]},
-    {name:"Mobile App Offline-first cho nhân viên", desc:"Ứng dụng di động iOS/Android học ngoại tuyến, quét Live QR điểm danh và nhận thông báo.", phase:3, time:"Tuần 27–32", marks:["y","y","y","y","y","y"]},
-    {name:"Kiểm thử UAT Khối HR/L&amp;D &amp; Release v3.0", desc:"Nghiệm thu phân hệ Nhân tài, AI Hub & Mobile App với HRD và L&D, phát hành v3.0.", phase:3, time:"Tuần 35–36", marks:["y","y","y","y","y","y"]},
+    {name:"Ứng dụng di động học được cả khi không có mạng", desc:"Ứng dụng di động iOS/Android học ngoại tuyến, quét mã QR điểm danh và nhận thông báo.", phase:3, time:"Tuần 27–32", marks:["y","y","y","y","y","y"]},
+    {name:"Kiểm thử UAT Khối Nhân sự/Đào tạo &amp; Release v3.0", desc:"Nghiệm thu phân hệ Nhân tài, Trợ lý AI &amp; Ứng dụng di động với Khối Nhân sự và Khối Đào tạo, phát hành v3.0.", phase:3, time:"Tuần 35–36", marks:["y","y","y","y","y","y"]},
 
     /* Phase 4 · Q4 */
-    {name:"Đồng bộ 2 chiều SAP SuccessFactors HRIS", desc:"Tự động hóa đồng bộ nhân sự, cơ cấu tổ chức và trả ngược kết quả đào tạo về SAP.", phase:4, time:"Tuần 37–40", marks:["n","n","n","n","n","y"]},
-    {name:"Cổng đào tạo Đối tác &amp; Social Learning", desc:"Cổng đào tạo riêng cho Nhà cung cấp/Nhà thầu và mạng xã hội học tập chia sẻ video mẹo.", phase:4, time:"Tuần 39–42", marks:["y","y","y","y","y","y"]},
+    {name:"Đồng bộ 2 chiều với hệ thống nhân sự SAP", desc:"Tự động hóa đồng bộ nhân sự, cơ cấu tổ chức và trả ngược kết quả đào tạo về SAP.", phase:4, time:"Tuần 37–40", marks:["n","n","n","n","n","y"]},
+    {name:"Cổng đào tạo Đối tác &amp; Học tập cộng đồng", desc:"Cổng đào tạo riêng cho Nhà cung cấp/Nhà thầu và mạng xã hội học tập chia sẻ video mẹo.", phase:4, time:"Tuần 39–42", marks:["y","y","y","y","y","y"]},
     {name:"Kho dữ liệu tập trung &amp; Báo cáo trực quan PowerBI", desc:"Đẩy dữ liệu đào tạo sang kho dữ liệu tập trung, đo lường tương quan với doanh thu và hao hụt.", phase:4, time:"Tuần 41–44", marks:["n","n","n","y","y","y"]},
     {name:"Liên thông Đánh giá Hiệu suất &amp; Lương", desc:"Gắn kết quả hoàn thành lộ trình làm tiêu chí bắt buộc khi xét KPI, thăng tiến và lương.", phase:4, time:"Tuần 43–44", marks:["n","n","n","y","y","n"]},
     {name:"Chuẩn tiếp cận người khuyết tật, Đa quốc gia &amp; Dự phòng sự cố", desc:"Đạt chuẩn tiếp cận cho người khuyết tật (WCAG 2.1 AA), triển khai đa quốc gia và có hạ tầng khôi phục nhanh khi xảy ra sự cố.", phase:4, time:"Tuần 43–46", marks:["y","y","y","y","y","y"]},
-    {name:"Nghiệm thu Tổng thể Toàn diện &amp; Bàn giao Full Suite", desc:"Nghiệm thu toàn hệ thống với Hội đồng Tập đoàn, bàn giao toàn bộ mã nguồn & tài liệu vận hành.", phase:4, time:"Tuần 47–48", marks:["y","y","y","y","y","y"]}
+    {name:"Nghiệm thu Tổng thể Toàn diện &amp; Bàn giao Trọn Bộ Hệ Thống", desc:"Nghiệm thu toàn hệ thống với Hội đồng Tập đoàn, bàn giao toàn bộ mã nguồn &amp; tài liệu vận hành.", phase:4, time:"Tuần 47–48", marks:["y","y","y","y","y","y"]}
   ];
   var tbody = document.getElementById('matrixBody');
   var prevPhase = null;
