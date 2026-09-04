@@ -50,11 +50,12 @@ import {
 } from '../utils/costCenter';
 import { DEFAULT_CERTIFICATE_TEMPLATES } from '../data/certificateTemplatesData';
 import { getAssignedCurriculaForUser } from '../utils/curriculumAssignment';
+import { isInPersonCourse, nextOpenIntake, intakeLabel, intakeDateRange } from '../utils/classSchedule';
 
 // v6: the inverted 7-level scale + the 6-role model. The key is bumped to drop the old v5 cache
 // (the previous build's `admin` role and levels 1-5 are no longer valid).
 const AUTH_KEY = 'mm-megalearn-auth-v6';
-const STORAGE_KEY = 'mm-megalearn-courses-v11';
+const STORAGE_KEY = 'mm-megalearn-courses-v14';
 const CLASSROOM_KEY = 'mm-megalearn-classrooms-v11';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
 const GAMIFICATION_KEY = 'mm-megalearn-gamification-v6';
@@ -1496,6 +1497,10 @@ export function CourseStoreProvider({ children }) {
       const access = accessFor(course, user);
       if (!access.canAccess) return { ok: false, reason: access.reason, access };
 
+      // An in-person course may run several intakes. The learner joins the next one still
+      // open, so their calendar shows only that cohort's training days.
+      const joinedIntake = isInPersonCourse(course) ? nextOpenIntake(course) : null;
+
       setEnrollments((prev) => {
         const forUser = prev[user.userId] || {};
         if (forUser[courseId]) return prev;
@@ -1507,17 +1512,20 @@ export function CourseStoreProvider({ children }) {
               courseId,
               userId: user.userId,
               courseType: course.courseType,
-              // Locked tightly to the content version at enrollment time — if
-              // the Admin later runs "Publish New Version", this learner still
-              // continues studying/being scored against the syllabus at the time of
-              // danh (xem resolveCourseView trong mockData.js).
+              // Pinned to the content version live at enrollment time: if the Admin later
+              // runs "Publish New Version", this learner keeps studying and being scored
+              // against the syllabus they signed up to (see resolveCourseView in mockData.js).
               enrolledVersion: course.currentVersion || course.version || 'v1.0',
               status: 'NOT_STARTED',
               progressPercent: 0,
               score: null,
               attemptsCount: 0,
               completedAt: null,
-              dueDate: course.assignment?.dueDate || null,
+              intakeId: joinedIntake?.id || null,
+              intakeName: joinedIntake ? intakeLabel(joinedIntake, 0) : null,
+              // Attending the last training day IS the completion, so the intake sets the
+              // deadline for an in-person course.
+              dueDate: joinedIntake ? intakeDateRange(joinedIntake).end : (course.assignment?.dueDate || null),
               lastLessonTitle: course.modules?.[0]?.lessons?.[0]?.title || null,
               lastActivityAt: todayIso(),
               enrolledVia: access.state === ACCESS_STATE.APPROVED ? 'LEVEL_ADVANCE_APPROVAL' : 'SELF_ENROLL',

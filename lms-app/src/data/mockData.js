@@ -1133,7 +1133,29 @@ export function createBlankCourse() {
     venueId: 'lab-ap-fresh',
     venue: 'Fresh Food & Bakery Practical Lab (MM An Phu)',
     scheduleDate: '2026-08-28',
-    scheduleTime: '08:30 - 11:30 (3.0 hours)',
+    scheduleTime: '08:30 - 11:30 (3.0h)',
+    // An in-person course is delivered as one or more intakes (class runs), each spanning
+    // one or more training days. `intakes` is the source of truth; sessions/scheduleDate/
+    // scheduleTime are denormalized from it (see utils/classSchedule.js) so older screens
+    // keep rendering unchanged.
+    intakes: [
+      {
+        id: 'intake-seed-1',
+        name: 'Intake 1',
+        trainerId: '',
+        trainerName: '',
+        venueId: '',
+        venue: '',
+        maxCapacity: null,
+        sessions: [
+          { id: 'ses-seed-1', date: '2026-08-28', startTime: '08:30', endTime: '11:30', topic: 'Theory & safety briefing' },
+        ],
+      },
+    ],
+    sessions: [
+      { id: 'ses-seed-1', date: '2026-08-28', startTime: '08:30', endTime: '11:30', topic: 'Theory & safety briefing' },
+    ],
+    totalTrainingHours: 3,
     maxCapacity: 25,
     enrolledStudents: [],
     prerequisites: [],

@@ -17,6 +17,12 @@ import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
 import { QUESTION_BANK as questionBanks, CONTENT_FORMATS } from '../../data/assessmentData';
 import { generateAssessmentCode } from '../../utils/assessmentCatalog';
 import { pricingOf, formatVnd, COST_TYPE, COST_TYPE_META } from '../../utils/costCenter';
+import {
+  courseIntakes, makeSession, makeIntake, deriveScheduleFields, sessionHours,
+  intakeHours, intakeDays, intakeLabel, intakeStatus, validateIntakes, formatHours,
+  isInPersonCourse, TIME_SLOTS, DURATION_OPTIONS,
+  DEFAULT_SESSION_START, DEFAULT_SESSION_END,
+} from '../../utils/classSchedule';
 
 // the 5 standardized lesson formats (replacing the old DOCUMENT/SCRIPT/IMAGE/TEXT and
 // that course.modality used to override the lesson type in the Lesson Player):
@@ -1037,6 +1043,10 @@ export default function AdminCourseBuilder() {
       raw.coTrainers = currentCoTrainers;
       raw.coTrainerIds = currentCoTrainers.map((t) => t.userId || t.id);
       raw.coTrainerNames = currentCoTrainers.map((t) => t.fullName || t.name);
+
+      // Upgrade legacy single-date courses to the session list on open.
+      // Upgrade legacy single-date and flat-session courses to the intake model on open.
+      Object.assign(raw, deriveScheduleFields(courseIntakes(raw)));
     }
     return raw;
   });
@@ -1262,6 +1272,12 @@ export default function AdminCourseBuilder() {
   const activeModule = draft.modules.find((m) => m.id === activeModuleId) || draft.modules[0] || null;
   const cfg = draft.configuration;
 
+  const draftIntakes = useMemo(() => courseIntakes(draft), [draft]);
+  const scheduleCheck = validateIntakes(draftIntakes);
+  // Every intake teaches the same course, so the first scheduled one defines its length.
+  const primaryIntake = draftIntakes.find((it) => intakeHours(it) > 0) || draftIntakes[0] || null;
+  const isInPerson = isInPersonCourse(draft);
+
   function patch(fields) {
     setDraft((d) => ({ ...d, ...fields }));
   }
@@ -1270,6 +1286,96 @@ export default function AdminCourseBuilder() {
   }
   function patchVirtualMeeting(fields) {
     setDraft((d) => ({ ...d, virtualMeeting: { ...(d.virtualMeeting || {}), ...fields } }));
+  }
+
+  // --- In-person schedule: intakes (class runs) and their training days ------
+  // Every write goes through deriveScheduleFields so the denormalized
+  // scheduleDate/scheduleTime/sessions stay consistent with the intakes.
+  function commitIntakes(nextIntakes) {
+    setDraft((d) => ({ ...d, ...deriveScheduleFields(nextIntakes) }));
+  }
+  function patchIntake(intakeId, fields) {
+    commitIntakes(draftIntakes.map((it) => (it.id === intakeId ? { ...it, ...fields } : it)));
+  }
+  function patchSession(intakeId, sessionId, fields) {
+    commitIntakes(draftIntakes.map((it) => (it.id === intakeId
+      ? { ...it, sessions: it.sessions.map((s) => (s.id === sessionId ? { ...s, ...fields } : s)) }
+      : it)));
+  }
+  function dayAfter(iso) {
+    const d = new Date(`${iso}T00:00:00`);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+  function addTrainingDay(intakeId) {
+    const intake = draftIntakes.find((it) => it.id === intakeId);
+    if (!intake) return;
+    const last = intake.sessions[intake.sessions.length - 1];
+    patchIntake(intakeId, {
+      sessions: [
+        ...intake.sessions,
+        makeSession({
+          date: last?.date ? dayAfter(last.date) : (draft.startDate || new Date().toISOString().slice(0, 10)),
+          startTime: last?.startTime || DEFAULT_SESSION_START,
+          endTime: last?.endTime || DEFAULT_SESSION_END,
+        }),
+      ],
+    });
+  }
+  /**
+   * Repeats a day's time window and topic on the following day. Copying it onto the same
+   * date would collide with the row it was copied from and immediately fail validation.
+   */
+  function duplicateSession(intakeId, sessionId) {
+    const intake = draftIntakes.find((it) => it.id === intakeId);
+    const src = intake?.sessions.find((s) => s.id === sessionId);
+    if (!src) return;
+    const taken = new Set(intake.sessions.map((s) => s.date));
+    let date = src.date ? dayAfter(src.date) : '';
+    while (date && taken.has(date)) date = dayAfter(date);
+    patchIntake(intakeId, { sessions: [...intake.sessions, makeSession({ ...src, id: undefined, date })] });
+  }
+  function removeSession(intakeId, sessionId) {
+    const intake = draftIntakes.find((it) => it.id === intakeId);
+    if (!intake) return;
+    patchIntake(intakeId, { sessions: intake.sessions.filter((s) => s.id !== sessionId) });
+  }
+  /**
+   * A new intake re-runs the SAME course for a new cohort, so it copies the shape of the
+   * previous run (same number of days, same time slots, same topics) and only shifts the
+   * dates a week out — the admin then moves them to when the new group is available.
+   */
+  function addIntake() {
+    const prev = draftIntakes[draftIntakes.length - 1];
+    const baseDate = prev?.sessions?.[0]?.date || draft.startDate || new Date().toISOString().slice(0, 10);
+    const shifted = new Date(`${baseDate}T00:00:00`);
+    shifted.setDate(shifted.getDate() + 7);
+    const offsetDays = prev?.sessions?.[0]?.date
+      ? Math.round((shifted - new Date(`${prev.sessions[0].date}T00:00:00`)) / 86400000)
+      : 0;
+    const sessions = (prev?.sessions || [makeSession()]).map((s) => {
+      let date = s.date;
+      if (date && offsetDays) {
+        const d = new Date(`${date}T00:00:00`);
+        d.setDate(d.getDate() + offsetDays);
+        date = d.toISOString().slice(0, 10);
+      }
+      return makeSession({ ...s, id: undefined, date });
+    });
+    commitIntakes([
+      ...draftIntakes,
+      makeIntake({
+        name: `Intake ${draftIntakes.length + 1}`,
+        trainerId: prev?.trainerId || '',
+        venueId: prev?.venueId || '',
+        maxCapacity: prev?.maxCapacity ?? null,
+        sessions,
+      }),
+    ]);
+  }
+  function removeIntake(intakeId) {
+    if (draftIntakes.length <= 1) return;
+    commitIntakes(draftIntakes.filter((it) => it.id !== intakeId));
   }
   // Tuition is written straight into draft.pricing (the Cost Center reads this field in
   // preference over the price derived from the modality) — so the price is fixed at
@@ -1458,6 +1564,10 @@ export default function AdminCourseBuilder() {
       if (!vm.scheduleTime?.trim()) { setError('A Virtual Class needs a session time window.'); return; }
       if (!vm.instructorId) { setError('A Virtual Class needs a trainer/host.'); return; }
     }
+    if (draft.deliveryType === 'IN_PERSON_CLASSROOM' && !scheduleCheck.ok) {
+      setError(scheduleCheck.errors[0]);
+      return;
+    }
     setError('');
     const { modality, format } = deriveModalityFormat(draft.deliveryType, draft.onlineClassType);
     const toSave = {
@@ -1470,6 +1580,8 @@ export default function AdminCourseBuilder() {
       status: nextStatus,
       modality,
       format,
+      // Keep scheduleDate/scheduleTime/startDate/endDate in step with the session list.
+      ...(draft.deliveryType === 'IN_PERSON_CLASSROOM' ? deriveScheduleFields(draftIntakes) : {}),
     };
     if (isNew) {
       addCourse(toSave);
@@ -1972,32 +2084,58 @@ export default function AdminCourseBuilder() {
         {/* Row 2: Dates, Duration & Course Type - PERFECTLY ALIGNED 4 COLUMNS */}
         <div className="grid grid-4" style={{ gap: 14, marginBottom: 16 }}>
           <div>
-            <label className="field-label">Start Date</label>
+            {/* For an in-person course these two are the ENROLLMENT window that decides when
+                the course is listed in the catalog — not when the class meets. The meeting
+                dates live in the Training Schedule below, so the labels say which is which. */}
+            <label className="field-label">{isInPerson ? 'Enrollment Opens' : 'Start Date'}</label>
             <input
               type="date"
+              lang="en-GB"
               className="field-input"
               value={draft.startDate || ''}
               onChange={(e) => patch({ startDate: e.target.value })}
             />
+            {isInPerson && <div className="field-hint">When the course appears in the catalog.</div>}
           </div>
           <div>
-            <label className="field-label">End Date</label>
+            <label className="field-label">{isInPerson ? 'Enrollment Closes' : 'End Date'}</label>
             <input
               type="date"
+              lang="en-GB"
               className="field-input"
               value={draft.endDate || ''}
               onChange={(e) => patch({ endDate: e.target.value })}
             />
+            {isInPerson && <div className="field-hint">Training days are set in the schedule below.</div>}
           </div>
           <div>
-            <label className="field-label">Estimated duration</label>
-            <input
-              type="text"
-              className="field-input"
-              placeholder="E.g. 3h or 2.5 hours"
-              value={draft.estimatedHours || draft.estimatedDuration || ''}
-              onChange={(e) => patch({ estimatedHours: e.target.value, estimatedDuration: e.target.value })}
-            />
+            <label className="field-label">
+              {isInPerson ? 'Duration (from the schedule)' : 'Estimated duration'}
+            </label>
+            {isInPerson ? (
+              // Typing a duration here while the timetable below computes a different one
+              // is how the two ended up disagreeing. The schedule is the single source now.
+              <div
+                className="field-input"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)', fontWeight: 700 }}
+              >
+                <i className="ti ti-clock-hour-4" style={{ color: 'var(--blue)' }} />
+                {formatHours(primaryIntake ? intakeHours(primaryIntake) : 0)}
+                <span style={{ fontWeight: 500, color: 'var(--ink-soft)', fontSize: 12 }}>
+                  &middot; set in Training Schedule
+                </span>
+              </div>
+            ) : (
+              <select
+                className="field-select"
+                value={draft.estimatedHours || draft.estimatedDuration || '2.0h'}
+                onChange={(e) => patch({ estimatedHours: e.target.value, estimatedDuration: e.target.value })}
+              >
+                {DURATION_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="field-label">Course Type</label>
@@ -2414,38 +2552,262 @@ export default function AdminCourseBuilder() {
             </div>
           )}
 
-          <div className="grid grid-3" style={{ marginBottom: 14 }}>
+          <div className="grid grid-2" style={{ marginBottom: 14 }}>
             <div>
-              <label className="field-label">Training Date</label>
-              <input
-                type="date"
+              <label className="field-label">Total Training Hours</label>
+              <div
                 className="field-input"
-                value={draft.scheduleDate || draft.startDate || '2026-08-28'}
-                onChange={(e) => patch({ scheduleDate: e.target.value, startDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="field-label">Time Window</label>
-              <select
-                className="field-select"
-                value={draft.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
-                onChange={(e) => patch({ scheduleTime: e.target.value })}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-sunken)', fontWeight: 700 }}
               >
-                <option value="08:30 - 11:30 (3.0 hours)">08:30 - 11:30 (morning - 3.0 hours)</option>
-                <option value="13:30 - 16:30 (3.0 hours)">13:30 - 16:30 (afternoon - 3.0 hours)</option>
-                <option value="09:00 - 12:00 (3.0 hours)">09:00 - 12:00 (morning - 3.0 hours)</option>
-                <option value="14:00 - 17:00 (3.0 hours)">14:00 - 17:00 (afternoon - 3.0 hours)</option>
-              </select>
+                <i className="ti ti-clock-hour-4" style={{ color: 'var(--blue)' }} />
+                {formatHours(primaryIntake ? intakeHours(primaryIntake) : 0)}
+                <span style={{ fontWeight: 500, color: 'var(--ink-soft)', fontSize: 12 }}>
+                  over {primaryIntake ? intakeDays(primaryIntake) : 0} training {(primaryIntake ? intakeDays(primaryIntake) : 0) === 1 ? 'day' : 'days'}
+                </span>
+              </div>
+              <div className="field-hint">
+                Added up from the training days below, so it can never disagree with the timetable.
+                A 16-hour course can run 8 hours on day 1 and 8 hours on day 2.
+              </div>
             </div>
             <div>
-              <label className="field-label">Max Capacity</label>
+              <label className="field-label">Default Seats Per Intake</label>
               <input
                 type="number"
                 className="field-input"
                 value={draft.maxCapacity || 25}
                 onChange={(e) => patch({ maxCapacity: Number(e.target.value) || 25 })}
               />
+              <div className="field-hint">Each intake can override this with its own seat count.</div>
             </div>
+          </div>
+
+          {/* INTAKES (CLASS RUNS) — each one re-runs the course for a new cohort */}
+          <div style={{ padding: '12px 14px', background: 'var(--paper-sunken)', border: '1px solid var(--line)', borderRadius: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <label className="field-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="ti ti-calendar-time" style={{ color: 'var(--blue)' }} />
+                  Training Schedule &mdash; Intakes &amp; Training Days
+                </label>
+                <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+                  An intake is one run of this course for one group of employees, and it may span
+                  several days. To teach the same course again to a new group later, add another
+                  intake instead of creating a second course.
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Badge tone="slate" size="sm">
+                  {draftIntakes.length} {draftIntakes.length === 1 ? 'intake' : 'intakes'}
+                </Badge>
+                <Button size="sm" variant="primary" icon="ti-plus" onClick={addIntake}>Add Intake</Button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {draftIntakes.map((intake, intakeIdx) => {
+                const status = intakeStatus(intake);
+                const hrs = intakeHours(intake);
+                return (
+                  <div
+                    key={intake.id}
+                    style={{
+                      background: 'var(--paper-raised)',
+                      border: '1px solid var(--line-strong)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                    }}
+                  >
+                    {/* Intake header */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+                      <Badge tone="blue" size="sm">{intakeIdx + 1}</Badge>
+                      <input
+                        type="text"
+                        className="field-input"
+                        style={{ height: 32, fontSize: 12, fontWeight: 700, flex: '1 1 180px', minWidth: 140 }}
+                        placeholder={intakeLabel({}, intakeIdx)}
+                        value={intake.name || ''}
+                        onChange={(e) => patchIntake(intake.id, { name: e.target.value })}
+                      />
+                      <Badge tone={status.tone} size="sm" icon={status.icon}>{status.label}</Badge>
+                      <Badge tone="slate" size="sm">
+                        {formatHours(hrs)} &middot; {intakeDays(intake)} {intakeDays(intake) === 1 ? 'day' : 'days'}
+                      </Badge>
+                      {draftIntakes.length > 1 && (
+                        <button
+                          type="button"
+                          title="Remove this intake"
+                          onClick={() => removeIntake(intake.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: 2, marginLeft: 'auto' }}
+                        >
+                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Per-intake overrides: a re-run may use another trainer, venue or room size */}
+                    <div className="grid grid-3" style={{ gap: 8, marginBottom: 10 }}>
+                      <div>
+                        <label className="field-label" style={{ fontSize: 11 }}>Trainer for this intake</label>
+                        <select
+                          className="field-select"
+                          style={{ height: 32, fontSize: 12 }}
+                          value={intake.trainerId || ''}
+                          onChange={(e) => {
+                            const tr = eligibleTrainers.find((t) => t.userId === e.target.value);
+                            patchIntake(intake.id, { trainerId: e.target.value, trainerName: tr?.fullName || '' });
+                          }}
+                        >
+                          <option value="">Same as the lead trainer</option>
+                          {eligibleTrainers.map((t) => (
+                            <option key={t.userId} value={t.userId}>{t.fullName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="field-label" style={{ fontSize: 11 }}>Venue for this intake</label>
+                        <select
+                          className="field-select"
+                          style={{ height: 32, fontSize: 12 }}
+                          value={intake.venueId || ''}
+                          onChange={(e) => {
+                            const rm = meetingRoomsAndLabs.find((r) => r.id === e.target.value);
+                            patchIntake(intake.id, { venueId: e.target.value, venue: rm?.name || '' });
+                          }}
+                        >
+                          <option value="">Same as the course venue</option>
+                          {meetingRoomsAndLabs.map((rm) => (
+                            <option key={rm.id} value={rm.id}>{rm.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="field-label" style={{ fontSize: 11 }}>Seats</label>
+                        <input
+                          type="number"
+                          className="field-input"
+                          style={{ height: 32, fontSize: 12 }}
+                          placeholder={String(draft.maxCapacity || 25)}
+                          value={intake.maxCapacity == null ? '' : intake.maxCapacity}
+                          onChange={(e) => patchIntake(intake.id, { maxCapacity: e.target.value === '' ? null : Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Training days of this intake */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {intake.sessions.map((s, idx) => {
+                        const sHrs = sessionHours(s.startTime, s.endTime);
+                        const invalid = sHrs <= 0 || !s.date;
+                        return (
+                          <div
+                            key={s.id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '58px 1.1fr 0.8fr 0.8fr 56px 1.3fr 46px',
+                              gap: 8,
+                              alignItems: 'center',
+                              background: 'var(--paper-sunken)',
+                              border: invalid ? '1px solid var(--rust)' : '1px solid var(--line)',
+                              borderRadius: 8,
+                              padding: '6px 8px',
+                            }}
+                          >
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Day {idx + 1}</span>
+                            <input
+                              type="date"
+                              lang="en-GB"
+                              className="field-input"
+                              style={{ height: 32, fontSize: 12 }}
+                              value={s.date || ''}
+                              onChange={(e) => patchSession(intake.id, s.id, { date: e.target.value })}
+                            />
+                            <select
+                              className="field-select"
+                              style={{ height: 32, fontSize: 12 }}
+                              value={s.startTime || ''}
+                              onChange={(e) => patchSession(intake.id, s.id, { startTime: e.target.value })}
+                            >
+                              {!TIME_SLOTS.includes(s.startTime) && s.startTime && (
+                                <option value={s.startTime}>{s.startTime}</option>
+                              )}
+                              {TIME_SLOTS.map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                            <select
+                              className="field-select"
+                              style={{ height: 32, fontSize: 12 }}
+                              value={s.endTime || ''}
+                              onChange={(e) => patchSession(intake.id, s.id, { endTime: e.target.value })}
+                            >
+                              {!TIME_SLOTS.includes(s.endTime) && s.endTime && (
+                                <option value={s.endTime}>{s.endTime}</option>
+                              )}
+                              {TIME_SLOTS.map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: invalid ? 'var(--rust)' : 'var(--ink)', textAlign: 'center' }}>
+                              {formatHours(sHrs)}
+                            </div>
+                            <input
+                              type="text"
+                              className="field-input"
+                              style={{ height: 32, fontSize: 12 }}
+                              placeholder="Session topic (optional)"
+                              value={s.topic || ''}
+                              onChange={(e) => patchSession(intake.id, s.id, { topic: e.target.value })}
+                            />
+                            <div style={{ display: 'flex', gap: 2 }}>
+                              <button
+                                type="button"
+                                title="Duplicate this day"
+                                onClick={() => duplicateSession(intake.id, s.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-soft)', padding: 2 }}
+                              >
+                                <i className="ti ti-copy" style={{ fontSize: 14 }} />
+                              </button>
+                              {intake.sessions.length > 1 && (
+                                <button
+                                  type="button"
+                                  title="Remove this day"
+                                  onClick={() => removeSession(intake.id, s.id)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E11D48', padding: 2 }}
+                                >
+                                  <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ marginTop: 8 }}>
+                      <Button size="sm" icon="ti-plus" onClick={() => addTrainingDay(intake.id)}>
+                        Add Training Day
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {(scheduleCheck.errors.length > 0 || scheduleCheck.warnings.length > 0) && (
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {scheduleCheck.errors.map((msg) => (
+                  <div key={msg} style={{ fontSize: 12, color: 'var(--rust)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="ti ti-alert-circle" /> {msg}
+                  </div>
+                ))}
+                {scheduleCheck.warnings.map((msg) => (
+                  <div key={msg} style={{ fontSize: 12, color: 'var(--amber-soft-text, #92400e)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="ti ti-alert-triangle" /> {msg}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

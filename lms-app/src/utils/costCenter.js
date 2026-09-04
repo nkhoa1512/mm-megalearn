@@ -23,6 +23,7 @@
 // ===========================================================================
 
 import { hrExportRow, costCenterCodeOf } from '../data/hrProfile';
+import { courseIntakes, intakeHours } from './classSchedule';
 
 export const CURRENCY = 'VND';
 export const FISCAL_YEAR = 2026;
@@ -136,9 +137,12 @@ export function derivePricing(course) {
   }
 
   if (course.modality === 'CLASSROOM_LAB' || course.deliveryType === 'IN_PERSON_CLASSROOM') {
+    // A seat costs what the classroom actually runs for. Read that off the timetable
+    // rather than the free-text estimate, so a 2-day course is not priced as a 3-hour one.
+    const scheduled = course.totalTrainingHours || intakeHours(courseIntakes(course)[0]);
     return {
       isFree: false,
-      price: roundPrice(hoursOf(course.estimatedHours) * CLASSROOM_COST_PER_HOUR),
+      price: roundPrice((scheduled > 0 ? scheduled : hoursOf(course.estimatedHours)) * CLASSROOM_COST_PER_HOUR),
       currency: CURRENCY,
       costType: COST_TYPE.VENDOR_CLASSROOM,
       vendor: course.venue || 'MMVN Training Venue',

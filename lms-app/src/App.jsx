@@ -81,6 +81,7 @@ const PAGE_META = {
   '/approvals': { title: 'Level Skip Request Approvals (Sequential Level Gate)', crumb: 'Management' },
 
   '/trainer': { title: 'Teaching Classes & Live QR Attendance Code', crumb: 'Trainer / L&D (Level 3)' },
+  '/trainer/my-courses': { title: 'My In-Person Courses — Schedule & Management', crumb: 'Trainer / L&D (Level 3)' },
   '/trainer/attendance': { title: 'Learner Attendance Management By Class', crumb: 'Trainer / L&D (Level 3)' },
   '/trainer/feedback': { title: 'Learner CSAT Feedback Report', crumb: 'Trainer / L&D (Level 3)' },
   '/trainer/courses': { title: 'Create & Manage Courses (SCORM, ILT, Lab)', crumb: 'Trainer / L&D (Level 3)' },
@@ -255,6 +256,7 @@ function Shell({ role, setRole }) {
 
         {/* Trainer / L&D Routes */}
         <Route path="/trainer" element={<TrainerHub initialTab="CLASSES" />} />
+        <Route path="/trainer/my-courses" element={<TrainerHub initialTab="MY_COURSES" />} />
         <Route path="/trainer/attendance" element={<TrainerHub initialTab="ATTENDANCE" />} />
         <Route path="/trainer/feedback" element={<TrainerHub initialTab="FEEDBACK" />} />
         <Route path="/trainer/labs" element={<TrainerHub initialTab="LABS" />} />

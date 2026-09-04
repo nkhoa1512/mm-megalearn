@@ -18,6 +18,7 @@ import {
   evaluateUserEligibilityForCourse,
   evaluateGroupEligibilityForCourse,
 } from '../../data/levelSystem';
+import { isInPersonCourse, completionDueDateOf, formatSessionDate } from '../../utils/classSchedule';
 
 export default function MultiTargetAssigner({
   course = null,
@@ -38,6 +39,9 @@ export default function MultiTargetAssigner({
   const [storeFilter, setStoreFilter] = useState('ALL');
 
   const [selectedIds, setSelectedIds] = useState([]);
+  // An in-person course carries its own timetable, and attending the last training day IS
+  // the completion — so the deadline is read off the schedule instead of being typed twice.
+  const scheduleDrivenDueDate = isInPersonCourse(course) ? completionDueDateOf(course) : null;
   const [dueDate, setDueDate] = useState('');
   const [justification, setJustification] = useState('');
   const [search, setSearch] = useState('');
@@ -251,7 +255,7 @@ export default function MultiTargetAssigner({
     onSave({
       assignmentType: assignScope,
       targets,
-      dueDate,
+      dueDate: scheduleDrivenDueDate || dueDate,
       justification,
       groupPolicy,
       assignedLevelEligibility: {
@@ -966,29 +970,48 @@ export default function MultiTargetAssigner({
           </div>
         </div>
 
-        <div className="grid grid-2" style={{ gap: 10, marginBottom: 14 }}>
-          <div>
-            <label className="field-label" style={{ fontSize: 12 }}>Completion Due Date</label>
-            <input
-              type="date"
-              className="field-input"
-              style={{ fontSize: 12, height: 34, width: '100%' }}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
+        {/* An in-person class is completed by attending it, so its deadline is the last
+            training day of the intake — there is nothing to type in here. */}
+        {scheduleDrivenDueDate ? (
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
+              padding: '8px 12px', borderRadius: 8,
+              background: 'var(--blue-soft)', border: '1px solid #BFDBFE',
+              fontSize: 12, color: 'var(--blue-soft-text)',
+            }}
+          >
+            <i className="ti ti-calendar-check" style={{ fontSize: 15 }} />
+            <span>
+              <strong>Completion deadline: {formatSessionDate(scheduleDrivenDueDate)}</strong> — taken from the last
+              training day of this course&apos;s schedule. Change it in the Training Schedule section above.
+            </span>
           </div>
-          <div>
-            <label className="field-label" style={{ fontSize: 12 }}>Notes / Allocation reason</label>
-            <input
-              type="text"
-              className="field-input"
-              style={{ fontSize: 12, height: 34, width: '100%' }}
-              placeholder="E.g. 2026 recurring training, safety standardization..."
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-            />
+        ) : (
+          <div className="grid grid-2" style={{ gap: 10, marginBottom: 14 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 12 }}>Completion Due Date</label>
+              <input
+                type="date"
+                className="field-input"
+                style={{ fontSize: 12, height: 34, width: '100%' }}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 12 }}>Notes / Allocation reason</label>
+              <input
+                type="text"
+                className="field-input"
+                style={{ fontSize: 12, height: 34, width: '100%' }}
+                placeholder="E.g. 2026 recurring training, safety standardization..."
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           {onCancel && (

@@ -9,6 +9,8 @@ import { getAssignedCurriculaForUser } from '../../utils/curriculumAssignment';
 import { computeLifecycleStatus } from '../../utils/courseCatalog';
 import { computeCourseRecertification, RECERTIFICATION_STATE } from '../../utils/recertification';
 import { pricingOf, formatVnd, COST_TYPE_META } from '../../utils/costCenter';
+import { scheduleSummary, nextOpenIntake, intakeLabel, courseIntakes } from '../../utils/classSchedule';
+import ClassScheduleList from '../../features/common/ClassScheduleList';
 
 
 function statusLabel(status) {
@@ -671,12 +673,26 @@ function InPersonClassroomCard({ course, isLocked, isEnrolled, onPreviewDoc }) {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>Venue &amp; Time</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginBottom: 4 }}>Venue</div>
             <div style={{ fontSize: 13, fontWeight: 700 }}>{course.venue || 'MM Mega Market Practice Workshop'}</div>
             <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
-              {formatDate(course.scheduleDate || course.startDate)} &middot; {course.scheduleTime || '08:30 - 11:30 (3.0 hours)'}
+              {scheduleSummary(course)}
             </div>
           </div>
+        </div>
+
+        {/* Training timetable — every day and time slot the class runs */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <i className="ti ti-calendar-time" /> Training Schedule
+          </div>
+          {courseIntakes(course).length > 1 && (
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginBottom: 8 }}>
+              This class runs more than once. You attend a single intake — the next one still open
+              to join is <strong>{nextOpenIntake(course) ? intakeLabel(nextOpenIntake(course), 0) : 'not scheduled yet'}</strong>.
+            </div>
+          )}
+          <ClassScheduleList course={course} highlightIntakeId={course.enrollment?.intakeId || null} />
         </div>
 
         {/* Section 1: Session Agenda & Syllabus */}
@@ -713,7 +729,11 @@ function InPersonClassroomCard({ course, isLocked, isEnrolled, onPreviewDoc }) {
             <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bigc-green, #007A38)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="ti ti-paperclip" /> Syllabus &amp; Attached Slides (Pre-Class Materials &amp; Downloads)
             </div>
-            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Learners download or view them online to prepare before the class</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+              {isEnrolled
+                ? 'Learners download or view them online to prepare before the class'
+                : 'Register for this class to open the materials'}
+            </span>
           </div>
 
           {materials.length === 0 ? (
@@ -734,24 +754,31 @@ function InPersonClassroomCard({ course, isLocked, isEnrolled, onPreviewDoc }) {
                       <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Format: {mat.type} &middot; Size: {mat.size || '2.5 MB'}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon="ti-eye"
-                      onClick={() => onPreviewDoc(mat)}
-                    >
-                      View Online
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon="ti-download"
-                      onClick={() => alert(`Downloading material: ${mat.name}`)}
-                    >
-                      Download
-                    </Button>
-                  </div>
+                  {/* Course content is only released to registered learners: the file list
+                      stays visible so people know what the class includes, but nothing can
+                      be opened or downloaded until they enroll. */}
+                  {isEnrolled ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon="ti-eye"
+                        onClick={() => onPreviewDoc(mat)}
+                      >
+                        View Online
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon="ti-download"
+                        onClick={() => alert(`Downloading material: ${mat.name}`)}
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  ) : (
+                    <Badge tone="slate" icon="ti-lock">Available after registration</Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -881,14 +908,18 @@ function VirtualClassCard({ course, isLocked, isEnrolled, onPreviewDoc }) {
                       <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{mat.type} &middot; {mat.size || '2.0 MB'}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <Button size="sm" variant="outline" icon="ti-eye" onClick={() => onPreviewDoc(mat)}>
-                      View Online
-                    </Button>
-                    <Button size="sm" variant="ghost" icon="ti-download" onClick={() => alert(`Downloading: ${mat.name}`)}>
-                      Download
-                    </Button>
-                  </div>
+                  {isEnrolled ? (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <Button size="sm" variant="outline" icon="ti-eye" onClick={() => onPreviewDoc(mat)}>
+                        View Online
+                      </Button>
+                      <Button size="sm" variant="ghost" icon="ti-download" onClick={() => alert(`Downloading: ${mat.name}`)}>
+                        Download
+                      </Button>
+                    </div>
+                  ) : (
+                    <Badge tone="slate" icon="ti-lock">Available after registration</Badge>
+                  )}
                 </div>
               ))}
             </div>

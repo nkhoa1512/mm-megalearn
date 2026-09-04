@@ -47,6 +47,7 @@ const ROLE_WORK_NAV = {
   ],
   trainer: [
     { to: '/trainer', label: 'Teaching & Classroom Dashboard', labelVi: 'Teaching & Classroom Dashboard', labelEn: 'Teaching Dashboard & Classes', icon: 'ti-school', end: true },
+    { to: '/trainer/my-courses', label: 'My In-Person Courses', labelVi: 'My In-Person Courses', labelEn: 'My In-Person Courses', icon: 'ti-folder' },
     { to: '/admin/courses', label: 'Create & Manage Courses', labelVi: 'Create & Manage Courses', labelEn: 'Create & Manage Courses', icon: 'ti-stack-2' },
     { to: '/trainer/reports', label: 'CSAT & Teaching Quality Report', labelVi: 'CSAT & Teaching Quality Report', labelEn: 'CSAT & Teaching Reports', icon: 'ti-chart-histogram' },
   ],

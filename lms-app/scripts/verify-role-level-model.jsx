@@ -67,7 +67,9 @@ const AssessmentDetailModal = (await import('../src/features/assessment/Assessme
 
 const AUTH_KEY = 'mm-megalearn-auth-v6';
 const APPROVAL_KEY = 'mm-megalearn-approvals-v6';
-const COURSES_KEY = 'mm-megalearn-courses-v11';
+// Must track STORAGE_KEY in src/store/CourseStore.jsx — when they drift the store falls
+// back to its own seed and the ownership checks below silently stop testing anything.
+const COURSES_KEY = 'mm-megalearn-courses-v14';
 const ENROLLMENT_KEY = 'mm-megalearn-enrollments-v6';
 
 let failures = 0;

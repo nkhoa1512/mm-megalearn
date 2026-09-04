@@ -10,6 +10,9 @@
 
 import { initialRoomBookings } from '../data/roomBookings';
 import { normalizeRole } from '../data/roles';
+import {
+  isInPersonCourse, courseIntakes, intakeLabel, intakeStatus, sessionHours, formatHours,
+} from './classSchedule';
 
 export const EVENT_CATEGORIES = {
   ALL: { id: 'ALL', labelVi: 'All', labelEn: 'All Events', icon: 'ti-calendar' },
@@ -128,6 +131,99 @@ function buildPersonalClassroomEvents(classrooms = []) {
       actionUrl: '/learner/classrooms',
       sessionId: session.id,
       qrToken: session.qrToken,
+    });
+  }
+  return events;
+}
+
+/**
+ * 2b. Every training day of every in-person course the user is enrolled in. A course can
+ * run several intakes, so only the sessions of the intake the learner joined are shown —
+ * falling back to the whole schedule when the enrollment does not name an intake.
+ */
+function buildInPersonSessionEvents(courses = [], myEnrollments = {}) {
+  const events = [];
+  for (const course of courses) {
+    if (!isInPersonCourse(course)) continue;
+    const enrollment = myEnrollments[course.id];
+    if (!enrollment) continue;
+
+    const intakes = courseIntakes(course);
+    const mine = enrollment.intakeId ? intakes.filter((it) => it.id === enrollment.intakeId) : intakes;
+
+    mine.forEach((intake, intakeIdx) => {
+      const label = intakeLabel(intake, intakeIdx);
+      intake.sessions.forEach((session, dayIdx) => {
+        if (!session.date) return;
+        events.push({
+          id: `ilt-${course.id}-${intake.id}-${session.id || dayIdx}`,
+          scope: 'PERSONAL',
+          category: 'CLASSROOM_ILT',
+          categoryLabel: 'In-Person Training Day',
+          icon: 'ti-chalkboard',
+          date: session.date,
+          time: `${session.startTime} - ${session.endTime}`,
+          title: `${course.title} — day ${dayIdx + 1} of ${intake.sessions.length}`,
+          subtitle: `${label} · ${session.topic || 'Training session'} · ${formatHours(sessionHours(session.startTime, session.endTime))}`,
+          courseCode: course.code || course.id,
+          courseId: course.id,
+          intakeId: intake.id,
+          venue: intake.venue || course.venue || 'MMVN Training Venue',
+          instructor: intake.trainerName || course.trainerName || 'Dedicated Trainer',
+          status: enrollment.status || 'ENROLLED',
+          statusLabel: enrollment.status === 'COMPLETED' ? 'Completed' : 'Scheduled',
+          tone: enrollment.status === 'COMPLETED' ? 'sage' : 'blue',
+          actionType: 'VIEW_DETAIL',
+          actionLabel: 'View The Class Detail',
+          actionUrl: `/learner/courses/${course.id}`,
+        });
+      });
+    });
+  }
+  return events;
+}
+
+/**
+ * 2c. The teaching calendar of a trainer: every training day of every intake they run.
+ */
+function buildTeachingSessionEvents(courses = [], currentUser) {
+  if (!currentUser?.userId) return [];
+  const events = [];
+  for (const course of courses) {
+    if (!isInPersonCourse(course)) continue;
+
+    courseIntakes(course).forEach((intake, intakeIdx) => {
+      const trainerId = intake.trainerId || course.trainerId;
+      const isMine = trainerId === currentUser.userId || (course.coTrainerIds || []).includes(currentUser.userId);
+      if (!isMine) return;
+
+      const label = intakeLabel(intake, intakeIdx);
+      const status = intakeStatus(intake);
+      intake.sessions.forEach((session, dayIdx) => {
+        if (!session.date) return;
+        events.push({
+          id: `teach-${course.id}-${intake.id}-${session.id || dayIdx}`,
+          scope: 'OPERATIONAL',
+          category: 'CLASSROOM_ILT',
+          categoryLabel: 'Class I Teach (ILT)',
+          icon: 'ti-school',
+          date: session.date,
+          time: `${session.startTime} - ${session.endTime}`,
+          title: `${course.title} — ${label}, day ${dayIdx + 1}`,
+          subtitle: `${session.topic || 'Training session'} · up to ${intake.maxCapacity || course.maxCapacity || 25} learners`,
+          courseCode: course.code || course.id,
+          courseId: course.id,
+          intakeId: intake.id,
+          venue: intake.venue || course.venue || 'MMVN Training Venue',
+          instructor: intake.trainerName || course.trainerName || currentUser.fullName,
+          status: status.id,
+          statusLabel: status.label,
+          tone: status.tone,
+          actionType: 'PROJECT_QR',
+          actionLabel: 'Project The Live Attendance QR',
+          actionUrl: '/trainer',
+        });
+      });
     });
   }
   return events;
@@ -555,16 +651,15 @@ export function buildCalendarEvents({
   const personalEvents = [
     ...buildPersonalDeadlineEvents(courses, myEnrollments),
     ...buildPersonalClassroomEvents(classrooms),
+    ...buildInPersonSessionEvents(courses, myEnrollments),
     ...buildPersonalVirtualClassEvents(courses),
     ...buildPersonalAssessmentEvents(assessments),
   ];
 
-  const operationalEvents = buildOperationalEventsByRole(role, {
-    courses,
-    classrooms,
-    users,
-    currentUser,
-  });
+  const operationalEvents = [
+    ...buildTeachingSessionEvents(courses, currentUser),
+    ...buildOperationalEventsByRole(role, { courses, classrooms, users, currentUser }),
+  ];
 
   const allEvents = [...personalEvents, ...operationalEvents];
 

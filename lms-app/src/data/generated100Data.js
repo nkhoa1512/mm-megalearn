@@ -504,6 +504,7 @@ function resolveCourseTargetLevel(codePrefix, idx) {
 
 let generatedCourseList = [];
 let courseCounter = 1;
+let classroomCounter = 0;
 
 COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
   tpl.titles.forEach((title, idx) => {
@@ -528,13 +529,60 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       { id: 'USR-9004', name: 'Lê Thị Mai', venueId: 'lab-ap-pos', venue: 'Cashier & Frontline Service Lab - MM Mega Market An Phu' },
       { id: 'USR-9001', name: 'Trần Hoàng Long', venueId: 'room-ho-dia', venue: 'Microsoft Teams Live Studio (An Phu Head Office)' },
     ];
-    const assignedPersona = TEACHING_POOL[(idx + courseCounter) % TEACHING_POOL.length];
+    // Rotate over the classroom courses only. Keying off (idx + courseCounter) instead
+    // walked the pool in a stride that skipped members entirely, leaving some trainers —
+    // the demo Trainer login among them — with no course of their own to manage.
+    const assignedPersona = TEACHING_POOL[classroomCounter % TEACHING_POOL.length];
+    if (isClassroom) classroomCounter++;
     const trainerId = isClassroom ? assignedPersona.id : null;
     const trainerName = isClassroom ? assignedPersona.name : null;
     const venue = isClassroom ? assignedPersona.venue : null;
     const venueId = isClassroom ? assignedPersona.venueId : null;
-    const scheduleDate = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${15 + (idx % 14)}` : null;
-    const scheduleTime = isClassroom ? '08:30 - 11:30 (3.0 hours)' : null;
+    // In-person courses run across 1-3 training days. Longer programmes are split into
+    // a morning + afternoon block per day, mirroring how store workshops actually run.
+    // Two thirds of them are re-run for a second cohort a few weeks later — the same
+    // course, a second intake, different dates.
+    const firstDay = isClassroom ? `2026-0${Math.min(9, 8 + (idx % 2))}-${String(15 + (idx % 12)).padStart(2, '0')}` : null;
+    const dayCount = isClassroom ? [1, 2, 3][idx % 3] : 0;
+    const isFullDay = isClassroom && dayCount > 1;
+    const intakeCount = isClassroom ? (idx % 3 === 2 ? 1 : 2) : 0;
+
+    function buildIntakeSessions(intakeIdx) {
+      const offset = intakeIdx * 21; // the re-run starts three weeks after the first
+      return Array.from({ length: dayCount }, (_, dIdx) => {
+        const d = new Date(`${firstDay}T00:00:00`);
+        d.setDate(d.getDate() + offset + dIdx);
+        const date = d.toISOString().slice(0, 10);
+        const blocks = isFullDay
+          ? [{ startTime: '08:30', endTime: '12:00', topic: `Day ${dIdx + 1} — morning theory block` },
+             { startTime: '13:30', endTime: '17:00', topic: `Day ${dIdx + 1} — afternoon hands-on practice` }]
+          : [{ startTime: '08:30', endTime: '11:30', topic: 'Theory, demonstration & assessment' }];
+        return blocks.map((b, bIdx) => ({
+          id: `ses-${code}-i${intakeIdx + 1}-${dIdx + 1}-${bIdx + 1}`,
+          date,
+          ...b,
+        }));
+      }).flat();
+    }
+
+    const classroomIntakes = isClassroom
+      ? Array.from({ length: intakeCount }, (_, i) => ({
+          id: `intake-${code}-${i + 1}`,
+          name: `Intake ${i + 1}`,
+          trainerId: '',
+          trainerName: '',
+          venueId: '',
+          venue: '',
+          maxCapacity: null,
+          sessions: buildIntakeSessions(i),
+        }))
+      : [];
+    const classroomSessions = classroomIntakes.flatMap((it) => it.sessions);
+    const totalTrainingHours = isFullDay ? dayCount * 7 : (isClassroom ? 3 : 0);
+    const scheduleDate = isClassroom ? classroomSessions[0].date : null;
+    const scheduleTime = isClassroom
+      ? `${classroomSessions[0].startTime} - ${classroomSessions[0].endTime} (${(isFullDay ? 3.5 : 3).toFixed(1)}h)`
+      : null;
 
     // Assign 2 to 3 co-trainers & teaching assistants (total teaching panel of 3 - 4 people)
     const coTrainerCount = (idx % 2 === 0) ? 2 : 3;
@@ -606,7 +654,9 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       format: tpl.format || 'SCORM 2004',
       platformSource: tpl.platformSource || null,
       courseType: tpl.isMandatory ? 'MANDATORY' : 'OPTIONAL',
-      estimatedHours: tpl.time,
+      // An in-person course lasts exactly as long as its timetable says. Only a self-paced
+      // online course keeps the template's estimate, since it has no timetable to measure.
+      estimatedHours: isClassroom ? `${totalTrainingHours.toFixed(1)}h` : tpl.time,
       passingScore: tpl.passScore,
       published: true,
       trainerId,
@@ -618,6 +668,13 @@ COURSE_CATALOG_TEMPLATES.forEach((tpl) => {
       venueId,
       scheduleDate,
       scheduleTime,
+      intakes: classroomIntakes,
+      sessions: classroomSessions,
+      totalTrainingHours,
+      // An in-person course is owned by the trainer who leads it, so that trainer can
+      // manage it from their own hub. Online courses stay owned by the L&D admin
+      // (no createdBy => the catalog treats them as User Admin's).
+      ...(isClassroom ? { createdBy: trainerId } : {}),
       maxCapacity: isClassroom ? 25 : 500,
       description: `Comprehensive MMVN standard training module for ${title}. Aligned with retail excellence and regulatory compliance.`,
       prerequisites: idx > 0 && idx % 3 === 0 ? [`CRS-${tpl.codePrefix}-${String(courseCounter - 1).padStart(3, '0')}`] : [],

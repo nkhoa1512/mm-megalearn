@@ -19,6 +19,9 @@ import {
   sessionQrSecret,
   deriveAttendanceWindows,
 } from '../../utils/qrAttendance';
+import {
+  courseIntakes, nextOpenIntake, intakeDateRange, scheduleSummary, formatSessionDate,
+} from '../../utils/classSchedule';
 
 function QrCodeDisplay({ value }) {
   const [dataUrl, setDataUrl] = useState('');
@@ -43,7 +46,7 @@ function QrCodeDisplay({ value }) {
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const navigate = useNavigate();
-  const { courses, currentUser: authUser, users } = useCourseStore();
+  const { courses, currentUser: authUser, users, removeCourse } = useCourseStore();
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED
@@ -67,6 +70,20 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
 
   // Filter in-person courses taught specifically by selected trainer
   const inPersonCourses = courses.filter((c) => c.deliveryType === 'IN_PERSON_CLASSROOM' || c.modality === 'CLASSROOM_LAB');
+
+  // The trainer's OWN in-person courses — the ones they created and may therefore edit or
+  // delete. User Admin / System Admin manage every in-person course from the catalog page
+  // instead; a trainer only ever sees their own here.
+  const isFullAdmin = hasCapability(authRole, 'canAuthorOnlineCourses');
+  const myAuthoredCourses = inPersonCourses.filter((c) =>
+    isFullAdmin ? true : c.createdBy === authUser?.userId
+  );
+  const [courseSearch, setCourseSearch] = useState('');
+  const filteredAuthoredCourses = myAuthoredCourses.filter((c) => {
+    if (!courseSearch.trim()) return true;
+    const q = courseSearch.toLowerCase().trim();
+    return [c.title, c.code, c.category, c.venue].some((v) => String(v || '').toLowerCase().includes(q));
+  });
 
   // Live online classes (Virtual Class) hosted by this trainer
   const virtualClassCourses = courses
@@ -608,6 +625,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
         {[
           { id: 'CLASSES', label: 'Classes I Teach', icon: 'ti-chalkboard', count: myTeachingClasses.length },
+          { id: 'MY_COURSES', label: 'My In-Person Courses', icon: 'ti-folder', count: myAuthoredCourses.length },
           { id: 'ATTENDANCE', label: 'Learner Attendance Management', icon: 'ti-user-check', count: totalRosterCount },
           { id: 'FEEDBACK', label: 'CSAT Ratings & Learner Feedback', icon: 'ti-star', count: `${trainerProfile.rating}★` },
           { id: 'LABS', label: 'Store Practice Workshop Directory', icon: 'ti-building', count: meetingRoomsAndLabs.length },
@@ -1083,6 +1101,132 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       )}
 
       {/* TAB 3: LABS & VENUES */}
+      {/* TAB: MY IN-PERSON COURSES — the trainer's own catalog entries, editable here */}
+      {activeTab === 'MY_COURSES' && (
+        <>
+          <div className="card card-pad" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--ink-soft)' }}>
+              <i className="ti ti-folder" style={{ color: 'var(--blue)', fontSize: 16 }} />
+              <div>
+                {isFullAdmin
+                  ? <>Every in-person course in the catalog, including the ones trainers created.</>
+                  : <>The in-person courses <strong>you created</strong>. Edit the schedule, venue and syllabus, or delete a course you no longer run.</>}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', minWidth: 220 }}>
+                <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', fontSize: 14 }} />
+                <input
+                  type="text"
+                  className="field-input"
+                  style={{ paddingLeft: 32, height: 36, fontSize: 13, width: '100%' }}
+                  placeholder="Search my courses..."
+                  value={courseSearch}
+                  onChange={(e) => setCourseSearch(e.target.value)}
+                />
+              </div>
+              <Button icon="ti-calendar" onClick={() => navigate('/trainer/training-ops')}>
+                Teaching Schedule
+              </Button>
+              <Button icon="ti-chart-histogram" onClick={() => navigate('/trainer/reports')}>
+                Training Reports
+              </Button>
+              <Button
+                variant="primary"
+                icon="ti-plus"
+                onClick={() => navigate('/trainer/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
+              >
+                Create In-Person Course
+              </Button>
+            </div>
+          </div>
+
+          {filteredAuthoredCourses.length === 0 ? (
+            <div className="card card-pad" style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <i className="ti ti-folder-open" style={{ fontSize: 40, color: 'var(--ink-faint)', marginBottom: 10, display: 'block' }} />
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)', marginBottom: 4 }}>
+                {courseSearch ? 'No course matches your search.' : 'You have not created any in-person course yet.'}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+                Click &quot;Create In-Person Course&quot; to build one, set its venue and lay out the training days.
+              </div>
+            </div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th style={{ width: 150 }}>Category</th>
+                    <th style={{ width: 230 }}>Training Schedule</th>
+                    <th style={{ width: 160 }}>Venue</th>
+                    <th style={{ width: 90 }}>Capacity</th>
+                    <th style={{ width: 110 }}>Status</th>
+                    <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAuthoredCourses.map((c) => {
+                    const intakes = courseIntakes(c);
+                    const next = nextOpenIntake(c);
+                    const nextStart = next ? intakeDateRange(next).start : null;
+                    const canManage = isFullAdmin || c.createdBy === authUser?.userId;
+                    return (
+                      <tr key={c.id}>
+                        <td>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{c.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>{c.code || c.id}</div>
+                        </td>
+                        <td style={{ fontSize: 12 }}>{c.category || '—'}</td>
+                        <td>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>{scheduleSummary(c)}</div>
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+                            {nextStart
+                              ? `Next intake starts ${formatSessionDate(nextStart, { withWeekday: false })}`
+                              : intakes.length > 0 ? 'All intakes finished' : 'Not scheduled yet'}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: 12 }}>
+                          {c.venue || '—'}
+                          <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 2 }}>
+                            {intakes.length === 1 ? '1 intake' : `${intakes.length} intakes`}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: 12 }}>{c.maxCapacity || 25}</td>
+                        <td>
+                          <Badge tone={c.status === 'PUBLISHED' ? 'sage' : 'slate'} size="sm">
+                            {c.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                          </Badge>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: 6 }}>
+                            <Button size="sm" icon="ti-pencil" onClick={() => navigate(`/trainer/courses/${c.id}`)}>
+                              Edit
+                            </Button>
+                            {canManage && (
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                icon="ti-trash"
+                                onClick={() => {
+                                  if (window.confirm(`Delete the course "${c.title}"? This cannot be undone.`)) removeCourse(c.id);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
       {activeTab === 'LABS' && (
         <div className="grid grid-2">
           {meetingRoomsAndLabs.map((lab) => (

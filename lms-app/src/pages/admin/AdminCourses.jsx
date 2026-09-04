@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { courseHasParticipants, userAdminUser, isUserAssignedToCourse } from '../../data/mockData';
+import { courseHasParticipants, userAdminUser, isUserAssignedToCourse, deriveCertificates } from '../../data/mockData';
 import { ActionsMenu, Badge, Button, CourseTypeBadge, Modal, Tabs, CertificateTemplatePicker } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
 import { canAuthorAnyCourse, hasCapability, normalizeRole } from '../../data/roles';
@@ -11,6 +11,9 @@ import {
   personalLifecycleStatusOf, PERSONAL_LIFECYCLE_STATUS_META, groupCategoriesByGroup,
 } from '../../utils/courseCatalog';
 import CurriculumTree from '../../features/catalog/CurriculumTree';
+import LearnerLibraryBrowser from '../../features/catalog/LearnerLibraryBrowser';
+import ClassScheduleList from '../../features/common/ClassScheduleList';
+import { scheduleSummary, isInPersonCourse } from '../../utils/classSchedule';
 import { pricingOf, formatVnd } from '../../utils/costCenter';
 import MultiTargetAssigner from '../../features/catalog/MultiTargetAssigner';
 import {
@@ -48,16 +51,17 @@ const STATUS_TONE = { PUBLISHED: 'sage', DRAFT: 'rail', ARCHIVED: 'slate' };
 // into a single tab — both are online courses, differing only in the
 // format badge (🌐 E-Learning / 💻 Live) is already on every row, so a separate tab
 // is no longer needed. "Library Course" moves to the front & is renamed "All Class" (keeping the same
-// behaviour: shows every course, with no section filter). The new "Library" at the end is
-// a consolidated view of courses by area (hard skills) — only User Admin &
-// System Admin can see it (adminOnly, filtered when building the visible tab list).
+// behaviour: shows every course, with no section filter). The "Library" at the end is
+// a consolidated view of courses by area (hard skills): User Admin & System Admin build and
+// edit the libraries there, while every other role gets the same tab as a read-only
+// browse — open a library, see its areas, and check their own status on each course.
 const CATALOG_TABS = [
   { id: 'library', label: 'All Class', icon: 'ti-database' },
   { id: 'online-class', label: 'Online Class', icon: 'ti-broadcast', includeSections: [CATALOG_SECTIONS.LEARNING_OBJECTS, CATALOG_SECTIONS.ONLINE_CLASS] },
   { id: 'classroom', label: 'Classroom / In-Person', icon: 'ti-chalkboard', section: CATALOG_SECTIONS.CLASSROOM },
   { id: 'curriculum', label: 'Curriculum', icon: 'ti-books' },
   { id: 'assessment', label: 'Assessment', icon: 'ti-writing' },
-  { id: 'domain-library', label: 'Library', icon: 'ti-folders', adminOnly: true },
+  { id: 'domain-library', label: 'Library', icon: 'ti-folders' },
 ];
 
 const COURSE_GROUP_BY_OPTIONS = [
@@ -195,15 +199,6 @@ export default function AdminCourses() {
     });
   }
   const activeTabDef = CATALOG_TABS.find((tb) => tb.id === activeTab) || CATALOG_TABS[0];
-  // "Library" (domain-library) is for User Admin/SysAdmin only — if someone
-  // navigates straight to ?tab=domain-library without the rights, they are pushed back to
-  // "All Class" rather than showing an empty/incorrect view.
-  useEffect(() => {
-    if (activeTab === 'domain-library' && !isFullAdmin) {
-      setActiveTab('library');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isFullAdmin]);
   // Trainer/L&D may only create in-person (Classroom) courses
   const hideCreateForTrainerTab = isAdmin && !isFullAdmin && activeTab === 'online-class';
 
@@ -321,6 +316,13 @@ export default function AdminCourses() {
   // its own CRUD: the admin creates the Library, adds areas & assigns courses manually
   // (see the dedicated JSX block below; it does not share the course table layout).
   const isLibraryManager = activeTabDef.id === 'domain-library' && isFullAdmin;
+  // Every other role gets the same tab read-only: browse the libraries an admin built,
+  // drill into an area and check their own progress on each course inside it.
+  const isLibraryBrowser = activeTabDef.id === 'domain-library' && !isFullAdmin;
+  const myCertificates = useMemo(
+    () => (isLibraryBrowser ? deriveCertificates(courses, currentUser, myEnrollments, certificateTemplates) : []),
+    [isLibraryBrowser, courses, currentUser, myEnrollments, certificateTemplates]
+  );
 
   // Assessment management & catalog state
   const [editingAssessment, setEditingAssessment] = useState(null);
@@ -424,7 +426,7 @@ export default function AdminCourses() {
   // while the other 3 tabs also filter by the open tab's section. For a role that is NOT
   // Full Admin, the status set switches to the personalized view (see
   // personalLifecycleStatusOf) instead of the Admin's Draft/Upcoming/Open/Closed.
-  const filtered = isCurriculum || isAssessment || isLibraryManager
+  const filtered = isCurriculum || isAssessment || isLibraryManager || isLibraryBrowser
     ? []
     : bySearchCategoryType.filter((c) => {
       // "All Class" shows every course with no section filter; the remaining tabs
@@ -443,7 +445,7 @@ export default function AdminCourses() {
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const groups = isCurriculum || isAssessment || isLibraryManager ? null : buildCourseGroups(filtered, groupBy, { personal: !(isFullAdmin || isAdmin) });
+  const groups = isCurriculum || isAssessment || isLibraryManager || isLibraryBrowser ? null : buildCourseGroups(filtered, groupBy, { personal: !(isFullAdmin || isAdmin) });
 
   function toggleGroup(key) {
     setCollapsedGroups((prev) => {
@@ -495,9 +497,15 @@ export default function AdminCourses() {
               <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
                 <span style={{ fontFamily: 'var(--font-mono)' }}>{c.code}</span> &middot; {(c.categories && c.categories.join(', ')) || c.category} &middot; Version {c.version}
                 {c.onlineClassType === 'VIRTUAL_CLASS' && c.virtualMeeting?.instructorName && (
-                  <> &middot; GV: {c.virtualMeeting.instructorName}</>
+                  <> &middot; Trainer: {c.virtualMeeting.instructorName}</>
                 )}
               </div>
+              {isInPersonCourse(c) && (
+                <div style={{ fontSize: 11, color: 'var(--blue)', marginTop: 2 }}>
+                  <i className="ti ti-calendar-time" style={{ marginRight: 4 }} />
+                  {scheduleSummary(c)}
+                </div>
+              )}
             </div>
           </div>
         </td>
@@ -927,7 +935,7 @@ export default function AdminCourses() {
               : 'Build lesson modules, interactive tests and question banks, and allocate mandatory training by Division, Department or Job Level.'}
           </p>
         </div>
-        {isAdmin && !isCurriculum && !isAssessment && !isLibraryManager && !hideCreateForTrainerTab && (
+        {isAdmin && !isCurriculum && !isAssessment && !isLibraryManager && !isLibraryBrowser && !hideCreateForTrainerTab && (
           <div>
             {!isFullAdmin ? (
               <Button
@@ -1714,6 +1722,15 @@ export default function AdminCourses() {
             )}
           </div>
         </>
+      ) : isLibraryBrowser ? (
+        <LearnerLibraryBrowser
+          libraries={libraries}
+          courses={courses.filter((c) => c.status !== 'DRAFT')}
+          myEnrollments={myEnrollments}
+          certificates={myCertificates}
+          accessFor={accessFor}
+          user={currentUser}
+        />
       ) : isLibraryManager ? (
         <>
           <div className="card card-pad" style={{ marginBottom: 16, fontSize: 13, color: 'var(--ink-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -2725,8 +2742,13 @@ function CourseDetailModal({
                   </div>
                 )}
                 <div><strong>Venue / workshop:</strong> {liveCourse.venue || 'Fresh Food & Bakery Lab'}</div>
-                <div><strong>Training schedule:</strong> {liveCourse.scheduleDate || '2026-08-28'} ({liveCourse.scheduleTime || '08:30 - 11:30'})</div>
-                <div><strong>Capacity:</strong> {liveCourse.maxCapacity || 25} learners &middot; Live QR Attendance</div>
+                <div><strong>Capacity:</strong> {liveCourse.maxCapacity || 25} learners per intake &middot; Live QR Attendance</div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                    Training schedule &mdash; {scheduleSummary(liveCourse)}
+                  </div>
+                  <ClassScheduleList course={liveCourse} />
+                </div>
               </div>
             </div>
           ) : (
