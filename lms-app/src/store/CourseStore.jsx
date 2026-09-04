@@ -73,7 +73,7 @@ const CURRICULUM_KEY = 'mm-megalearn-curriculum-v3';
 // the areas (each bound to an existing Category) and then assign courses manually
 // to each area for easy lookup — unlike a Curriculum, it is only a view
 // a reference/lookup view for User Admin & System Admin, with no allocation/enrollment.
-const LIBRARY_KEY = 'mm-megalearn-libraries-v2';
+const LIBRARY_KEY = 'mm-megalearn-libraries-v3';
 
 // Sample data for the first few Libraries (demo/first-run) — pre-grouping the seed
 // seed courses from mockData.js into the area matching their Category, so the
