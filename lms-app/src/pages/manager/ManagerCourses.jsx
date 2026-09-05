@@ -1,69 +1,97 @@
 import React, { useState, useMemo } from 'react';
-import { getTeamMembersForManager, managerUser as defaultManager, courses as allCourses, classroomSessions } from '../../data/mockData';
+import { managerUser as defaultManager, courses as allCourses, classroomSessions, allUsers, enrollmentsForUser } from '../../data/mockData';
 import { useCourseStore } from '../../store/CourseStore';
 import { canManage } from '../../data/roles';
+import { buildTeam, teamAssignments } from '../../utils/managerRules';
 import { Badge, ProgressBar, CourseTypeBadge, Button, Modal } from '../../features/common/ui';
 import { downloadCsv } from '../../lib/exportCsv';
 
-function groupByCourse(members, courseList = []) {
-  const map = new Map();
-  for (const m of members) {
-    if (!map.has(m.course)) {
-      const matchedCourse = courseList.find((c) => c.title === m.course || c.id === m.courseId) || {};
-      map.set(m.course, {
-        course: m.course,
-        courseId: matchedCourse.id || `CRS-${Math.abs(m.course.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0)).toString().slice(0, 6)}`,
-        courseType: m.courseType || matchedCourse.courseType || 'MANDATORY',
-        domain: matchedCourse.domain || matchedCourse.category || 'Store Operations',
-        deliveryType: matchedCourse.deliveryType || (matchedCourse.modality === 'CLASSROOM_LAB' ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING'),
-        modality: matchedCourse.modality || 'E_LEARNING',
-        estimatedHours: matchedCourse.estimatedHours || '2.0h',
-        passingScore: matchedCourse.passingScore || 80,
-        trainerName: matchedCourse.trainerName || 'L&OD Training Department',
-        thumbnail: matchedCourse.thumbnail || matchedCourse.imageUrl,
-        members: [],
-      });
-    }
-    map.get(m.course).members.push(m);
-  }
-
-  return [...map.values()].map((g) => {
-    const assigned = g.members.length;
-    const completed = g.members.filter((m) => m.status === 'COMPLETED').length;
-    const inProgress = g.members.filter((m) => m.status === 'IN_PROGRESS').length;
-    const notStarted = g.members.filter((m) => m.status === 'NOT_STARTED').length;
-    const overdue = g.members.filter((m) => m.status === 'OVERDUE').length;
-    const failed = g.members.filter((m) => m.status === 'FAILED').length;
-    const scored = g.members.filter((m) => m.score != null);
-    const avgScore = scored.length ? Math.round(scored.reduce((s, m) => s + m.score, 0) / scored.length) : null;
-    const completionRate = Math.round((completed / Math.max(1, assigned)) * 100);
-
-    const hoursNumeric = parseFloat(String(g.estimatedHours).replace(/[^\d.]/g, '')) || 2.0;
-    const totalHoursCompleted = Math.round(completed * hoursNumeric * 10) / 10;
-
-    return {
-      ...g,
-      assigned,
-      completed,
-      inProgress,
-      notStarted,
-      overdue,
-      failed,
-      avgScore,
-      completionRate,
-      hoursNumeric,
-      totalHoursCompleted,
-    };
-  });
-}
-
 export default function ManagerCourses() {
-  const { currentUser: authUser, courses: storeCourses } = useCourseStore();
+  const { currentUser: authUser, courses: storeCourses, users, enrollments } = useCourseStore();
   const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
-  const teamMembers = useMemo(() => getTeamMembersForManager(activeManager), [activeManager]);
   const courseList = storeCourses && storeCourses.length > 0 ? storeCourses : allCourses;
+  const roster = useMemo(() => (users && users.length > 0 ? users : allUsers()), [users]);
+  const today = useMemo(() => new Date(), []);
 
-  const groups = useMemo(() => groupByCourse(teamMembers, courseList), [teamMembers, courseList]);
+  const effectiveEnrollments = useMemo(() => {
+    const map = {};
+    roster.forEach((u) => { map[u.userId] = enrollmentsForUser(u, enrollments); });
+    return map;
+  }, [roster, enrollments]);
+
+  const team = useMemo(
+    () => buildTeam(activeManager, roster, effectiveEnrollments, today),
+    [activeManager, roster, effectiveEnrollments, today]
+  );
+  const teamMembers = team.members;
+
+  const groups = useMemo(() => {
+    const assignmentRows = teamAssignments(team, effectiveEnrollments, courseList);
+    const map = new Map();
+
+    assignmentRows.forEach((r) => {
+      const matchedCourse = courseList.find((c) => c.id === r.courseId || c.title === r.course) || {};
+      if (!map.has(r.courseId)) {
+        map.set(r.courseId, {
+          course: r.course,
+          courseId: r.courseId,
+          courseType: r.mandatory ? 'MANDATORY' : (matchedCourse.courseType || 'OPTIONAL'),
+          domain: matchedCourse.category || matchedCourse.domain || 'Store Operations',
+          deliveryType: matchedCourse.deliveryType || (matchedCourse.modality === 'CLASSROOM_LAB' ? 'IN_PERSON_CLASSROOM' : 'ONLINE_ELEARNING'),
+          modality: matchedCourse.modality || 'E_LEARNING',
+          estimatedHours: matchedCourse.estimatedHours || '2.0h',
+          passingScore: matchedCourse.passingScore || 80,
+          trainerName: matchedCourse.trainerName || 'L&OD Training Department',
+          thumbnail: matchedCourse.thumbnail || matchedCourse.imageUrl,
+          members: [],
+        });
+      }
+      map.get(r.courseId).members.push({
+        employeeId: r.employeeCode || r.userId,
+        userId: r.userId,
+        name: r.name,
+        position: r.relationshipLabel || 'Team Member',
+        status: r.status,
+        score: r.score,
+        progress: r.progressPercent ?? (r.status === 'COMPLETED' ? 100 : 0),
+        dueDate: r.dueDate || '2026-09-30',
+        attempts: r.attemptsCount || (r.status === 'COMPLETED' ? 1 : 0),
+        lastActivity: r.lastActivity,
+        overdue: r.status === 'OVERDUE' || r.isOverdue,
+        course: r.course,
+        courseId: r.courseId,
+      });
+    });
+
+    return Array.from(map.values()).map((g) => {
+      const assigned = g.members.length;
+      const completed = g.members.filter((m) => m.status === 'COMPLETED').length;
+      const inProgress = g.members.filter((m) => m.status === 'IN_PROGRESS').length;
+      const notStarted = g.members.filter((m) => m.status === 'NOT_STARTED').length;
+      const overdue = g.members.filter((m) => m.status === 'OVERDUE').length;
+      const failed = g.members.filter((m) => m.status === 'FAILED').length;
+      const scored = g.members.filter((m) => m.score != null);
+      const avgScore = scored.length ? Math.round(scored.reduce((s, m) => s + m.score, 0) / scored.length) : null;
+      const completionRate = Math.round((completed / Math.max(1, assigned)) * 100);
+
+      const hoursNumeric = parseFloat(String(g.estimatedHours).replace(/[^\d.]/g, '')) || 2.0;
+      const totalHoursCompleted = Math.round(completed * hoursNumeric * 10) / 10;
+
+      return {
+        ...g,
+        assigned,
+        completed,
+        inProgress,
+        notStarted,
+        overdue,
+        failed,
+        avgScore,
+        completionRate,
+        hoursNumeric,
+        totalHoursCompleted,
+      };
+    });
+  }, [team, effectiveEnrollments, courseList]);
 
   // Main Tabs: CURRICULUM_ROSTER, DOMAIN_ANALYTICS, LIVE_WORKSHOPS
   const [activeTab, setActiveTab] = useState('CURRICULUM_ROSTER');

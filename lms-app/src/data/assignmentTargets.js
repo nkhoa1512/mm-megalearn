@@ -40,7 +40,17 @@ export const TARGET_ID_FIELD = {
   USER: 'targetUserId',
 };
 
-export function targetOptionsFor(assignmentType, customGroupsList = null) {
+export function targetOptionsFor(assignmentType, customGroupsList = null, options = {}) {
+  const {
+    businessUnits: buList = businessUnits,
+    divisions: divList = divisions,
+    departments: deptList = departments,
+    subDepartments: subDeptList = subDepartments,
+    jobLevels: lvlList = jobLevels,
+    retailStores: storeList = retailStores,
+    users: usrList = null,
+  } = options;
+
   switch (assignmentType) {
     case 'GROUP': {
       const groups = (customGroupsList && customGroupsList.length > 0) ? customGroupsList : DEFAULT_CUSTOM_GROUPS;
@@ -54,10 +64,10 @@ export function targetOptionsFor(assignmentType, customGroupsList = null) {
         type: g.type,
       }));
     }
-    case 'BUSINESS_UNIT': return businessUnits.map((b) => ({ id: b.id, label: b.name }));
-    case 'DIVISION': return divisions.map((d) => ({ id: d.id, code: d.code, name: d.name, label: `🏢 [${d.code}] ${d.name}` }));
-    case 'DEPARTMENT': return departments.map((d) => ({ id: d.id, code: d.code, name: d.name, divisionId: d.divisionId, label: `🏛️ [${d.code}] ${d.name}` }));
-    case 'SUBDEPARTMENT': return subDepartments.map((s) => ({
+    case 'BUSINESS_UNIT': return buList.map((b) => ({ id: b.id, label: b.name }));
+    case 'DIVISION': return divList.map((d) => ({ id: d.id, code: d.code, name: d.name, label: `🏢 [${d.code}] ${d.name}` }));
+    case 'DEPARTMENT': return deptList.map((d) => ({ id: d.id, code: d.code, name: d.name, divisionId: d.divisionId, label: `🏛️ [${d.code}] ${d.name}` }));
+    case 'SUBDEPARTMENT': return subDeptList.map((s) => ({
       id: s.id,
       code: s.code,
       name: s.name,
@@ -67,11 +77,11 @@ export function targetOptionsFor(assignmentType, customGroupsList = null) {
     case 'AREA': return operationsAreas.map((a) => ({ id: a.id, label: `${a.code} - ${a.name}` }));
     case 'STORE_TYPE': return storeTypes.map((t) => ({ id: t.id, label: `${t.code} - ${t.name}` }));
     case 'CLUSTER': return clusters.map((c) => ({ id: c.id, label: `${c.code} - ${c.name}` }));
-    case 'STORE': return retailStores.map((s) => ({ id: s.id, code: s.code, name: s.name, label: `📍 [${s.code}] ${s.name}` }));
-    case 'LEVEL': return jobLevels.map((l) => ({ id: String(l.level), level: String(l.level), label: `🎯 Level ${l.level} — ${l.title}` }));
+    case 'STORE': return storeList.map((s) => ({ id: s.id, code: s.code, name: s.name, label: `📍 [${s.code}] ${s.name}` }));
+    case 'LEVEL': return lvlList.map((l) => ({ id: String(l.level), level: String(l.level), label: `🎯 Level ${l.level} — ${l.title}` }));
     case 'ROLE': return ROLE_DEFINITIONS.map((r) => ({ id: r.id, label: `${r.labelVi} (${r.shortVi})` }));
     case 'USER': {
-      const list = typeof allUsers === 'function' ? allUsers() : (demoUsers || []);
+      const list = usrList || (typeof allUsers === 'function' ? allUsers() : (demoUsers || []));
       return list
         .map((u) => {
           const subInfo = u.subDepartmentName ? ` · 🌿 ${u.subDepartmentName}` : (u.subDepartmentCode ? ` · ${u.subDepartmentCode}` : '');
@@ -113,15 +123,21 @@ export function getCascadingTargetOptions({
   search = '',
   customGroups = [],
   usersList = null,
+  businessUnits: buList = businessUnits,
+  divisions: divList = divisions,
+  departments: deptList = departments,
+  subDepartments: subDeptList = subDepartments,
+  jobLevels: lvlList = jobLevels,
+  retailStores: storeList = retailStores,
 }) {
   const q = (search || '').toLowerCase().trim();
 
   switch (scope) {
     case 'BUSINESS_UNIT': {
-      let list = (businessUnits || []).map((b) => {
-        const divCount = divisions.filter((d) => d.businessUnitId === b.id).length;
-        const deptCount = departments.filter((dept) => {
-          const d = divisions.find((div) => div.id === dept.divisionId);
+      let list = (buList || []).map((b) => {
+        const divCount = (divList || []).filter((d) => d.businessUnitId === b.id).length;
+        const deptCount = (deptList || []).filter((dept) => {
+          const d = (divList || []).find((div) => div.id === dept.divisionId);
           return d && d.businessUnitId === b.id;
         }).length;
         return {
@@ -129,7 +145,7 @@ export function getCascadingTargetOptions({
           code: b.code || 'MMVN',
           name: b.name,
           label: `🏢 [${b.code || 'MMVN'}] ${b.name}`,
-          subtitle: `${divCount || divisions.length} Divisions · ${deptCount || departments.length} Departments (Enterprise-Wide)`,
+          subtitle: `${divCount || (divList || []).length} Divisions · ${deptCount || (deptList || []).length} Departments (Enterprise-Wide)`,
           badge: b.code || 'BU',
         };
       });
@@ -143,9 +159,9 @@ export function getCascadingTargetOptions({
     }
 
     case 'DIVISION': {
-      let list = divisions.map((d) => {
-        const deptCount = departments.filter((dept) => dept.divisionId === d.id).length;
-        const bu = businessUnits.find((b) => b.id === d.businessUnitId);
+      let list = (divList || []).map((d) => {
+        const deptCount = (deptList || []).filter((dept) => dept.divisionId === d.id).length;
+        const bu = (buList || []).find((b) => b.id === d.businessUnitId);
         return {
           id: d.id,
           code: d.code,
@@ -169,10 +185,10 @@ export function getCascadingTargetOptions({
     }
 
     case 'DEPARTMENT': {
-      let list = departments.map((dept) => {
-        const div = divisions.find((d) => d.id === dept.divisionId);
-        const bu = div ? businessUnits.find((b) => b.id === div.businessUnitId) : null;
-        const subCount = subDepartments.filter((s) => s.departmentId === dept.id).length;
+      let list = (deptList || []).map((dept) => {
+        const div = (divList || []).find((d) => d.id === dept.divisionId);
+        const bu = div ? (buList || []).find((b) => b.id === div.businessUnitId) : null;
+        const subCount = (subDeptList || []).filter((s) => s.departmentId === dept.id).length;
         return {
           id: dept.id,
           code: dept.code,
@@ -200,10 +216,10 @@ export function getCascadingTargetOptions({
     }
 
     case 'SUBDEPARTMENT': {
-      let list = subDepartments.map((s) => {
-        const parentDept = departments.find((d) => d.id === s.departmentId);
-        const parentDiv = parentDept ? divisions.find((d) => d.id === parentDept.divisionId) : null;
-        const bu = parentDiv ? businessUnits.find((b) => b.id === parentDiv.businessUnitId) : null;
+      let list = (subDeptList || []).map((s) => {
+        const parentDept = (deptList || []).find((d) => d.id === s.departmentId);
+        const parentDiv = parentDept ? (divList || []).find((d) => d.id === parentDept.divisionId) : null;
+        const bu = parentDiv ? (buList || []).find((b) => b.id === parentDiv.businessUnitId) : null;
         return {
           id: s.id,
           code: s.code,
@@ -235,7 +251,7 @@ export function getCascadingTargetOptions({
     }
 
     case 'LEVEL': {
-      let list = jobLevels.map((l) => ({
+      let list = (lvlList || []).map((l) => ({
         id: String(l.level),
         level: String(l.level),
         label: `🎯 Level ${l.level} — ${l.title}`,
@@ -252,7 +268,7 @@ export function getCascadingTargetOptions({
     }
 
     case 'STORE': {
-      let list = retailStores.map((st) => ({
+      let list = (storeList || []).map((st) => ({
         id: st.id,
         code: st.code,
         name: st.name,
@@ -293,9 +309,9 @@ export function getCascadingTargetOptions({
         : (typeof allUsers === 'function' ? allUsers() : (demoUsers || []));
 
       let mapped = sourceList.map((u) => {
-        const sub = u.subDepartmentId ? subDepartments.find((s) => s.id === u.subDepartmentId) : null;
-        const dept = u.departmentId ? departments.find((d) => d.id === u.departmentId) : null;
-        const div = u.divisionId ? divisions.find((d) => d.id === u.divisionId) : (dept ? divisions.find((d) => d.id === dept.divisionId) : null);
+        const sub = u.subDepartmentId ? (subDeptList || []).find((s) => s.id === u.subDepartmentId) : null;
+        const dept = u.departmentId ? (deptList || []).find((d) => d.id === u.departmentId) : null;
+        const div = u.divisionId ? (divList || []).find((d) => d.id === u.divisionId) : (dept ? (divList || []).find((d) => d.id === dept.divisionId) : null);
         const subInfo = u.subDepartmentName ? `🌿 ${u.subDepartmentName}` : (sub ? `🌿 ${sub.name}` : '');
         const deptInfo = u.departmentName || (dept ? dept.name : (u.department || 'MMVN'));
 
@@ -373,42 +389,53 @@ export function assignmentTypeLabel(t) {
   }[t] || t;
 }
 
-export function resolveTargetLabel(assignmentType, targetId) {
+export function resolveTargetLabel(assignmentType, targetId, options = {}) {
   if (!targetId) return 'All';
+  const {
+    businessUnits: buList = businessUnits,
+    divisions: divList = divisions,
+    departments: deptList = departments,
+    subDepartments: subDeptList = subDepartments,
+    jobLevels: lvlList = jobLevels,
+    retailStores: storeList = retailStores,
+    customGroups: grpList = DEFAULT_CUSTOM_GROUPS,
+    users: usrList = null,
+  } = options;
+
   if (assignmentType === 'BUSINESS_UNIT') {
-    const bu = businessUnits.find((b) => b.id === targetId || b.code === targetId);
+    const bu = (buList || []).find((b) => b.id === targetId || b.code === targetId);
     if (bu) return `🏢 [${bu.code || 'MMVN'}] ${bu.name}`;
   }
   if (assignmentType === 'DIVISION') {
-    const div = divisions.find((d) => d.id === targetId || d.code === targetId);
+    const div = (divList || []).find((d) => d.id === targetId || d.code === targetId);
     if (div) return `🏢 [${div.code}] ${div.name}`;
   }
   if (assignmentType === 'DEPARTMENT') {
-    const dept = departments.find((d) => d.id === targetId || d.code === targetId);
+    const dept = (deptList || []).find((d) => d.id === targetId || d.code === targetId);
     if (dept) return `🏛️ [${dept.code}] ${dept.name}`;
   }
   if (assignmentType === 'SUBDEPARTMENT') {
-    const sub = subDepartments.find((s) => s.id === targetId || s.code === targetId);
+    const sub = (subDeptList || []).find((s) => s.id === targetId || s.code === targetId);
     if (sub) return `🌿 [${sub.code}] ${sub.name}`;
   }
   if (assignmentType === 'STORE') {
-    const st = retailStores.find((s) => s.id === targetId || s.code === targetId);
+    const st = (storeList || []).find((s) => s.id === targetId || s.code === targetId);
     if (st) return `📍 [${st.code}] ${st.name}`;
   }
   if (assignmentType === 'LEVEL') {
-    const lvl = jobLevels.find((l) => String(l.level) === String(targetId));
+    const lvl = (lvlList || []).find((l) => String(l.level) === String(targetId));
     if (lvl) return `🎯 Level ${lvl.level} — ${lvl.title}`;
   }
   if (assignmentType === 'GROUP') {
-    const grp = DEFAULT_CUSTOM_GROUPS.find((g) => g.id === targetId || g.code === targetId);
+    const grp = (grpList || []).find((g) => g.id === targetId || g.code === targetId);
     if (grp) return `👥 ${grp.title || grp.name}`;
   }
   if (assignmentType === 'USER') {
-    const uList = typeof allUsers === 'function' ? allUsers() : (demoUsers || []);
+    const uList = usrList || (typeof allUsers === 'function' ? allUsers() : (demoUsers || []));
     const u = uList.find((usr) => usr.userId === targetId || usr.employeeCode === targetId || usr.id === targetId);
     if (u) return `👤 ${u.fullName} (${u.employeeCode || u.userId} · Lvl ${u.level})`;
   }
-  const opts = targetOptionsFor(assignmentType) || [];
+  const opts = targetOptionsFor(assignmentType, grpList, options) || [];
   const found = opts.find((o) => o.id === targetId || o.code === targetId);
   return found ? (found.label || found.name || targetId) : targetId;
 }

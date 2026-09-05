@@ -116,7 +116,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
       };
     });
 
-  const allLearnerCandidates = (users && users.length > 0 ? users : allUsers).filter((u) => normalizeRole(u.role) === 'learner' || normalizeRole(u.role) === 'manager');
+  const allLearnerCandidates = (users && users.length > 0 ? users : (typeof allUsers === 'function' ? allUsers() : (allUsers || []))).filter((u) => normalizeRole(u.role) === 'learner' || normalizeRole(u.role) === 'manager');
 
   const myTeachingClasses = [
     ...classroomSessions.filter((s) =>

@@ -10,10 +10,10 @@ const TYPE_META = {
 };
 
 export default function LearnerHistory() {
-  const { currentUser: authUser, courses: allCourses } = useCourseStore();
+  const { currentUser: authUser, courses: allCourses, enrollments } = useCourseStore();
   const user = authUser || currentUser;
   const historyLogs = getUserLearningHistory(user);
-  const learningHours = totalLearningHours(allCourses, user);
+  const learningHours = totalLearningHours(allCourses, user, enrollments);
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -28,7 +28,7 @@ export default function LearnerHistory() {
 
   const totalAssessments = historyLogs.filter((l) => l.type === 'ASSESSMENT').length;
   const assessmentScores = historyLogs.filter((l) => l.type === 'ASSESSMENT' && l.score != null).map((l) => l.score);
-  const avgScore = assessmentScores.length > 0 ? Math.round(assessmentScores.reduce((a, b) => a + b, 0) / assessmentScores.length) : 92;
+  const avgScore = assessmentScores.length > 0 ? Math.round(assessmentScores.reduce((a, b) => a + b, 0) / assessmentScores.length) : (totalAssessments > 0 ? 0 : 100);
 
   return (
     <>
@@ -48,7 +48,7 @@ export default function LearnerHistory() {
       </div>
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-4" style={{ marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div className="card card-pad stat">
           <div className="stat-label">Total Verified Events</div>
           <div className="stat-value">{historyLogs.length} Records</div>

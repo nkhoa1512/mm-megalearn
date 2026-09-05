@@ -41,7 +41,7 @@ const ROLE_WORK_NAV = {
   ],
   manager: [
     { to: '/manager', label: 'Team Dashboard', labelVi: 'Team Dashboard', labelEn: 'Team Dashboard', icon: 'ti-layout-dashboard', end: true },
-    { to: '/manager/team', label: 'Team Management & Training', labelVi: 'Team Management & Training', labelEn: 'Team Learning & Competencies', icon: 'ti-users' },
+    { to: '/manager/team', label: 'Employee & Competency Gap', labelVi: 'Employee & Competency Gap', labelEn: 'Employee & Competency Gap', icon: 'ti-users' },
     { to: '/manager/courses', label: 'Department Courses', labelVi: 'Department Courses', labelEn: 'Department Courses', icon: 'ti-stack-2' },
     { to: '/manager/catalog', label: 'Full Course Catalog', labelVi: 'Full Course Catalog', labelEn: 'Full Course Catalog', icon: 'ti-database' },
   ],

@@ -943,7 +943,7 @@ export default function AdminCourses() {
                 icon="ti-plus"
                 onClick={() => navigate('/admin/courses/new?scope=classroom&deliveryType=IN_PERSON_CLASSROOM')}
               >
-                {language === 'en' ? 'Create In-Person Class' : 'Create An In-Person Course'}
+                {language === 'en' ? 'Create New Course' : 'Create New Course'}
               </Button>
             ) : activeTab === 'online-class' ? (
               <Button

@@ -1827,7 +1827,7 @@ export default function AdminCourseBuilder() {
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 2 }}>
                   {isTrainerOnly
-                    ? `Hosting trainer: ${authUser.fullName} (yourself · you run the class and scan the attendance QR code in person)`
+                    ? `Trainer / L&D may only create and edit In-Person (ILT) courses. Hosting trainer: ${authUser.fullName} (yourself · you run the class and scan the attendance QR code in person)`
                     : 'Onsite training in a facility/workshop with a trainer & Live QR attendance management.'}
                 </div>
               </div>

@@ -538,7 +538,7 @@ function buildOperationalEventsByRole(role, { courses = [], classrooms = [], use
         statusLabel: 'Mandatory Plan',
         tone: 'rust',
         actionType: 'VIEW_DETAIL',
-        actionLabel: 'Xem Audit Logs',
+        actionLabel: 'View Audit Logs',
         actionUrl: '/sysadmin/audit',
       }
     );

@@ -497,7 +497,8 @@ export default function LearnerCourses({ user: propUser, basePath = '/learner/co
         </div>
         <p style={{ margin: 0 }}>
           Learner: <strong>{user.fullName}</strong> &middot; {user.position} &middot; Current job level:{' '}
-          <strong>{levelShortLabel(userLevel)}</strong> — {userLevelDef.titleVi}
+          <strong>{levelShortLabel(userLevel)}</strong> — {userLevelDef.titleVi} &middot;{' '}
+          <Badge tone="blue" size="sm">Sequential Level Gate</Badge>
         </p>
       </div>
 

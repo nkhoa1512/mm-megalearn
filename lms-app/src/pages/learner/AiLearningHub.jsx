@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseStore } from '../../store/CourseStore';
 import { levelValue } from '../../data/levelSystem';
-import { currentUser as defaultUser } from '../../data/mockData';
+import { currentUser as defaultUser, enrollmentsForUser } from '../../data/mockData';
 import { Badge, Button, Tabs } from '../../features/common/ui';
 
 export default function AiLearningHub() {
   const navigate = useNavigate();
-  const { courses: allCourses, currentUser: authUser, enrollCourse } = useCourseStore();
+  const { courses: allCourses, currentUser: authUser, enrollments, enrollCourse } = useCourseStore();
   const user = authUser || defaultUser;
+  const userEnrollments = enrollmentsForUser(user, enrollments);
 
   // Active Tab: recommendations (Default) vs tutor
   const [activeTab, setActiveTab] = useState('recommendations');
@@ -29,7 +30,8 @@ export default function AiLearningHub() {
   // DYNAMIC PERSONALIZED RECOMMENDATIONS (Filtered from Admin Courses in CourseStore)
   // Recommends courses created by Admin that the user has NOT completed yet
   const uncompletedCourses = allCourses.filter((c) => {
-    const isCompleted = c.enrollment?.status === 'COMPLETED';
+    const enr = userEnrollments[c.id];
+    const isCompleted = enr?.status === 'COMPLETED';
     // The level scale is inverted: a smaller number is more senior, so Level > 4 means below manager grade.
     const isManagerCourse = (c.domain === 'Leadership' || c.code?.startsWith('LEAD')) && levelValue(user.level) > 4;
     return !isCompleted && !isManagerCourse;
@@ -192,7 +194,7 @@ Your question has been cross-checked against MM Mega Market's current courses an
             ) : (
               recommendedCourses.map((course) => {
                 const isInPerson = course.deliveryType === 'IN_PERSON_CLASSROOM' || course.modality === 'CLASSROOM_LAB';
-                const isEnrolled = Boolean(course.enrollment);
+                const isEnrolled = Boolean(userEnrollments[course.id]);
 
                 return (
                   <div

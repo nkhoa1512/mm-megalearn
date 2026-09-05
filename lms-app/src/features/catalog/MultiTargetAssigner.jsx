@@ -49,7 +49,21 @@ export default function MultiTargetAssigner({
   const [groupPolicy, setGroupPolicy] = useState('ELIGIBLE_ONLY'); // 'ELIGIBLE_ONLY' | 'ALL_MEMBERS'
   const [validationError, setValidationError] = useState('');
 
-  const { customGroups = [], users = [] } = useCourseStore();
+  const {
+    businessUnits: storeBUs = [],
+    divisions: storeDivisions = [],
+    departments: storeDepartments = [],
+    subDepartments: storeSubDepartments = [],
+    jobLevels: storeJobLevels = [],
+    customGroups = [],
+    users = [],
+  } = useCourseStore();
+
+  const businessUnitsList = storeBUs.length > 0 ? storeBUs : businessUnits;
+  const divisionsList = storeDivisions.length > 0 ? storeDivisions : divisions;
+  const departmentsList = storeDepartments.length > 0 ? storeDepartments : departments;
+  const subDepartmentsList = storeSubDepartments.length > 0 ? storeSubDepartments : subDepartments;
+  const jobLevelsList = storeJobLevels.length > 0 ? storeJobLevels : jobLevels;
 
   // Target Levels of the course / curriculum
   const courseTargetLevels = useMemo(() => {
@@ -65,38 +79,38 @@ export default function MultiTargetAssigner({
 
   // Dependent divisions based on BU
   const availableDivisions = useMemo(() => {
-    if (buFilter === 'ALL') return divisions;
-    return divisions.filter((d) => d.businessUnitId === buFilter);
-  }, [buFilter]);
+    if (buFilter === 'ALL') return divisionsList;
+    return divisionsList.filter((d) => d.businessUnitId === buFilter);
+  }, [buFilter, divisionsList]);
 
   // Dependent departments based on chosen Division & BU
   const availableDepts = useMemo(() => {
-    return departments.filter((d) => {
+    return departmentsList.filter((d) => {
       if (divisionFilter !== 'ALL') return d.divisionId === divisionFilter;
       if (buFilter !== 'ALL') {
-        const div = divisions.find((di) => di.id === d.divisionId);
+        const div = divisionsList.find((di) => di.id === d.divisionId);
         return div && div.businessUnitId === buFilter;
       }
       return true;
     });
-  }, [divisionFilter, buFilter]);
+  }, [divisionFilter, buFilter, departmentsList, divisionsList]);
 
   // Dependent sub-departments based on chosen Department, Division & BU
   const availableSubDepts = useMemo(() => {
-    return subDepartments.filter((s) => {
+    return subDepartmentsList.filter((s) => {
       if (deptFilter !== 'ALL') return s.departmentId === deptFilter;
       if (divisionFilter !== 'ALL') {
-        const parentDept = departments.find((d) => d.id === s.departmentId);
+        const parentDept = departmentsList.find((d) => d.id === s.departmentId);
         return parentDept && parentDept.divisionId === divisionFilter;
       }
       if (buFilter !== 'ALL') {
-        const parentDept = departments.find((d) => d.id === s.departmentId);
-        const parentDiv = parentDept && divisions.find((di) => di.id === parentDept.divisionId);
+        const parentDept = departmentsList.find((d) => d.id === s.departmentId);
+        const parentDiv = parentDept && divisionsList.find((di) => di.id === parentDept.divisionId);
         return parentDiv && parentDiv.businessUnitId === buFilter;
       }
       return true;
     });
-  }, [deptFilter, divisionFilter, buFilter]);
+  }, [deptFilter, divisionFilter, buFilter, subDepartmentsList, departmentsList, divisionsList]);
 
   // Dynamically resolve target options based on active Scope & Cascading filters
   const visibleOptions = useMemo(() => {
@@ -111,6 +125,11 @@ export default function MultiTargetAssigner({
       search,
       customGroups,
       usersList: users,
+      businessUnits: businessUnitsList,
+      divisions: divisionsList,
+      departments: departmentsList,
+      subDepartments: subDepartmentsList,
+      jobLevels: jobLevelsList,
     });
 
     if (assignScope === 'USER' && strictLevelFilter && course) {
@@ -132,6 +151,11 @@ export default function MultiTargetAssigner({
     search,
     customGroups,
     users,
+    businessUnitsList,
+    divisionsList,
+    departmentsList,
+    subDepartmentsList,
+    jobLevelsList,
     strictLevelFilter,
     course,
   ]);
@@ -162,7 +186,7 @@ export default function MultiTargetAssigner({
   function handleDivisionFilterChange(divId) {
     setDivisionFilter(divId);
     if (divId !== 'ALL') {
-      const div = divisions.find((d) => d.id === divId);
+      const div = divisionsList.find((d) => d.id === divId);
       if (div && div.businessUnitId) setBuFilter(div.businessUnitId);
     }
     setDeptFilter('ALL');
@@ -174,10 +198,10 @@ export default function MultiTargetAssigner({
   function handleDeptFilterChange(deptId) {
     setDeptFilter(deptId);
     if (deptId !== 'ALL') {
-      const dept = departments.find((d) => d.id === deptId);
+      const dept = departmentsList.find((d) => d.id === deptId);
       if (dept && dept.divisionId) {
         setDivisionFilter(dept.divisionId);
-        const div = divisions.find((d) => d.id === dept.divisionId);
+        const div = divisionsList.find((d) => d.id === dept.divisionId);
         if (div && div.businessUnitId) setBuFilter(div.businessUnitId);
       }
     }
@@ -189,13 +213,13 @@ export default function MultiTargetAssigner({
   function handleSubDeptFilterChange(subId) {
     setSubDeptFilter(subId);
     if (subId !== 'ALL') {
-      const sub = subDepartments.find((s) => s.id === subId);
+      const sub = subDepartmentsList.find((s) => s.id === subId);
       if (sub && sub.departmentId) {
         setDeptFilter(sub.departmentId);
-        const dept = departments.find((d) => d.id === sub.departmentId);
+        const dept = departmentsList.find((d) => d.id === sub.departmentId);
         if (dept && dept.divisionId) {
           setDivisionFilter(dept.divisionId);
-          const div = divisions.find((d) => d.id === dept.divisionId);
+          const div = divisionsList.find((d) => d.id === dept.divisionId);
           if (div && div.businessUnitId) setBuFilter(div.businessUnitId);
         }
       }
@@ -391,8 +415,8 @@ export default function MultiTargetAssigner({
                 value={buFilter}
                 onChange={(e) => handleBuFilterChange(e.target.value)}
               >
-                <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
-                {businessUnits.map((b) => (
+                <option value="ALL">-- All Business Unit ({businessUnitsList.length}) --</option>
+                {businessUnitsList.map((b) => (
                   <option key={b.id} value={b.id}>
                     [{b.code || 'BU'}] {b.name}
                   </option>
@@ -423,8 +447,8 @@ export default function MultiTargetAssigner({
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
-                  {businessUnits.map((b) => (
+                  <option value="ALL">-- All Business Unit ({businessUnitsList.length}) --</option>
+                  {businessUnitsList.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
                     </option>
@@ -474,8 +498,8 @@ export default function MultiTargetAssigner({
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- All Business Unit ({businessUnits.length}) --</option>
-                  {businessUnits.map((b) => (
+                  <option value="ALL">-- All Business Unit ({businessUnitsList.length}) --</option>
+                  {businessUnitsList.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
                     </option>
@@ -545,8 +569,8 @@ export default function MultiTargetAssigner({
                   value={buFilter}
                   onChange={(e) => handleBuFilterChange(e.target.value)}
                 >
-                  <option value="ALL">-- All BU ({businessUnits.length}) --</option>
-                  {businessUnits.map((b) => (
+                  <option value="ALL">-- All BU ({businessUnitsList.length}) --</option>
+                  {businessUnitsList.map((b) => (
                     <option key={b.id} value={b.id}>
                       [{b.code || 'BU'}] {b.name}
                     </option>
@@ -631,7 +655,7 @@ export default function MultiTargetAssigner({
                   }}
                 >
                   <option value="ALL">-- All Levels (Level 1 - 7) --</option>
-                  {jobLevels.map((l) => (
+                  {jobLevelsList.map((l) => (
                     <option key={l.level} value={String(l.level)}>
                       Level {l.level} — {l.title}
                     </option>

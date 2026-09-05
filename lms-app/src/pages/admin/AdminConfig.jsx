@@ -32,7 +32,7 @@ export default function AdminConfig() {
       triggerType: 'DEPARTMENT',
       triggerTarget: 'dept-ppf',
       triggerLabel: 'Department (Head Office): PPF - Processed Fresh Food',
-      assignedCourseId: 'course-fsh-1',
+      assignedCourseId: 'CRS-FSH-001',
       assignedCourseTitle: 'Food Safety & Hygiene Standards (HACCP)',
       completionDays: 14,
       priority: 'HIGH',
@@ -44,7 +44,7 @@ export default function AdminConfig() {
       triggerType: 'DIVISION',
       triggerTarget: 'div-scm',
       triggerLabel: 'Division (Head Office): SCM - Supply Chain Management',
-      assignedCourseId: 'course-scm-1',
+      assignedCourseId: 'CRS-SCM-001',
       assignedCourseTitle: 'Forklift & Reach Truck Safe Operation Certification',
       completionDays: 10,
       priority: 'HIGH',
@@ -56,7 +56,7 @@ export default function AdminConfig() {
       triggerType: 'LEVEL',
       triggerTarget: '4',
       triggerLabel: 'Job Level: Level 4 - Line Manager / Store Department Manager',
-      assignedCourseId: 'course-ldr-1',
+      assignedCourseId: 'CRS-LDR-001',
       assignedCourseTitle: 'Leadership Essentials for Managers: Coaching & Feedback',
       completionDays: 30,
       priority: 'MEDIUM',
@@ -68,7 +68,7 @@ export default function AdminConfig() {
       triggerType: 'ALL_ASSOCIATES',
       triggerTarget: 'MMVN',
       triggerLabel: 'All 100 Associates (Company-wide)',
-      assignedCourseId: 'course-isa-1',
+      assignedCourseId: 'CRS-ISA-001',
       assignedCourseTitle: 'Information Security Awareness & Phishing Defense',
       completionDays: 21,
       priority: 'HIGH',
@@ -79,7 +79,7 @@ export default function AdminConfig() {
   const [newRuleName, setNewRuleName] = useState('');
   const [newRuleTrigger, setNewRuleTrigger] = useState('DEPARTMENT');
   const [newRuleTarget, setNewRuleTarget] = useState('dept-ppf');
-  const [newRuleCourse, setNewRuleCourse] = useState(courses[0]?.id || 'course-fsh-1');
+  const [newRuleCourse, setNewRuleCourse] = useState(courses[0]?.id || 'CRS-FSH-001');
   const [newRuleDays, setNewRuleDays] = useState(14);
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
 
