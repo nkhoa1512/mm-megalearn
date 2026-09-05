@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   hrbpUser,
   retailStores,
@@ -7,6 +7,7 @@ import {
   enrollmentsForUser,
 } from '../../data/mockData';
 import { useCourseStore } from '../../store/CourseStore';
+import { normalizeRole, hasCapability } from '../../data/roles';
 import { Badge, Button, Modal, ProgressBar } from '../../features/common/ui';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 import HrbpCurriculumTab from './HrbpCurriculumTab';
@@ -71,12 +72,30 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   } = useCourseStore();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewUserId = searchParams.get('viewUserId');
+
+  const authRole = normalizeRole(currentUser?.role);
+  const canManageUsers = hasCapability(authRole, 'canManageUsers');
+  const isAdminView = Boolean(canManageUsers && viewUserId);
+
+  const roster = useMemo(() => (users && users.length > 0 ? users : allUsers ? allUsers() : []), [users]);
+
+  // If Admin view is active and a valid viewUserId is supplied, resolve the target HRBP
+  const targetHrbp = useMemo(() => {
+    if (!isAdminView || !viewUserId) return null;
+    return roster.find((u) => u.userId === viewUserId || u.employeeCode === viewUserId) || null;
+  }, [isAdminView, viewUserId, roster]);
+
+  const activeHrbp = targetHrbp || currentUser || hrbpUser;
+
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
   function goToTab(tabId) {
     setActiveTab(tabId);
-    navigate(TAB_PATH[tabId] || '/hrbp');
+    const basePath = TAB_PATH[tabId] || '/hrbp';
+    navigate(isAdminView ? `${basePath}?viewUserId=${encodeURIComponent(viewUserId)}` : basePath);
   }
 
   const [transcriptUser, setTranscriptUser] = useState(null);
@@ -132,6 +151,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   // Handle submit intervention
   function handleSubmitIntervention(e) {
     e.preventDefault();
+    if (isAdminView) return;
     addInterventionRequest({
       unit: formUnit,
       departmentCode: formDeptCode,
@@ -148,7 +168,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
   // Handle Propose Curriculum Assignment to Candidate
   function handleAssignCurriculumToCandidate() {
-    if (!assignCurriculumModal || !selectedCurriculumId) return;
+    if (isAdminView || !assignCurriculumModal || !selectedCurriculumId) return;
     const targetUserId = assignCurriculumModal.userId || assignCurriculumModal.id;
     const result = proposeCurriculumAssignment(
       selectedCurriculumId,
@@ -173,13 +193,13 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   // Handle Save 1-on-1 Alignment
   function handleSaveAlignment(e) {
     e.preventDefault();
-    if (!alignmentModal) return;
+    if (isAdminView || !alignmentModal) return;
     saveSuccessionAlignment({
       candidateId: alignmentModal.id || alignmentModal.userId,
       candidateName: alignmentModal.name,
       targetRole: alignmentModal.targetRole,
       mentorName: alignmentModal.mentor,
-      managerName: currentUser?.fullName || 'HRBP',
+      managerName: activeHrbp?.fullName || 'HRBP',
       ojt70Progress: Number(alnOjt),
       mentoring20Progress: Number(alnMentor),
       course10Progress: Number(alnFormal),
@@ -194,7 +214,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   // Handle Nominate Talent
   function handleNominateCandidate(e) {
     e.preventDefault();
-    if (!nominateUserId || !nominateTargetRole.trim()) return;
+    if (isAdminView || !nominateUserId || !nominateTargetRole.trim()) return;
     const allUserList = users && users.length > 0 ? users : allUsers ? allUsers() : [];
     const foundUser = allUserList.find((u) => u.userId === nominateUserId || u.employeeCode === nominateUserId);
     if (!foundUser) return;
@@ -225,7 +245,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   // Handle Send SGM Nudge
   function handleSendSgmNudge(e) {
     e.preventDefault();
-    if (!nudgeModal) return;
+    if (isAdminView || !nudgeModal) return;
     sendComplianceNudge(nudgeModal.id || nudgeModal.code, {
       storeName: nudgeModal.name || nudgeModal.store,
       sgmName: 'Store General Manager (SGM)',
@@ -253,8 +273,8 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
   }, [users, enrollments]);
 
   const portfolio = useMemo(
-    () => resolveHrbpPortfolio(currentUser || hrbpUser, portfolioMode),
-    [currentUser, portfolioMode]
+    () => resolveHrbpPortfolio(activeHrbp, portfolioMode),
+    [activeHrbp, portfolioMode]
   );
 
   const scopedUsers = useMemo(() => usersInPortfolio(users, portfolio), [users, portfolio]);
@@ -346,6 +366,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
 
   /** Prefills the L&D intervention form from a derived gap cell (BR-HRBP-022). */
   function raiseTicketForCell(cell) {
+    if (isAdminView) return;
     setFormUnit(`${cell.domainLabel} — ${cell.divisionName}`);
     setFormDeptCode(cell.divisionCode || 'OPS');
     setFormSkill(cell.domainLabel);
@@ -402,6 +423,66 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
         </div>
       )}
 
+      {/* 0. ADMIN READ-ONLY OVERSIGHT BANNER */}
+      {isAdminView && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 20,
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            borderColor: '#3B82F6',
+            borderWidth: 2,
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'var(--blue, #005BAA)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 22,
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0, 91, 170, 0.3)',
+              }}
+            >
+              <i className="ti ti-eye" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#1E3A8A' }}>Admin View Mode &mdash; Read Only</span>
+                <Badge tone="blue">Inspecting: {activeHrbp.fullName}</Badge>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: '#1E40AF' }}>
+                Viewing live HRBP talent &amp; workforce dashboard of <strong>{activeHrbp.fullName}</strong> ({activeHrbp.position || 'HR Business Partner'}, {activeHrbp.departmentName || 'HRBP'}). Talent nominations, intervention tickets, and SGM nudges are disabled.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            icon="ti-arrow-left"
+            onClick={() => {
+              if (authRole === 'sysadmin') navigate('/sysadmin/team-performance');
+              else navigate('/user-admin/team-performance');
+            }}
+            style={{ background: '#1D4ED8', borderColor: '#1D4ED8', fontWeight: 700 }}
+          >
+            Back to Team Performance
+          </Button>
+        </div>
+      )}
+
       {/* HRBP EXECUTIVE HEADER */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
@@ -410,7 +491,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             <Badge tone="blue" icon="ti-users">HR Business Partner (Level 2)</Badge>
           </div>
           <p style={{ margin: 0 }}>
-            Strategic HR Business Partner: <strong>{currentUser?.fullName || hrbpUser.fullName}</strong> &middot; {currentUser?.departmentName || hrbpUser.departmentName || 'HR Business Partnering'} &middot; Accountable for <strong>{portfolio.label}</strong> &middot; {headcount} employees in scope
+            Strategic HR Business Partner: <strong>{activeHrbp.fullName}</strong> &middot; {activeHrbp.departmentName || 'HR Business Partnering'} &middot; Accountable for <strong>{portfolio.label}</strong> &middot; {headcount} employees in scope
           </p>
         </div>
 
@@ -560,7 +641,9 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                             size="sm"
                             variant="ghost"
                             style={{ color: 'var(--rust)' }}
+                            disabled={isAdminView}
                             onClick={() => {
+                              if (isAdminView) return;
                               cancelIntervention(itv.id);
                               showToast(`Ticket ${itv.id} cancelled`);
                             }}
@@ -612,7 +695,12 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <Badge tone="sage">{successionTalents.length} in the talent pool</Badge>
-                  <Button variant="primary" icon="ti-user-plus" onClick={() => setNominateModal(true)}>
+                  <Button
+                    variant="primary"
+                    icon="ti-user-plus"
+                    disabled={isAdminView}
+                    onClick={() => !isAdminView && setNominateModal(true)}
+                  >
                     Nominate A New Candidate
                   </Button>
                 </div>
@@ -797,8 +885,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                           size="sm"
                           variant="outline"
                           icon="ti-books"
+                          disabled={isAdminView}
                           title="Assign A Mandatory Curriculum To The Succession Candidate"
                           onClick={() => {
+                            if (isAdminView) return;
                             setAssignCurriculumModal(talent);
                             setSelectedCurriculumId(curricula[0]?.id || '');
                           }}
@@ -809,8 +899,10 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
                           size="sm"
                           variant="outline"
                           icon="ti-notes"
+                          disabled={isAdminView}
                           title="Record 1-on-1 Alignment Meeting Minutes With The Mentor & Manager"
                           onClick={() => {
+                            if (isAdminView) return;
                             setAlignmentModal(talent);
                             setAlnOjt(talent.ojt70 || 80);
                             setAlnMentor(talent.mentoring20 || 75);
@@ -953,6 +1045,7 @@ export default function HrbpDashboard({ initialTab = 'SKILL_GAP' }) {
             rows={divisionCompliance}
             onDrilldown={(row) => setStoreDrilldown(row)}
             onNudge={(row) => {
+              if (isAdminView) return;
               setNudgeModal(row);
               setNudgeMessage(
                 `${row.name} is at ${row.compliancePercent}% mandatory training compliance with ${row.nonCompliantPeople} ` +

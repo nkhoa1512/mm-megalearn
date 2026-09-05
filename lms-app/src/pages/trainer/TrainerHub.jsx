@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import {
   meetingRoomsAndLabs,
@@ -46,6 +46,9 @@ function QrCodeDisplay({ value }) {
 
 export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewUserId = searchParams.get('viewUserId');
+
   const { courses, currentUser: authUser, users, removeCourse } = useCourseStore();
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
@@ -57,13 +60,21 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
   const [activeChartTab, setActiveChartTab] = useState('BAR'); // 'BAR' | 'LINE'
 
   const authRole = normalizeRole(authUser?.role);
+  const canManageUsers = hasCapability(authRole, 'canManageUsers');
+  const isAdminView = Boolean(canManageUsers && viewUserId);
   const canBeAssignedToClass = hasCapability(authRole, 'canBeAssignedToClass');
 
   const eligibleTrainers = teachingEligibleUsers();
-  const [selectedTrainerId, setSelectedTrainerId] = useState(authUser?.userId || eligibleTrainers[0]?.userId);
+  const [selectedTrainerId, setSelectedTrainerId] = useState(
+    (isAdminView && viewUserId) || authUser?.userId || eligibleTrainers[0]?.userId
+  );
   useEffect(() => {
-    if (authUser?.userId) setSelectedTrainerId(authUser.userId);
-  }, [authUser?.userId]);
+    if (isAdminView && viewUserId) {
+      setSelectedTrainerId(viewUserId);
+    } else if (authUser?.userId) {
+      setSelectedTrainerId(authUser.userId);
+    }
+  }, [isAdminView, viewUserId, authUser?.userId]);
 
   const trainerUser = eligibleTrainers.find((t) => t.userId === selectedTrainerId) || eligibleTrainers[0] || authUser;
   const trainerProfile = { ...trainerUser, ...trainerStatsFor(trainerUser?.userId) };
@@ -362,7 +373,7 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
     setTimeout(() => setCopiedToken(false), 2000);
   }
 
-  if (!canBeAssignedToClass) {
+  if (!canBeAssignedToClass && !isAdminView) {
     return (
       <div className="empty-state">
         <i className="ti ti-lock" aria-hidden="true" style={{ color: 'var(--rust)' }} />
@@ -395,6 +406,66 @@ export default function TrainerHub({ initialTab = 'CLASSES' }) {
 
   return (
     <>
+      {/* 0. ADMIN READ-ONLY OVERSIGHT BANNER */}
+      {isAdminView && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 20,
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            borderColor: '#3B82F6',
+            borderWidth: 2,
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'var(--blue, #005BAA)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 22,
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0, 91, 170, 0.3)',
+              }}
+            >
+              <i className="ti ti-eye" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#1E3A8A' }}>Admin View Mode &mdash; Read Only</span>
+                <Badge tone="blue">Inspecting: {trainerProfile.fullName}</Badge>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: '#1E40AF' }}>
+                Viewing live teaching command center of <strong>{trainerProfile.fullName}</strong> ({trainerProfile.position || 'Trainer'}, {trainerProfile.departmentName || trainerProfile.divisionName || 'L&D Faculty'}).
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            icon="ti-arrow-left"
+            onClick={() => {
+              if (authRole === 'sysadmin') navigate('/sysadmin/team-performance');
+              else navigate('/user-admin/team-performance');
+            }}
+            style={{ background: '#1D4ED8', borderColor: '#1D4ED8', fontWeight: 700 }}
+          >
+            Back to Team Performance
+          </Button>
+        </div>
+      )}
+
       {/* 1. EXECUTIVE TRAINER PROFILE BANNER */}
       <div
         className="card card-pad"

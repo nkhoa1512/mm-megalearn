@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { managerUser as defaultManager, notifications, allUsers, enrollmentsForUser } from '../../data/mockData';
 import {
   buildTeam,
@@ -9,7 +9,7 @@ import {
   INACTIVITY_THRESHOLD_DAYS,
 } from '../../utils/managerRules';
 import { useCourseStore } from '../../store/CourseStore';
-import { canManage } from '../../data/roles';
+import { canManage, hasCapability, normalizeRole } from '../../data/roles';
 import {
   Badge,
   Button,
@@ -23,16 +23,28 @@ import {
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewUserId = searchParams.get('viewUserId');
+
   const {
     approvals, currentUser: authUser, approveRequest, rejectRequest, levelAdvanceRequestsFor,
     users, enrollments, courses,
   } = useCourseStore();
-  const activeManager = canManage(authUser?.role, 'learner') ? authUser : defaultManager;
 
-  // The team, and every figure derived from it, comes from src/utils/managerRules.js —
-  // the real roster joined to the real enrollment matrix (BR-MGR-001, BR-MGR-010).
+  const authRole = normalizeRole(authUser?.role);
+  const canManageUsers = hasCapability(authRole, 'canManageUsers');
+  const isAdminView = Boolean(canManageUsers && viewUserId);
+
   const today = React.useMemo(() => new Date(), []);
   const roster = React.useMemo(() => (users && users.length > 0 ? users : allUsers()), [users]);
+
+  // If Admin view is active and a valid viewUserId is supplied, resolve the target manager
+  const targetManager = React.useMemo(() => {
+    if (!isAdminView || !viewUserId) return null;
+    return roster.find((u) => u.userId === viewUserId || u.employeeCode === viewUserId) || null;
+  }, [isAdminView, viewUserId, roster]);
+
+  const activeManager = targetManager || (canManage(authUser?.role, 'learner') ? authUser : defaultManager);
   const effectiveEnrollments = React.useMemo(() => {
     const map = {};
     roster.forEach((u) => { map[u.userId] = enrollmentsForUser(u, enrollments); });
@@ -154,6 +166,66 @@ export default function ManagerDashboard() {
 
   return (
     <>
+      {/* 0. ADMIN READ-ONLY OVERSIGHT BANNER */}
+      {isAdminView && (
+        <div
+          className="card card-pad"
+          style={{
+            marginBottom: 20,
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            borderColor: '#3B82F6',
+            borderWidth: 2,
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'var(--blue, #005BAA)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 22,
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0, 91, 170, 0.3)',
+              }}
+            >
+              <i className="ti ti-eye" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#1E3A8A' }}>Admin View Mode &mdash; Read Only</span>
+                <Badge tone="blue">Inspecting: {activeManager.fullName}</Badge>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: '#1E40AF' }}>
+                Viewing live team dashboard of <strong>{activeManager.fullName}</strong> ({activeManager.position || 'Line Manager'}, {activeManager.departmentName || activeManager.divisionName}). Direct management actions are disabled.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            icon="ti-arrow-left"
+            onClick={() => {
+              if (authRole === 'sysadmin') navigate('/sysadmin/team-performance');
+              else navigate('/user-admin/team-performance');
+            }}
+            style={{ background: '#1D4ED8', borderColor: '#1D4ED8', fontWeight: 700 }}
+          >
+            Back to Team Performance
+          </Button>
+        </div>
+      )}
+
       {/* 1. EXECUTIVE MANAGER PROFILE & OVERVIEW BANNER */}
       <div
         className="card card-pad"
@@ -210,6 +282,8 @@ export default function ManagerDashboard() {
               variant="outline"
               tone="amber"
               icon="ti-bell-ringing"
+              disabled={isAdminView || needsAttention.length === 0}
+              title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
               onClick={() => {
                 setIsBatchRemind(true);
                 setRemindTarget({ name: `All ${needsAttention.length} employees behind schedule`, course: 'Regulatory courses' });
@@ -218,7 +292,14 @@ export default function ManagerDashboard() {
               Remind The Whole Team ({needsAttention.length})
             </Button>
             {pendingApprovals.length > 0 && (
-              <Button variant="primary" tone="amber" icon="ti-clipboard-check" onClick={() => navigate('/manager/approvals')}>
+              <Button
+                variant="primary"
+                tone="amber"
+                icon="ti-clipboard-check"
+                disabled={isAdminView}
+                title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
+                onClick={() => navigate('/manager/approvals')}
+              >
                 Approve {pendingApprovals.length} Pending Requests
               </Button>
             )}
@@ -509,7 +590,14 @@ export default function ManagerDashboard() {
                     <Badge tone="rust" icon="ti-x">
                       Failed The Exam ({m.score}%)
                     </Badge>
-                    <Button size="sm" variant="danger" icon="ti-lock-open" onClick={() => handleUnlockRetake(m)}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="ti-lock-open"
+                      disabled={isAdminView}
+                      title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
+                      onClick={() => handleUnlockRetake(m)}
+                    >
                       Unlock A Retake
                     </Button>
                   </>
@@ -518,7 +606,15 @@ export default function ManagerDashboard() {
                     <Badge tone="rust" icon="ti-alert-circle">
                       Overdue (inactive {m.inactiveDays} days)
                     </Badge>
-                    <Button size="sm" icon="ti-brand-zalo" variant="primary" tone="danger" onClick={() => setRemindTarget(m)}>
+                    <Button
+                      size="sm"
+                      icon="ti-brand-zalo"
+                      variant="primary"
+                      tone="danger"
+                      disabled={isAdminView}
+                      title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
+                      onClick={() => setRemindTarget(m)}
+                    >
                       Send A Zalo / Teams Ping
                     </Button>
                   </>
@@ -527,7 +623,14 @@ export default function ManagerDashboard() {
                     <Badge tone="amber" icon="ti-clock-pause">
                       Inactive {m.inactiveDays} Days
                     </Badge>
-                    <Button size="sm" icon="ti-bell" variant="outline" onClick={() => setRemindTarget(m)}>
+                    <Button
+                      size="sm"
+                      icon="ti-bell"
+                      variant="outline"
+                      disabled={isAdminView}
+                      title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
+                      onClick={() => setRemindTarget(m)}
+                    >
                       Send A Multi-Channel Reminder
                     </Button>
                   </>
@@ -587,7 +690,14 @@ export default function ManagerDashboard() {
                       Courses: <strong>{req.courseTitle || req.courseName}</strong> &middot; Job level: Level {req.currentLevel} &rarr; Level {req.targetLevel}
                     </div>
                   </div>
-                  <Button size="sm" variant="primary" icon="ti-check" onClick={() => navigate('/manager/approvals')}>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon="ti-check"
+                    disabled={isAdminView}
+                    title={isAdminView ? 'Action disabled in Admin read-only mode' : undefined}
+                    onClick={() => navigate('/manager/approvals')}
+                  >
                     Handle Requests
                   </Button>
                 </div>

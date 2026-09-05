@@ -8,9 +8,11 @@ import {
   personaForRole,
 } from '../../data/mockData';
 import { Badge, Button, Modal, ProgressBar, JobLevelBadge } from '../../features/common/ui';
-import { ROLE_DEFINITIONS, roleDefinition, normalizeRole, managedScopeLabel, capabilitiesOf } from '../../data/roles';
+import { ROLE_DEFINITIONS, roleDefinition, normalizeRole, managedScopeLabel, capabilitiesOf, hasCapability } from '../../data/roles';
 import { normalizeLevel } from '../../data/levelSystem';
+import { useCourseStore } from '../../store/CourseStore';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
+import TeamPerformanceOverview from '../../features/admin/TeamPerformanceOverview';
 
 // The capabilities shown on the role permission matrix.
 const CAPABILITY_ROWS = [
@@ -31,7 +33,10 @@ const CAPABILITY_ROWS = [
 
 export default function SysAdminPortal({ initialTab = 'HRIS' }) {
   const navigate = useNavigate();
-  // HRIS | AUDIT_LOGS | POLICIES | ROLE_GOVERNANCE
+  const { currentUser } = useCourseStore();
+  const canManageUsers = hasCapability(normalizeRole(currentUser?.role || sysAdminUser.role), 'canManageUsers');
+
+  // HRIS | AUDIT_LOGS | POLICIES | ROLE_GOVERNANCE | TEAM_PERFORMANCE
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -60,6 +65,14 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
     setPolicySaved(true);
     setTimeout(() => setPolicySaved(false), 2000);
   }
+
+  const TABS = [
+    { id: 'HRIS', label: 'HRIS Data Integration & Sync (API Pipeline)', icon: 'ti-refresh', count: 'Active' },
+    { id: 'AUDIT_LOGS', label: 'Security Audit Log & Session Monitoring (Security Audit Logs)', icon: 'ti-shield-check', count: '100% Secure' },
+    { id: 'POLICIES', label: 'Security & Anti-Cheating Policy (Security Policies)', icon: 'ti-shield-lock', count: 'Standard' },
+    { id: 'ROLE_GOVERNANCE', label: 'Governance For All 6 Roles & Permission Matrix', icon: 'ti-users-group', count: '6 Role' },
+    ...(canManageUsers ? [{ id: 'TEAM_PERFORMANCE', label: 'Team Performance & Role Oversight', icon: 'ti-trophy', count: 'Overview' }] : []),
+  ];
 
   return (
     <>
@@ -122,12 +135,7 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
 
       {/* TABS SWITCHER */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 8, flexWrap: 'wrap' }}>
-        {[
-          { id: 'HRIS', label: 'HRIS Data Integration & Sync (API Pipeline)', icon: 'ti-refresh', count: 'Active' },
-          { id: 'AUDIT_LOGS', label: 'Security Audit Log & Session Monitoring (Security Audit Logs)', icon: 'ti-shield-check', count: '100% Secure' },
-          { id: 'POLICIES', label: 'Security & Anti-Cheating Policy (Security Policies)', icon: 'ti-shield-lock', count: 'Standard' },
-          { id: 'ROLE_GOVERNANCE', label: 'Governance For All 6 Roles & Permission Matrix', icon: 'ti-users-group', count: '6 Role' },
-        ].map((tab) => (
+        {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -594,6 +602,11 @@ export default function SysAdminPortal({ initialTab = 'HRIS' }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 5: TEAM PERFORMANCE OVERSIGHT */}
+      {activeTab === 'TEAM_PERFORMANCE' && canManageUsers && (
+        <TeamPerformanceOverview basePath="/sysadmin" />
       )}
 
       {/* USER TRANSCRIPT & PROMOTION MODAL */}

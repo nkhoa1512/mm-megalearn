@@ -100,11 +100,13 @@ const PAGE_META = {
   '/user-admin/job-levels': { title: '7-Level Job Grade Framework (Level 7 → Level 1)', crumb: 'User Admin (Level 2)' },
   '/user-admin/allocation': { title: 'Course Allocation By Division / Department', crumb: 'User Admin (Level 2)' },
   '/user-admin/trainers': { title: 'Trainer Assignment By Branch', crumb: 'User Admin (Level 2)' },
+  '/user-admin/team-performance': { title: 'Team Performance & Role Oversight', crumb: 'User Admin (Level 2)' },
 
   '/sysadmin': { title: 'IT Infrastructure & SAP HRIS Sync API Pipeline', crumb: 'System Admin IT (Level 1)' },
   '/sysadmin/audit': { title: 'Security Audit Log & Session Monitoring (ISO 27001)', crumb: 'System Admin IT (Level 1)' },
   '/sysadmin/policies': { title: 'Anti-Cheating Policy & Watermark', crumb: 'System Admin IT (Level 1)' },
   '/sysadmin/roles': { title: 'Governance For All 6 Roles & Permission Matrix', crumb: 'System Admin IT (Level 1)' },
+  '/sysadmin/team-performance': { title: 'Team Performance & Role Oversight', crumb: 'System Admin IT (Level 1)' },
   '/sysadmin/org-config': { title: 'Org Tree Configuration & HRIS Sync', crumb: 'System Admin IT (Level 1)' },
 
   '/manager': { title: 'Team Operations Dashboard', crumb: 'Manager (Level 4)' },
@@ -245,6 +247,7 @@ function Shell({ role, setRole }) {
         <Route path="/user-admin/job-levels" element={<UserAdminPortal initialTab="JOB_LEVELS" />} />
         <Route path="/user-admin/allocation" element={<UserAdminPortal initialTab="ALLOCATION" />} />
         <Route path="/user-admin/trainers" element={<UserAdminPortal initialTab="TRAINER_ASSIGNMENT" />} />
+        <Route path="/user-admin/team-performance" element={<UserAdminPortal initialTab="TEAM_PERFORMANCE" />} />
         <Route path="/user-admin/roadmaps" element={<AdminLevelRoadmaps />} />
 
         {/* System Admin (IT) Routes */}
@@ -252,6 +255,7 @@ function Shell({ role, setRole }) {
         <Route path="/sysadmin/audit" element={<SysAdminPortal initialTab="AUDIT_LOGS" />} />
         <Route path="/sysadmin/policies" element={<SysAdminPortal initialTab="POLICIES" />} />
         <Route path="/sysadmin/roles" element={<SysAdminPortal initialTab="ROLE_GOVERNANCE" />} />
+        <Route path="/sysadmin/team-performance" element={<SysAdminPortal initialTab="TEAM_PERFORMANCE" />} />
         <Route path="/sysadmin/org-config" element={<AdminConfig />} />
 
         {/* Trainer / L&D Routes */}

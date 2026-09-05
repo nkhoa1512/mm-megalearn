@@ -13,6 +13,7 @@
     "check:tables": "esbuild scripts/check-table-widths.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/check-table-widths.mjs && node node_modules/.cache/check-table-widths.mjs",
     "verify:hrbp": "esbuild scripts/verify-hrbp.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-hrbp.mjs && node node_modules/.cache/verify-hrbp.mjs",
     "verify:manager": "esbuild scripts/verify-manager.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-manager.mjs && node node_modules/.cache/verify-manager.mjs",
+    "verify:team-performance": "esbuild scripts/verify-team-performance.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-team-performance.mjs && node node_modules/.cache/verify-team-performance.mjs",
     "verify:schedule": "esbuild scripts/verify-inperson-schedule.jsx --bundle --platform=node --format=esm --loader:.jsx=jsx --jsx=automatic --packages=external --log-level=warning --outfile=node_modules/.cache/verify-inperson-schedule.mjs && node node_modules/.cache/verify-inperson-schedule.mjs"
   },
   "dependencies": {

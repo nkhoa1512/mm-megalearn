@@ -8,9 +8,10 @@ import OrgHierarchyBrowser from '../../features/common/OrgHierarchyBrowser';
 import { Badge, Button, Modal, JobLevelBadge } from '../../features/common/ui';
 import { useCourseStore } from '../../store/CourseStore';
 import { LEVEL_DEFINITIONS, normalizeLevel, levelDefinition } from '../../data/levelSystem';
-import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf } from '../../data/roles';
+import { ROLE_DEFINITIONS, normalizeRole, roleDefinition, managedRolesOf, hasCapability } from '../../data/roles';
 import UserTranscriptModal from '../../features/common/UserTranscriptModal';
 import CustomGroupsManager from '../../features/useradmin/CustomGroupsManager';
+import TeamPerformanceOverview from '../../features/admin/TeamPerformanceOverview';
 
 export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
   const navigate = useNavigate();
@@ -37,9 +38,12 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     subDepartments = [],
     businessUnits = [],
     customGroups = [],
+    currentUser,
     language,
     t,
   } = useCourseStore();
+
+  const canManageUsers = hasCapability(normalizeRole(currentUser?.role), 'canManageUsers');
 
   // Search & Filter State
   const [search, setSearch] = useState('');
@@ -617,6 +621,7 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
     { id: 'GROUPS', labelVi: 'Custom Groups', labelEn: 'Custom Groups', icon: 'ti-users-group', count: customGroups.length },
     { id: 'HIERARCHY', labelVi: 'Organization Tree (42 Divisions)', labelEn: 'Org Hierarchy Tree', icon: 'ti-binary-tree', count: divisions.length },
     { id: 'JOB_LEVELS', labelVi: 'Job Level Framework (7 Levels)', labelEn: 'Job Level Framework', icon: 'ti-id-badge-2', count: jobLevels.length },
+    ...(canManageUsers ? [{ id: 'TEAM_PERFORMANCE', labelVi: 'Team Performance', labelEn: 'Team Performance', icon: 'ti-trophy', count: 'Overview' }] : []),
   ];
 
   return (
@@ -1421,6 +1426,11 @@ export default function UserAdminPortal({ initialTab = 'DIRECTORY' }) {
             })}
           </div>
         </div>
+      )}
+
+      {/* TAB 5: TEAM PERFORMANCE OVERSIGHT */}
+      {activeTab === 'TEAM_PERFORMANCE' && canManageUsers && (
+        <TeamPerformanceOverview basePath="/user-admin" />
       )}
 
       {/* MODAL: ADD EMPLOYEES (manual entry + bulk import) / EDIT USER */}
