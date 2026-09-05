@@ -194,11 +194,6 @@ export default function AdminLevelRoadmaps() {
     return rows.sort((a, b) => Number(a.level) - Number(b.level));
   }, [positions, roadmapsConfig]);
 
-  // Counts
-  const totalHeadcount = useMemo(() => {
-    return directoryRows.reduce((sum, r) => sum + (r.headcount || 0), 0);
-  }, [directoryRows]);
-
   const activeFiltersCount = (
     (filterBuId !== 'ALL' ? 1 : 0) +
     (filterDivisionId !== 'ALL' ? 1 : 0) +
@@ -406,37 +401,6 @@ export default function AdminLevelRoadmaps() {
           </p>
         </div>
         <Button variant="primary" icon="ti-plus" onClick={() => setCreateOpen(true)}>Create A New Roadmap</Button>
-      </div>
-
-      {/* METRICS ROW */}
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Positions &amp; Levels</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--blue, #005BAA)', marginTop: 2 }}>{directoryRows.length}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Covers 2 major divisions &middot; 7 MMVN job levels</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Roadmap Customized</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#16A34A', marginTop: 2 }}>
-            {directoryRows.filter((r) => r.hasOwnOverride).length}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Has a version managed separately by sub-department</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Inheriting The Standard Roadmap</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#D97706', marginTop: 2 }}>
-            {directoryRows.filter((r) => r.isInherited).length}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Automatically inherited from the Division / parent</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees Covered</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#7C3AED', marginTop: 2 }}>{totalHeadcount}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: 4 }}>Actual learners across the whole system</div>
-        </div>
       </div>
 
       {/* STANDARDIZED FILTER TOOLBAR CARD */}
