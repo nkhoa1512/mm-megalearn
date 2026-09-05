@@ -226,21 +226,6 @@ export default function CustomGroupsManager() {
   // Delete Confirm
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, group: null });
 
-  // Stats calculation
-  const totalGroups = customGroups.length;
-  const dynamicGroups = customGroups.filter((g) => g.type === 'DYNAMIC').length;
-  const manualGroups = customGroups.filter((g) => g.type === 'MANUAL').length;
-  const fileGroups = customGroups.filter((g) => g.type === 'FILE_IMPORT').length;
-
-  const totalAssignedHeadcount = useMemo(() => {
-    const uniqueUserIds = new Set();
-    customGroups.forEach((g) => {
-      const members = resolveGroupMembers(g, users);
-      members.forEach((m) => uniqueUserIds.add(m.userId));
-    });
-    return uniqueUserIds.size;
-  }, [customGroups, users]);
-
   // Filtered Groups
   const filteredGroups = useMemo(() => {
     return customGroups.filter((g) => {
@@ -694,53 +679,6 @@ export default function CustomGroupsManager() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* 1. STATS OVERVIEW CARDS */}
-      <div className="grid grid-4" style={{ gap: 12 }}>
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Custom Groups</span>
-            <span style={{ background: 'var(--blue-soft)', color: '#1D4ED8', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
-              <i className="ti ti-users-group" />
-            </span>
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink)' }}>{totalGroups}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>A group for administering learning audiences</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees</span>
-            <span style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
-              <i className="ti ti-user-check" />
-            </span>
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--sage-soft-text)' }}>{totalAssignedHeadcount}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>Assigned to the target groups</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Structural Group (Dynamic)</span>
-            <span style={{ background: '#FAF5FF', color: '#7E22CE', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
-              <i className="ti ti-binary-tree" />
-            </span>
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#7E22CE' }}>{dynamicGroups}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>Updates automatically with the org chart</div>
-        </div>
-
-        <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Manual &amp; File Import</span>
-            <span style={{ background: 'var(--amber-soft)', color: 'var(--amber-soft-text)', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
-              <i className="ti ti-file-spreadsheet" />
-            </span>
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--amber-soft-text)' }}>{manualGroups + fileGroups}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>A special group defined by list</div>
-        </div>
-      </div>
-
       {/* 2. SEARCH & ACTION TOOLBAR (ENTERPRISE 2-ROW) */}
       <div
         className="card"
