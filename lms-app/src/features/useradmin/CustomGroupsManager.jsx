@@ -709,7 +709,7 @@ export default function CustomGroupsManager() {
 
         <div className="card card-pad" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees In Group</span>
+            <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>Total Employees</span>
             <span style={{ background: 'var(--sage-soft)', color: 'var(--sage-soft-text)', padding: '4px 8px', borderRadius: 8, fontSize: 13 }}>
               <i className="ti ti-user-check" />
             </span>
